@@ -1,0 +1,36 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-staging:
+    name: Staging deploy gate
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify build
+        run: npm run check
+
+      - name: Deploy placeholder
+        run: |
+          echo "Configure STAGING_DEPLOY_HOOK or cloud deployment action before enabling real staging deploy."
+          test -z "${{ secrets.STAGING_DEPLOY_HOOK }}" || echo "Staging deploy hook is configured."

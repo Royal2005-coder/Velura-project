@@ -1,0 +1,20 @@
+services:
+  velura-api:
+    image: node:20-alpine
+    working_dir: /app
+    command: node apps/api/src/server.js
+    ports:
+      - "8787:8787"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+
+  velura-admin:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run admin:dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app

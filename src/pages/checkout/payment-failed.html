@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura — Thanh toán thất bại</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <div class="container">
+        <div class="site-header__top">
+          <a href="#" class="site-header__logo"><img src="../../assets/images/logo.png" alt="Velura" width="84" height="76" /></a>
+          <label class="site-header__search">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7.33" cy="7.33" r="5.33" stroke="#6B635D" stroke-width="1.33"/><path d="M14 14l-2.87-2.87" stroke="#6B635D" stroke-width="1.33" stroke-linecap="round"/></svg>
+            <input type="search" placeholder="Tìm kiếm sản phẩm..." aria-label="Tìm kiếm" />
+          </label>
+          <div class="site-header__actions">
+            <button class="menu-toggle" type="button" aria-label="Mở menu" aria-expanded="false"><span></span><span></span><span></span></button>
+            <button class="icon-btn" type="button" aria-label="Yêu thích"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 17.5l-5.83-5.83a4.17 4.17 0 115.83-5.83 4.17 4.17 0 115.83 5.83L10 17.5z" stroke="#2A2522" stroke-width="1.67"/></svg></button>
+            <button class="icon-btn" type="button" aria-label="Giỏ hàng"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 3h2.5l2.7 12.36a2 2 0 0 0 1.95 1.57h8.6a2 2 0 0 0 1.96-1.61L21.5 7H6" stroke="#2A2522" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="20.5" r="1.4" stroke="#2A2522" stroke-width="1.6"/><circle cx="17" cy="20.5" r="1.4" stroke="#2A2522" stroke-width="1.6"/></svg><span class="cart-badge">3</span></button>
+            <a class="icon-btn" href="../auth/signin.html" aria-label="Tài khoản"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 9.17a3.33 3.33 0 100-6.67 3.33 3.33 0 000 6.67zM15.83 17.5v-1.67a3.33 3.33 0 00-3.33-3.33H7.5a3.33 3.33 0 00-3.33 3.33V17.5" stroke="#2A2522" stroke-width="1.67"/></svg></a>
+          </div>
+        </div>
+        <nav class="site-header__nav" aria-label="Chính">
+          <a href="#">Trang chủ</a>
+          <a href="#">Sản phẩm</a>
+          <a href="#">Gợi ý AI</a>
+          <a href="#">Chatbot</a>
+          <a href="#">Blog</a>
+          <a href="#">Về chúng tôi</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="payment-failed">
+      <div class="container">
+      <div class="payment-failed__icon" aria-hidden="true">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" stroke="#CCCCCC" stroke-width="3"/><path d="M30 18L18 30M18 18l12 12" stroke="#CCCCCC" stroke-width="3" stroke-linecap="round"/></svg>
+      </div>
+      <h1 class="payment-failed__title">Thanh toán thất bại</h1>
+      <p class="payment-failed__desc">Rất tiếc, giao dịch của bạn không thành công. Vui lòng thử lại hoặc chọn phương thức thanh toán khác.</p>
+
+      <div class="error-box">
+        <div class="error-box__head">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8.33" stroke="#D4183D" stroke-width="1.67"/><path d="M10 6.67V10M10 13.33h.01" stroke="#D4183D" stroke-width="1.67" stroke-linecap="round"/></svg>
+          <div>
+            <p><strong>Mã lỗi:</strong></p>
+            <p style="color:#827473;font-size:0.875rem;margin-top:4px">Giao dịch bị từ chối bởi ngân hàng. Vui lòng kiểm tra số dư tài khoản hoặc thông tin thẻ của bạn.</p>
+          </div>
+        </div>
+        <ul class="error-box__reasons">
+          <li>Một số lý do có thể gây ra lỗi:</li>
+          <li>• Số dư tài khoản không đủ</li>
+          <li>• Thông tin thẻ không chính xác</li>
+          <li>• Thẻ đã hết hạn hoặc bị khóa</li>
+          <li>• Vượt quá hạn mức giao dịch</li>
+        </ul>
+      </div>
+
+      <div class="payment-failed__actions">
+        <a class="btn" href="./shipping-payment.html">Thử lại thanh toán</a>
+        <a class="btn" href="#">Tiếp tục mua sắm</a>
+      </div>
+
+      <div class="help-box">
+        <p><strong>Cần trợ giúp?</strong></p>
+        <p>Đội ngũ chăm sóc khách hàng sẵn sàng hỗ trợ bạn</p>
+        <p style="margin-top:8px"><a href="tel:1900xxxx" style="color:var(--terracotta)">📞 1900 xxxx</a> · <a href="mailto:hello@velura.vn" style="color:var(--terracotta)">hello@velura.vn</a></p>
+      </div></div></main>
+
+    <footer class="site-footer">
+      <div class="container site-footer__inner">
+        <div class="site-footer__grid">
+          <div class="site-footer__brand">
+            <p class="font-display">Velura</p>
+            <p>Thời trang thông minh cho phái đẹp hiện đại</p>
+            <div class="site-footer__social"><a href="#" aria-label="Facebook">f</a><a href="#" aria-label="Instagram">ig</a></div>
+          </div>
+          <div><h4>Liên kết nhanh</h4><ul><li><a href="#">Trang chủ</a></li><li><a href="#">Sản phẩm</a></li><li><a href="#">Blog</a></li><li><a href="#">Về chúng tôi</a></li><li><a href="#">Liên hệ</a></li></ul></div>
+          <div><h4>Hỗ trợ</h4><ul><li><a href="#">Đơn hàng của tôi</a></li><li><a href="#">Theo dõi đơn hàng</a></li><li><a href="#">Trả hàng &amp; Hoàn tiền</a></li><li><a href="#">Chính sách</a></li><li><a href="#">Câu hỏi thường gặp</a></li></ul></div>
+          <div><h4>Liên hệ</h4><ul class="site-footer__contact"><li>📍 123 Nguyễn Huệ, Q.1, TP.HCM</li><li>📞 1900 xxxx</li><li>✉ hello@velura.vn</li></ul></div>
+        </div>
+        <p class="site-footer__bottom">© 2026 Velura. Bản quyền thuộc về Velura Fashion.</p>
+      </div>
+    </footer>
+  </div>
+  <script type="module" src="../../scripts/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "name": "velura",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Velura commerce monorepo with admin backend, shared database schema, and static admin UI",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "admin:dev": "vite",
+    "api:dev": "node apps/api/src/server.js",
+    "api:check": "node --check apps/api/src/server.js",
+    "check:js": "node scripts/check-js.mjs",
+    "check": "npm run check:js && npm run build",
+    "smoke:api": "node scripts/smoke-api.mjs",
+    "db:seed:admins": "node database/seed/seed-admin-users.mjs",
+    "build": "vite build",
+    "preview": "vite preview --port 4173 --host"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "vite": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
