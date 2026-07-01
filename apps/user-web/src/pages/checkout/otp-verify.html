@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura — Xác nhận OTP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+</head>
+
+<body>
+  <div class="page-shell">
+    <load src="/src/components/header.html" />
+
+    <main class="checkout-page">
+      <div class="container">
+        <load src="/src/components/breadcrumb.html" />
+        <h1 class="page-title">Thanh toán</h1>
+
+        <div class="checkout-steps">
+          <div class="checkout-step"><span class="checkout-step__num checkout-step__num--done">✓</span><span
+              class="checkout-step__label checkout-step__label--done">Thông tin giao hàng</span></div>
+          <span class="checkout-step__line checkout-step__line--done"></span>
+          <div class="checkout-step"><span class="checkout-step__num checkout-step__num--done">✓</span><span
+              class="checkout-step__label checkout-step__label--done">Vận chuyển &amp; Thanh toán</span></div>
+          <span class="checkout-step__line checkout-step__line--done"></span>
+          <div class="checkout-step"><span class="checkout-step__num checkout-step__num--active">3</span><span
+              class="checkout-step__label checkout-step__label--active">Xác nhận</span></div>
+        </div>
+
+        <div class="checkout-grid">
+          <div class="checkout-main">
+            <h2 class="review-title">Kiểm tra đơn hàng</h2>
+
+            <div class="review-section">
+              <div class="review-section__head">
+                <span class="review-section__label">📍 Địa chỉ giao hàng</span>
+                <a href="./payment-guest.html" class="review-section__change">Thay đổi</a>
+              </div>
+              <p class="review-section__name">Khách hàng</p>
+              <p class="review-section__text">0901 234 567<br />123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh</p>
+            </div>
+
+            <article class="product-item">
+              <div class="product-item__img">
+                <img src="../../assets/images/product-silk-blazer.png" alt="Áo Blazer Lụa Satin" width="96"
+                  height="128" />
+              </div>
+              <div style="display:flex;flex-direction:column;flex:1">
+                <h4 class="product-item__name">Áo Blazer Lụa Satin</h4>
+                <p class="product-item__variant">Champagne / Size M</p>
+                <p class="product-item__qty">Số lượng: 1</p>
+                <p class="product-item__price">2.450.000 VND</p>
+              </div>
+            </article>
+          </div>
+
+          <aside class="order-summary">
+            <h2 class="order-summary__title">Tóm tắt đơn hàng</h2>
+            <div class="summary-total">
+              <span class="summary-total__label">Tổng cộng</span>
+              <span class="summary-total__value">9.100.000₫</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <!-- OTP overlay -->
+    <div class="otp-overlay" role="dialog" aria-modal="true" aria-labelledby="otp-title">
+      <div class="otp-modal">
+        <div class="otp-modal__bg" aria-hidden="true"></div>
+        <div class="otp-modal__content">
+          <h2 id="otp-title" class="otp-modal__title">Nhập OTP để hoàn tất đơn hàng</h2>
+          <p class="otp-modal__desc">Nhập mã OTP đã được gửi về số điện thoại mà bạn đăng kí</p>
+          <form data-prevent-submit>
+            <div class="otp-inputs" role="group" aria-label="Mã OTP 4 chữ số">
+              <input class="otp-input" type="text" inputmode="numeric" maxlength="1" aria-label="Chữ số 1" />
+              <input class="otp-input" type="text" inputmode="numeric" maxlength="1" aria-label="Chữ số 2" />
+              <input class="otp-input" type="text" inputmode="numeric" maxlength="1" aria-label="Chữ số 3" />
+              <input class="otp-input" type="text" inputmode="numeric" maxlength="1" aria-label="Chữ số 4" />
+            </div>
+            <p class="otp-timer">(10S)</p>
+            <p class="otp-resend">Không nhận được mã? <button type="button">Gửi lại</button></p>
+            <div style="margin-top:24px">
+              <a class="btn btn--accent btn--full" href="/src/pages/checkout/payment-confirm.html">Xác nhận</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <load src="/src/components/footer.html" />
+  </div>
+  <script type="module" src="../../scripts/main.js"></script>
+</body>
+
+</html>

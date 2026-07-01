@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chính sách và Điều khoản thương hiệu — Velura</title>
+  <meta name="description"
+    content="Trung tâm hỗ trợ khách hàng Velura. Cập nhật các chính sách đổi trả, bảo mật thông tin, chính sách vận chuyển, điều khoản sử dụng và quyền lợi thành viên mới nhất." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+
+<body>
+  <div class="page-shell">
+    <!-- SITE HEADER -->
+    <load src="/src/components/header.html" />
+
+    <!-- MAIN BODY CONTENT -->
+    <main>
+      <div class="policy-container container">
+        <!-- Breadcrumb / Header -->
+        <div class="policy-header">
+          <span class="policy-header__subtitle">Trung tâm hỗ trợ</span>
+          <h1 class="policy-header__title">Chính sách và Điều khoản</h1>
+          <div class="policy-header__meta">
+            <svg class="policy-header__meta-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>Cập nhật lần cuối: 01 tháng 06, 2026</span>
+          </div>
+        </div>
+
+        <!-- 2 Columns Layout -->
+        <div class="policy-layout">
+          <!-- Left Column: Navigation Tabs -->
+          <aside class="policy-tabs" role="tablist" aria-label="Danh mục chính sách">
+            <button class="policy-tabs__item js-policy-tab is-active" data-policy-tab="returns" id="policy-tab-returns"
+              role="tab" aria-selected="true" aria-controls="policy-panel-returns">
+              <svg class="policy-tabs__item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5" />
+              </svg>
+              <span>Chính sách đổi trả</span>
+            </button>
+
+            <button class="policy-tabs__item js-policy-tab" data-policy-tab="privacy" id="policy-tab-privacy" role="tab"
+              aria-selected="false" aria-controls="policy-panel-privacy">
+              <svg class="policy-tabs__item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Chính sách bảo mật</span>
+            </button>
+
+            <button class="policy-tabs__item js-policy-tab" data-policy-tab="shipping" id="policy-tab-shipping"
+              role="tab" aria-selected="false" aria-controls="policy-panel-shipping">
+              <svg class="policy-tabs__item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0" />
+              </svg>
+              <span>Chính sách vận chuyển</span>
+            </button>
+
+            <button class="policy-tabs__item js-policy-tab" data-policy-tab="terms" id="policy-tab-terms" role="tab"
+              aria-selected="false" aria-controls="policy-panel-terms">
+              <svg class="policy-tabs__item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Điều khoản sử dụng</span>
+            </button>
+
+            <button class="policy-tabs__item js-policy-tab" data-policy-tab="faq" id="policy-tab-faq" role="tab"
+              aria-selected="false" aria-controls="policy-panel-faq">
+              <svg class="policy-tabs__item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Câu hỏi thường gặp</span>
+            </button>
+
+            <button class="policy-tabs__item js-policy-tab" data-policy-tab="member" id="policy-tab-member" role="tab"
+              aria-selected="false" aria-controls="policy-panel-member">
+              <svg class="policy-tabs__item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+              <span>Chính sách thành viên</span>
+            </button>
+          </aside>
+
+          <!-- Right Column: Content Detail -->
+          <div class="policy-content">
+            <!-- PANEL 1: Chính sách đổi trả -->
+            <section class="policy-panel js-policy-panel is-active" id="policy-panel-returns" role="tabpanel"
+              aria-labelledby="policy-tab-returns">
+              <h2 class="policy-panel__title">Chính sách đổi trả</h2>
+              <p class="policy-panel__intro">Velura cam kết mang lại trải nghiệm mua sắm an tâm cho mọi khách hàng.
+                Trong trường hợp sản phẩm không như mong đợi, quý khách hoàn toàn có thể yêu cầu đổi hoặc trả hàng theo
+                các điều khoản dưới đây.</p>
+
+              <h3 class="policy-panel__section-title">Thời gian đổi trả</h3>
+              <ul class="policy-panel__list">
+                <li class="policy-panel__list-item">7 ngày kể từ ngày nhận hàng đối với sản phẩm nguyên giá.</li>
+                <li class="policy-panel__list-item">3 ngày đối với sản phẩm giảm giá trên 30%.</li>
+                <li class="policy-panel__list-item">Sản phẩm phụ kiện và đồ lót không áp dụng đổi trả vì lý do vệ sinh.
+                </li>
+              </ul>
+
+              <h3 class="policy-panel__section-title">Điều kiện đổi trả</h3>
+              <ul class="policy-panel__list">
+                <li class="policy-panel__list-item">Sản phẩm còn nguyên tem mác, chưa qua sử dụng và chưa giặt là.</li>
+                <li class="policy-panel__list-item">Còn đầy đủ hóa đơn mua hàng hoặc mã đơn hàng trực tuyến.</li>
+                <li class="policy-panel__list-item">Bao bì gốc và phụ kiện đi kèm (nếu có) còn nguyên vẹn.</li>
+              </ul>
+
+              <h3 class="policy-panel__section-title">Quy trình đổi trả</h3>
+              <p class="policy-panel__text">Quý khách vui lòng liên hệ hotline 1900 6868 hoặc gửi yêu cầu qua mục Đơn
+                hàng trong tài khoản Velura. Đội ngũ chăm sóc khách hàng sẽ sắp xếp đơn vị vận chuyển đến nhận hàng miễn
+                phí trong vòng 48 giờ. Hoàn tiền được thực hiện trong 3–5 ngày làm việc sau khi sản phẩm hoàn về kho.
+              </p>
+            </section>
+
+            <!-- PANEL 2: Chính sách bảo mật -->
+            <section class="policy-panel js-policy-panel" id="policy-panel-privacy" role="tabpanel"
+              aria-labelledby="policy-tab-privacy">
+              <h2 class="policy-panel__title">Chính sách bảo mật</h2>
+              <p class="policy-panel__intro">Velura tôn trọng và cam kết bảo vệ thông tin cá nhân của khách hàng theo
+                quy định pháp luật Việt Nam và các chuẩn mực quốc tế.</p>
+
+              <h3 class="policy-panel__section-title">Thông tin chúng tôi thu thập</h3>
+              <ul class="policy-panel__list">
+                <li class="policy-panel__list-item">Họ tên, số điện thoại, email và địa chỉ giao hàng.</li>
+                <li class="policy-panel__list-item">Lịch sử mua sắm và sở thích phong cách (nếu khách hàng tự nguyện
+                  chia sẻ).</li>
+                <li class="policy-panel__list-item">Thông tin kỹ thuật về thiết bị truy cập website nhằm cải thiện trải
+                  nghiệm.</li>
+              </ul>
+
+              <h3 class="policy-panel__section-title">Cách chúng tôi sử dụng thông tin</h3>
+              <ul class="policy-panel__list">
+                <li class="policy-panel__list-item">Xử lý đơn hàng, vận chuyển và chăm sóc sau bán.</li>
+                <li class="policy-panel__list-item">Gửi thông báo ưu đãi, sự kiện (chỉ khi khách hàng đăng ký nhận).
+                </li>
+                <li class="policy-panel__list-item">Phân tích nội bộ để cải thiện sản phẩm và dịch vụ.</li>
+              </ul>
+
+              <h3 class="policy-panel__section-title">Cam kết bảo mật</h3>
+              <p class="policy-panel__text">Velura không chia sẻ, mua bán hoặc trao đổi thông tin khách hàng với bên thứ
+                ba ngoài các đối tác vận chuyển và thanh toán cần thiết để hoàn thành đơn hàng. Mọi dữ liệu được mã hóa
+                theo chuẩn SSL 256-bit.</p>
+            </section>
+
+            <!-- PANEL 3: Chính sách vận chuyển -->
+            <section class="policy-panel js-policy-panel" id="policy-panel-shipping" role="tabpanel"
+              aria-labelledby="policy-tab-shipping">
+              <h2 class="policy-panel__title">Chính sách vận chuyển</h2>
+              <p class="policy-panel__intro">Velura hợp tác cùng các đơn vị vận chuyển uy tín như GHN, GHTK và Viettel
+                Post để đảm bảo hàng hóa đến tay khách hàng nhanh chóng, an toàn.</p>
+
+              <h3 class="policy-panel__section-title">Thời gian giao hàng</h3>
+              <ul class="policy-panel__list">
+                <li class="policy-panel__list-item">Nội thành TP.HCM và Hà Nội: 1–2 ngày làm việc.</li>
+                <li class="policy-panel__list-item">Các tỉnh thành khác: 3–5 ngày làm việc.</li>
+                <li class="policy-panel__list-item">Khu vực huyện đảo, vùng sâu vùng xa: 5–7 ngày làm việc.</li>
+              </ul>
+
+              <h3 class="policy-panel__section-title">Phí vận chuyển</h3>
+              <ul class="policy-panel__list">
+                <li class="policy-panel__list-item">Miễn phí vận chuyển toàn quốc cho đơn hàng từ 500.000đ.</li>
+                <li class="policy-panel__list-item">Đơn hàng dưới 500.000đ: 25.000đ nội thành, 35.000đ tỉnh thành khác.
+                </li>
+                <li class="policy-panel__list-item">Giao hỏa tốc trong 2 giờ tại TP.HCM (nội thành): 60.000đ.</li>
+              </ul>
+
+              <h3 class="policy-panel__section-title">Theo dõi đơn hàng</h3>
+              <p class="policy-panel__text">Sau khi đơn hàng được đóng gói, quý khách sẽ nhận được mã vận đơn qua email
+                và SMS để theo dõi hành trình giao hàng theo thời gian thực.</p>
+            </section>
+
+            <!-- PANEL 4: Điều khoản sử dụng -->
+            <section class="policy-panel js-policy-panel" id="policy-panel-terms" role="tabpanel"
+              aria-labelledby="policy-tab-terms">
+              <h2 class="policy-panel__title">Điều khoản sử dụng</h2>
+              <p class="policy-panel__intro">Bằng việc truy cập và sử dụng website velura.vn, quý khách đồng ý tuân thủ
+                các điều khoản và điều kiện dưới đây.</p>
+
+              <h3 class="policy-panel__section-title">Quyền sở hữu trí tuệ</h3>
+              <p class="policy-panel__text">Toàn bộ nội dung, hình ảnh, thiết kế và logo trên website thuộc quyền sở hữu
+                của Công ty TNHH Thời trang Velura. Mọi hành vi sao chép, sử dụng cho mục đích thương mại mà không có sự
+                đồng ý bằng văn bản đều bị nghiêm cấm.</p>
+
+              <h3 class="policy-panel__section-title">Trách nhiệm của khách hàng</h3>
+              <ul class="policy-panel__list">
+                <li class="policy-panel__list-item">Cung cấp thông tin chính xác khi đặt hàng và đăng ký tài khoản.</li>
+                <li class="policy-panel__list-item">Bảo mật thông tin đăng nhập và chịu trách nhiệm với mọi hoạt động
+                  dưới tài khoản của mình.</li>
+                <li class="policy-panel__list-item">Không sử dụng website cho các mục đích vi phạm pháp luật.</li>
+              </ul>
+
+              <h3 class="policy-panel__section-title">Giới hạn trách nhiệm</h3>
+              <p class="policy-panel__text">Velura không chịu trách nhiệm cho các thiệt hại gián tiếp phát sinh từ việc
+                sử dụng sản phẩm sai hướng dẫn bảo quản được in trên nhãn.</p>
+            </section>
+
+            <!-- PANEL 5: Câu hỏi thường gặp -->
+            <section class="policy-panel js-policy-panel" id="policy-panel-faq" role="tabpanel"
+              aria-labelledby="policy-tab-faq">
+              <h2 class="policy-panel__title">Câu hỏi thường gặp</h2>
+              <p class="policy-panel__intro">Dưới đây là lời giải đáp cho các câu hỏi phổ biến mà Velura thường nhận
+                được từ phía khách hàng.</p>
+
+              <h3 class="policy-panel__section-title">Tôi có thể đặt hàng mà không cần tài khoản không?</h3>
+              <p class="policy-panel__text">Có. Velura hỗ trợ đặt hàng nhanh dành cho khách hàng không có tài khoản. Tuy
+                nhiên, đăng ký tài khoản giúp quý khách theo dõi đơn hàng dễ dàng và tích lũy điểm thành viên.</p>
+
+              <h3 class="policy-panel__section-title">Velura có nhận may đo theo yêu cầu không?</h3>
+              <p class="policy-panel__text">Dịch vụ may đo cá nhân hóa hiện chỉ áp dụng cho khách hàng VIP tại flagship
+                store Sài Gòn và Hà Nội. Vui lòng đặt lịch trước qua hotline.</p>
+
+              <h3 class="policy-panel__section-title">Làm sao để hủy đơn hàng?</h3>
+              <p class="policy-panel__text">Quý khách có thể hủy đơn miễn phí trong vòng 2 giờ sau khi đặt qua mục Đơn
+                hàng. Sau thời gian này, đơn đã được chuyển sang khâu đóng gói và không thể hủy.</p>
+            </section>
+
+            <!-- PANEL 6: Chính sách thành viên -->
+            <section class="policy-panel js-policy-panel" id="policy-panel-member" role="tabpanel"
+              aria-labelledby="policy-tab-member">
+              <h2 class="policy-panel__title">Chính sách thành viên</h2>
+              <p class="policy-panel__intro">Velura Club là chương trình tri ân dành cho khách hàng thân thiết, với bốn
+                hạng thẻ tương ứng với mức chi tiêu trong năm.</p>
+
+              <h3 class="policy-panel__section-title">Các hạng thẻ</h3>
+              <ul class="policy-panel__list">
+                <li class="policy-panel__list-item"><strong>Silk (mặc định):</strong> Tích lũy 1 điểm cho mỗi 10.000đ,
+                  sinh nhật giảm 10%.</li>
+                <li class="policy-panel__list-item"><strong>Pearl (từ 5 triệu):</strong> Ưu đãi 5% trọn năm, miễn phí
+                  gói quà.</li>
+                <li class="policy-panel__list-item"><strong>Rose (từ 15 triệu):</strong> Ưu đãi 10%, mời tham dự sự kiện
+                  riêng tư, quà sinh nhật cao cấp.</li>
+                <li class="policy-panel__list-item"><strong>Onyx (từ 35 triệu):</strong> Ưu đãi 15% trọn đời, personal
+                  stylist 1-1, ưu tiên đặt sản phẩm phiên bản giới hạn.</li>
+              </ul>
+
+              <h3 class="policy-panel__section-title">Sử dụng điểm</h3>
+              <p class="policy-panel__text">Điểm Velura được quy đổi 1 điểm = 1.000đ, áp dụng trực tiếp vào đơn hàng kế
+                tiếp. Điểm có hiệu lực trong 12 tháng kể từ ngày tích.</p>
+
+              <h3 class="policy-panel__section-title">Nâng hạng &amp; duy trì hạng</h3>
+              <p class="policy-panel__text">Hạng thẻ được xét lại mỗi 12 tháng dựa trên tổng chi tiêu. Khách hàng đạt
+                hạng Onyx sẽ duy trì hạng vĩnh viễn dù không tiếp tục đạt mức chi tiêu yêu cầu.</p>
+            </section>
+          </div>
+        </div>
+
+        <div class="policy-footer">
+          <span>Mọi thắc mắc về chính sách, vui lòng liên hệ </span>
+          <a href="mailto:legal@velura.vn">legal@velura.vn</a>
+        </div>
+      </div>
+    </main>
+
+    <!-- SITE FOOTER -->
+    <load src="/src/components/footer.html" />
+  </div>
+
+  <!-- STYLE QUIZ MODAL -->
+  <div class="quiz-modal" id="quiz-modal">
+    <div class="quiz-modal__overlay"></div>
+    <div class="quiz-modal__content">
+      <button class="quiz-modal__close js-close-quiz" type="button" aria-label="Đóng">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="quiz-modal__image-side">
+        <img src="/src/assets/images/quiz-illustration.png" alt="Style Quiz Illustration" />
+      </div>
+
+      <div class="quiz-modal__content-side">
+        <div class="quiz-modal__header">
+          <div class="quiz-modal__icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+              </polygon>
+            </svg>
+          </div>
+          <h2 class="quiz-modal__title-text">Kiến tạo phong cách riêng cùng AI Stylist</h2>
+          <p class="quiz-modal__description">
+            Trải nghiệm dịch vụ tư vấn trang phục cá nhân hóa. Chúng mình sẽ phân tích sở thích và phong cách sống của
+            bạn để tuyển chọn những thiết kế hoàn hảo nhất từ Velura.
+          </p>
+        </div>
+
+        <div class="quiz-modal__buttons">
+          <a class="btn btn--accent" href="/src/pages/ai/style-quiz.html">Bắt đầu Style Quiz</a>
+          <button class="btn btn-outline js-close-quiz" type="button">Để sau</button>
+        </div>
+
+        <p class="quiz-modal__note">Chỉ mất khoảng 2 phút. Phân tích miễn phí 100%.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHATBOT WIDGET -->
+  <div class="chatbot-widget">
+    <button class="chatbot-toggler js-chatbot-toggle" type="button" aria-label="Mở khung chat">
+      <svg class="chatbot-toggler__icon-chat" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <svg class="chatbot-toggler__icon-close" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="chatbot-box">
+      <div class="chatbot-header">
+        <div class="chatbot-header__info">
+          <div class="chatbot-header__avatar">
+            <img src="/src/assets/images/chatbot/bot-avatar.png" alt="Velura Assistant" />
+            <span class="chatbot-header__status"></span>
+          </div>
+          <div>
+            <h4 class="chatbot-header__title">AI Stylist — Velura</h4>
+            <span class="chatbot-header__desc">Trực tuyến</span>
+          </div>
+        </div>
+        <div class="chatbot-state-switcher">
+          <select class="js-chatbot-state-select" aria-label="Chọn trạng thái kiểm thử">
+            <option value="guest">Guest Mode</option>
+            <option value="user">User Mode</option>
+          </select>
+        </div>
+
+        <a class="chatbot-header__expand" href="/src/pages/chatbot.html" aria-label="Phóng to">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+        </a>
+        <button class="chatbot-header__close js-chatbot-toggle" type="button" aria-label="Đóng khung chat">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="chatbot-messages">
+        <div class="chatbot-message chatbot-message--bot">
+          <div class="chatbot-message__text">Chào bạn! Tôi là AI Stylist của Velura. Tôi có thể giúp gì cho bạn trong
+            việc lựa chọn phong cách hôm nay?</div>
+          <span class="chatbot-message__time">17:05</span>
+        </div>
+      </div>
+
+      <form class="chatbot-input-area js-chatbot-form" data-prevent-submit>
+        <input class="chatbot-input js-chatbot-input" type="text" placeholder="Viết tin nhắn..."
+          aria-label="Nội dung chat" />
+        <button class="chatbot-send-btn" type="submit" aria-label="Gửi tin nhắn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- SEARCH OVERLAY -->
+  <div class="search-overlay" id="search-overlay">
+    <div class="search-overlay__background js-search-close"></div>
+    <div class="search-overlay__container">
+      <div class="search-overlay__header">
+        <div class="search-overlay__search-box">
+          <svg class="search-overlay__search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input class="search-overlay__input js-search-overlay-input" type="text"
+            placeholder="Tìm kiếm sản phẩm, danh mục..." aria-label="Tìm kiếm trong cửa hàng" />
+        </div>
+        <button class="search-overlay__close js-search-close" type="button" aria-label="Đóng tìm kiếm">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="search-overlay__content">
+        <div class="search-overlay__row">
+          <div class="search-overlay__left-col">
+            <div class="search-section">
+              <h3 class="search-section__title">Tìm kiếm gần đây</h3>
+              <div class="search-pills js-recent-searches"></div>
+            </div>
+            <div class="search-section">
+              <h3 class="search-section__title">Xu hướng tìm kiếm</h3>
+              <ol class="trending-list js-trending-searches"></ol>
+            </div>
+          </div>
+          <div class="search-overlay__right-col">
+            <div class="search-section">
+              <h3 class="search-section__title">Tìm kiếm phổ biến</h3>
+              <div class="popular-grid js-popular-categories"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/scripts/main.js"></script>
+</body>
+
+</html>

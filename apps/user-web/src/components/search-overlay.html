@@ -1,0 +1,47 @@
+<div class="search-overlay" id="search-overlay">
+  <div class="search-overlay__background js-search-close"></div>
+  <div class="search-overlay__container">
+    <div class="search-overlay__header">
+      <div class="search-overlay__search-box">
+        <svg class="search-overlay__search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input class="search-overlay__input js-search-overlay-input" type="text"
+          placeholder="Tìm kiếm sản phẩm, danh mục..." aria-label="Tìm kiếm trong cửa hàng" />
+      </div>
+      <button class="search-overlay__close js-search-close" type="button" aria-label="Đóng tìm kiếm">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="search-overlay__content">
+      <div class="search-overlay__row">
+        <!-- Cột trái: Tìm kiếm gần đây & Xu hướng tìm kiếm -->
+        <div class="search-overlay__col search-overlay__left-col">
+          <div class="search-section">
+            <h3 class="search-section__title">Tìm kiếm gần đây</h3>
+            <div class="search-pills js-recent-searches"></div>
+          </div>
+          <div class="search-section" style="margin-top: 24px;">
+            <h3 class="search-section__title">Xu hướng tìm kiếm</h3>
+            <div class="trending-list js-trending-searches"></div>
+          </div>
+        </div>
+
+        <!-- Cột phải: Tìm kiếm phổ biến (4 cards) -->
+        <div class="search-overlay__col search-overlay__right-col">
+          <div class="search-section">
+            <h3 class="search-section__title">Tìm kiếm phổ biến</h3>
+            <div class="popular-grid js-popular-categories"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

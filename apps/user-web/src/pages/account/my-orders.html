@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đơn hàng của tôi - Velura Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+</head>
+
+<body class="page-my-orders">
+  <div class="page-shell">
+    <load src="/src/components/header.html" />
+
+
+    <!-- Main Content -->
+    <main class="my-orders-page">
+      <div class="container">
+        <!-- Page Title Block -->
+        <div class="my-orders-title-block">
+          <h1 class="my-orders-title">Đơn hàng của tôi</h1>
+          <p class="my-orders-subtitle">Theo dõi và quản lý tất cả đơn hàng của bạn tại Velura</p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-orders-container">
+          <div class="search-orders-wrapper">
+            <svg class="search-orders-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" class="search-orders-input" id="js-search-orders"
+              placeholder="Tìm theo mã đơn hàng..." />
+          </div>
+        </div>
+
+        <!-- Horizontal Tabs -->
+        <div class="order-tabs">
+          <button class="order-tab is-active" data-tab="all" type="button">Tất cả</button>
+          <button class="order-tab" data-tab="pending" type="button">Chờ xác nhận</button>
+          <button class="order-tab" data-tab="shipping" type="button">Đang giao</button>
+          <button class="order-tab" data-tab="delivered" type="button">Hoàn thành</button>
+          <button class="order-tab" data-tab="cancelled" type="button">Đã hủy</button>
+        </div>
+
+        <!-- Orders List -->
+        <div class="order-list" id="js-order-list">
+
+          <!-- order-list Template -->
+          <div class="order-card" data-order-id="VL-20260524-1234" data-status="shipping" data-bind="order.card">
+            <div class="order-card__header">
+              <div class="order-card__header-left">
+                <span class="order-card__id" data-bind="order.id">#VL-20260524-1234</span>
+                <span class="order-card__date" data-bind="order.date">Đặt ngày 24/05/2026 • 10:32</span>
+              </div>
+              <span class="order-card__status-badge order-card__status-badge--shipping" data-bind="order.status_badge">Đang giao</span>
+            </div>
+
+            <div class="order-card__products" data-bind="order.products_list">
+              <div class="order-product-item" data-bind="order.product_item">
+                <img class="order-product-item__image" src="../../assets/images/image-1.png"
+                  alt="Áo sơ mi linen trắng" data-bind="order.product_image" />
+                <span class="order-product-item__name" data-bind="order.product_name">Áo sơ mi linen trắng</span>
+              </div>
+            </div>
+
+            <div class="order-card__footer">
+              <div class="order-card__footer-left">
+                <span class="order-card__count" data-bind="order.count">Tổng cộng (3 sản phẩm)</span>
+                <span class="order-card__total" data-bind="order.total">2,480,000đ</span>
+              </div>
+              <div class="order-card__actions" id="actions-VL-20260524-1234" data-bind="order.actions">
+                <button class="btn btn--success js-btn-confirm-delivery" type="button">Xác nhận giao thành công</button>
+                <a href="/src/pages/account/return-request.html?orderId=VL-20260524-1234" class="btn btn--outline js-btn-return">Đổi/Trả</a>
+                <a href="/src/pages/account/order-detail.html" class="btn btn--primary btn-detail-action">Chi tiết &gt;</a>
+              </div>
+            </div>
+          </div>
+          <!-- /order-list Template -->
+
+        </div>
+      </div>
+    </main>
+
+    <!-- Confirm Receipt Popup Modal (Intermediate Modal) -->
+    <div class="review-popup" id="js-confirm-receipt-modal">
+      <div class="review-popup__overlay js-close-confirm"></div>
+      <div class="review-popup__content">
+        <button class="review-popup__close js-close-confirm" type="button" aria-label="Đóng">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <h3 class="review-popup__title" style="margin-bottom: 24px;">Xác nhận đã nhận đơn hàng này?</h3>
+
+        <div class="review-popup__actions" style="justify-content: center; gap: 16px;">
+          <button class="btn btn--outline js-btn-skip-confirm" type="button" style="min-width: 120px;">Bỏ qua</button>
+          <button class="btn btn--primary js-btn-go-review" type="button"
+            style="min-width: 120px; background-color: var(--terracotta); border-color: var(--terracotta);">Đánh
+            giá</button>
+        </div>
+      </div>
+    </div>
+
+    <load src="/src/components/footer.html" />
+
+  </div>
+
+  <script type="module" src="../../scripts/main.js"></script>
+</body>
+
+</html>

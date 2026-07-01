@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tài khoản cá nhân - Velura Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+</head>
+
+<body class="page-profile">
+  <div class="page-shell">
+    <load src="/src/components/header.html" />
+
+    <!-- Main Content -->
+    <main class="profile-page">
+      <div class="container">
+        <!-- Title & Subtitle Section -->
+        <div class="account-title-block">
+          <h1 class="account-title">Tài khoản</h1>
+          <p class="account-subtitle">Quản lý hồ sơ và đơn hàng của bạn</p>
+        </div>
+
+        <div class="account-layout">
+          <!-- Left Column: Sidebar -->
+          <aside class="account-sidebar">
+            <!-- User summary card -->
+            <div class="account-sidebar__user-card card">
+              <div class="account-sidebar__avatar-wrapper">
+                <img class="account-sidebar__avatar" src="../../assets/images/user-avatar.png"
+                  alt="Avatar Nguyễn Thanh Hà" />
+                <span class="account-sidebar__verify-badge">✓</span>
+              </div>
+              <div class="account-sidebar__user-info">
+                <h2 class="account-sidebar__name">Nguyễn Thanh Hà</h2>
+                <span class="account-sidebar__badge">Hạng Gold</span>
+              </div>
+            </div>
+
+            <!-- Navigation menu card -->
+            <nav class="account-sidebar__nav card" aria-label="Điều hướng tài khoản">
+              <a href="#" class="account-sidebar__link is-active" data-tab="profile">
+                <svg class="account-sidebar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Thông tin cá nhân
+              </a>
+              <a href="#" class="account-sidebar__link" data-tab="addresses">
+                <svg class="account-sidebar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                Địa chỉ
+              </a>
+              <a href="#" class="account-sidebar__link" data-tab="orders">
+                <svg class="account-sidebar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                </svg>
+                Đơn hàng
+              </a>
+              <a href="#" class="account-sidebar__link" data-tab="wishlist">
+                <svg class="account-sidebar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                Wishlist
+              </a>
+              <a href="#" class="account-sidebar__link" data-tab="style-profile">
+                <svg class="account-sidebar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                Style Profile
+              </a>
+              <a href="#" class="account-sidebar__link" data-tab="settings">
+                <svg class="account-sidebar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1-1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+                Cài đặt
+              </a>
+            </nav>
+          </aside>
+
+          <!-- Right Column: Main Content -->
+          <section class="account-main">
+
+            <!-- Tab 1: Profile -->
+            <div class="account-tab-content is-active" id="tab-profile">
+              <div class="account-main__header">
+                <h2 class="account-main__title">Thông tin cá nhân</h2>
+                <p class="account-main__subtitle">Cập nhật hồ sơ của bạn</p>
+              </div>
+
+              <!-- Profile Avatar and Meta Row -->
+              <div class="profile-avatar-row">
+                <div class="profile-avatar-wrapper">
+                  <img class="profile-avatar-img" src="../../assets/images/user-avatar.png"
+                    alt="Avatar Nguyễn Thanh Hà" />
+                  <button type="button" class="profile-avatar-upload-btn" aria-label="Tải lên ảnh mới">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="profile-avatar-info">
+                  <h3 class="profile-avatar-name">Nguyễn Thanh Hà</h3>
+                  <p class="profile-avatar-meta">Thành viên từ tháng 03/2024 · 1.245 điểm tích lũy</p>
+                </div>
+              </div>
+
+              <form class="profile-form" novalidate>
+                <div class="profile-form__row-grid">
+                  <!-- Fullname input group -->
+                  <div class="profile-form__group">
+                    <label for="profile-name">Họ và tên</label>
+                    <div class="profile-form__input-wrapper">
+                      <svg class="profile-form__field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                      <input class="profile-form__input" type="text" id="profile-name" name="fullname"
+                        value="Nguyễn Thanh Hà" placeholder="Nhập họ và tên" required />
+                    </div>
+                  </div>
+
+                  <!-- Phone input group -->
+                  <div class="profile-form__group">
+                    <label for="profile-phone">Số điện thoại</label>
+                    <div class="profile-form__input-wrapper">
+                      <svg class="profile-form__field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                          d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                      </svg>
+                      <input class="profile-form__input" type="tel" id="profile-phone" name="phone" value="000 111 2232"
+                        placeholder="Nhập số điện thoại" required />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="profile-form__row-grid">
+                  <!-- Email input group -->
+                  <div class="profile-form__group">
+                    <label for="profile-email">Email</label>
+                    <div class="profile-form__input-wrapper">
+                      <svg class="profile-form__field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <polyline points="22,6 12,13 2,6" />
+                      </svg>
+                      <input class="profile-form__input" type="email" id="profile-email" name="email"
+                        value="hannpn@gmail.com" readonly />
+                    </div>
+                  </div>
+
+                  <!-- Date of Birth input group -->
+                  <div class="profile-form__group">
+                    <label for="profile-dob">Ngày sinh</label>
+                    <div class="profile-form__input-wrapper">
+                      <svg class="profile-form__field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <input class="profile-form__input" type="text" id="profile-dob" name="dob" value="15/04/2000"
+                        placeholder="dd/mm/yyyy" />
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Form Buttons -->
+                <div class="profile-form__actions">
+                  <button type="submit" class="btn btn--primary">Cập nhật</button>
+                  <button type="button" class="btn btn--outline js-btn-cancel">Hủy</button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Tab 2: Addresses -->
+            <div class="account-tab-content" id="tab-addresses">
+              <div class="addresses-header">
+                <div class="addresses-header__info">
+                  <h2 class="account-main__title">Sổ địa chỉ</h2>
+                  <p class="account-main__subtitle">Quản lý địa chỉ giao hàng</p>
+                </div>
+                <button class="btn btn--outline js-btn-add-address" type="button">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Thêm địa chỉ
+                </button>
+              </div>
+
+              <!-- Addresses List -->
+              <div class="address-list">
+                <!-- Address 1 (Default) -->
+                <div class="address-card address-card--default" data-id="1">
+                  <div class="address-card__icon-wrapper">
+                    <svg class="address-card__location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </div>
+                  <div class="address-card__content">
+                    <div class="address-card__header">
+                      <span class="address-card__name">Nguyễn Thanh Hà</span>
+                      <span class="address-card__separator">·</span>
+                      <span class="address-card__phone">0901 234 567</span>
+                      <span class="badge badge--default">Mặc định</span>
+                    </div>
+                    <p class="address-card__detail">Số 24, Lý Tự Trọng, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh</p>
+                  </div>
+                  <div class="address-card__actions">
+                    <button class="address-card__btn js-btn-edit-address" aria-label="Chỉnh sửa" type="button">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                      </svg>
+                    </button>
+                    <button class="address-card__btn js-btn-delete-address" aria-label="Xóa" type="button">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Address 2 -->
+                <div class="address-card" data-id="2">
+                  <div class="address-card__icon-wrapper">
+                    <svg class="address-card__location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </div>
+                  <div class="address-card__content">
+                    <div class="address-card__header">
+                      <span class="address-card__name">Nguyễn Thanh Hà</span>
+                      <span class="address-card__separator">·</span>
+                      <span class="address-card__phone">0901 234 567</span>
+                      <span class="badge badge--default d-none">Mặc định</span>
+                    </div>
+                    <p class="address-card__detail">12 Trần Hưng Đạo, Phường Hàng Bài, Quận Hoàn Kiếm, Hà Nội</p>
+                  </div>
+                  <div class="address-card__actions">
+                    <button class="address-card__btn js-btn-edit-address" aria-label="Chỉnh sửa" type="button">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                      </svg>
+                    </button>
+                    <button class="address-card__btn js-btn-delete-address" aria-label="Xóa" type="button">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Address 3 -->
+                <div class="address-card" data-id="3">
+                  <div class="address-card__icon-wrapper">
+                    <svg class="address-card__location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </div>
+                  <div class="address-card__content">
+                    <div class="address-card__header">
+                      <span class="address-card__name">Mẹ Hà</span>
+                      <span class="address-card__separator">·</span>
+                      <span class="address-card__phone">0938 112 233</span>
+                      <span class="badge badge--default d-none">Mặc định</span>
+                    </div>
+                    <p class="address-card__detail">98 Nguyễn Văn Linh, Phường Tân Phong, Quận 7, TP. Hồ Chí Minh</p>
+                  </div>
+                  <div class="address-card__actions">
+                    <button class="address-card__btn js-btn-edit-address" aria-label="Chỉnh sửa" type="button">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                      </svg>
+                    </button>
+                    <button class="address-card__btn js-btn-delete-address" aria-label="Xóa" type="button">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 3: Orders -->
+            <div class="account-tab-content" id="tab-orders">
+              <div class="orders-header">
+                <div class="orders-header__info">
+                  <h2 class="account-main__title">Đơn hàng gần đây</h2>
+                  <p class="account-main__subtitle">3 đơn hàng mới nhất</p>
+                </div>
+                <a href="/src/pages/account/my-orders.html" class="btn btn--outline orders-header__btn"
+                  style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">Xem
+                  tất cả</a>
+              </div>
+
+              <!-- Orders Cards List -->
+              <div class="orders-list">
+                <!-- Order 1: Shipping -->
+                <a href="/src/pages/account/order-detail.html" class="order-card" data-status="shipping">
+                  <img class="order-card__image" src="../../assets/images/image-1.png" alt="Đơn hàng" />
+                  <div class="order-card__info">
+                    <h3 class="order-card__sku">Mã đơn VL-2026-0421</h3>
+                    <p class="order-card__date">02/06/2026 · 3 sản phẩm</p>
+                  </div>
+                  <div class="order-card__meta">
+                    <span class="order-card__price">2,890,000đ</span>
+                    <span class="order-card__status order-card__status--shipping">Đang giao</span>
+                  </div>
+                  <div class="order-card__arrow">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </div>
+                </a>
+
+                <!-- Order 2: Delivered -->
+                <a href="/src/pages/account/order-detail.html" class="order-card" data-status="delivered">
+                  <img class="order-card__image" src="../../assets/images/products/product-vay-midi-do.png"
+                    alt="Đơn hàng" />
+                  <div class="order-card__info">
+                    <h3 class="order-card__sku">Mã đơn VL-2026-0388</h3>
+                    <p class="order-card__date">24/05/2026 · 1 sản phẩm</p>
+                  </div>
+                  <div class="order-card__meta">
+                    <span class="order-card__price">1,590,000đ</span>
+                    <span class="order-card__status order-card__status--delivered">Đã giao</span>
+                  </div>
+                  <div class="order-card__arrow">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </div>
+                </a>
+
+                <!-- Order 3: Delivered (2) -->
+                <a href="/src/pages/account/order-detail.html" class="order-card" data-status="delivered">
+                  <img class="order-card__image" src="../../assets/images/image-3.png" alt="Đơn hàng" />
+                  <div class="order-card__info">
+                    <h3 class="order-card__sku">Mã đơn VL-2026-0301</h3>
+                    <p class="order-card__date">10/05/2026 · 2 sản phẩm</p>
+                  </div>
+                  <div class="order-card__meta">
+                    <span class="order-card__price">4,280,000đ</span>
+                    <span class="order-card__status order-card__status--delivered">Đã giao</span>
+                  </div>
+                  <div class="order-card__arrow">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            <!-- Tab 4: Wishlist -->
+            <div class="account-tab-content" id="tab-wishlist">
+              <div class="wishlist-account-header">
+                <div class="wishlist-account-header__info">
+                  <h2 class="account-main__title">Danh sách yêu thích</h2>
+                  <p class="account-main__subtitle">Những món bạn đã lưu (4 sản phẩm)</p>
+                </div>
+                <button class="btn btn--outline" type="button"
+                  onclick="window.location.href='/src/pages/wishlist/wishlist.html'">
+                  Xem tất cả
+                </button>
+              </div>
+
+              <!-- Product Grid -->
+              <div class="product-grid" id="wishlist-product-grid">
+                <!-- Card 1 -->
+                <div class="product-card" data-product-id="p1">
+                  <div class="product-card__image-container">
+                    <img class="product-card__image" src="../../assets/images/image-1.png" alt="Áo sơ mi lụa pastel" />
+                    <button class="product-card__wishlist-btn js-remove-wishlist" type="button"
+                      aria-label="Xóa khỏi yêu thích">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="product-card__details">
+                    <h3 class="product-card__name">Áo sơ mi lụa pastel</h3>
+                    <div class="product-card__price-row">
+                      <span class="product-card__price">1.290.000₫</span>
+                    </div>
+                    <button class="btn btn--primary product-card__cart-btn js-add-cart-fast" type="button">
+                      Thêm vào giỏ nhanh
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="product-card" data-product-id="p2">
+                  <div class="product-card__image-container">
+                    <img class="product-card__image" src="../../assets/images/products/product-vay-midi-do.png"
+                      alt="Váy midi hoa nhí" />
+                    <button class="product-card__wishlist-btn js-remove-wishlist" type="button"
+                      aria-label="Xóa khỏi yêu thích">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="product-card__details">
+                    <h3 class="product-card__name">Váy midi hoa nhí</h3>
+                    <div class="product-card__price-row">
+                      <span class="product-card__price">1.590.000₫</span>
+                    </div>
+                    <button class="btn btn--primary product-card__cart-btn js-add-cart-fast" type="button">
+                      Thêm vào giỏ nhanh
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="product-card" data-product-id="p3">
+                  <div class="product-card__image-container">
+                    <img class="product-card__image" src="../../assets/images/product-silk-blazer.png"
+                      alt="Blazer linen" />
+                    <button class="product-card__wishlist-btn js-remove-wishlist" type="button"
+                      aria-label="Xóa khỏi yêu thích">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="product-card__details">
+                    <h3 class="product-card__name">Blazer linen</h3>
+                    <div class="product-card__price-row">
+                      <span class="product-card__price">2.190.000₫</span>
+                    </div>
+                    <button class="btn btn--primary product-card__cart-btn js-add-cart-fast" type="button">
+                      Thêm vào giỏ nhanh
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="product-card" data-product-id="p4">
+                  <div class="product-card__image-container">
+                    <img class="product-card__image" src="../../assets/images/image-6.png" alt="Quần culottes" />
+                    <button class="product-card__wishlist-btn js-remove-wishlist" type="button"
+                      aria-label="Xóa khỏi yêu thích">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="product-card__details">
+                    <h3 class="product-card__name">Quần culottes</h3>
+                    <div class="product-card__price-row">
+                      <span class="product-card__price">990.000₫</span>
+                    </div>
+                    <button class="btn btn--primary product-card__cart-btn js-add-cart-fast" type="button">
+                      Thêm vào giỏ nhanh
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 5: Style Profile -->
+            <div class="account-tab-content" id="tab-style-profile">
+              <div class="account-main__header">
+                <h2 class="account-main__title">Style Profile</h2>
+                <p class="account-main__subtitle">Hồ sơ phong cách giúp Velura gợi ý cho bạn</p>
+              </div>
+
+              <!-- AI Stylist Container Block -->
+              <div class="style-profile-container">
+                <!-- Left side: cozy styling image -->
+                <div class="style-profile__image-box">
+                  <img class="style-profile__image" src="../../assets/images/collection-2.png"
+                    alt="Clothes rack styling" />
+                </div>
+
+                <!-- Right side: style results content -->
+                <div class="style-profile__details">
+                  <span class="style-profile__tag">✨ Phong cách của bạn</span>
+                  <h3 class="style-profile__heading">Tối giản thanh lịch</h3>
+
+                  <!-- Measurements and Shapes grid -->
+                  <div class="style-profile__metrics">
+                    <div class="style-profile__metric-row">
+                      <span class="style-profile__metric-label">Chiều cao</span>
+                      <span class="style-profile__metric-value">1m62</span>
+                    </div>
+                    <div class="style-profile__metric-row">
+                      <span class="style-profile__metric-label">Cân nặng</span>
+                      <span class="style-profile__metric-value">52kg</span>
+                    </div>
+                    <div class="style-profile__metric-row">
+                      <span class="style-profile__metric-label">Dáng người</span>
+                      <span class="style-profile__metric-value">Đồng hồ cát</span>
+                    </div>
+                    <div class="style-profile__metric-row">
+                      <span class="style-profile__metric-label">Tông màu yêu thích</span>
+                      <span class="style-profile__metric-value">Be · Nude · Trắng kem</span>
+                    </div>
+                  </div>
+
+                  <!-- Personal Color Palette visualization -->
+                  <div class="personal-palette">
+                    <h4 class="personal-palette__title">Bảng màu phù hợp nhất với da</h4>
+                    <div class="personal-palette__colors">
+                      <div class="personal-palette__color" style="background-color: #E6D9CD;" title="Beige"></div>
+                      <div class="personal-palette__color" style="background-color: #D8BFA9;" title="Nude"></div>
+                      <div class="personal-palette__color" style="background-color: #F8F5F2;" title="Cream"></div>
+                      <div class="personal-palette__color" style="background-color: #8C5E45;" title="Warm Brown"></div>
+                      <div class="personal-palette__color" style="background-color: #A2B5CD;" title="Muted Blue"></div>
+                    </div>
+                  </div>
+
+                  <!-- Update style profile action -->
+                  <button class="btn btn--primary style-profile__update-btn" type="button">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    </svg>
+                    Cập nhật Style Profile
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 6: Settings -->
+            <div class="account-tab-content" id="tab-settings">
+              <div class="account-main__header">
+                <h2 class="account-main__title">Cài đặt tài khoản</h2>
+                <p class="account-main__subtitle">Cấu hình bảo mật và tuỳ chọn nâng cao</p>
+              </div>
+
+              <!-- Settings Sections -->
+              <div class="settings-container">
+                <!-- Section 1: Notifications -->
+                <div class="settings-section">
+                  <h3 class="settings-section__title">Thông báo hệ thống</h3>
+                  <div class="setting-row">
+                    <div class="setting-row__info">
+                      <h4 class="setting-row__label">Nhận thông báo qua Email</h4>
+                      <p class="setting-row__desc">Cập nhật về các ưu đãi mới nhất, bộ sưu tập mới và đơn hàng của bạn.
+                      </p>
+                    </div>
+                    <div class="setting-row__action">
+                      <label class="toggle-switch">
+                        <input type="checkbox" checked id="setting-notify-email" />
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section 2: Security (2FA) -->
+                <div class="settings-section">
+                  <h3 class="settings-section__title">Bảo mật</h3>
+                  <div class="setting-row">
+                    <div class="setting-row__info">
+                      <h4 class="setting-row__label">Bảo mật hai lớp (2FA)</h4>
+                      <p class="setting-row__desc">Yêu cầu mã xác thực OTP gửi qua điện thoại khi đăng nhập từ thiết bị
+                        lạ.</p>
+                    </div>
+                    <div class="setting-row__action">
+                      <label class="toggle-switch">
+                        <input type="checkbox" id="setting-2fa" />
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section 3: Localization (Language) -->
+                <div class="settings-section">
+                  <h3 class="settings-section__title">Ngôn ngữ hệ thống</h3>
+                  <div class="setting-row">
+                    <div class="setting-row__info">
+                      <h4 class="setting-row__label">Ngôn ngữ hiển thị chính</h4>
+                      <p class="setting-row__desc">Thay đổi ngôn ngữ hiển thị trên toàn bộ trang web.</p>
+                    </div>
+                    <div class="setting-row__action">
+                      <select class="profile-form__input settings-lang-select" id="setting-language"
+                        style="width: 160px; padding: 0 16px;">
+                        <option value="vi" selected>Tiếng Việt</option>
+                        <option value="en">English</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section 4: Social Account Linking -->
+                <div class="settings-section">
+                  <h3 class="settings-section__title">Liên kết tài khoản</h3>
+
+                  <!-- Google link row -->
+                  <div class="setting-row">
+                    <div class="setting-row__info">
+                      <div style="display: flex; align-items: center; gap: 12px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2">
+                          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                          <line x1="4" y1="22" x2="4" y2="15" />
+                        </svg>
+                        <div>
+                          <h4 class="setting-row__label" style="margin: 0;">Tài khoản Google</h4>
+                          <p class="setting-row__desc" style="margin: 4px 0 0 0;">Liên kết với google_user@gmail.com</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="setting-row__action">
+                      <button class="btn btn--outline btn--settings-action linked" type="button">Hủy liên kết</button>
+                    </div>
+                  </div>
+
+                  <!-- Facebook link row -->
+                  <div class="setting-row" style="margin-top: 16px;">
+                    <div class="setting-row__info">
+                      <div style="display: flex; align-items: center; gap: 12px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2">
+                          <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                        </svg>
+                        <div>
+                          <h4 class="setting-row__label" style="margin: 0;">Tài khoản Facebook</h4>
+                          <p class="setting-row__desc" style="margin: 4px 0 0 0;">Chưa liên kết tài khoản Facebook</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="setting-row__action">
+                      <button class="btn btn--outline btn--settings-action" type="button"
+                        style="border-color: var(--terracotta); color: var(--terracotta);">Liên kết</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Save settings action -->
+                <div class="profile-form__actions" style="margin-top: 40px; justify-content: flex-end;">
+                  <button class="btn btn--primary js-btn-save-settings" type="button">Lưu cài đặt</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal Dialog -->
+    <div class="modal" id="address-modal" aria-hidden="true">
+      <div class="modal__backdrop"></div>
+      <div class="modal__container">
+        <div class="modal__content card">
+          <div class="modal__header">
+            <h3 class="modal__title" id="modal-title">Thêm địa chỉ mới</h3>
+            <button class="modal__close js-btn-close-modal" type="button" aria-label="Đóng modal">×</button>
+          </div>
+          <form class="modal__form" id="address-form" novalidate>
+            <input type="hidden" id="address-id" name="addressId" value="" />
+            <div class="profile-form__row-grid">
+              <div class="profile-form__group">
+                <label for="address-fullname">Họ và tên</label>
+                <div class="profile-form__input-wrapper">
+                  <svg class="profile-form__field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <input class="profile-form__input" type="text" id="address-fullname" name="fullname"
+                    placeholder="Nhập họ và tên" required />
+                </div>
+              </div>
+              <div class="profile-form__group">
+                <label for="address-phone">Số điện thoại</label>
+                <div class="profile-form__input-wrapper">
+                  <svg class="profile-form__field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path
+                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                  </svg>
+                  <input class="profile-form__input" type="tel" id="address-phone" name="phone"
+                    placeholder="Nhập số điện thoại" required />
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-form__row-grid profile-form__row-grid--three">
+              <div class="profile-form__group">
+                <label for="address-province">Tỉnh/Thành phố</label>
+                <div class="profile-form__input-wrapper">
+                  <select class="profile-form__input" id="address-province" name="province" required>
+                    <option value="" disabled selected>Chọn Tỉnh/Thành</option>
+                    <option value="HCM">TP. Hồ Chí Minh</option>
+                    <option value="HN">TP. Hà Nội</option>
+                    <option value="DN">TP. Đà Nẵng</option>
+                  </select>
+                </div>
+              </div>
+              <div class="profile-form__group">
+                <label for="address-district">Quận/Huyện</label>
+                <div class="profile-form__input-wrapper">
+                  <select class="profile-form__input" id="address-district" name="district" required disabled>
+                    <option value="" disabled selected>Chọn Quận/Huyện</option>
+                  </select>
+                </div>
+              </div>
+              <div class="profile-form__group">
+                <label for="address-ward">Phường/Xã</label>
+                <div class="profile-form__input-wrapper">
+                  <select class="profile-form__input" id="address-ward" name="ward" required disabled>
+                    <option value="" disabled selected>Chọn Phường/Xã</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-form__group" style="margin-top: 24px;">
+              <label for="address-detail">Địa chỉ chi tiết</label>
+              <div class="profile-form__input-wrapper">
+                <svg class="profile-form__field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                <input class="profile-form__input" type="text" id="address-detail" name="detail"
+                  placeholder="Số nhà, tên đường, khu phố..." required />
+              </div>
+            </div>
+
+            <div class="profile-form__group" style="margin-top: 20px;">
+              <label class="checkbox-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input class="checkbox-input" type="checkbox" id="address-is-default" name="isDefault" />
+                <span class="checkbox-custom"></span>
+                <span>Đặt làm địa chỉ mặc định</span>
+              </label>
+            </div>
+
+            <div class="profile-form__actions" style="margin-top: 32px;">
+              <button class="btn btn--primary" type="submit">Lưu địa chỉ</button>
+              <button class="btn btn--outline js-btn-close-modal" type="button">Hủy</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <load src="/src/components/footer.html" />
+  </div>
+
+  <script type="module" src="../../scripts/main.js"></script>
+</body>
+
+</html>

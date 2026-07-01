@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura — Vận chuyển &amp; Thanh toán</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+</head>
+
+<body>
+  <div class="page-shell">
+    <load src="/src/components/header.html" />
+
+    <main class="checkout-page">
+      <div class="container">
+        <load src="/src/components/breadcrumb.html" />
+        <h1 class="page-title">Thanh toán</h1>
+
+        <div class="checkout-steps">
+          <div class="checkout-step"><span class="checkout-step__num checkout-step__num--done">✓</span><span
+              class="checkout-step__label checkout-step__label--done">Thông tin giao hàng</span></div>
+          <span class="checkout-step__line checkout-step__line--done"></span>
+          <div class="checkout-step"><span class="checkout-step__num checkout-step__num--active">2</span><span
+              class="checkout-step__label checkout-step__label--active">Vận chuyển &amp; Thanh toán</span></div>
+          <span class="checkout-step__line"></span>
+          <div class="checkout-step"><span class="checkout-step__num checkout-step__num--pending">3</span><span
+              class="checkout-step__label checkout-step__label--pending">Xác nhận</span></div>
+        </div>
+
+        <div class="checkout-grid">
+          <div class="checkout-main">
+            <section class="card">
+              <div class="card__header">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M11.67 15V5M3.33 5h13.33v10H3.33V5z" stroke="#7C5454" stroke-width="1.67" />
+                </svg>
+                <h2 class="section-title">Phương thức vận chuyển</h2>
+              </div>
+              <div class="option-list">
+                <label class="option-card">
+                  <input type="radio" name="shipping" value="standard" />
+                  <div class="option-card__left">
+                    <span class="option-card__radio"></span>
+                    <div>
+                      <p class="option-card__title">Giao hàng tiêu chuẩn</p>
+                      <p class="option-card__desc">3-5 ngày</p>
+                    </div>
+                  </div>
+                  <span class="option-card__price">30,000đ</span>
+                </label>
+                <label class="option-card is-selected">
+                  <input type="radio" name="shipping" value="express" checked />
+                  <div class="option-card__left">
+                    <span class="option-card__radio"></span>
+                    <div>
+                      <p class="option-card__title">Giao hàng nhanh</p>
+                      <p class="option-card__desc">1-2 ngày</p>
+                    </div>
+                  </div>
+                  <span class="option-card__price">50,000đ</span>
+                </label>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card__header">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="1.67" y="4.17" width="16.67" height="11.67" rx="1" stroke="#7C5454" stroke-width="1.67" />
+                  <path d="M1.67 8.33h16.67" stroke="#7C5454" stroke-width="1.67" />
+                </svg>
+                <h2 class="section-title">Phương thức thanh toán</h2>
+              </div>
+              <div class="option-list">
+                <label class="option-card is-selected">
+                  <input type="radio" name="payment" value="cod" checked />
+                  <div class="option-card__left">
+                    <span class="option-card__radio"></span>
+                    <div>
+                      <p class="option-card__title">Thanh toán khi nhận hàng</p>
+                      <p class="option-card__desc">Thanh toán bằng tiền mặt khi nhận hàng</p>
+                    </div>
+                  </div>
+                </label>
+                <label class="option-card">
+                  <input type="radio" name="payment" value="vnpay" />
+                  <div class="option-card__left">
+                    <span class="option-card__radio"></span>
+                    <div>
+                      <p class="option-card__title">VNPay</p>
+                      <p class="option-card__desc">Thanh toán qua ví điện tử VNPay</p>
+                    </div>
+                  </div>
+                </label>
+                <label class="option-card">
+                  <input type="radio" name="payment" value="momo" />
+                  <div class="option-card__left">
+                    <span class="option-card__radio"></span>
+                    <div>
+                      <p class="option-card__title">MoMo</p>
+                      <p class="option-card__desc">Thanh toán qua ví MoMo</p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+              <div class="checkout-actions">
+                <a class="btn btn--primary" id="btn-submit-order" href="/src/pages/checkout/order-confirm.html">Tiếp
+                  tục</a>
+              </div>
+            </section>
+          </div>
+
+          <aside class="order-summary">
+            <h2 class="order-summary__title">Tóm tắt đơn hàng</h2>
+            <div class="summary-lines">
+              <div class="summary-line"><span>Tạm tính</span><span class="summary-line__value">9.050.000₫</span></div>
+              <div class="summary-line summary-line--shipping"><span>Vận chuyển</span><span
+                  class="summary-line__value">50.000đ</span></div>
+            </div>
+            <div class="summary-total">
+              <span class="summary-total__label">Tổng cộng</span>
+              <span class="summary-total__value">9.100.000₫</span>
+            </div>
+            <p class="summary-note">Thanh toán an toàn với SSL 256-bit</p>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <load src="/src/components/footer.html" />
+  </div>
+  <script type="module" src="../../scripts/main.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const btnSubmit = document.getElementById('btn-submit-order');
+      if (btnSubmit) {
+        const paymentRadios = document.querySelectorAll('input[name="payment"]');
+        paymentRadios.forEach(radio => {
+          radio.addEventListener('change', function () {
+            if (this.value === 'cod') {
+              btnSubmit.href = '/src/pages/checkout/order-confirm.html';
+            } else {
+              // E-wallet (VNPay / MoMo)
+              btnSubmit.href = '/src/pages/checkout/payment-confirm.html';
+            }
+          });
+        });
+      }
+    });
+  </script>
+</body>
+
+</html>
