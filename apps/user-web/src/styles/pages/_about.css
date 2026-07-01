@@ -1,0 +1,480 @@
+/* ============================================================
+   Velura — About Us Styles
+   Supports fluid responsive layout (max-width: 1488px)
+   ============================================================ */
+
+.page-about {
+  background: #fbf7f2;
+}
+
+.about-page {
+  padding-bottom: 80px;
+}
+
+.about-page .container {
+  max-width: var(--max-w);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Badge (Shared element) */
+.about-badge {
+  color: #c97b63;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
+/* Titles and Descs */
+.about-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 3rem;
+  font-weight: 500;
+  color: #2a2522;
+  line-height: 1.3;
+  margin: 0 0 24px;
+}
+
+.about-desc {
+  font-size: 1.5rem;
+  color: #8c857e;
+  line-height: 1.65;
+  margin: 0 0 16px;
+}
+
+.about-desc:last-child {
+  margin-bottom: 0;
+}
+
+/* ============================================================
+   Section 1: Hero Banner
+   ============================================================ */
+.about-hero {
+  width: 100%;
+  height: 800px;
+  overflow: hidden;
+  margin-bottom: 80px;
+}
+
+.about-hero__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ============================================================
+   Section 2 & 4: Alternate Sections (Story / Atelier)
+   ============================================================ */
+.about-section {
+  margin-bottom: 80px;
+}
+
+.about-story__grid,
+.about-atelier__grid {
+  display: flex;
+  align-items: center;
+  gap: 64px;
+}
+
+.about-story__image,
+.about-story__content,
+.about-atelier__image,
+.about-atelier__content {
+  flex: 1;
+}
+
+.about-story__image img,
+.about-atelier__image img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(42, 37, 34, 0.03);
+  display: block;
+}
+
+/* ============================================================
+   Section 3: Triết lý thương hiệu (Core Values)
+   ============================================================ */
+.about-values {
+  background: #ffffff;
+  padding: 80px 0;
+  margin-bottom: 80px;
+  border-top: 1px solid #eee2d6;
+  border-bottom: 1px solid #eee2d6;
+}
+
+.about-values__header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.about-values__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.value-card {
+  background: #fbf7f2;
+  padding: 40px 32px;
+  border-radius: 12px;
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.value-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(201, 123, 99, 0.06);
+}
+
+.value-card__icon-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.value-card__icon {
+  width: 64px;
+  height: 64px;
+  background: #f4e4dc;
+  color: #c97b63;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.value-card__title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 2rem;
+  font-weight: 500;
+  color: #2a2522;
+  margin: 0 0 16px;
+}
+
+.value-card__desc {
+  font-size: 1.25rem;
+  color: #8c857e;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ============================================================
+   Section 5: Đội ngũ sáng tạo (Creative Team)
+   ============================================================ */
+.about-team {
+  padding: 80px 0;
+  margin-bottom: 80px;
+  border-top: 1px solid #eee2d6;
+  background: #ffffff;
+}
+
+.about-team__header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.about-team__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.team-card {
+  background: #fbf7f2;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(42, 37, 34, 0.02);
+  transition: transform 0.3s;
+}
+
+.team-card:hover {
+  transform: translateY(-4px);
+}
+
+.team-card__image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
+.team-card__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+  display: block;
+}
+
+.team-card:hover .team-card__image img {
+  transform: scale(1.04);
+}
+
+.team-card__info {
+  padding: 24px;
+}
+
+.team-card__name {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #2a2522;
+  margin: 0 0 6px;
+}
+
+.team-card__role {
+  font-size: 0.8125rem;
+  color: #c97b63;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
+.team-card__bio {
+  font-size: 0.8125rem;
+  color: #8c857e;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ============================================================
+   Section 6: Số liệu nổi bật (Stats)
+   ============================================================ */
+.about-stats {
+  background: #f4e4dc;
+  padding: 80px 0;
+  margin-bottom: 80px;
+}
+
+.about-stats__header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.about-stats__subtitle {
+  font-size: 1rem;
+  color: #8c857e;
+  margin: 0;
+}
+
+.about-stats__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.stat-card {
+  background: #ffffff;
+  padding: 40px 24px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(42, 37, 34, 0.02);
+  transition: transform 0.3s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+}
+
+.stat-card__icon {
+  color: #c97b63;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.stat-card__number {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 2.75rem;
+  font-weight: 500;
+  color: #2a2522;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.stat-card__label {
+  font-size: 0.8125rem;
+  color: #8c857e;
+  font-weight: 500;
+}
+
+/* ============================================================
+   Section 7: Truyền thông & Giải thưởng (Press)
+   ============================================================ */
+.about-press {
+  padding: 80px 0;
+  margin-bottom: 80px;
+  background: #ffffff;
+  border-top: 1px solid #eee2d6;
+  border-bottom: 1px solid #eee2d6;
+}
+
+.about-press__header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.about-press__grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+
+.press-logo {
+  background: #fbf7f2;
+  height: 112px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6b635d;
+  letter-spacing: 0.15em;
+  transition: background 0.2s, color 0.2s;
+}
+
+.press-logo:hover {
+  background: #f4e4dc;
+  color: #c97b63;
+}
+
+/* ============================================================
+   Section 8: CTA Section
+   ============================================================ */
+.about-cta {
+  background: #fbf7f2;
+  padding: 96px 0;
+  text-align: center;
+}
+
+.about-cta__content {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.about-cta__title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 2.75rem;
+  font-weight: 500;
+  color: #2a2522;
+  margin: 0 0 16px;
+  line-height: 1.3;
+}
+
+.about-cta__desc {
+  font-size: 1.0625rem;
+  color: #8c857e;
+  line-height: 1.6;
+  margin: 0 0 32px;
+}
+
+.about-cta__btn {
+  background: #c97b63;
+  color: #ffffff;
+  padding: 16px 36px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.9375rem;
+  display: inline-block;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.about-cta__btn:hover {
+  background: #b36a53;
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   Responsive Overrides
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .about-values__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .about-team__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+  }
+
+  .about-stats__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .about-press__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .about-hero {
+    height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .about-story__grid,
+  .about-atelier__grid {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .about-atelier__grid {
+    /* Reverse order on mobile to keep text on top of image */
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .about-hero {
+    height: 300px;
+    margin-bottom: 48px;
+  }
+
+  .about-title {
+    font-size: 2rem;
+  }
+
+  .about-cta__title {
+    font-size: 2rem;
+  }
+
+  .about-section {
+    margin-bottom: 48px;
+  }
+
+  .about-values,
+  .about-team,
+  .about-stats,
+  .about-press {
+    padding: 56px 0;
+    margin-bottom: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .about-values__grid,
+  .about-team__grid,
+  .about-stats__grid,
+  .about-press__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .press-logo {
+    height: 80px;
+  }
+
+  .about-hero {
+    height: 200px;
+  }
+}

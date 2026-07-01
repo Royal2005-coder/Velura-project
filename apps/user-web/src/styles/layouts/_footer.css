@@ -1,0 +1,132 @@
+.site-footer {
+  border-top: 1px solid #f4e4dc;
+  background: #ffffff;
+  margin-top: auto;
+  padding: 48px 24px;
+}
+
+.site-footer__grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 32px;
+  max-width: var(--max-w, 1200px);
+  margin: 0 auto;
+}
+
+.site-footer h3 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 24px;
+  font-weight: 500;
+  color: #2a2522;
+  margin: 0 0 16px 0;
+}
+
+.site-footer p {
+  font-family: "DM Sans", sans-serif;
+  margin: 0 0 16px 0;
+  color: #6b635d;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.site-footer__social {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.site-footer__social a {
+  width: 32px;
+  height: 32px;
+  background-color: #f4e4dc;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c97b63;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.site-footer__social a:hover {
+  background-color: #c97b63;
+  color: #ffffff;
+}
+
+.site-footer h4 {
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 16px 0;
+  color: #2a2522;
+}
+
+.site-footer ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.site-footer ul li {
+  margin-bottom: 12px;
+}
+
+.site-footer ul li:last-child {
+  margin-bottom: 0;
+}
+
+.site-footer ul a {
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  color: #6b635d;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.site-footer ul a:hover {
+  color: #c97b63;
+}
+
+.site-footer__contact {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.site-footer__contact li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 14px;
+  color: #6b635d;
+  margin-bottom: 12px;
+}
+
+.site-footer__contact li:last-child {
+  margin-bottom: 0;
+}
+
+.site-footer__contact li svg {
+  color: #c97b63;
+  flex-shrink: 0;
+}
+
+.site-footer__bottom {
+  padding-top: 32px;
+  margin-top: 48px;
+  border-top: 1px solid #f4e4dc;
+  text-align: center;
+  color: #6b635d;
+  font-size: 14px;
+  max-width: var(--max-w, 1200px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 768px) {
+  .site-footer__grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}

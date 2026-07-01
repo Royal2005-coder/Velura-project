@@ -1,0 +1,550 @@
+/* ============================================================
+   Shopping Cart Page Styles
+   ============================================================ */
+
+.cart-page {
+  padding: 60px 0 120px;
+  background-color: #fbf7f2;
+}
+
+/* Breadcrumb Navigation */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 32px;
+  font-size: 1.125rem;
+  color: #8c857e;
+}
+
+.breadcrumb a {
+  color: #8c857e;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.breadcrumb a:hover {
+  color: #c97b63;
+}
+
+.breadcrumb__current {
+  color: #2a2522;
+  font-weight: 500;
+}
+
+/* Page Header */
+.cart-header {
+  margin-bottom: 40px;
+}
+
+.cart-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 3rem;
+  font-weight: 500;
+  color: #2a2522;
+  margin: 0 0 8px;
+}
+
+.cart-count {
+  font-size: 1.375rem;
+  color: #8c857e;
+  margin: 0;
+}
+
+/* Layout Grid */
+.cart-grid {
+  display: grid;
+  grid-template-columns: 8fr 4fr;
+  gap: 40px;
+  align-items: start;
+}
+
+/* Left Column: Items List */
+.cart-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.cart-items {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Cart Item Card */
+.cart-item {
+  display: flex;
+  gap: 24px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(42, 37, 34, 0.02);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.cart-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(42, 37, 34, 0.05);
+}
+
+.cart-item__image {
+  width: 120px;
+  height: 154px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f4e4dc;
+  flex-shrink: 0;
+}
+
+.cart-item__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s ease;
+}
+
+.cart-item:hover .cart-item__image img {
+  transform: scale(1.05);
+}
+
+.cart-item__details {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.cart-item__header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.cart-item__name {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.625rem;
+  font-weight: 500;
+  color: #2a2522;
+  margin: 0;
+}
+
+.cart-item__delete {
+  background: transparent;
+  border: none;
+  color: #8c857e;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, transform 0.2s;
+}
+
+.cart-item__delete:hover {
+  color: #c97b63;
+  transform: scale(1.1);
+}
+
+.cart-item__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.cart-item__tag {
+  font-size: 0.9375rem;
+  color: #c97b63;
+  background-color: #f4e4dc;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.cart-item__footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+/* Quantity Selector */
+.qty-selector {
+  display: flex;
+  align-items: center;
+  border: 1px solid #eee2d6;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.qty-selector__btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: #2a2522;
+  font-size: 1.25rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.qty-selector__btn:hover {
+  background-color: #fbf7f2;
+}
+
+.qty-selector__value {
+  width: 36px;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #2a2522;
+}
+
+/* Prices */
+.cart-item__price-block {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.cart-item__old-price {
+  font-size: 1.125rem;
+  color: #8c857e;
+  text-decoration: line-through;
+}
+
+.cart-item__price {
+  font-size: 1.5rem;
+  color: #c97b63;
+  font-weight: 600;
+}
+
+/* Refund Guarantee Section */
+.cart-guarantee {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background-color: #f4e4dc;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px dashed #c97b63;
+}
+
+.cart-guarantee__icon {
+  color: #c97b63;
+  flex-shrink: 0;
+}
+
+.cart-guarantee__text {
+  font-size: 1.125rem;
+  color: #2a2522;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Right Column: Sidebar Order Summary */
+.cart-sidebar {
+  position: sticky;
+  top: 40px;
+}
+
+.summary-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(42, 37, 34, 0.02);
+}
+
+.summary-card__title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 2rem;
+  font-weight: 500;
+  color: #2a2522;
+  margin: 0 0 24px;
+}
+
+.summary-card__divider {
+  border: none;
+  border-top: 1px solid #eee2d6;
+  margin: 24px 0;
+}
+
+/* Promo Code Section */
+.coupon-section {
+  margin-bottom: 8px;
+}
+
+.coupon-label {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2a2522;
+  margin-bottom: 12px;
+}
+
+.coupon-form {
+  display: flex;
+  gap: 12px;
+}
+
+.coupon-input-wrapper {
+  display: flex;
+  align-items: center;
+  background-color: #f3f3f5;
+  border-radius: 8px;
+  padding: 12px 16px;
+  flex-grow: 1;
+  gap: 8px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.coupon-input-wrapper:focus-within {
+  border-color: #eee2d6;
+}
+
+.coupon-icon {
+  color: #8c857e;
+  flex-shrink: 0;
+}
+
+.coupon-input-wrapper input {
+  border: none;
+  background: transparent;
+  font-size: 1.125rem;
+  color: #2a2522;
+  width: 100%;
+  outline: none;
+}
+
+.coupon-input-wrapper input::placeholder {
+  color: #8c857e;
+}
+
+.coupon-btn {
+  background: transparent;
+  border: none;
+  color: #c97b63;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 8px;
+  transition: color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.coupon-btn:hover {
+  color: #b36a53;
+  transform: translateX(2px);
+}
+
+/* Pricing Rows */
+.summary-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-line__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.125rem;
+  color: #8c857e;
+}
+
+.shipping-icon {
+  color: #8c857e;
+  flex-shrink: 0;
+}
+
+.summary-line__value {
+  font-size: 1.125rem;
+  color: #2a2522;
+  font-weight: 500;
+}
+
+.summary-line__value--free {
+  color: #a8b5a0;
+  font-weight: 600;
+}
+
+/* Total Row */
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 28px;
+}
+
+.summary-total__label {
+  font-size: 1.25rem;
+  color: #2a2522;
+  font-weight: 500;
+}
+
+.summary-total__value {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 2.25rem;
+  color: #c97b63;
+  font-weight: 500;
+}
+
+/* Checkout Button */
+.summary-card__btn-checkout {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  background-color: #c97b63;
+  color: #ffffff;
+  width: 100%;
+  padding: 16px 24px;
+  border-radius: 8px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  transition: background-color 0.2s, transform 0.2s;
+  box-shadow: 0 4px 12px rgba(201, 123, 99, 0.2);
+}
+
+.summary-card__btn-checkout:hover {
+  background-color: #b36a53;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(201, 123, 99, 0.3);
+}
+
+.summary-card__btn-checkout svg {
+  transition: transform 0.2s;
+}
+
+.summary-card__btn-checkout:hover svg {
+  transform: translateX(4px);
+}
+
+/* Security Text */
+.summary-card__security {
+  text-align: center;
+  font-size: 1rem;
+  color: #8c857e;
+  margin-top: 20px;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.summary-card__security svg {
+  color: #8c857e;
+}
+
+/* ============================================================
+   Responsive Breakpoints
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .cart-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .cart-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .cart-page {
+    padding: 40px 0 80px;
+  }
+
+  .cart-title {
+    font-size: 2.25rem;
+  }
+
+  .cart-count {
+    font-size: 1.125rem;
+  }
+
+  .cart-item {
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .cart-item__image {
+    width: 90px;
+    height: 116px;
+  }
+
+  .cart-item__name {
+    font-size: 1.25rem;
+  }
+
+  .cart-item__tag {
+    font-size: 0.8125rem;
+    padding: 4px 10px;
+  }
+
+  .cart-item__price {
+    font-size: 1.25rem;
+  }
+
+  .cart-item__old-price {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cart-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cart-item__image {
+    width: 100%;
+    height: 200px;
+  }
+
+  .cart-item__details {
+    width: 100%;
+  }
+
+  .cart-item__footer-row {
+    margin-top: 16px;
+    width: 100%;
+  }
+
+  .coupon-form {
+    flex-direction: column;
+  }
+
+  .coupon-btn {
+    justify-content: center;
+    padding: 12px;
+    border: 1px solid #c97b63;
+    border-radius: 8px;
+    background-color: #fbf7f2;
+  }
+
+  .coupon-btn:hover {
+    background-color: #f4e4dc;
+    transform: none;
+  }
+}

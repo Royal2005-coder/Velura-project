@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura — Thanh toán thất bại</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+</head>
+
+<body>
+  <div class="page-shell">
+    <load src="/src/components/header.html" />
+
+    <main class="payment-failed">
+      <div class="container">
+        <div class="payment-failed__icon" aria-hidden="true">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <circle cx="24" cy="24" r="20" stroke="#CCCCCC" stroke-width="3" />
+            <path d="M30 18L18 30M18 18l12 12" stroke="#CCCCCC" stroke-width="3" stroke-linecap="round" />
+          </svg>
+        </div>
+        <h1 class="payment-failed__title">Thanh toán thất bại</h1>
+        <p class="payment-failed__desc">Rất tiếc, giao dịch của bạn không thành công. Vui lòng thử lại hoặc chọn phương
+          thức thanh toán khác.</p>
+
+        <div class="error-box">
+          <div class="error-box__head">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="8.33" stroke="#D4183D" stroke-width="1.67" />
+              <path d="M10 6.67V10M10 13.33h.01" stroke="#D4183D" stroke-width="1.67" stroke-linecap="round" />
+            </svg>
+            <div>
+              <p><strong>Mã lỗi:</strong></p>
+              <p style="color:#827473;font-size:0.875rem;margin-top:4px">Giao dịch bị từ chối bởi ngân hàng. Vui lòng
+                kiểm tra số dư tài khoản hoặc thông tin thẻ của bạn.</p>
+            </div>
+          </div>
+          <ul class="error-box__reasons">
+            <li>Một số lý do có thể gây ra lỗi:</li>
+            <li>• Số dư tài khoản không đủ</li>
+            <li>• Thông tin thẻ không chính xác</li>
+            <li>• Thẻ đã hết hạn hoặc bị khóa</li>
+            <li>• Vượt quá hạn mức giao dịch</li>
+          </ul>
+        </div>
+
+        <div class="payment-failed__actions">
+          <a class="btn" href="./shipping-payment.html">Thử lại thanh toán</a>
+          <a class="btn" href="#">Tiếp tục mua sắm</a>
+        </div>
+
+        <div class="help-box">
+          <p><strong>Cần trợ giúp?</strong></p>
+          <p>Đội ngũ chăm sóc khách hàng sẵn sàng hỗ trợ bạn</p>
+          <p style="margin-top:8px"><a href="tel:1900xxxx" style="color:var(--terracotta)">📞 1900 xxxx</a> · <a
+              href="mailto:hello@velura.vn" style="color:var(--terracotta)">hello@velura.vn</a></p>
+        </div>
+      </div>
+    </main>
+
+    <load src="/src/components/footer.html" />
+  </div>
+  <script type="module" src="../../scripts/main.js"></script>
+</body>
+
+</html>

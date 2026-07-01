@@ -1,0 +1,261 @@
+/* ============================================================
+   Policy Tabs — Giao diện Điều khoản và Chính sách
+   Bám sát Figma Node 282-5801, cấu trúc ITCSS & đặt tên BEM
+   ============================================================ */
+
+.policy-container {
+  padding-bottom: 60px;
+}
+
+/* Header trang chính sách */
+.policy-header {
+  margin-top: 40px;
+  margin-bottom: 32px;
+}
+
+.policy-header__subtitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--terracotta);
+  display: block;
+  margin-bottom: 12px;
+}
+
+.policy-header__title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 500;
+  color: var(--text-dark);
+  margin-bottom: 16px;
+  line-height: 1.15;
+}
+
+.policy-header__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.policy-header__meta-icon {
+  flex-shrink: 0;
+  stroke: var(--text-secondary);
+}
+
+/* Bố cục lưới chia 2 cột */
+.policy-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+/* Cột trái: Card chứa danh sách tabs */
+.policy-tabs {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.policy-tabs__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-dark);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.policy-tabs__item-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke: var(--text-secondary);
+  transition: stroke 0.25s ease;
+}
+
+/* Hover state */
+.policy-tabs__item:hover:not(.is-active) {
+  background-color: var(--field-bg);
+  color: var(--text-dark);
+}
+
+/* Active state (Theo Figma: nền nhẹ --tab-bg, màu terracotta) */
+.policy-tabs__item.is-active {
+  background-color: var(--tab-bg);
+  color: var(--brown);
+  font-weight: 600;
+}
+
+.policy-tabs__item.is-active .policy-tabs__item-icon {
+  stroke: var(--brown);
+}
+
+/* Cột phải: Vùng chứa nội dung chi tiết */
+.policy-content {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 40px;
+  min-height: 550px;
+}
+
+/* Panel nội dung tab */
+.policy-panel {
+  display: none;
+}
+
+/* Hiển thị mượt mà với keyframe */
+.policy-panel.is-active {
+  display: block;
+  animation: policyFadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes policyFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Typography nội dung chính sách */
+.policy-panel__title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--text-dark);
+  margin-bottom: 20px;
+  line-height: 1.25;
+}
+
+.policy-panel__intro {
+  font-size: 1rem;
+  color: var(--text-body);
+  line-height: 1.65;
+  margin-bottom: 32px;
+}
+
+.policy-panel__section-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-top: 36px;
+  margin-bottom: 16px;
+  line-height: 1.35;
+}
+
+.policy-panel__text {
+  font-size: 0.9375rem;
+  color: var(--text-body);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.policy-panel__list {
+  list-style: none;
+  margin-top: 12px;
+  margin-bottom: 24px;
+  padding-left: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.policy-panel__list-item {
+  position: relative;
+  padding-left: 20px;
+  font-size: 0.9375rem;
+  color: var(--text-body);
+  line-height: 1.6;
+}
+
+.policy-panel__list-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.65em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--terracotta);
+}
+
+/* Footer nhỏ bên dưới bố cục */
+.policy-footer {
+  text-align: center;
+  margin-top: 48px;
+  margin-bottom: 32px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.policy-footer a {
+  color: var(--terracotta);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.policy-footer a:hover {
+  color: var(--terracotta-h);
+  text-decoration: underline;
+}
+
+/* Responsive Overrides */
+@media (max-width: 991px) {
+  .policy-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .policy-tabs {
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 8px;
+    gap: 8px;
+    border-radius: var(--radius-md);
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .policy-tabs::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  .policy-tabs__item {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 10px 16px;
+    scroll-snap-align: start;
+  }
+
+  .policy-content {
+    padding: 28px 20px;
+    min-height: auto;
+  }
+
+  .policy-panel__title {
+    font-size: 1.75rem;
+  }
+}

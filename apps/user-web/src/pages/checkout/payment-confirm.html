@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura — Đặt hàng thành công</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+</head>
+
+<body>
+  <div class="page-shell">
+    <load src="/src/components/header.html" />
+
+    <main class="checkout-page">
+      <section class="success-hero">
+        <div class="success-hero__icon" aria-hidden="true">
+          <svg width="32" height="23" viewBox="0 0 32 23" fill="none">
+            <path d="M10.67 22.61L0 11.94l2.14-2.14L10.67 18.33 29 0l2.14 2.14L10.67 22.61z" fill="#7D562D" />
+          </svg>
+        </div>
+        <h1 class="success-hero__title">Đặt hàng thành công!</h1>
+        <p class="success-hero__desc">Cảm ơn bạn đã tin tưởng lựa chọn Velura. Đơn hàng của bạn đang được chuẩn bị để
+          gửi tới bạn sớm nhất có thể.</p>
+      </section>
+
+      <div class="container">
+        <div class="details-grid">
+          <div class="details-grid__row">
+            <p class="label-upper">Mã đơn hàng</p>
+            <p class="details-grid__value details-grid__value--accent">#VEL-9928103</p>
+          </div>
+          <div class="details-grid__row">
+            <p class="label-upper">Phương thức thanh toán</p>
+            <p class="details-grid__value">Thanh toán qua VNPay</p>
+          </div>
+          <div class="details-grid__row">
+            <p class="label-upper">Dự kiến giao hàng</p>
+            <p class="details-grid__value">Thứ Năm, 24 Tháng 10, 2024</p>
+          </div>
+          <div class="details-grid__row">
+            <p class="label-upper">Địa chỉ nhận hàng</p>
+            <p class="details-grid__value">123 Đường Lê Lợi, Quận 1, TP. Hồ Chí Minh</p>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <a class="btn btn--brown" href="/src/pages/account/track-order.html">Xem đơn hàng</a>
+          <a class="btn btn--brown-outline" href="/index.html">Tiếp tục mua sắm</a>
+        </div>
+      </div>
+    </main>
+
+    <load src="/src/components/footer.html" />
+  </div>
+  <script type="module" src="../../scripts/main.js"></script>
+</body>
+
+</html>
