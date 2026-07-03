@@ -609,7 +609,7 @@ export function initStyleQuiz() {
     // Final redirection after 2.4s
     setTimeout(() => {
       document.body.style.overflow = "";
-      window.location.href = "/src/pages/account/profile.html?tab=style-profile";
+      window.location.href = "/src/pages/ai/suggestions.html?isNewQuiz=true";
     }, 2400);
   }
 }

@@ -539,3 +539,15 @@ INSERT INTO category (name, parent_id, slug, display_order) VALUES
   ('Set đồ',    NULL, 'set-do',  5),
   ('Phụ kiện',  NULL, 'phu-kien', 6),
   ('Giày dép',  NULL, 'giay-dep', 7);
+
+-- ============================================================
+-- WISHLISTS
+-- ============================================================
+CREATE TABLE Wishlists (
+  id           UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      UUID      NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  product_id   UUID      NOT NULL REFERENCES product(product_id) ON DELETE CASCADE,
+  created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT unique_user_product UNIQUE (user_id, product_id)
+);

@@ -329,11 +329,28 @@ body.page-quiz-flow {
   border-radius: var(--radius-md);
   background: #fff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   text-align: left;
   height: auto;
   align-items: stretch;
   justify-content: flex-start;
+  position: relative;
+}
+
+.quiz-shape-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--soft);
+  z-index: 10;
+}
+
+.quiz-shape-card.is-selected {
+  background-color: #F4E4DC !important;
+  border-color: var(--terracotta) !important;
+  box-shadow: 0 4px 12px rgba(201, 123, 99, 0.15);
+}
+
+.quiz-shape-card.is-selected .quiz-shape-card__name {
+  color: var(--terracotta) !important;
 }
 
 .quiz-shape-card__img-box {
@@ -343,14 +360,25 @@ body.page-quiz-flow {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
   margin-bottom: 12px;
+  position: relative;
 }
 
 .quiz-shape-card__img-box img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transform-origin: center;
+}
+
+.quiz-shape-card:hover .quiz-shape-card__img-box img {
+  transform: scale(2.6);
+  background-color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  padding: 4px;
 }
 
 .quiz-shape-card__info {

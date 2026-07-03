@@ -8,6 +8,7 @@ import { deleteRows, insertRow, selectRows, updateRows } from "./supabase.js";
 import { writeAuditLog } from "./audit.js";
 import { handleAction } from "./actions.js";
 import { handleUserRoute } from "./user-routes.js";
+import { handleWishlistRoute } from "./v1-wishlist-routes.js";
 
 assertRuntimeConfig();
 
@@ -48,6 +49,10 @@ const server = createServer(async (req, res) => {
 
     if (parts[1] === "user") {
       return await handleUserRoute(req, res, parts, corsHeaders, context);
+    }
+
+    if (parts[1] === "v1" && parts[2] === "wishlists") {
+      return await handleWishlistRoute(req, res, parts, corsHeaders, context);
     }
 
     if (parts[1] !== "admin") {

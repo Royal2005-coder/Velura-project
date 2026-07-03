@@ -229,6 +229,57 @@ function bindSignin() {
   const form = document.getElementById("js-signin-form");
   if (!form) return;
 
+  /* DEV MODE ONLY - REMOVE BEFORE PRODUCTION */
+  if (import.meta.env.DEV) {
+    const signupPara = document.querySelector(".signup");
+    if (signupPara && !document.querySelector(".dev-quick-login")) {
+      const devContainer = document.createElement("div");
+      devContainer.className = "dev-quick-login";
+      devContainer.style.cssText = "margin-top: 16px; display: flex; justify-content: center; gap: 10px;";
+      devContainer.innerHTML = `
+        <button type="button" id="js-dev-login-phone" style="background: rgba(107, 99, 93, 0.1); border: 1px dashed #6B635D; padding: 4px 8px; font-size: 11px; border-radius: 4px; color: #6B635D; cursor: pointer; transition: all 0.2s;">Test Phone</button>
+        <button type="button" id="js-dev-login-email" style="background: rgba(107, 99, 93, 0.1); border: 1px dashed #6B635D; padding: 4px 8px; font-size: 11px; border-radius: 4px; color: #6B635D; cursor: pointer; transition: all 0.2s;">Test Email</button>
+      `;
+      signupPara.after(devContainer);
+
+      const tabPhone = document.getElementById("tab-phone");
+      const tabEmail = document.getElementById("tab-email");
+      const panelPhone = document.getElementById("panel-phone");
+      const panelEmail = document.getElementById("panel-email");
+
+      document.getElementById("js-dev-login-phone").addEventListener("click", () => {
+        if (tabPhone && tabEmail && panelPhone && panelEmail) {
+          tabPhone.classList.add("tab--active");
+          tabPhone.setAttribute("aria-selected", "true");
+          tabEmail.classList.remove("tab--active");
+          tabEmail.setAttribute("aria-selected", "false");
+          panelPhone.classList.add("is-active");
+          panelEmail.classList.remove("is-active");
+        }
+        const phoneInput = document.getElementById("phone");
+        const passInput = document.getElementById("password");
+        if (phoneInput) phoneInput.value = "0912345678";
+        if (passInput) passInput.value = "123456";
+      });
+
+      document.getElementById("js-dev-login-email").addEventListener("click", () => {
+        if (tabPhone && tabEmail && panelPhone && panelEmail) {
+          tabEmail.classList.add("tab--active");
+          tabEmail.setAttribute("aria-selected", "true");
+          tabPhone.classList.remove("tab--active");
+          tabPhone.setAttribute("aria-selected", "false");
+          panelEmail.classList.add("is-active");
+          panelPhone.classList.remove("is-active");
+        }
+        const emailInput = document.getElementById("email-login");
+        const passInput = document.getElementById("password-email");
+        if (emailInput) emailInput.value = "user@velura.vn";
+        if (passInput) passInput.value = "123456";
+      });
+    }
+  }
+  /* END DEV MODE ONLY */
+
   // Store original button label
   const btn = document.getElementById("btn-signin");
   if (btn) btn.dataset.label = btn.textContent;

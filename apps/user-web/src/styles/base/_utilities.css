@@ -9,3 +9,10 @@
 
 .tab-panel { display: none; }
 .tab-panel.is-active { display: block; }
+
+.icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: currentColor;
+  display: inline-block;
+}
