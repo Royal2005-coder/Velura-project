@@ -34,6 +34,8 @@ export function initProductCatalog() {
   const itemsPerPage = 12;
   let hasStyleProfile = false;
   let userBodyShape = "";
+  let isSuggestionsEnabled = localStorage.getItem("velura_suggestions_enabled") !== "false";
+  let quizData = null;
 
   const CATEGORY_MAP = {
     top: "ao",
@@ -138,6 +140,198 @@ export function initProductCatalog() {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
   };
 
+  function applyProfileFilters(enable) {
+    if (!hasStyleProfile || !quizData) return;
+
+    if (enable) {
+      // 1. Brand
+      if (quizData.favorite_brands && Array.isArray(quizData.favorite_brands)) {
+        const brandCheckboxes = document.querySelectorAll('input[name="brand"]');
+        brandCheckboxes.forEach(cb => {
+          if (quizData.favorite_brands.includes(cb.value)) {
+            cb.checked = true;
+          }
+        });
+      }
+
+      // 2. Budget
+      if (quizData.budget_range && priceInputs.length === 2) {
+        const br = quizData.budget_range;
+        let minPrice = 0;
+        let maxPrice = maxProductPrice;
+        if (br === "under_300k") { minPrice = 0; maxPrice = 300000; }
+        else if (br === "300k_700k") { minPrice = 300000; maxPrice = 700000; }
+        else if (br === "700k_1.5m") { minPrice = 700000; maxPrice = 1500000; }
+        else if (br === "above_1.5m") { minPrice = 1500000; maxPrice = maxProductPrice; }
+
+        priceInputs[0].value = minPrice;
+        priceInputs[1].value = maxPrice;
+        if (priceRangeText) {
+          priceRangeText.textContent = `${minPrice.toLocaleString('vi-VN')}₫ – ${maxPrice.toLocaleString('vi-VN')}₫`;
+        }
+      }
+
+      // 3. Skin tone
+      if (quizData.skin_tone) {
+        const tone = quizData.skin_tone.toLowerCase();
+        let targetColor = "";
+        if (tone === "warm") targetColor = "Terracotta";
+        else if (tone === "cool") targetColor = "Trắng";
+        else if (tone === "neutral") targetColor = "Xanh rêu";
+
+        if (targetColor) {
+          colorOptions.forEach(btn => {
+            if (btn.getAttribute("title") === targetColor) {
+              btn.classList.add("is-selected");
+              selectedColor = targetColor;
+            } else {
+              btn.classList.remove("is-selected");
+            }
+          });
+        }
+      }
+
+      // 4. Waist size
+      if (quizData.waist_cm) {
+        const waist = quizData.waist_cm;
+        let recommendedSize = "";
+        if (waist < 64) recommendedSize = "XS";
+        else if (waist <= 68) recommendedSize = "S";
+        else if (waist <= 72) recommendedSize = "M";
+        else if (waist <= 76) recommendedSize = "L";
+        else recommendedSize = "XL";
+
+        if (recommendedSize) {
+          const sizeOptionsList = document.querySelectorAll(".size-option");
+          sizeOptionsList.forEach(opt => {
+            if (opt.textContent.trim() === recommendedSize) {
+              opt.classList.add("is-active");
+              selectedSize = recommendedSize;
+            } else {
+              opt.classList.remove("is-active");
+            }
+          });
+        }
+      }
+
+      // 5. Body shape
+      const shapeCheckboxes = document.querySelectorAll('input[name="body_shape"]');
+      if (userBodyShape) {
+        shapeCheckboxes.forEach(cb => {
+          if (cb.value.toLowerCase() === userBodyShape.toLowerCase()) {
+            cb.checked = true;
+          }
+        });
+      }
+    } else {
+      // Clear profile-based filters
+      const brandCheckboxes = document.querySelectorAll('input[name="brand"]');
+      brandCheckboxes.forEach(cb => cb.checked = false);
+
+      if (priceInputs.length === 2) {
+        priceInputs[0].value = 0;
+        priceInputs[1].value = maxProductPrice;
+        if (priceRangeText) {
+          priceRangeText.textContent = `0₫ – ${maxProductPrice.toLocaleString('vi-VN')}₫`;
+        }
+      }
+
+      colorOptions.forEach(btn => btn.classList.remove("is-selected"));
+      selectedColor = "";
+
+      const sizeSelectorBtns = document.querySelectorAll(".size-selector .size-option");
+      sizeSelectorBtns.forEach(btn => btn.classList.remove("is-active"));
+      selectedSize = "";
+
+      const shapeCheckboxes = document.querySelectorAll('input[name="body_shape"]');
+      shapeCheckboxes.forEach(cb => cb.checked = false);
+    }
+
+    applyFiltersAndSort();
+  }
+
+  function updateFitHelperUI() {
+    const fitHelperEl = document.querySelector(".fit-helper");
+    const lockOverlay = document.querySelector(".js-body-shape-lock");
+    const shapeListContainer = document.querySelector(".js-body-shape-list");
+    const isLoggedIn = !!localStorage.getItem("velura_token");
+
+    if (hasStyleProfile && quizData) {
+      if (lockOverlay) lockOverlay.style.display = "none";
+      if (shapeListContainer) {
+        shapeListContainer.style.filter = "none";
+        shapeListContainer.style.pointerEvents = "auto";
+      }
+
+      if (fitHelperEl) {
+        const bodyShapeTranslations = {
+          "hourglass": "Đồng hồ cát",
+          "pear": "Dáng quả lê",
+          "apple": "Dáng quả táo",
+          "rectangle": "Dáng chữ nhật",
+          "inverted triangle": "Dáng tam giác ngược"
+        };
+        const translatedShape = bodyShapeTranslations[userBodyShape.toLowerCase()] || userBodyShape;
+
+        if (isSuggestionsEnabled) {
+          fitHelperEl.innerHTML = `
+            <div class="fit-helper__header" style="color: #C97B63; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span>Gợi ý đã kích hoạt</span>
+              </div>
+              <button class="js-toggle-fit-suggestions" type="button" style="font-size: 0.7rem; background: #C97B63; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-weight: 600;">Tắt</button>
+            </div>
+            <p class="fit-helper__desc">Hệ thống đã tự động lọc các trang phục phù hợp nhất với dáng người <strong>${translatedShape}</strong> của bạn.</p>
+          `;
+        } else {
+          fitHelperEl.innerHTML = `
+            <div class="fit-helper__header" style="color: #666; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>Gợi ý đã tạm tắt</span>
+              </div>
+              <button class="js-toggle-fit-suggestions" type="button" style="font-size: 0.7rem; background: #888; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-weight: 600;">Bật</button>
+            </div>
+            <p class="fit-helper__desc">Nhấp vào nút Bật để tự động điền lại các bộ lọc dựa trên hồ sơ Style Profile của bạn.</p>
+          `;
+        }
+
+        // Bind dynamic event listener to toggle button
+        const toggleBtn = fitHelperEl.querySelector(".js-toggle-fit-suggestions");
+        if (toggleBtn) {
+          toggleBtn.addEventListener("click", () => {
+            isSuggestionsEnabled = !isSuggestionsEnabled;
+            localStorage.setItem("velura_suggestions_enabled", String(isSuggestionsEnabled));
+            applyProfileFilters(isSuggestionsEnabled);
+            updateFitHelperUI();
+          });
+        }
+      }
+    } else {
+      if (fitHelperEl && isLoggedIn) {
+        fitHelperEl.innerHTML = `
+          <div class="fit-helper__header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>Style Profile trống</span>
+          </div>
+          <p class="fit-helper__desc">Hãy hoàn thành <a href="/src/pages/ai/style-quiz.html" style="color: #C97B63; font-weight: 600; text-decoration: underline;">Style Quiz</a> để mở khóa bộ lọc tự động gợi ý kích cỡ theo dáng người của bạn.</p>
+        `;
+      }
+    }
+  }
+
   // Initialize
   async function loadProducts() {
     if (productGrid) {
@@ -158,31 +352,17 @@ export function initProductCatalog() {
         if (profileRes && profileRes.quiz) {
           hasStyleProfile = true;
           userBodyShape = profileRes.quiz.body_shape;
+          quizData = profileRes.quiz;
         }
       } catch (quizErr) {
         hasStyleProfile = false;
       }
 
-      // Adjust lock overlay and enable filter
-      const lockOverlay = document.querySelector(".js-body-shape-lock");
-      const shapeListContainer = document.querySelector(".js-body-shape-list");
+      // Apply initial suggestion filters and update layout
+      applyProfileFilters(isSuggestionsEnabled);
+      updateFitHelperUI();
+
       const shapeCheckboxes = document.querySelectorAll('input[name="body_shape"]');
-
-      if (hasStyleProfile) {
-        if (lockOverlay) lockOverlay.style.display = "none";
-        if (shapeListContainer) {
-          shapeListContainer.style.filter = "none";
-          shapeListContainer.style.pointerEvents = "auto";
-        }
-        if (userBodyShape) {
-          shapeCheckboxes.forEach(cb => {
-            if (cb.value.toLowerCase() === userBodyShape.toLowerCase()) {
-              cb.checked = true;
-            }
-          });
-        }
-      }
-
       shapeCheckboxes.forEach(cb => {
         cb.addEventListener("change", applyFiltersAndSort);
       });
@@ -196,6 +376,29 @@ export function initProductCatalog() {
       specialCheckboxes.forEach(cb => {
         cb.addEventListener("change", applyFiltersAndSort);
       });
+
+      const clearBtn = document.querySelector(".js-clear-filters");
+      if (clearBtn) {
+        clearBtn.addEventListener("click", () => {
+          categoryCheckboxes.forEach(cb => cb.checked = false);
+          if (priceInputs[0]) priceInputs[0].value = 0;
+          if (priceInputs[1]) priceInputs[1].value = maxProductPrice;
+          if (priceRangeText) {
+            priceRangeText.textContent = `0₫ – ${maxProductPrice.toLocaleString('vi-VN')}₫`;
+          }
+          colorOptions.forEach(btn => btn.classList.remove("is-selected"));
+          selectedColor = "";
+          const sizeSelectorBtns = document.querySelectorAll(".size-selector .size-option");
+          sizeSelectorBtns.forEach(btn => btn.classList.remove("is-active"));
+          selectedSize = "";
+          brandCheckboxes.forEach(cb => cb.checked = false);
+          specialCheckboxes.forEach(cb => cb.checked = false);
+          shapeCheckboxes.forEach(cb => cb.checked = false);
+
+          applyFiltersAndSort();
+          showToast("Đã xóa toàn bộ bộ lọc");
+        });
+      }
 
       // Fetch user wishlist to initialize state
       try {
@@ -229,7 +432,8 @@ export function initProductCatalog() {
       // Dynamically calculate and set max price filter based on database product prices
       if (allProducts.length > 0) {
         maxProductPrice = Math.max(...allProducts.map(p => p.sale_price || p.base_price), 5000000);
-        if (priceInputs[1]) {
+        // Do not overwrite max value if already set by budget_range
+        if (priceInputs[1] && !hasStyleProfile) {
           priceInputs[1].value = maxProductPrice;
         }
       }
@@ -609,19 +813,11 @@ export function initProductCatalog() {
           </div>
           <div class="card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
-              </svg>
+              <svg class="icon" style="width: 16px; height: 16px;"><use href="#icon-bag"></use></svg>
               Mua ngay
             </a>
             <button class="card__btn-cart js-add-cart-catalog" type="button" aria-label="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="9" cy="21" r="1"></circle>
-                <circle cx="20" cy="21" r="1"></circle>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-              </svg>
+              <svg class="icon" style="width: 18px; height: 18px;"><use href="#icon-cart"></use></svg>
             </button>
           </div>
         </article>

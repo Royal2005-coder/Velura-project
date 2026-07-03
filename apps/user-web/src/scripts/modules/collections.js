@@ -154,23 +154,38 @@ export function initCollectionsFilter() {
       const tabs = tabsContainer.querySelectorAll(".collections-tab");
       const collections = listContainer.querySelectorAll(".collection-detail");
 
+      const applyFilter = (filterValue) => {
+        tabs.forEach(t => {
+          if (t.getAttribute("data-filter") === filterValue) {
+            t.classList.add("active");
+          } else {
+            t.classList.remove("active");
+          }
+        });
+
+        collections.forEach(col => {
+          const category = col.getAttribute("data-category");
+          if (filterValue === "all" || category === filterValue) {
+            col.style.display = "";
+          } else {
+            col.style.display = "none";
+          }
+        });
+      };
+
       tabs.forEach(tab => {
         tab.addEventListener("click", function () {
-          tabs.forEach(t => t.classList.remove("active"));
-          tab.classList.add("active");
-
           const filterValue = tab.getAttribute("data-filter");
-
-          collections.forEach(col => {
-            const category = col.getAttribute("data-category");
-            if (filterValue === "all" || category === filterValue) {
-              col.style.display = "";
-            } else {
-              col.style.display = "none";
-            }
-          });
+          applyFilter(filterValue);
         });
       });
+
+      // BỔ SUNG: Kiểm tra tham số id từ URL và tự động kích hoạt bộ lọc tương ứng
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlId = urlParams.get("id");
+      if (urlId) {
+        applyFilter(urlId);
+      }
     })
     .catch(err => {
       console.error("[Collections Dynamic Load Error]:", err);

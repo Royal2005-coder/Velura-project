@@ -12,11 +12,13 @@ export async function apiRequest(path, options = {}) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  let fetchOptions = { ...options, headers };
+  if (options.body && typeof options.body === "object" && !(options.body instanceof FormData)) {
+    fetchOptions.body = JSON.stringify(options.body);
+  }
+
   try {
-    const response = await fetch(`${API_URL}${path}`, {
-      ...options,
-      headers
-    });
+    const response = await fetch(`${API_URL}${path}`, fetchOptions);
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
