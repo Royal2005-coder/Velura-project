@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura — Quản lý sản phẩm</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+  <link rel="stylesheet" href="../../styles/admin.css" />
+</head>
+<body class="admin-page">
+  <div class="admin-layout" data-admin-module="products">
+    <aside class="admin-sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị">
+      <div class="admin-sidebar__brand">
+        <a class="admin-sidebar__logo" href="./products.html"><img src="../../assets/images/logo.png" alt="Velura" /></a>
+        <span class="admin-sidebar__caption">Quản trị</span>
+      </div>
+      <nav class="admin-sidebar__nav">
+        <a class="admin-menu-item" href="./dashboard.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#dashboard" /></svg>Dashboard</a>
+        <a class="admin-menu-item" href="./accounts.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#users" /></svg>Quản lý tài khoản</a>
+        <a class="admin-menu-item admin-menu-item--active" href="./products.html" aria-current="page"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#box" /></svg>Quản lý sản phẩm</a>
+        <a class="admin-menu-item" href="./orders.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#cart" /></svg>Quản lý đơn hàng</a>
+        <a class="admin-menu-item" href="./reviews.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#star" /></svg>Quản lý đánh giá</a>
+        <a class="admin-menu-item" href="./returns-cskh.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#support" /></svg>Đổi trả &amp; CSKH</a>
+        <details class="admin-menu-group"><summary><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#tag" /></svg>Giá &amp; khuyến mãi</summary><div class="admin-menu-subnav"><a href="./pricing.html">Quản lý giá</a><a href="./promotions.html">Quản lý khuyến mãi</a></div></details>
+        <a class="admin-menu-item" href="./logs.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#log" /></svg>Nhật ký hệ thống</a>
+      </nav>
+    </aside>
+    <div class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar__leading"><button class="admin-icon-button admin-topbar__menu" type="button" data-product-sidebar aria-label="Đóng sidebar">☰</button><h1 class="admin-topbar__title">Quản lý sản phẩm</h1></div>
+        <div class="admin-topbar__actions"><button class="admin-btn admin-btn--export admin-btn--sm" type="button" data-product-export>Xuất danh sách</button><button class="admin-btn admin-btn--secondary admin-btn--sm" type="button" data-product-modal="product-form">Thêm sản phẩm</button><button class="admin-profile" type="button"><span class="admin-profile__avatar">PH</span><span class="admin-profile__copy"><strong>Phạm Thu Hương</strong><small>Quản trị viên</small></span></button></div>
+      </header>
+      <main class="admin-content">
+        <p class="admin-page-crumb">Dashboard / Quản lý sản phẩm</p>
+        <section class="admin-kpi-grid admin-product-kpis" aria-label="Thống kê sản phẩm">
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Tổng sản phẩm</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#box" /></svg></span></div><strong class="admin-kpi-card__value">48</strong></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Đang bán</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#check" /></svg></span></div><strong class="admin-kpi-card__value">39</strong></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Tạm ẩn</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#eye" /></svg></span></div><strong class="admin-kpi-card__value">5</strong></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Hết hàng</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#lock" /></svg></span></div><strong class="admin-kpi-card__value">2</strong></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Tồn kho thấp</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#clock" /></svg></span></div><strong class="admin-kpi-card__value">4</strong></article>
+        </section>
+        <section class="admin-card admin-card--flush">
+          <div class="admin-tabs" role="tablist"><button class="admin-tab admin-tab--active" type="button" data-product-tab="catalog">Danh sách sản phẩm <span>48</span></button><button class="admin-tab" type="button" data-product-tab="csv">Nhập CSV</button><button class="admin-tab" type="button" data-product-tab="logs">Nhật ký sản phẩm</button></div>
+          <div class="admin-tab-content" data-product-panel="catalog">
+            <form class="admin-filter-bar" data-product-filter>
+              <label class="admin-search-field"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#search" /></svg><input class="admin-form-control" type="search" placeholder="Tìm theo tên hoặc mã sản phẩm..." data-product-search /></label>
+              <select class="admin-form-control" data-product-category><option value="">Tất cả danh mục</option><option>Áo</option><option>Đầm váy</option><option>Áo khoác</option></select>
+              <select class="admin-form-control" data-product-status><option value="">Tất cả trạng thái</option><option value="active">Đang bán</option><option value="hidden">Tạm ẩn</option><option value="discontinued">Ngừng bán</option></select>
+              <select class="admin-form-control" data-product-stock><option value="">Tất cả tồn kho</option><option value="low">Tồn kho thấp</option><option value="out">Hết hàng</option></select>
+              <button class="admin-btn admin-btn--filter admin-btn--sm" type="button" data-product-filter-apply>Lọc</button>
+              <button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button>
+            </form>
+            <div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Sản phẩm</th><th>SKU</th><th>Danh mục</th><th>Giá bán</th><th>Tồn kho</th><th>Trạng thái</th><th>Cập nhật</th><th>Thao tác</th></tr></thead><tbody id="product-list"></tbody></table></div>
+            <div class="admin-card__footer"><p class="admin-table-note">Hiển thị 5 / 48 sản phẩm</p><nav class="admin-pagination"><button type="button">←</button><button class="is-active" type="button">1</button><button type="button">2</button><button type="button">→</button></nav></div>
+          </div>
+          <div class="admin-tab-content" data-product-panel="csv" hidden><section class="admin-csv-import"><header><div><h2 class="admin-section__title">Nhập sản phẩm bằng CSV</h2><p class="admin-table-note">Thêm mới hoặc cập nhật hàng loạt từ file CSV.</p></div><button class="admin-btn admin-btn--outline admin-btn--sm" type="button">Tải file mẫu</button></header><div class="admin-csv-dropzone"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#box" /></svg><strong>Kéo thả file CSV vào đây</strong><span>hoặc chọn file từ máy tính</span><button class="admin-btn admin-btn--secondary admin-btn--sm" type="button">Chọn file CSV</button></div><div class="admin-csv-checklist"><h3>Kiểm tra dữ liệu</h3><p>✓ Đúng định dạng .csv</p><p>✓ Đủ cột: tên, SKU, danh mục, giá, tồn kho, trạng thái</p><p>✓ Giá và tồn kho là số hợp lệ</p><p>✓ SKU mới để thêm; SKU trùng để cập nhật</p></div><div class="admin-alert">Sau khi kiểm tra, hệ thống sẽ hiển thị preview và lỗi từng dòng trước khi nhập dữ liệu.</div></section></div>
+          <div class="admin-tab-content" data-product-panel="logs" hidden><div class="admin-filter-bar"><label class="admin-search-field"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#search" /></svg><input class="admin-form-control" placeholder="Tìm mã sản phẩm, tên sản phẩm..."></label><select class="admin-form-control"><option>Tất cả hành động</option><option>Thêm sản phẩm</option><option>Cập nhật sản phẩm</option><option>Ẩn sản phẩm</option><option>Nhập CSV</option></select><button class="admin-btn admin-btn--ghost admin-btn--sm" type="button">Đặt lại</button></div><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Thời gian</th><th>Người thao tác</th><th>Sản phẩm</th><th>Hành động</th><th>Dữ liệu trước → sau</th><th>Kết quả</th></tr></thead><tbody><tr><td>20/06/2026 11:20</td><td>Phạm Thu Hương</td><td>BCR-004 · Blazer cropped bouclé</td><td>Cập nhật sản phẩm</td><td>Giá: 2.350.000₫ → 2.450.000₫</td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr><tr><td>19/06/2026 15:10</td><td>Phạm Thu Hương</td><td>LSV-001 · Áo sơ mi linen cổ V</td><td>Tạm ẩn sản phẩm</td><td>Đang bán → Tạm ẩn</td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr></tbody></table></div><div class="admin-card__footer"><p class="admin-table-note">Hiển thị 2 mục</p><nav class="admin-pagination"><button>←</button><button class="is-active">1</button><button>→</button></nav></div></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div class="admin-modal-overlay" id="product-form" hidden>
+    <section class="admin-modal admin-modal--lg admin-product-modal" role="dialog" aria-modal="true" aria-labelledby="product-form-title">
+      <header class="admin-modal__header"><div><p class="label-upper">Quản lý sản phẩm</p><h2 id="product-form-title">Thêm sản phẩm</h2></div><button class="admin-icon-button" type="button" data-product-close aria-label="Đóng">×</button></header>
+      <form class="admin-modal__body admin-product-form" id="product-form-fields" data-product-form>
+        <section class="admin-product-form__section admin-product-form__section--full"><h3>Hình ảnh sản phẩm</h3><div class="admin-product-upload"><div class="admin-product-upload__preview"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#box" /></svg></div><div><strong>Ảnh đại diện sản phẩm</strong><p>Kéo thả ảnh vào đây hoặc chọn tệp. Dùng JPG, PNG hoặc WebP.</p><button class="admin-btn admin-btn--outline admin-btn--sm" type="button">Chọn ảnh</button></div></div></section>
+        <section class="admin-product-form__section"><h3>Thông tin cơ bản</h3><label class="admin-form-group"><span class="admin-form-label">Tên sản phẩm <b>*</b></span><input class="admin-form-control" name="name" required placeholder="Ví dụ: Blazer cropped bouclé" /></label><label class="admin-form-group"><span class="admin-form-label">Mã SKU <b>*</b></span><input class="admin-form-control" name="sku" required placeholder="Ví dụ: BCR-004" /></label><label class="admin-form-group"><span class="admin-form-label">Danh mục <b>*</b></span><select class="admin-form-control" name="category" required><option value="">Chọn danh mục</option><option>Áo</option><option>Áo khoác</option><option>Đầm váy</option><option>Phụ kiện</option></select></label><label class="admin-form-group"><span class="admin-form-label">Bộ sưu tập</span><input class="admin-form-control" name="collection" placeholder="Ví dụ: Autumn 2026" /></label></section>
+        <section class="admin-product-form__section"><h3>Giá và tồn kho</h3><label class="admin-form-group"><span class="admin-form-label">Giá bán (₫) <b>*</b></span><input class="admin-form-control" name="price" type="number" min="0" required /></label><label class="admin-form-group"><span class="admin-form-label">Giá gốc (₫)</span><input class="admin-form-control" name="originalPrice" type="number" min="0" /></label><label class="admin-form-group"><span class="admin-form-label">Tồn kho <b>*</b></span><input class="admin-form-control" name="stock" type="number" min="0" required /></label><label class="admin-form-group"><span class="admin-form-label">Ngưỡng cảnh báo tồn kho</span><input class="admin-form-control" name="minStock" type="number" min="0" value="10" /></label></section>
+        <section class="admin-product-form__section admin-product-form__section--full"><h3>Biến thể</h3><div class="admin-variant-grid"><label class="admin-form-group"><span class="admin-form-label">Màu sắc</span><input class="admin-form-control" name="colors" placeholder="Kem, Navy, Hồng" /></label><label class="admin-form-group"><span class="admin-form-label">Kích thước</span><div class="admin-size-options"><label><input type="checkbox" name="size" value="S" /> S</label><label><input type="checkbox" name="size" value="M" /> M</label><label><input type="checkbox" name="size" value="L" /> L</label><label><input type="checkbox" name="size" value="XL" /> XL</label></div></label></div></section>
+        <section class="admin-product-form__section admin-product-form__section--full"><h3>Mô tả và AI</h3><label class="admin-form-group"><span class="admin-form-label">Mô tả sản phẩm</span><textarea class="admin-form-control admin-form-textarea" name="description" placeholder="Mô tả chất liệu, phom dáng và điểm nổi bật..."></textarea></label><label class="admin-form-group"><span class="admin-form-label">AI tags &amp; SEO metadata <span class="admin-ai-badge">AI</span></span><input class="admin-form-control admin-ai-control" name="aiTags" placeholder="Ví dụ: blazer, bouclé, formal, áo khoác nữ" /><small class="admin-form-helper admin-ai-helper">Tag gợi ý cho tìm kiếm và SEO. Có thể chỉnh sửa trước khi lưu.</small></label></section>
+        <section class="admin-product-form__section admin-product-form__section--full"><h3>Hiển thị và trạng thái</h3><div class="admin-product-status-options"><label><input type="radio" name="status" value="active" checked /> Đang bán</label><label><input type="radio" name="status" value="hidden" /> Tạm ẩn</label><label><input type="radio" name="status" value="discontinued" /> Ngừng kinh doanh</label></div></section>
+      </form>
+      <footer class="admin-modal__footer"><button class="admin-btn admin-btn--ghost" type="button" data-product-close>Hủy</button><button class="admin-btn admin-btn--secondary" type="submit" form="product-form-fields">Lưu sản phẩm</button></footer>
+    </section>
+  </div>
+  <div class="admin-modal-overlay" id="product-stop-modal" hidden>
+    <section class="admin-modal admin-product-stop-modal" role="dialog" aria-modal="true" aria-labelledby="product-stop-title">
+      <header class="admin-modal__header"><div><p class="label-upper">Quản lý sản phẩm</p><h2 id="product-stop-title">Thay đổi trạng thái bán</h2></div><button class="admin-icon-button" type="button" data-product-stop-close aria-label="Đóng">×</button></header>
+      <form class="admin-modal__body" id="product-stop-form" data-product-stop-form>
+        <dl class="admin-info-grid admin-product-stop-summary">
+          <div><dt>Sản phẩm</dt><dd data-product-stop-name>—</dd></div>
+          <div><dt>Mã SKU</dt><dd data-product-stop-sku>—</dd></div>
+          <div><dt>Trạng thái hiện tại</dt><dd data-product-stop-status>—</dd></div>
+          <div><dt>Tồn kho</dt><dd data-product-stop-stock>—</dd></div>
+        </dl>
+        <fieldset class="admin-product-stop-fieldset"><legend class="admin-form-label">Trạng thái mới <b>*</b></legend><div class="admin-product-stop-options"><label><input type="radio" name="nextStatus" value="hidden" checked><span><strong>Tạm ẩn</strong><small>Ẩn khỏi cửa hàng và có thể mở bán lại.</small></span></label><label><input type="radio" name="nextStatus" value="discontinued"><span><strong>Ngừng kinh doanh</strong><small>Dừng bán dài hạn và lưu vào lịch sử.</small></span></label></div></fieldset>
+        <label class="admin-form-group"><span class="admin-form-label">Lý do <b>*</b></span><textarea class="admin-form-control admin-form-textarea" name="reason" minlength="10" maxlength="300" required placeholder="Nhập lý do thay đổi trạng thái sản phẩm..."></textarea><small class="admin-form-helper">Tối thiểu 10 ký tự, chỉ dùng trong quản trị và nhật ký hệ thống.</small></label>
+      </form>
+      <footer class="admin-modal__footer"><button class="admin-btn admin-btn--ghost" type="button" data-product-stop-close>Hủy</button><button class="admin-btn admin-btn--secondary" type="submit" form="product-stop-form" data-product-stop-submit>Xác nhận tạm ẩn</button></footer>
+    </section>
+  </div>
+  <div class="admin-drawer-backdrop" data-product-close hidden></div><aside class="admin-drawer admin-drawer--wide" id="product-detail" hidden></aside>
+  <p class="admin-toast" id="product-toast" hidden></p>
+  <script type="module">
+    import { checkAuth, updateSidebarForRole, logout } from '../../scripts/auth.js';
+    const session = checkAuth();
+    if (session) { updateSidebarForRole(session); document.addEventListener('click', e => { if (e.target.closest('[data-admin-logout]')) logout(); }); }
+  </script>
+  <script type="module" src="../../scripts/products.js"></script>
+</body>
+</html>

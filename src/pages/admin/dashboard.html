@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Velura - Dashboard quản trị</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../styles/main.css">
+  <link rel="stylesheet" href="../../styles/admin.css">
+  <link rel="stylesheet" href="../../styles/dashboard.css">
+</head>
+<body class="admin-page admin-dashboard-page">
+  <div class="admin-layout" data-dashboard>
+    <aside class="admin-sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị">
+      <div class="admin-sidebar__brand">
+        <a class="admin-sidebar__logo" href="./dashboard.html"><img src="../../assets/images/logo.png" alt="Velura"></a>
+        <span class="admin-sidebar__caption">Quản trị</span>
+      </div>
+      <nav class="admin-sidebar__nav">
+        <a class="admin-menu-item admin-menu-item--active" href="./dashboard.html" aria-current="page"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#dashboard"></use></svg>Dashboard</a>
+        <a class="admin-menu-item" href="./accounts.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#users"></use></svg>Quản lý tài khoản</a>
+        <a class="admin-menu-item" href="./products.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#box"></use></svg>Quản lý sản phẩm</a>
+        <a class="admin-menu-item" href="./orders.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#cart"></use></svg>Quản lý đơn hàng</a>
+        <a class="admin-menu-item" href="./reviews.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#star"></use></svg>Quản lý đánh giá</a>
+        <a class="admin-menu-item" href="./returns-cskh.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#support"></use></svg>Đổi trả &amp; CSKH</a>
+        <details class="admin-menu-group">
+          <summary><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#tag"></use></svg>Giá &amp; khuyến mãi</summary>
+          <div class="admin-menu-subnav"><a href="./pricing.html">Quản lý giá</a><a href="./promotions.html">Quản lý khuyến mãi</a></div>
+        </details>
+        <a class="admin-menu-item" href="./logs.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#log"></use></svg>Nhật ký hệ thống</a>
+      </nav>
+    </aside>
+
+    <div class="admin-sidebar-backdrop" data-dashboard-sidebar-close hidden></div>
+    <div class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar__leading">
+          <button class="admin-icon-button admin-topbar__menu" type="button" aria-label="Đóng sidebar" title="Đóng sidebar" aria-controls="admin-sidebar" aria-expanded="true" data-dashboard-sidebar>☰</button>
+          <h1 class="admin-topbar__title">Dashboard</h1>
+        </div>
+        <div class="admin-topbar__actions">
+          <button class="admin-btn admin-btn--outline admin-btn--sm" type="button" data-dashboard-report><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#download"></use></svg>Xuất báo cáo</button>
+          <button class="admin-btn admin-btn--outline admin-btn--sm" type="button" data-dashboard-refresh><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#refresh"></use></svg>Làm mới</button>
+          <button class="admin-profile" type="button"><span class="admin-profile__avatar">PH</span><span class="admin-profile__copy"><strong>Phạm Thu Hương</strong><small>Quản trị viên</small></span></button>
+        </div>
+      </header>
+
+      <main class="admin-content dashboard-content">
+        <p class="admin-page-crumb">Dashboard / Tổng quan</p>
+        <div class="dashboard-controls">
+          <div class="dashboard-view-tabs" role="tablist" aria-label="Góc nhìn Dashboard">
+            <button class="dashboard-view-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="dashboard-operations" data-dashboard-tab="operations"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#settings"></use></svg>Quản trị</button>
+            <button class="dashboard-view-tab" type="button" role="tab" aria-selected="false" aria-controls="dashboard-business" data-dashboard-tab="business"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#dashboard"></use></svg>Kinh doanh</button>
+          </div>
+          <div class="dashboard-time-filter" role="group" aria-label="Khoảng thời gian xem dữ liệu">
+            <button type="button" data-dashboard-range="day" aria-pressed="false">Ngày</button>
+            <button class="is-active" type="button" data-dashboard-range="week" aria-pressed="true">Tuần</button>
+            <button type="button" data-dashboard-range="month" aria-pressed="false">Tháng</button>
+            <button type="button" data-dashboard-range="custom" aria-pressed="false"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#clock"></use></svg>Tùy chọn</button>
+          </div>
+        </div>
+        <form class="dashboard-custom-period" data-dashboard-custom-period hidden>
+          <label><span>Từ ngày</span><input class="admin-form-control" type="date" value="2026-06-21" data-dashboard-date-from></label>
+          <label><span>Đến ngày</span><input class="admin-form-control" type="date" value="2026-06-27" data-dashboard-date-to></label>
+          <button class="admin-btn admin-btn--filter admin-btn--sm" type="submit">Áp dụng</button>
+        </form>
+
+        <section class="dashboard-panel" id="dashboard-operations" role="tabpanel" data-dashboard-panel="operations">
+          <div class="dashboard-kpi-grid" aria-label="Chỉ số vận hành">
+            <article class="dashboard-kpi"><div class="dashboard-kpi__head"><span>Đơn hàng cần xử lý</span><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#cart"></use></svg></i></div><strong>18</strong><div><small>5 thanh toán lỗi</small><span class="admin-badge admin-badge--danger">Khẩn cấp</span></div></article>
+            <article class="dashboard-kpi"><div class="dashboard-kpi__head"><span>Đổi/trả còn trong hạn</span><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#refresh"></use></svg></i></div><strong>7</strong><div><small>3 phiếu dưới 6 giờ</small><span class="admin-badge admin-badge--warning">Cần chú ý</span></div></article>
+            <article class="dashboard-kpi"><div class="dashboard-kpi__head"><span>Ticket chờ phản hồi</span><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#support"></use></svg></i></div><strong>12</strong><div><small>+3 so với hôm qua</small><span class="admin-badge admin-badge--warning">Cần chú ý</span></div></article>
+            <article class="dashboard-kpi"><div class="dashboard-kpi__head"><span>Sản phẩm sắp hết hàng</span><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#box"></use></svg></i></div><strong>9</strong><div><small>4 sản phẩm bán chạy</small><span class="admin-badge admin-badge--danger">Khẩn cấp</span></div></article>
+            <article class="dashboard-kpi"><div class="dashboard-kpi__head"><span>Đánh giá cần duyệt</span><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#star"></use></svg></i></div><strong>14</strong><div><small>6 đánh giá tiêu cực</small><span class="admin-badge admin-badge--neutral">Bình thường</span></div></article>
+          </div>
+
+          <div class="dashboard-command-grid">
+            <section class="dashboard-section dashboard-alert-center">
+              <header class="dashboard-section__header"><div><span class="dashboard-eyebrow">Ưu tiên vận hành</span><h3>Cần xử lý trước</h3></div><button class="dashboard-text-action" type="button" data-dashboard-drawer="alerts">Xem tất cả 8</button></header>
+              <div class="dashboard-alert-list">
+                <article class="dashboard-alert dashboard-alert--critical"><span class="admin-badge admin-badge--danger dashboard-alert__level">Khẩn cấp</span><div><h4>3 phiếu đổi/trả sắp hết hạn 48 giờ</h4><p>Đổi trả &amp; CSKH · Còn ít hơn 6 giờ xử lý</p></div><a href="./returns-cskh.html">Xem phiếu</a></article>
+                <article class="dashboard-alert dashboard-alert--critical"><span class="admin-badge admin-badge--danger dashboard-alert__level">Khẩn cấp</span><div><h4>5 đơn hàng thanh toán lỗi cần kiểm tra</h4><p>Quản lý đơn hàng · Tổng giá trị 8,6M</p></div><a href="./orders.html">Kiểm tra</a></article>
+                <article class="dashboard-alert dashboard-alert--high"><span class="admin-badge admin-badge--warning dashboard-alert__level">Cao</span><div><h4>4 sản phẩm dưới mức tồn tối thiểu</h4><p>Sản phẩm &amp; tồn kho · Có 2 sản phẩm bán chạy</p></div><a href="./products.html">Xem tồn kho</a></article>
+                <article class="dashboard-alert dashboard-alert--medium"><span class="admin-badge admin-badge--pending dashboard-alert__level">Trung bình</span><div><h4>2 chiến dịch sắp hết ngân sách</h4><p>Giá &amp; khuyến mãi · Summer Sale đã dùng 68%</p></div><a href="./promotions.html">Xem ngân sách</a></article>
+              </div>
+            </section>
+
+            <section class="dashboard-section dashboard-module-health">
+              <header class="dashboard-section__header"><div><span class="dashboard-eyebrow">Toàn hệ thống</span><h3>Tình trạng phân hệ</h3></div></header>
+              <div class="dashboard-health-list">
+                <a class="dashboard-health-card" href="./orders.html"><div class="dashboard-health-card__head"><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#cart"></use></svg></i><span class="admin-badge admin-badge--warning">Cần chú ý</span></div><div class="dashboard-health-card__title"><span class="dashboard-health-dot dashboard-health-dot--warning"></span><strong>Đơn hàng</strong></div><small>18 cần xử lý · 5 thanh toán lỗi</small></a>
+                <a class="dashboard-health-card" href="./products.html"><div class="dashboard-health-card__head"><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#box"></use></svg></i><span class="admin-badge admin-badge--danger">Rủi ro</span></div><div class="dashboard-health-card__title"><span class="dashboard-health-dot dashboard-health-dot--danger"></span><strong>Sản phẩm &amp; tồn kho</strong></div><small>9 dưới tồn tối thiểu · 3 thiếu giá</small></a>
+                <a class="dashboard-health-card" href="./reviews.html"><div class="dashboard-health-card__head"><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#star"></use></svg></i><span class="admin-badge admin-badge--success">Tốt</span></div><div class="dashboard-health-card__title"><span class="dashboard-health-dot dashboard-health-dot--success"></span><strong>Đánh giá</strong></div><small>14 chờ duyệt · 92% phản hồi đúng hạn</small></a>
+                <a class="dashboard-health-card" href="./returns-cskh.html"><div class="dashboard-health-card__head"><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#support"></use></svg></i><span class="admin-badge admin-badge--warning">Cần chú ý</span></div><div class="dashboard-health-card__title"><span class="dashboard-health-dot dashboard-health-dot--warning"></span><strong>Đổi trả &amp; CSKH</strong></div><small>7 phiếu còn hạn · 12 ticket chờ</small></a>
+                <a class="dashboard-health-card" href="./promotions.html"><div class="dashboard-health-card__head"><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#tag"></use></svg></i><span class="admin-badge admin-badge--warning">Cần chú ý</span></div><div class="dashboard-health-card__title"><span class="dashboard-health-dot dashboard-health-dot--warning"></span><strong>Giá &amp; khuyến mãi</strong></div><small>2 campaign gần ngân sách · 5 voucher gần hạn</small></a>
+                <a class="dashboard-health-card" href="./accounts.html"><div class="dashboard-health-card__head"><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#users"></use></svg></i><span class="admin-badge admin-badge--success">Tốt</span></div><div class="dashboard-health-card__title"><span class="dashboard-health-dot dashboard-health-dot--success"></span><strong>Tài khoản &amp; hệ thống</strong></div><small>Không có cảnh báo bảo mật mới</small></a>
+              </div>
+            </section>
+          </div>
+
+          <div class="dashboard-lower-grid">
+            <section class="dashboard-section dashboard-action-queue">
+              <header class="dashboard-section__header"><div><span class="dashboard-eyebrow">Gợi ý hành động</span><h3>Việc nên xử lý hôm nay</h3></div><span class="dashboard-section__count">5 việc</span></header>
+              <div class="dashboard-task-list">
+                <a href="./returns-cskh.html"><span class="dashboard-task__index">01</span><div><strong>Duyệt 3 phiếu đổi/trả còn dưới 6 giờ</strong><small>Đổi trả &amp; CSKH · Hạn 15:30 hôm nay</small></div><span class="admin-badge admin-badge--danger">Cao</span></a>
+                <a href="./orders.html"><span class="dashboard-task__index">02</span><div><strong>Kiểm tra 5 đơn thanh toán lỗi</strong><small>Quản lý đơn hàng · Hạn 17:00 hôm nay</small></div><span class="admin-badge admin-badge--danger">Cao</span></a>
+                <a href="./reviews.html"><span class="dashboard-task__index">03</span><div><strong>Phản hồi 6 đánh giá tiêu cực</strong><small>Quản lý đánh giá · Trong hôm nay</small></div><span class="admin-badge admin-badge--warning">Vừa</span></a>
+                <a href="./products.html"><span class="dashboard-task__index">04</span><div><strong>Bổ sung tồn kho cho 4 sản phẩm bán chạy</strong><small>Quản lý sản phẩm · Chưa có hạn</small></div><span class="admin-badge admin-badge--warning">Vừa</span></a>
+                <a href="./promotions.html"><span class="dashboard-task__index">05</span><div><strong>Xem lại ngân sách Summer Sale 2026</strong><small>Giá &amp; khuyến mãi · Còn 25,6M</small></div><span class="admin-badge admin-badge--neutral">Theo dõi</span></a>
+              </div>
+            </section>
+
+            <section class="dashboard-section dashboard-activity">
+              <header class="dashboard-section__header"><div><span class="dashboard-eyebrow">Nhật ký rút gọn</span><h3>Hoạt động gần đây</h3></div><a class="dashboard-text-action" href="#">Mở nhật ký</a></header>
+              <div class="dashboard-timeline">
+                <article><time>09:36</time><span></span><div><strong>Trần Minh Tuấn</strong><p>Cập nhật giá Blazer cropped bouclé</p><small>Giá sản phẩm · Thành công</small></div></article>
+                <article><time>09:12</time><span></span><div><strong>Hệ thống</strong><p>Tạm dừng campaign VIP100 do hết ngân sách</p><small>Khuyến mãi · Tự động</small></div></article>
+                <article><time>08:54</time><span></span><div><strong>Phạm Thu Hương</strong><p>Tạo đơn đổi hàng RT-0264</p><small>Đổi trả &amp; CSKH · Thành công</small></div></article>
+                <article><time>08:31</time><span></span><div><strong>Lê Gia Linh</strong><p>Ẩn đánh giá vi phạm RV-0188</p><small>Đánh giá · Thành công</small></div></article>
+                <article><time>08:05</time><span></span><div><strong>Phạm Thu Hương</strong><p>Khóa tạm thời tài khoản ACC004</p><small>Tài khoản · Thành công</small></div></article>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="dashboard-panel" id="dashboard-business" role="tabpanel" data-dashboard-panel="business" hidden>
+          <div class="dashboard-kpi-grid dashboard-kpi-grid--business" aria-label="Chỉ số kinh doanh">
+            <article class="dashboard-kpi"><div class="dashboard-kpi__head"><span>Doanh thu</span><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#credit-card"></use></svg></i></div><strong>128M</strong><div><small class="dashboard-trend dashboard-trend--up">↑ 12% so với kỳ trước</small></div></article>
+            <article class="dashboard-kpi"><div class="dashboard-kpi__head"><span>Số đơn hàng</span><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#cart"></use></svg></i></div><strong>830</strong><div><small class="dashboard-trend dashboard-trend--up">↑ 8% so với kỳ trước</small></div></article>
+            <article class="dashboard-kpi"><div class="dashboard-kpi__head"><span>Giá trị đơn trung bình</span><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#dashboard"></use></svg></i></div><strong>420K</strong><div><small class="dashboard-trend dashboard-trend--down">↓ 3% so với kỳ trước</small></div></article>
+            <article class="dashboard-kpi"><div class="dashboard-kpi__head"><span>Tỷ lệ hoàn tất</span><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#check"></use></svg></i></div><strong>91%</strong><div><small class="dashboard-trend dashboard-trend--up">↑ 2,4 điểm phần trăm</small></div></article>
+            <article class="dashboard-kpi"><div class="dashboard-kpi__head"><span>Doanh thu khuyến mãi</span><i><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#tag"></use></svg></i></div><strong>54M</strong><div><small>42% tổng doanh thu</small></div></article>
+          </div>
+
+          <section class="dashboard-section dashboard-revenue">
+            <header class="dashboard-section__header"><div><span class="dashboard-eyebrow">7 ngày qua</span><h3>Xu hướng doanh thu</h3></div><div class="dashboard-chart-legend"><span><i></i>Doanh thu</span><span><i></i>Số đơn</span></div></header>
+            <div class="dashboard-revenue__layout">
+              <div class="dashboard-chart" aria-label="Biểu đồ doanh thu 7 ngày">
+                <div class="dashboard-chart__grid"><span>30M</span><span>20M</span><span>10M</span><span>0</span></div>
+                <div class="dashboard-chart__bars">
+                  <div class="dashboard-chart__bar--1"><i></i><b></b><span>21/06</span></div><div class="dashboard-chart__bar--2"><i></i><b></b><span>22/06</span></div><div class="dashboard-chart__bar--3"><i></i><b></b><span>23/06</span></div><div class="dashboard-chart__bar--4"><i></i><b></b><span>24/06</span></div><div class="dashboard-chart__bar--5"><i></i><b></b><span>25/06</span></div><div class="dashboard-chart__bar--6"><i></i><b></b><span>26/06</span></div><div class="dashboard-chart__bar--7"><i></i><b></b><span>27/06</span></div>
+                </div>
+              </div>
+              <aside class="dashboard-chart-insight"><span>Insight nổi bật</span><h4>Flash Sale kéo doanh thu tăng mạnh</h4><p>Doanh thu ngày 26/06 tăng 31%, nhưng giá trị đơn trung bình giảm nhẹ do mức giảm cao.</p><a href="./promotions.html">Xem hiệu quả khuyến mãi</a></aside>
+            </div>
+          </section>
+
+          <div class="dashboard-business-grid">
+            <section class="dashboard-section">
+              <header class="dashboard-section__header"><div><span class="dashboard-eyebrow">Theo đóng góp</span><h3>Danh mục bán tốt</h3></div></header>
+              <div class="dashboard-ranking">
+                <div><span>Áo</span><i><b></b></i><strong>42,6M <small>33%</small></strong></div>
+                <div><span>Váy</span><i><b></b></i><strong>31,2M <small>24%</small></strong></div>
+                <div><span>Giày</span><i><b></b></i><strong>22,8M <small>18%</small></strong></div>
+                <div><span>Phụ kiện</span><i><b></b></i><strong>17,4M <small>14%</small></strong></div>
+                <div><span>Combo</span><i><b></b></i><strong>14,0M <small>11%</small></strong></div>
+              </div>
+            </section>
+            <section class="dashboard-section">
+              <header class="dashboard-section__header"><div><span class="dashboard-eyebrow">Theo doanh thu</span><h3>Sản phẩm bán chạy</h3></div><a class="dashboard-text-action" href="./products.html">Xem sản phẩm</a></header>
+              <div class="dashboard-products">
+                <article><span>01</span><div><strong>Blazer cropped bouclé</strong><small>BCR-004 · 86 đã bán</small></div><b>18,4M</b><em class="admin-badge admin-badge--warning">Sắp hết</em></article>
+                <article><span>02</span><div><strong>Váy maxi tiered floral</strong><small>VMX-012 · 74 đã bán</small></div><b>15,2M</b><em class="admin-badge admin-badge--success">Còn hàng</em></article>
+                <article><span>03</span><div><strong>Áo sơ mi linen cổ V</strong><small>LSV-001 · 69 đã bán</small></div><b>12,8M</b><em class="admin-badge admin-badge--warning">Sắp hết</em></article>
+                <article><span>04</span><div><strong>Giày slingback da mềm</strong><small>GSB-008 · 55 đã bán</small></div><b>10,1M</b><em class="admin-badge admin-badge--success">Còn hàng</em></article>
+              </div>
+            </section>
+          </div>
+
+          <div class="dashboard-business-grid dashboard-business-grid--lower">
+            <section class="dashboard-section dashboard-promotion-impact">
+              <header class="dashboard-section__header"><div><span class="dashboard-eyebrow">Hiệu quả đầu tư</span><h3>Tác động khuyến mãi</h3></div><a class="dashboard-text-action" href="./promotions.html">Mở module</a></header>
+              <div class="dashboard-impact-stats"><div><small>Đơn có khuyến mãi</small><strong>312</strong></div><div><small>Tổng giá trị giảm</small><strong>18,6M</strong></div><div><small>Campaign tốt nhất</small><strong>Summer Sale</strong></div><div><small>Voucher dùng nhiều</small><strong>FREESHIP</strong></div></div>
+              <p class="dashboard-impact-note"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#alert"></use></svg><span><strong>Cần theo dõi ngân sách.</strong> Summer Sale tạo doanh thu cao nhất nhưng đã dùng 68% ngân sách.</span></p>
+            </section>
+            <section class="dashboard-section dashboard-insights">
+              <header class="dashboard-section__header"><div><span class="dashboard-eyebrow">Cơ hội &amp; rủi ro</span><h3>Insight kinh doanh</h3></div></header>
+              <div class="dashboard-insight-list">
+                <button type="button" data-dashboard-drawer="insight" data-insight="linen"><div><strong>Áo linen tăng trưởng tốt</strong><small>Doanh thu tăng 18% trong 7 ngày qua.</small></div><span class="admin-badge admin-badge--success">Cơ hội</span><em>›</em></button>
+                <button type="button" data-dashboard-drawer="insight" data-insight="aov"><div><strong>AOV giảm khi chạy khuyến mãi</strong><small>Giá trị đơn trung bình giảm 3% trong Flash Sale.</small></div><span class="admin-badge admin-badge--warning">Theo dõi</span><em>›</em></button>
+                <button type="button" data-dashboard-drawer="insight" data-insight="stock"><div><strong>Sản phẩm bán chạy sắp hết hàng</strong><small>4 sản phẩm doanh thu cao đang dưới tồn tối thiểu.</small></div><span class="admin-badge admin-badge--danger">Rủi ro</span><em>›</em></button>
+                <button type="button" data-dashboard-drawer="insight" data-insight="voucher"><div><strong>Voucher khách mới có tỷ lệ dùng thấp</strong><small>Tỷ lệ sử dụng hiện chỉ đạt 12%.</small></div><span class="admin-badge admin-badge--neutral">Thấp</span><em>›</em></button>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div id="dashboard-overlay"></div>
+  <p class="admin-toast" id="dashboard-toast" hidden></p>
+  <script type="module">
+    import { checkAuth, updateSidebarForRole, logout } from '../../scripts/auth.js';
+    const session = checkAuth();
+    if (session) { updateSidebarForRole(session); document.addEventListener('click', e => { if (e.target.closest('[data-admin-logout]')) logout(); }); }
+  </script>
+  <script type="module" src="../../scripts/dashboard.js"></script>
+</body>
+</html>

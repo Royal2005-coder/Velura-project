@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Velura - Nhật ký hệ thống</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../styles/main.css">
+  <link rel="stylesheet" href="../../styles/admin.css">
+  <link rel="stylesheet" href="../../styles/logs.css">
+</head>
+<body class="admin-page admin-logs-page">
+  <div class="admin-layout" data-log-app>
+    <aside class="admin-sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị">
+      <div class="admin-sidebar__brand"><a class="admin-sidebar__logo" href="./dashboard.html"><img src="../../assets/images/logo.png" alt="Velura"></a><span class="admin-sidebar__caption">Quản trị</span></div>
+      <nav class="admin-sidebar__nav">
+        <a class="admin-menu-item" href="./dashboard.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#dashboard"></use></svg>Dashboard</a>
+        <a class="admin-menu-item" href="./accounts.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#users"></use></svg>Quản lý tài khoản</a>
+        <a class="admin-menu-item" href="./products.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#box"></use></svg>Quản lý sản phẩm</a>
+        <a class="admin-menu-item" href="./orders.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#cart"></use></svg>Quản lý đơn hàng</a>
+        <a class="admin-menu-item" href="./reviews.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#star"></use></svg>Quản lý đánh giá</a>
+        <a class="admin-menu-item" href="./returns-cskh.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#support"></use></svg>Đổi trả &amp; CSKH</a>
+        <details class="admin-menu-group"><summary><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#tag"></use></svg>Giá &amp; khuyến mãi</summary><div class="admin-menu-subnav"><a href="./pricing.html">Quản lý giá</a><a href="./promotions.html">Quản lý khuyến mãi</a></div></details>
+        <a class="admin-menu-item admin-menu-item--active" href="./logs.html" aria-current="page"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#log"></use></svg>Nhật ký hệ thống</a>
+      </nav>
+    </aside>
+    <div class="admin-sidebar-backdrop" data-log-sidebar-close hidden></div>
+    <div class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar__leading"><button class="admin-icon-button admin-topbar__menu" type="button" data-log-sidebar aria-label="Đóng sidebar">☰</button><h1 class="admin-topbar__title">Nhật ký hệ thống</h1></div>
+        <div class="admin-topbar__actions"><button class="admin-btn admin-btn--outline admin-btn--sm" type="button" data-log-export><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#download"></use></svg>Xuất nhật ký</button><button class="admin-btn admin-btn--outline admin-btn--sm" type="button" data-log-refresh><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#refresh"></use></svg>Làm mới</button><button class="admin-profile" type="button"><span class="admin-profile__avatar">PH</span><span class="admin-profile__copy"><strong>Phạm Thu Hương</strong><small>Quản trị viên</small></span></button></div>
+      </header>
+      <main class="admin-content">
+        <p class="admin-page-crumb">Dashboard / Nhật ký hệ thống</p>
+        <section class="admin-kpi-grid admin-log-kpis" aria-label="Thống kê nhật ký">
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Sự kiện hôm nay</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#log"></use></svg></span></div><strong class="admin-kpi-card__value">186</strong><p class="admin-kpi-card__trend admin-kpi-card__trend--neutral">+14 so với hôm qua</p></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Thành công</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#check"></use></svg></span></div><strong class="admin-kpi-card__value">171</strong><p class="admin-kpi-card__trend admin-kpi-card__trend--up">91,9% tổng sự kiện</p></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Thất bại</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#alert"></use></svg></span></div><strong class="admin-kpi-card__value">6</strong><p class="admin-kpi-card__trend admin-kpi-card__trend--warning">Cần kiểm tra</p></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Bị chặn</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#lock"></use></svg></span></div><strong class="admin-kpi-card__value">5</strong><p class="admin-kpi-card__trend admin-kpi-card__trend--warning">2 xung đột dữ liệu</p></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Bảo mật</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#users"></use></svg></span></div><strong class="admin-kpi-card__value">4</strong><p class="admin-kpi-card__trend admin-kpi-card__trend--warning">1 nghiêm trọng</p></article>
+        </section>
+
+        <section class="admin-log-alerts" aria-label="Cảnh báo nhật ký">
+          <button type="button" data-log-alert-result="denied"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#lock"></use></svg><span>3 thao tác bị từ chối do không đủ quyền</span><b class="admin-badge admin-badge--warning">Cần chú ý</b></button>
+          <button type="button" data-log-alert-result="conflict"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#refresh"></use></svg><span>2 xung đột dữ liệu trong 24 giờ</span><b class="admin-badge admin-badge--danger">Nghiêm trọng</b></button>
+          <button type="button" data-log-alert-result="failed"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#alert"></use></svg><span>1 lỗi gửi email cảnh báo</span><b class="admin-badge admin-badge--warning">Theo dõi</b></button>
+        </section>
+
+        <section class="admin-card admin-card--flush admin-log-workspace">
+          <div class="admin-tabs" role="tablist" aria-label="Nhóm nhật ký">
+            <button class="admin-tab admin-tab--active" type="button" data-log-tab="all">Tất cả nhật ký <span>186</span></button>
+            <button class="admin-tab" type="button" data-log-tab="admin">Thao tác Admin <span>142</span></button>
+            <button class="admin-tab" type="button" data-log-tab="system">Sự kiện hệ thống <span>27</span></button>
+            <button class="admin-tab" type="button" data-log-tab="ai">Nhật ký AI <span>17</span></button>
+          </div>
+          <div class="admin-tab-content" id="log-panel"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div id="log-overlay"></div>
+  <p class="admin-toast" id="log-toast" hidden></p>
+  <script type="module">
+    import { checkAuth, updateSidebarForRole, logout } from '../../scripts/auth.js';
+    const session = checkAuth();
+    if (session) { updateSidebarForRole(session); document.addEventListener('click', e => { if (e.target.closest('[data-admin-logout]')) logout(); }); }
+  </script>
+  <script type="module" src="../../scripts/logs.js"></script>
+</body>
+</html>

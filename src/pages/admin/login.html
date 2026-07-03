@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura — Đăng nhập</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+  <style>
+    body { display:grid; place-items:center; min-height:100vh; background:var(--checkout-bg); font-family:"DM Sans",sans-serif; }
+    .auth-card { width:min(440px,100%); padding:40px 36px; background:#fff; border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow-card); }
+    .auth-card__brand { text-align:center; margin-bottom:28px; }
+    .auth-card__brand img { width:90px; height:auto; }
+    .auth-card__brand h1 { margin:12px 0 4px; color:var(--text-dark); font-family:"Playfair Display",Georgia,serif; font-size:1.5rem; font-weight:600; }
+    .auth-card__brand p { color:var(--muted); font-size:.875rem; }
+    .auth-error { display:none; padding:10px 14px; margin-bottom:16px; border-left:3px solid var(--error); border-radius:var(--radius-sm); background:#f9e4e8; color:var(--error); font-size:.8125rem; line-height:1.5; }
+    .auth-error.is-visible { display:block; }
+    .auth-success { display:none; padding:10px 14px; margin-bottom:16px; border-left:3px solid #16a34a; border-radius:var(--radius-sm); background:#e7f1e5; color:#4c7048; font-size:.8125rem; line-height:1.5; }
+    .auth-success.is-visible { display:block; }
+    .auth-divider { display:flex; align-items:center; gap:12px; margin:20px 0; color:var(--soft); font-size:.75rem; }
+    .auth-divider::before,.auth-divider::after { content:""; flex:1; height:1px; background:var(--line); }
+    .auth-field { margin-bottom:16px; }
+    .auth-field label { display:block; margin-bottom:6px; color:var(--text-body); font-size:.8125rem; font-weight:500; }
+    .auth-field input { width:100%; height:44px; padding:0 14px; border:1px solid var(--line); border-radius:var(--radius-sm); font-size:.9375rem; transition:border-color .2s,box-shadow .2s; }
+    .auth-field input:focus { outline:0; border-color:var(--terracotta); box-shadow:0 0 0 3px rgba(201,123,99,.12); }
+    .auth-btn { width:100%; min-height:48px; border:none; border-radius:var(--radius-md); font-size:1rem; font-weight:600; cursor:pointer; transition:background .2s,opacity .2s; }
+    .auth-btn:disabled { opacity:.6; cursor:not-allowed; }
+    .auth-btn--primary { background:var(--terracotta); color:#fff; }
+    .auth-btn--primary:hover:not(:disabled) { background:var(--terracotta-h); }
+    .auth-links { display:flex; justify-content:space-between; margin-top:16px; font-size:.8125rem; }
+    .auth-links a { color:var(--terracotta); text-decoration:none; }
+    .auth-links a:hover { text-decoration:underline; }
+    .auth-footer { text-align:center; margin-top:20px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:.8125rem; }
+    .auth-footer a { color:var(--terracotta); text-decoration:none; font-weight:500; }
+    .auth-footer a:hover { text-decoration:underline; }
+    .auth-hint { margin-top:20px; padding:14px; border:1px dashed var(--brown-light); border-radius:var(--radius-md); background:var(--field-bg); }
+    .auth-hint summary { color:var(--brown); font-size:.8125rem; font-weight:600; cursor:pointer; }
+    .auth-hint ul { margin:10px 0 0; padding-left:16px; color:var(--text-body); font-size:.75rem; line-height:1.8; }
+    .auth-hint code { background:#fff; padding:1px 5px; border-radius:3px; font-size:.7rem; }
+    .google-btn-wrap { display:flex; justify-content:center; }
+    .google-btn-wrap iframe { border:none !important; }
+    .auth-btn--google { display:flex; align-items:center; justify-content:center; gap:10px; background:#fff; border:1px solid #dadce0; color:#3c4043; font-size:.875rem; font-weight:500; transition:background .2s,box-shadow .2s; }
+    .auth-btn--google:hover { background:#f7f8f8; box-shadow:0 1px 3px rgba(0,0,0,.1); }
+    .auth-btn--google svg { width:20px; height:20px; flex:0 0 20px; }
+    .auth-google-note { text-align:center; margin-top:12px; font-size:.75rem; color:var(--soft); }
+  </style>
+</head>
+<body>
+
+  <main class="auth-card" role="main" aria-label="Đăng nhập Velura">
+    <div class="auth-card__brand">
+      <img src="../../assets/images/logo.png" alt="Velura" />
+      <h1>Chào mừng trở lại</h1>
+      <p>Đăng nhập để tiếp tục mua sắm</p>
+    </div>
+
+    <div class="auth-error" id="login-error" role="alert"></div>
+    <div class="auth-success" id="login-success"></div>
+
+    <!-- Google SSO button container — rendered by GIS -->
+    <div class="google-btn-wrap" id="google-btn-container">
+      <div id="g_id_signin"></div>
+    </div>
+    <p class="auth-google-note">Đăng nhập an toàn bằng tài khoản Google của bạn</p>
+
+    <div class="auth-divider">hoặc</div>
+
+    <form id="login-form" novalidate>
+      <div class="auth-field">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" placeholder="email@example.com" required autocomplete="email" />
+      </div>
+      <div class="auth-field">
+        <label for="login-password">Mật khẩu</label>
+        <input type="password" id="login-password" placeholder="Nhập mật khẩu" required autocomplete="current-password" />
+      </div>
+      <button class="auth-btn auth-btn--primary" type="submit" style="margin-top:8px">Đăng nhập</button>
+    </form>
+
+    <div class="auth-links">
+      <a href="#" id="link-forgot">Quên mật khẩu?</a>
+    </div>
+
+    <div class="auth-footer">
+      Chưa có tài khoản? <a href="./register.html">Đăng ký ngay</a>
+    </div>
+
+    <details class="auth-hint">
+      <summary>Tài khoản demo (bấm để xem)</summary>
+      <ul>
+        <li><code>admin@velura.vn</code> / <code>admin123</code> — Admin quản trị</li>
+        <li><code>product@velura.vn</code> / <code>product123</code> — Admin sản phẩm</li>
+        <li><code>order@velura.vn</code> / <code>order123</code> — Admin đơn hàng</li>
+        <li><code>price@velura.vn</code> / <code>price123</code> — Admin giá & KM</li>
+        <li><code>cskh@velura.vn</code> / <code>cskh123</code> — Admin CSKH</li>
+        <li><code>lan.nguyen@email.com</code> / <code>user123</code> — Khách hàng</li>
+      </ul>
+    </details>
+  </main>
+
+  <!--
+    REGULAR SCRIPT (not module) — defines the global callback BEFORE Google GIS loads.
+    This ensures window.handleGoogleCredential exists when Google's library calls it.
+  -->
+  <script>
+    var GOOGLE_CLIENT_ID = "711189114053-01fhqth5l4h9d3ai6oh0jb4m3233f5kh.apps.googleusercontent.com";
+
+    // Global callback — Google GIS calls this after user picks an account
+    window.handleGoogleCredential = function(response) {
+      // Store the credential for the module script to process
+      window.__googleCredential = response.credential;
+      // Dispatch a custom event so the module listener picks it up
+      window.dispatchEvent(new CustomEvent("google-credential", { detail: response.credential }));
+    };
+  </script>
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer
+    onload="initGoogleGIS()"
+    onerror="showGoogleFallback()">
+  </script>
+
+  <script>
+    function initGoogleGIS() {
+      if (typeof google === "undefined" || !google.accounts) {
+        showGoogleFallback();
+        return;
+      }
+      try {
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: window.handleGoogleCredential,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          context: "signin"
+        });
+        google.accounts.id.renderButton(
+          document.getElementById("g_id_signin"),
+          {
+            type: "standard",
+            shape: "rectangular",
+            theme: "outline",
+            text: "signin_with",
+            size: "large",
+            width: 380,
+            logo_alignment: "left",
+            locale: "vi_VN"
+          }
+        );
+        console.log("[Auth] Google GIS initialized OK");
+      } catch(e) {
+        console.warn("[Auth] Google GIS init error:", e);
+        showGoogleFallback();
+      }
+    }
+
+    function showGoogleFallback() {
+      var container = document.getElementById("google-btn-container");
+      if (container && !container.querySelector("button")) {
+        container.innerHTML = '<button class="auth-btn auth-btn--google" type="button" id="btn-google-fallback">'
+          + '<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>'
+          + 'Đăng nhập bằng Google</button>';
+        document.getElementById("btn-google-fallback").addEventListener("click", function() {
+          window.dispatchEvent(new CustomEvent("google-fallback-click"));
+        });
+        console.log("[Auth] Google fallback button shown");
+      }
+    }
+
+    // If Google library doesn't load within 5s, show fallback
+    setTimeout(function() {
+      if (typeof google === "undefined" || !google.accounts) {
+        showGoogleFallback();
+      }
+    }, 5000);
+  </script>
+
+  <!-- Module script — handles login logic, listens for Google credential -->
+  <script type="module">
+    import { login, loginWithGoogle, ROLE_PAGES } from '../../scripts/auth-core.js';
+
+    var errorEl = document.getElementById("login-error");
+    var successEl = document.getElementById("login-success");
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.add("is-visible");
+      successEl.classList.remove("is-visible");
+    }
+
+    function hideMessages() {
+      errorEl.classList.remove("is-visible");
+      successEl.classList.remove("is-visible");
+    }
+
+    function redirectUser(session) {
+      var allowed = ROLE_PAGES[session.role] || [];
+      if (allowed.length > 0 && allowed[0] !== "welcome") {
+        window.location.href = "./" + allowed[0] + ".html";
+      } else {
+        window.location.href = "./welcome.html";
+      }
+    }
+
+    function processGoogleCredential(credential) {
+      hideMessages();
+      try {
+        var payload = JSON.parse(atob(credential.split(".")[1]));
+        var googleUser = {
+          email: payload.email,
+          name: payload.name,
+          picture: payload.picture,
+          sub: payload.sub,
+          email_verified: payload.email_verified
+        };
+
+        console.log("[Auth] Google SSO — user:", googleUser.email);
+        var result = loginWithGoogle(googleUser);
+
+        if (result.error) {
+          showError(result.error);
+          return;
+        }
+
+        successEl.innerHTML = "Đăng nhập thành công (<strong>" + googleUser.email + "</strong>). Đang chuyển hướng...";
+        successEl.classList.add("is-visible");
+        setTimeout(function() { redirectUser(result.session); }, 800);
+      } catch (err) {
+        console.error("[Auth] Google SSO decode error:", err);
+        showError("Đăng nhập Google thất bại. Vui lòng thử lại.");
+      }
+    }
+
+    // Listen for Google credential from the regular script above
+    window.addEventListener("google-credential", function(e) {
+      processGoogleCredential(e.detail);
+    });
+
+    // Listen for fallback button click
+    window.addEventListener("google-fallback-click", function() {
+      hideMessages();
+      var googleEmail = prompt("Google OAuth Demo Mode\n\nNhập email Google của bạn:", "user@gmail.com");
+      if (!googleEmail) return;
+      var googleName = googleEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+      var result = loginWithGoogle({ email: googleEmail, name: googleName });
+      if (result.error) { showError(result.error); return; }
+      successEl.innerHTML = "Đăng nhập thành công (<strong>" + googleEmail + "</strong>). Đang chuyển hướng...";
+      successEl.classList.add("is-visible");
+      setTimeout(function() { redirectUser(result.session); }, 800);
+    });
+
+    // If credential was stored before module loaded
+    if (window.__googleCredential) {
+      processGoogleCredential(window.__googleCredential);
+    }
+
+    // Email/password login
+    document.getElementById("login-form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      hideMessages();
+      var email = document.getElementById("login-email").value.trim();
+      var password = document.getElementById("login-password").value;
+      if (!email || !password) { showError("Vui lòng nhập đầy đủ email và mật khẩu."); return; }
+      var result = login(email, password);
+      if (result.error) { showError(result.error); return; }
+      if (result.mustChangePassword) {
+        localStorage.setItem("velura_temp_session", JSON.stringify(result.session));
+        window.location.href = "./change-password.html";
+        return;
+      }
+      redirectUser(result.session);
+    });
+
+    // Forgot password
+    document.getElementById("link-forgot").addEventListener("click", function(e) {
+      e.preventDefault();
+      var email = prompt("Nhập email để đặt lại mật khẩu:");
+      if (email) {
+        successEl.innerHTML = "Yêu cầu đặt lại mật khẩu đã gửi đến <strong>" + email + "</strong>.<br><small>(Demo: mật khẩu mới là \"reset123\")</small>";
+        successEl.classList.add("is-visible");
+      }
+    });
+  </script>
+</body>
+</html>

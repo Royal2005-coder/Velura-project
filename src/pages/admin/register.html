@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura — Đăng ký tài khoản</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body { display:grid; place-items:center; min-height:100vh; background:var(--checkout-bg); font-family:"DM Sans",sans-serif; }
+    .auth-card { width:min(440px,100%); padding:40px 36px; background:#fff; border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow-card); }
+    .auth-card__brand { text-align:center; margin-bottom:28px; }
+    .auth-card__brand img { width:90px; height:auto; }
+    .auth-card__brand h1 { margin:12px 0 4px; color:var(--text-dark); font-family:"Playfair Display",Georgia,serif; font-size:1.5rem; font-weight:600; }
+    .auth-card__brand p { color:var(--muted); font-size:.875rem; }
+    .auth-error { display:none; padding:10px 14px; margin-bottom:16px; border-left:3px solid var(--error); border-radius:var(--radius-sm); background:#f9e4e8; color:var(--error); font-size:.8125rem; line-height:1.5; }
+    .auth-error.is-visible { display:block; }
+    .auth-success { display:none; padding:10px 14px; margin-bottom:16px; border-left:3px solid #16a34a; border-radius:var(--radius-sm); background:#e7f1e5; color:#4c7048; font-size:.8125rem; line-height:1.5; }
+    .auth-success.is-visible { display:block; }
+    .auth-divider { display:flex; align-items:center; gap:12px; margin:20px 0; color:var(--soft); font-size:.75rem; }
+    .auth-divider::before,.auth-divider::after { content:""; flex:1; height:1px; background:var(--line); }
+    .auth-field { margin-bottom:16px; }
+    .auth-field label { display:block; margin-bottom:6px; color:var(--text-body); font-size:.8125rem; font-weight:500; }
+    .auth-field label .required { color:var(--error); }
+    .auth-field input { width:100%; height:44px; padding:0 14px; border:1px solid var(--line); border-radius:var(--radius-sm); font-size:.9375rem; transition:border-color .2s,box-shadow .2s; }
+    .auth-field input:focus { outline:0; border-color:var(--terracotta); box-shadow:0 0 0 3px rgba(201,123,99,.12); }
+    .auth-field input.error { border-color:var(--error); }
+    .auth-field__error { color:var(--error); font-size:.75rem; margin-top:4px; display:none; }
+    .auth-field__error.is-visible { display:block; }
+    .auth-strength { display:flex; gap:4px; margin-top:6px; }
+    .auth-strength__bar { flex:1; height:4px; border-radius:2px; background:var(--line); transition:background .3s; }
+    .auth-strength__label { font-size:.7rem; margin-top:2px; }
+    .auth-btn { width:100%; min-height:48px; border:none; border-radius:var(--radius-md); font-size:1rem; font-weight:600; cursor:pointer; transition:background .2s,opacity .2s; }
+    .auth-btn:disabled { opacity:.6; cursor:not-allowed; }
+    .auth-btn--primary { background:var(--terracotta); color:#fff; }
+    .auth-btn--primary:hover:not(:disabled) { background:var(--terracotta-h); }
+    .auth-btn--google { display:flex; align-items:center; justify-content:center; gap:10px; background:#fff; border:1px solid var(--line); color:var(--text-body); }
+    .auth-btn--google:hover { background:var(--field-bg); border-color:var(--brown-light); }
+    .auth-btn--google svg { width:20px; height:20px; }
+    .auth-checkbox { display:flex; align-items:flex-start; gap:8px; margin:12px 0; color:var(--text-body); font-size:.8125rem; cursor:pointer; }
+    .auth-checkbox input { margin-top:3px; accent-color:var(--terracotta); }
+    .auth-footer { text-align:center; margin-top:20px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:.8125rem; }
+    .auth-footer a { color:var(--terracotta); text-decoration:none; font-weight:500; }
+    .auth-footer a:hover { text-decoration:underline; }
+    .auth-default-pass { padding:10px 14px; margin-bottom:16px; border-left:3px solid var(--terracotta); border-radius:var(--radius-sm); background:var(--field-bg); color:var(--text-body); font-size:.8125rem; line-height:1.5; }
+    .auth-default-pass strong { color:var(--brown); }
+  </style>
+</head>
+<body>
+  <main class="auth-card" role="main" aria-label="Đăng ký Velura">
+    <div class="auth-card__brand">
+      <img src="../../assets/images/logo.png" alt="Velura" />
+      <h1>Tạo tài khoản mới</h1>
+      <p>Tham gia cộng đồng Velura</p>
+    </div>
+
+    <div class="auth-error" id="reg-error" role="alert"></div>
+    <div class="auth-success" id="reg-success"></div>
+
+    <!-- Google SSO Button -->
+    <div class="google-btn-wrap" id="google-btn-container">
+      <div id="g_id_register"
+           data-type="standard"
+           data-shape="rectangular"
+           data-theme="outline"
+           data-text="signup_with"
+           data-size="large"
+           data-width="380"
+           data-logo_alignment="left"
+           data-locale="vi_VN">
+      </div>
+    </div>
+    <p class="auth-google-note">Tạo tài khoản nhanh bằng Google — không cần nhập mật khẩu</p>
+
+    <div class="auth-divider">hoặc</div>
+
+    <form id="register-form" novalidate>
+      <div class="auth-field">
+        <label for="reg-name">Họ và tên <span class="required">*</span></label>
+        <input type="text" id="reg-name" placeholder="Nguyễn Văn A" required autocomplete="name" />
+      </div>
+      <div class="auth-field">
+        <label for="reg-email">Email <span class="required">*</span></label>
+        <input type="email" id="reg-email" placeholder="email@example.com" required autocomplete="email" />
+      </div>
+      <div class="auth-field">
+        <label for="reg-phone">Số điện thoại</label>
+        <input type="tel" id="reg-phone" placeholder="0901 234 567" autocomplete="tel" />
+      </div>
+
+      <label class="auth-checkbox">
+        <input type="checkbox" id="reg-default-pass" checked />
+        <span>Sử dụng mật khẩu mặc định (<strong>Velura@123</strong>) — sẽ yêu cầu đổi khi đăng nhập lần đầu</span>
+      </label>
+
+      <div id="custom-password-section" class="auth-hidden">
+        <div class="auth-field">
+          <label for="reg-password">Mật khẩu <span class="required">*</span></label>
+          <input type="password" id="reg-password" placeholder="Ít nhất 6 ký tự" autocomplete="new-password" />
+          <div class="auth-strength" id="password-strength">
+            <span class="auth-strength__bar"></span>
+            <span class="auth-strength__bar"></span>
+            <span class="auth-strength__bar"></span>
+            <span class="auth-strength__bar"></span>
+            <span class="auth-strength__bar"></span>
+          </div>
+          <div class="auth-strength__label" id="strength-label"></div>
+        </div>
+        <div class="auth-field">
+          <label for="reg-confirm">Xác nhận mật khẩu <span class="required">*</span></label>
+          <input type="password" id="reg-confirm" placeholder="Nhập lại mật khẩu" autocomplete="new-password" />
+        </div>
+      </div>
+
+      <button class="auth-btn auth-btn--primary" type="submit" style="margin-top:8px">Tạo tài khoản</button>
+    </form>
+
+    <div class="auth-footer">
+      Đã có tài khoản? <a href="./login.html">Đăng nhập</a>
+    </div>
+  </main>
+
+  <!-- Regular script: Google callback must be on window before GIS loads -->
+  <script>
+    var GOOGLE_CLIENT_ID = "711189114053-01fhqth5l4h9d3ai6oh0jb4m3233f5kh.apps.googleusercontent.com";
+    window.handleGoogleCredential = function(response) {
+      window.__googleCredential = response.credential;
+      window.dispatchEvent(new CustomEvent("google-credential", { detail: response.credential }));
+    };
+  </script>
+  <script src="https://accounts.google.com/gsi/client" async defer
+    onload="if(typeof google!=='undefined'&&google.accounts){google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:handleGoogleCredential,auto_select:false,cancel_on_tap_outside:true,context:'signup'});google.accounts.id.renderButton(document.getElementById('g_id_register'),{type:'standard',shape:'rectangular',theme:'outline',text:'signup_with',size:'large',width:380,logo_alignment:'left',locale:'vi_VN'});console.log('[Auth] Register: Google GIS OK');}else{console.warn('[Auth] Register: Google GIS not loaded');}"
+    onerror="console.warn('[Auth] Register: Google GIS load failed')">
+  </script>
+  <script>
+    setTimeout(function(){if(typeof google==='undefined'||!google.accounts){var c=document.getElementById('google-btn-container');if(c&&!c.querySelector('button')){c.innerHTML='<button class="auth-btn auth-btn--google" type="button" id="btn-google-fallback"><svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Đăng ký bằng Google</button>';document.getElementById('btn-google-fallback').addEventListener('click',function(){window.dispatchEvent(new CustomEvent('google-fallback-click'));});}}},5000);
+  </script>
+
+  <script type="module">
+    import { register, loginWithGoogle, checkPasswordStrength } from '../../scripts/auth-core.js';
+
+    const errorEl = document.getElementById("reg-error");
+    const successEl = document.getElementById("reg-success");
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.add("is-visible");
+      successEl.classList.remove("is-visible");
+    }
+
+    function hideMessages() {
+      errorEl.classList.remove("is-visible");
+      successEl.classList.remove("is-visible");
+    }
+
+    // Toggle custom password section
+    document.getElementById("reg-default-pass").addEventListener("change", function() {
+      const section = document.getElementById("custom-password-section");
+      if (this.checked) {
+        section.classList.add("auth-hidden");
+      } else {
+        section.classList.remove("auth-hidden");
+      }
+    });
+
+    // Password strength indicator
+    document.getElementById("reg-password")?.addEventListener("input", function() {
+      const result = checkPasswordStrength(this.value);
+      const bars = document.querySelectorAll("#password-strength .auth-strength__bar");
+      bars.forEach((bar, i) => {
+        bar.style.background = i < result.score ? result.color : "var(--line)";
+      });
+      document.getElementById("strength-label").textContent = result.label;
+      document.getElementById("strength-label").style.color = result.color;
+    });
+
+    // Registration form
+    document.getElementById("register-form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      hideMessages();
+
+      const name = document.getElementById("reg-name").value.trim();
+      const email = document.getElementById("reg-email").value.trim();
+      const phone = document.getElementById("reg-phone").value.trim();
+      const useDefault = document.getElementById("reg-default-pass").checked;
+      const password = document.getElementById("reg-password").value;
+      const confirm = document.getElementById("reg-confirm").value;
+
+      if (!name) { showError("Vui lòng nhập họ và tên."); return; }
+      if (!email) { showError("Vui lòng nhập email."); return; }
+      if (!/\S+@\S+\.\S+/.test(email)) { showError("Email không hợp lệ."); return; }
+
+      if (!useDefault) {
+        if (!password || password.length < 6) {
+          showError("Mật khẩu phải có ít nhất 6 ký tự.");
+          return;
+        }
+        if (password !== confirm) {
+          showError("Mật khẩu xác nhận không khớp.");
+          return;
+        }
+      }
+
+      const result = register({ email, password, name, phone, useDefaultPassword: useDefault });
+
+      if (result.error) {
+        showError(result.error);
+        return;
+      }
+
+      if (result.mustChangePassword) {
+        localStorage.setItem("velura_temp_session", JSON.stringify(result.session));
+        successEl.innerHTML = `Tạo tài khoản thành công! Mật khẩu mặc định: <strong>${result.defaultPassword}</strong>. Đang chuyển sang đổi mật khẩu...`;
+        successEl.classList.add("is-visible");
+        setTimeout(() => { window.location.href = "./change-password.html"; }, 2000);
+      } else {
+        successEl.textContent = "Tạo tài khoản thành công! Đang chuyển hướng...";
+        successEl.classList.add("is-visible");
+        setTimeout(() => { window.location.href = "./dashboard.html"; }, 1000);
+      }
+    });
+
+    // Listen for Google credential from regular script
+    window.addEventListener("google-credential", function(e) {
+      hideMessages();
+      try {
+        var payload = JSON.parse(atob(e.detail.split('.')[1]));
+        var googleUser = { email: payload.email, name: payload.name, picture: payload.picture, sub: payload.sub };
+        var result = loginWithGoogle(googleUser);
+        if (result.error) { showError(result.error); return; }
+        successEl.innerHTML = "Đăng ký/đăng nhập thành công (<strong>" + googleUser.email + "</strong>). Đang chuyển hướng...";
+        successEl.classList.add("is-visible");
+        setTimeout(function() { window.location.href = "./dashboard.html"; }, 1000);
+      } catch (err) {
+        showError("Đăng nhập Google thất bại. Vui lòng thử lại.");
+      }
+    });
+
+    window.addEventListener("google-fallback-click", function() {
+      hideMessages();
+      var googleEmail = prompt("Google OAuth Demo Mode\n\nNhập email Google để mô phỏng đăng ký:", "newuser@gmail.com");
+      if (!googleEmail) return;
+      var googleName = googleEmail.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+      var result = loginWithGoogle({ email: googleEmail, name: googleName });
+      if (result.error) { showError(result.error); return; }
+      successEl.innerHTML = "Đăng ký/đăng nhập thành công (<strong>" + googleEmail + "</strong>). Đang chuyển hướng...";
+      successEl.classList.add("is-visible");
+      setTimeout(function() { window.location.href = "./dashboard.html"; }, 1000);
+    });
+  </script>
+</body>
+</html>
