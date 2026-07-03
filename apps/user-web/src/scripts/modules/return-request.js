@@ -1,133 +1,6 @@
-/**
- * Velura — Return Request Module
- * Handles order context detection from URL params,
- * dynamic order selection, product selection,
- * return method & reason form, and image upload preview.
- */
-
-// Mock data for orders (simulates data from API/localStorage)
-const MOCK_ORDERS = [
-  {
-    id: "VL-20260524-1234",
-    date: "24/05/2026",
-    status: "shipping",
-    statusLabel: "Đang giao",
-    totalProducts: 3,
-    total: "2,480,000đ",
-    products: [
-      {
-        id: "pro-01",
-        name: "Áo sơ mi linen trắng",
-        variant: "Trắng • Size M",
-        price: "680,000đ",
-        image: "../../assets/images/image-1.png"
-      },
-      {
-        id: "pro-02",
-        name: "Quần suông ống rộng be",
-        variant: "Be • Size L",
-        price: "850,000đ",
-        image: "../../assets/images/image-6.png"
-      },
-      {
-        id: "pro-03",
-        name: "Túi tote da nâu",
-        variant: "Nâu • Freesize",
-        price: "950,000đ",
-        image: "../../assets/images/phu-kien_tui-deo-vai-hobo-patent_01.jpg"
-      }
-    ]
-  },
-  {
-    id: "VL-20260520-0987",
-    date: "20/05/2026",
-    status: "delivered",
-    statusLabel: "Đã giao",
-    totalProducts: 2,
-    total: "1,790,000đ",
-    products: [
-      {
-        id: "pro-04",
-        name: "Váy midi hoa nhí vintage",
-        variant: "Đỏ • Size S",
-        price: "1,290,000đ",
-        image: "../../assets/images/products/product-vay-midi-do.png"
-      },
-      {
-        id: "pro-05",
-        name: "Khăn lụa pastel",
-        variant: "Hồng • Freesize",
-        price: "500,000đ",
-        image: "../../assets/images/phu-kien_khan-lua-twilly-cham-bi_01.jpg"
-      }
-    ]
-  },
-  {
-    id: "VL-20260515-0432",
-    date: "15/05/2026",
-    status: "delivered",
-    statusLabel: "Đã giao",
-    totalProducts: 4,
-    total: "3,120,000đ",
-    products: [
-      {
-        id: "pro-06",
-        name: "Quần culottes thanh lịch",
-        variant: "Đen • Size M",
-        price: "750,000đ",
-        image: "../../assets/images/image-6.png"
-      },
-      {
-        id: "pro-07",
-        name: "Áo thun cotton organic",
-        variant: "Xám • Size S",
-        price: "450,000đ",
-        image: "../../assets/images/image-8.png"
-      },
-      {
-        id: "pro-08",
-        name: "Giày loafer nâu",
-        variant: "Nâu • Size 37",
-        price: "1,200,000đ",
-        image: "../../assets/images/phu-kien_khan-choang-da-tron-tua-rua_03.jpg"
-      },
-      {
-        id: "pro-09",
-        name: "Áo khoác nhẹ",
-        variant: "Kem • Size M",
-        price: "720,000đ",
-        image: "../../assets/images/image-3.png"
-      }
-    ]
-  },
-  {
-    id: "VL-20260508-0107",
-    date: "08/05/2026",
-    status: "shipping",
-    statusLabel: "Đang giao",
-    totalProducts: 2,
-    total: "2,890,000đ",
-    products: [
-      {
-        id: "pro-10",
-        name: "Đầm dạ hội đen",
-        variant: "Đen • Size S",
-        price: "2,390,000đ",
-        image: "../../assets/images/image-4.png"
-      },
-      {
-        id: "pro-11",
-        name: "Hoa tai ngọc trai",
-        variant: "Trắng • Freesize",
-        price: "500,000đ",
-        image: "../../assets/images/phu-kien_bom-toc-ban-to-theu-hoa-vintage_01.jpg"
-      }
-    ]
-  }
-];
+import { apiRequest } from "./api.js";
 
 export function initReturnRequest() {
-  // Only run on the return-request page
   const returnPage = document.querySelector(".return-request-page");
   if (!returnPage) return;
 
@@ -144,53 +17,71 @@ export function initReturnRequest() {
   const filePreviewList = document.getElementById("filePreviewList");
   const maxFiles = 5;
   let uploadedFiles = [];
+  let currentOrder = null;
+  let allOrdersList = [];
 
   // ──────────────────────────────────────────────────
-  // 1. ORDER CONTEXT DETECTION
+  // 1. ORDER CONTEXT DETECTION & LOADING
   // ──────────────────────────────────────────────────
 
   if (orderIdFromUrl) {
-    // Case 1: orderId from URL → lock the order, show details
     handleLockedOrder(orderIdFromUrl);
   } else {
-    // Case 2: No orderId → show order selection dropdown/cards
     handleOrderSelection();
   }
 
   function handleLockedOrder(orderId) {
-    const order = MOCK_ORDERS.find(o => o.id === orderId);
-
     if (orderDropdownArea) orderDropdownArea.style.display = "none";
-    if (orderLockedArea) orderLockedArea.style.display = "block";
-
-    if (order && orderLockedArea) {
-      if (hiddenOrderInput) hiddenOrderInput.value = order.id;
-      renderLockedOrder(order);
-      renderProductsForOrder(order);
-    } else if (orderLockedArea) {
-      orderLockedArea.innerHTML = `
-        <div class="return-notice return-notice--warning">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-          <span>Không tìm thấy đơn hàng <strong>${orderId}</strong>. Vui lòng kiểm tra lại mã đơn hàng.</span>
-        </div>
-      `;
+    if (orderLockedArea) {
+      orderLockedArea.style.display = "block";
+      orderLockedArea.innerHTML = `<div style="padding: 16px 0; color: var(--soft);">Đang tải chi tiết đơn hàng...</div>`;
     }
+
+    apiRequest(`/api/user/orders/${orderId}`)
+      .then(order => {
+        currentOrder = order;
+        if (hiddenOrderInput) hiddenOrderInput.value = order.order_id;
+        renderLockedOrder(order);
+        renderProductsForOrder(order);
+      })
+      .catch(err => {
+        if (orderLockedArea) {
+          orderLockedArea.innerHTML = `
+            <div class="return-notice return-notice--warning">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span>Không tìm thấy đơn hàng hoặc lỗi: <strong>${err.message}</strong></span>
+            </div>
+          `;
+        }
+      });
   }
 
   function renderLockedOrder(order) {
+    if (!orderLockedArea) return;
+    const trackingCode = order.tracking_code || order.order_id.slice(0, 8).toUpperCase();
+    const dateObj = new Date(order.created_at);
+    const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
+    const statusLabels = {
+      pending: "Chờ xác nhận",
+      shipping: "Đang giao",
+      delivered: "Hoàn thành",
+      cancelled: "Đã hủy"
+    };
+    const statusLabel = statusLabels[order.status] || order.status;
+
     orderLockedArea.innerHTML = `
       <div class="return-order-locked">
         <div class="return-order-locked__info">
           <div class="return-order-locked__detail">
-            <strong>Đơn hàng #${order.id}</strong>
-            <span>Ngày đặt: ${order.date} • ${order.totalProducts} sản phẩm</span>
+            <strong>Đơn hàng #${trackingCode}</strong>
+            <span>Ngày đặt: ${formattedDate} • ${order.items?.length || 0} sản phẩm</span>
           </div>
-          <span class="return-order-locked__badge return-order-locked__badge--${order.status}">${order.statusLabel}</span>
+          <span class="return-order-locked__badge return-order-locked__badge--${order.status}">${statusLabel}</span>
         </div>
         <div class="return-order-locked__lock-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -207,36 +98,62 @@ export function initReturnRequest() {
     if (orderDropdownArea) orderDropdownArea.style.display = "block";
     if (orderLockedArea) orderLockedArea.style.display = "none";
 
-    // Render order selection cards
     const orderList = document.getElementById("js-order-selection-list");
     if (!orderList) return;
 
-    orderList.innerHTML = "";
-    MOCK_ORDERS.forEach((order, index) => {
-      const card = document.createElement("div");
-      card.className = "selection-card" + (index === 0 ? " is-selected" : "");
-      card.setAttribute("data-type", "order");
-      card.innerHTML = `
-        <div class="selection-card__content">
-          <strong>Đơn hàng ${order.id}</strong>
-          <span>Ngày đặt: ${order.date} • ${order.totalProducts} sản phẩm</span>
-        </div>
-        <div class="radio-indicator">
-          <div class="radio-indicator__inner"></div>
-        </div>
-        <input type="radio" name="order_select" value="${order.id}" ${index === 0 ? "checked" : ""} style="display:none;" />
-      `;
-      orderList.appendChild(card);
-    });
+    orderList.innerHTML = `<div style="padding: 16px 0; color: var(--soft);">Đang tải danh sách đơn hàng...</div>`;
 
-    // Select first order's products by default
-    if (MOCK_ORDERS.length > 0) {
-      if (hiddenOrderInput) hiddenOrderInput.value = MOCK_ORDERS[0].id;
-      renderProductsForOrder(MOCK_ORDERS[0]);
-    }
+    apiRequest("/api/user/orders")
+      .then(data => {
+        allOrdersList = data.orders || [];
+        // Only allow returns on delivered orders
+        const deliverOrders = allOrdersList.filter(o => o.status === "delivered");
 
-    // Bind order selection card clicks
-    bindSelectionCards(orderList, "order");
+        if (deliverOrders.length === 0) {
+          orderList.innerHTML = `
+            <div style="padding: 24px 0; text-align: center; color: var(--soft);">
+              Không có đơn hàng nào đủ điều kiện đổi trả (chỉ áp dụng cho đơn hàng Hoàn thành).
+            </div>
+          `;
+          return;
+        }
+
+        orderList.innerHTML = "";
+        deliverOrders.forEach((order, index) => {
+          const trackingCode = order.tracking_code || order.order_id.slice(0, 8).toUpperCase();
+          const dateObj = new Date(order.created_at);
+          const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
+          const count = (order.items || []).reduce((acc, cur) => acc + cur.quantity, 0);
+
+          const card = document.createElement("div");
+          card.className = "selection-card" + (index === 0 ? " is-selected" : "");
+          card.setAttribute("data-type", "order");
+          card.setAttribute("data-id", order.order_id);
+          card.innerHTML = `
+            <div class="selection-card__content">
+              <strong>Đơn hàng #${trackingCode}</strong>
+              <span>Ngày đặt: ${formattedDate} • ${count} sản phẩm</span>
+            </div>
+            <div class="radio-indicator">
+              <div class="radio-indicator__inner"></div>
+            </div>
+            <input type="radio" name="order_select" value="${order.order_id}" ${index === 0 ? "checked" : ""} style="display:none;" />
+          `;
+          orderList.appendChild(card);
+        });
+
+        // Select first order by default
+        if (deliverOrders.length > 0) {
+          currentOrder = deliverOrders[0];
+          if (hiddenOrderInput) hiddenOrderInput.value = currentOrder.order_id;
+          renderProductsForOrder(currentOrder);
+        }
+
+        bindSelectionCards(orderList, "order");
+      })
+      .catch(err => {
+        orderList.innerHTML = `<div style="padding: 16px 0; color: #d9534f;">Lỗi: ${err.message}</div>`;
+      });
   }
 
   // ──────────────────────────────────────────────────
@@ -247,19 +164,27 @@ export function initReturnRequest() {
     if (!productSelectionList) return;
     productSelectionList.innerHTML = "";
 
-    order.products.forEach((product, index) => {
+    const items = order.items || [];
+    if (items.length === 0) {
+      productSelectionList.innerHTML = `<div style="padding: 16px 0; color: var(--soft);">Đơn hàng không có sản phẩm.</div>`;
+      return;
+    }
+
+    items.forEach((item, index) => {
+      const priceFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.unit_price);
+
       const card = document.createElement("div");
       card.className = "selection-card" + (index === 0 ? " is-selected" : "");
       card.setAttribute("data-type", "product");
       card.innerHTML = `
         <div class="selection-card__product-info">
           <div class="product-img-wrapper">
-            <img src="${product.image}" alt="${product.name}" />
+            <img src="${item.product_image || '/src/assets/images/placeholder.jpg'}" alt="${item.product_name}" />
           </div>
           <div class="product-details">
-            <strong>${product.name}</strong>
-            <span>${product.variant}</span>
-            <span class="product-price">${product.price}</span>
+            <strong>${item.product_name}</strong>
+            <span>Số lượng trong đơn: ${item.quantity}</span>
+            <span class="product-price">${priceFormatted}</span>
           </div>
         </div>
         <div class="checkbox-indicator">
@@ -268,12 +193,11 @@ export function initReturnRequest() {
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </div>
-        <input type="checkbox" name="product_select" value="${product.id}" ${index === 0 ? "checked" : ""} style="display:none;" />
+        <input type="checkbox" name="product_select" value="${item.item_id}" data-qty="${item.quantity}" ${index === 0 ? "checked" : ""} style="display:none;" />
       `;
       productSelectionList.appendChild(card);
     });
 
-    // Bind product selection card clicks
     bindSelectionCards(productSelectionList, "product");
   }
 
@@ -300,9 +224,10 @@ export function initReturnRequest() {
 
           // If order changed, update products
           if (type === "order" && input) {
-            const selectedOrder = MOCK_ORDERS.find(o => o.id === input.value);
+            const selectedOrder = allOrdersList.find(o => o.order_id === input.value);
             if (selectedOrder) {
-              if (hiddenOrderInput) hiddenOrderInput.value = selectedOrder.id;
+              currentOrder = selectedOrder;
+              if (hiddenOrderInput) hiddenOrderInput.value = selectedOrder.order_id;
               renderProductsForOrder(selectedOrder);
             }
           }
@@ -363,10 +288,7 @@ export function initReturnRequest() {
       reader.readAsDataURL(file);
     }
 
-    // Update counter text
     updateUploadCounter();
-
-    // Reset input so the same file can be re-selected
     fileInput.value = "";
   }
 
@@ -425,6 +347,7 @@ export function initReturnRequest() {
       const selectedProducts = returnForm.querySelectorAll('input[name="product_select"]:checked');
       const selectedMethod = returnForm.querySelector('input[name="method_select"]:checked');
       const selectedReason = document.getElementById("returnReason");
+      const returnDesc = document.getElementById("returnDesc");
 
       if (!selectedOrder) {
         createToast("Vui lòng chọn đơn hàng cần đổi/trả.", "warning");
@@ -452,15 +375,42 @@ export function initReturnRequest() {
         return;
       }
 
-      // Success
-      createToast("Yêu cầu đổi/trả hàng đã được gửi thành công! Chúng tôi sẽ liên hệ bạn trong 24h.", "success");
-
-      // Optionally disable submit button
       const submitBtn = returnForm.querySelector(".btn-submit");
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = "Đã gửi yêu cầu";
+        submitBtn.textContent = "Đang gửi...";
       }
+
+      // Map return items
+      const itemsPayload = Array.from(selectedProducts).map(input => {
+        return {
+          order_item_id: input.value,
+          quantity: parseInt(input.getAttribute("data-qty") || "1", 10)
+        };
+      });
+
+      const payload = {
+        order_id: selectedOrder,
+        return_type: selectedMethod.value, // "refund" or "exchange"
+        description: `${selectedReason.options[selectedReason.selectedIndex].text}. Chi tiết: ${returnDesc ? returnDesc.value : ""}`,
+        evidence_images: [], // evidence images normally uploaded to cloud storage
+        items: itemsPayload
+      };
+
+      apiRequest("/api/user/returns", { method: "POST", body: payload })
+        .then(() => {
+          createToast("Yêu cầu đổi/trả hàng đã được gửi thành công! Chúng tôi sẽ liên hệ bạn trong 24h.", "success");
+          setTimeout(() => {
+            window.location.href = "/src/pages/account/my-orders.html";
+          }, 1500);
+        })
+        .catch(err => {
+          createToast(`Lỗi: ${err.message}`, "warning");
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Gửi yêu cầu";
+          }
+        });
     });
   }
 

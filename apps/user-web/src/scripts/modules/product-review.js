@@ -1,6 +1,4 @@
-/**
- * Velura — Product Review Screen Module
- */
+import { apiRequest } from "./api.js";
 
 export function initProductReview() {
   const container = document.querySelector(".product-review-page");
@@ -29,73 +27,48 @@ export function initProductReview() {
 
   let ratingValue = 0;
   let selectedFiles = [];
+  let currentProduct = null;
 
-  // Product Database for dynamic loading based on order ID
-  const orderProducts = {
-    "VL-20260524-1234": {
-      name: "Áo sơ mi linen trắng",
-      variant: "Màu trắng &nbsp;&middot;&nbsp; Size: S",
-      price: "1.290.000đ",
-      img: "../../assets/images/image-1.png",
-      color: "#FFFFFF"
-    },
-    "VL-20260520-0987": {
-      name: "Váy midi hoa nhí vintage",
-      variant: "Màu đỏ hoa nhí &nbsp;&middot;&nbsp; Size: M",
-      price: "1.590.000đ",
-      img: "../../assets/images/products/product-vay-midi-do.png",
-      color: "#D2183D"
-    },
-    "VL-20260518-0654": {
-      name: "Blazer linen cao cấp",
-      variant: "Màu beige &nbsp;&middot;&nbsp; Size: L",
-      price: "2.190.000đ",
-      img: "../../assets/images/image-3.png",
-      color: "#EFE7DD"
-    },
-    "VL-20260515-0432": {
-      name: "Quần culottes thanh lịch",
-      variant: "Màu đen &nbsp;&middot;&nbsp; Size: S",
-      price: "990.000đ",
-      img: "../../assets/images/image-6.png",
-      color: "#000000"
-    },
-    "VL-20260510-0218": {
-      name: "Áo khoác dạ camel",
-      variant: "Màu camel &nbsp;&middot;&nbsp; Size: M",
-      price: "3.490.000đ",
-      img: "../../assets/images/image-4.png",
-      color: "#C19A6B"
-    },
-    "VL-20260508-0107": {
-      name: "Đầm dạ hội đen",
-      variant: "Màu đen &nbsp;&middot;&nbsp; Size: S",
-      price: "2.890.000đ",
-      img: "../../assets/images/image-8.png",
-      color: "#1C1B1B"
-    }
-  };
-
-  // 1. Load product summary data
+  // Load product summary data from API
   function loadProductSummary() {
-    if (orderId && orderProducts[orderId]) {
-      const prod = orderProducts[orderId];
-      if (productImg) productImg.src = prod.img;
-      if (productName) productName.textContent = prod.name;
-      if (productVariant) productVariant.innerHTML = prod.variant;
-      if (productPrice) productPrice.textContent = prod.price;
-      if (productColorDot) productColorDot.style.backgroundColor = prod.color;
-    } else {
-      // Default fallback matching figma look exactly
-      if (productImg) productImg.src = "../../assets/images/product-silk-blazer.png";
-      if (productName) productName.textContent = "Áo Blazer Lụa Satin";
-      if (productVariant) productVariant.innerHTML = "Champagne &nbsp;&middot;&nbsp; Size: M";
-      if (productPrice) productPrice.textContent = "1.200.000 VND";
-      if (productColorDot) productColorDot.style.backgroundColor = "#E6D9CD";
+    if (!orderId) {
+      // Fallback matching template
+      setDefaultFallback();
+      return;
     }
+
+    apiRequest(`/api/user/orders/${orderId}`)
+      .then(order => {
+        if (order && order.items && order.items.length > 0) {
+          const firstItem = order.items[0];
+          currentProduct = firstItem;
+
+          if (productImg) productImg.src = firstItem.product_image || "../../assets/images/product-silk-blazer.png";
+          if (productName) productName.textContent = firstItem.product_name;
+          if (productVariant) productVariant.innerHTML = "Sản phẩm trong đơn hàng";
+          if (productPrice) {
+            productPrice.textContent = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(firstItem.unit_price);
+          }
+          if (productColorDot) productColorDot.style.backgroundColor = "var(--terracotta)";
+        } else {
+          setDefaultFallback();
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load order items:", err);
+        setDefaultFallback();
+      });
   }
 
-  // 2. Interactivity Star Rating
+  function setDefaultFallback() {
+    if (productImg) productImg.src = "../../assets/images/product-silk-blazer.png";
+    if (productName) productName.textContent = "Áo Blazer Lụa Satin";
+    if (productVariant) productVariant.innerHTML = "Champagne &nbsp;&middot;&nbsp; Size: M";
+    if (productPrice) productPrice.textContent = "1.200.000đ";
+    if (productColorDot) productColorDot.style.backgroundColor = "#E6D9CD";
+  }
+
+  // Interactivity Star Rating
   function setupStars() {
     stars.forEach(star => {
       // Hover element enter
@@ -123,7 +96,7 @@ export function initProductReview() {
     });
   }
 
-  // 3. Quick comments suggestion tags
+  // Quick comments suggestion tags
   function setupTags() {
     tagBtns.forEach(btn => {
       btn.addEventListener("click", () => {
@@ -156,7 +129,7 @@ export function initProductReview() {
     });
   }
 
-  // 4. File upload & previews
+  // File upload & previews
   function setupMediaUpload() {
     if (!mediaInput || !mediaPreview || !dropzone) return;
 
@@ -203,7 +176,7 @@ export function initProductReview() {
     });
   }
 
-  // 5. Submit Form
+  // Submit Form
   function setupSubmit() {
     if (!submitBtn) return;
 
@@ -213,23 +186,47 @@ export function initProductReview() {
         return;
       }
 
-      // Show spinner / disable state if needed
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Đang gửi...";
-
-      setTimeout(() => {
-        // Save reviewed state in sessionStorage
-        if (orderId) {
-          sessionStorage.setItem(`order_status_${orderId}`, "reviewed");
-        }
-
+      if (!orderId || !currentProduct || !currentProduct.product_id) {
+        // Fallback or demo completion if order details didn't load completely
+        sessionStorage.setItem(`order_status_${orderId}`, "reviewed");
+        sessionStorage.setItem(`order_reviewed_${orderId}`, "true");
         createToast("Cảm ơn bạn đã gửi đánh giá sản phẩm!");
-
-        // Route back after 1.5 seconds
         setTimeout(() => {
           window.location.href = "/src/pages/account/my-orders.html";
         }, 1500);
-      }, 800);
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Đang gửi...";
+
+      const activeTags = Array.from(tagBtns)
+        .filter(btn => btn.classList.contains("is-active"))
+        .map(btn => btn.getAttribute("data-text"));
+
+      const payload = {
+        product_id: currentProduct.product_id,
+        order_id: orderId,
+        rating: ratingValue,
+        comment: textarea.value.trim(),
+        images: [], // Images would normally be uploaded to storage first.
+        review_tags: activeTags
+      };
+
+      apiRequest("/api/user/reviews", { method: "POST", body: payload })
+        .then(() => {
+          sessionStorage.setItem(`order_status_${orderId}`, "reviewed");
+          sessionStorage.setItem(`order_reviewed_${orderId}`, "true");
+          createToast("Cảm ơn bạn đã gửi đánh giá sản phẩm!");
+          setTimeout(() => {
+            window.location.href = "/src/pages/account/my-orders.html";
+          }, 1500);
+        })
+        .catch(err => {
+          createToast(`Lỗi: ${err.message}`);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Gửi đánh giá";
+        });
     });
   }
 
@@ -259,13 +256,11 @@ export function initProductReview() {
     toast.textContent = message;
     document.body.appendChild(toast);
 
-    // Fade-in
     setTimeout(() => {
       toast.style.opacity = "1";
       toast.style.transform = "translateY(0)";
     }, 50);
 
-    // Fade-out and clean
     setTimeout(() => {
       toast.style.opacity = "0";
       toast.style.transform = "translateY(-10px)";

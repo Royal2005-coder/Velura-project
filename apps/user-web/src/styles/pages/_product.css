@@ -153,6 +153,18 @@
   text-align: center;
 }
 
+/* Hide spin-buttons for chrome/safari/edge */
+.price-range__input::-webkit-outer-spin-button,
+.price-range__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Hide spin-buttons for firefox */
+.price-range__input {
+  -moz-appearance: textfield;
+}
+
 .price-range__separator {
   color: var(--text-secondary);
 }

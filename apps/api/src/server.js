@@ -7,6 +7,7 @@ import { getResource, buildListQuery } from "./resources.js";
 import { deleteRows, insertRow, selectRows, updateRows } from "./supabase.js";
 import { writeAuditLog } from "./audit.js";
 import { handleAction } from "./actions.js";
+import { handleUserRoute } from "./user-routes.js";
 
 assertRuntimeConfig();
 
@@ -43,6 +44,10 @@ const server = createServer(async (req, res) => {
         isAdmin: context.isAdmin,
         allowedPages: context.allowedPages
       }, corsHeaders);
+    }
+
+    if (parts[1] === "user") {
+      return await handleUserRoute(req, res, parts, corsHeaders, context);
     }
 
     if (parts[1] !== "admin") {
@@ -145,4 +150,5 @@ const server = createServer(async (req, res) => {
 
 server.listen(config.port, () => {
   console.log(`Velura API listening on http://localhost:${config.port}`);
+  console.log(`CORS Origin config: ${config.corsOrigin}`);
 });

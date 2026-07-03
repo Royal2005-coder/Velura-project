@@ -25,6 +25,7 @@ export async function supabaseRequest(path, options = {}) {
     body = JSON.stringify(options.body);
   }
 
+  console.log(`[SUPABASE REQ] ${options.method || "GET"} ${url.pathname}${url.search}`);
   try {
     const response = await fetch(url, {
       method: options.method || "GET",
@@ -33,6 +34,7 @@ export async function supabaseRequest(path, options = {}) {
       signal: controller.signal
     });
 
+    console.log(`[SUPABASE RES] ${response.status} for ${url.pathname}${url.search}`);
     const text = await response.text();
     const data = text ? parseJson(text) : null;
 

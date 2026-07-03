@@ -542,6 +542,64 @@ export function initStyleQuiz() {
       { delay: 1800, text: "Hợp nhất dữ liệu và tạo hồ sơ Style Profile tối ưu..." }
     ];
 
+    // Gather and save Style Profile to Database
+    const height_cm = parseInt(sessionStorage.getItem("quiz-height"), 10) || null;
+    const weight_kg = parseInt(sessionStorage.getItem("quiz-weight"), 10) || null;
+    const chest_cm = parseInt(sessionStorage.getItem("quiz-vong1"), 10) || null;
+    const waist_cm = parseInt(sessionStorage.getItem("quiz-vong2"), 10) || null;
+    const hip_cm = parseInt(sessionStorage.getItem("quiz-vong3"), 10) || null;
+    
+    // Map body shape text to database enum (Hourglass, Pear, Apple, Rectangle, Inverted Triangle)
+    const rawShape = sessionStorage.getItem("quiz-body-shape") || "";
+    let body_shape = null;
+    if (rawShape.toLowerCase().includes("hourglass") || rawShape.toLowerCase().includes("dong-cat")) body_shape = "Hourglass";
+    else if (rawShape.toLowerCase().includes("pear") || rawShape.toLowerCase().includes("le")) body_shape = "Pear";
+    else if (rawShape.toLowerCase().includes("apple") || rawShape.toLowerCase().includes("tao")) body_shape = "Apple";
+    else if (rawShape.toLowerCase().includes("rectangle") || rawShape.toLowerCase().includes("chu-nhat")) body_shape = "Rectangle";
+    else if (rawShape.toLowerCase().includes("triangle") || rawShape.toLowerCase().includes("tam-giac")) body_shape = "Inverted Triangle";
+
+    // Styles & Colors
+    let style_tags = [];
+    try {
+      const parsedStyles = JSON.parse(sessionStorage.getItem("quiz-main-style") || "[]");
+      style_tags = Array.isArray(parsedStyles) ? parsedStyles : [parsedStyles];
+    } catch(e) {}
+
+    const occasions = sessionStorage.getItem("quiz-context") ? [sessionStorage.getItem("quiz-context")] : [];
+    
+    let budget_range = sessionStorage.getItem("quiz-budget") || "300k_700k";
+    if (!['under_300k', '300k_700k', '700k_1.5m', 'above_1.5m'].includes(budget_range)) {
+      if (budget_range.includes("300") && budget_range.includes("700")) budget_range = "300k_700k";
+      else if (budget_range.includes("300")) budget_range = "under_300k";
+      else if (budget_range.includes("1.5")) budget_range = "above_1.5m";
+      else budget_range = "700k_1.5m";
+    }
+
+    import("./api.js").then(({ apiRequest }) => {
+      apiRequest("/api/user/style-quiz", {
+        method: "POST",
+        body: JSON.stringify({
+          height_cm,
+          weight_kg,
+          chest_cm,
+          waist_cm,
+          hip_cm,
+          body_shape,
+          skin_tone: "Neutral",
+          style_tags,
+          preferred_occasions: occasions,
+          favorite_brands: ["Velura"],
+          budget_range
+        })
+      })
+      .then(() => {
+        console.log("Style Profile saved successfully to database!");
+      })
+      .catch(err => {
+        console.error("Failed to save style profile:", err);
+      });
+    });
+
     simulationSteps.forEach(step => {
       setTimeout(() => {
         loadingMsg.textContent = step.text;

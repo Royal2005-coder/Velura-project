@@ -1,4 +1,5 @@
 import { recentSearches, trendingSearches, popularCategories } from "../data/search-mock.js";
+import { apiRequest } from "./api.js";
 
 export function initSearchOverlay() {
   var searchTriggers = document.querySelectorAll(".js-search-input");
@@ -21,14 +22,28 @@ export function initSearchOverlay() {
     });
   }
 
-  // Render mock data into the overlay
+  // Pre-fill search inputs if q param is present in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const qParam = urlParams.get("q");
+  if (qParam) {
+    searchTriggers.forEach(function (trigger) {
+      if (trigger.tagName === "INPUT") {
+        trigger.value = qParam;
+      }
+    });
+    if (overlayInput) {
+      overlayInput.value = qParam;
+    }
+  }
+
+  // Render mock data into the overlay (and dynamic categories)
   function renderSearchData() {
     // 1. Render Recent Searches with close buttons
     var recentContainer = overlay.querySelector(".js-recent-searches");
     if (recentContainer) {
       recentContainer.innerHTML = recentSearches.map(function (keyword) {
         return '<span class="search-pill">' + 
-          '<span>' + escapeHtml(keyword) + '</span>' +
+          '<span class="js-search-pill-keyword" style="cursor:pointer;">' + escapeHtml(keyword) + '</span>' +
           '<button type="button" class="js-delete-recent" data-val="' + escapeHtml(keyword) + '" aria-label="Xóa">✕</button>' +
         '</span>';
       }).join("");
@@ -50,6 +65,13 @@ export function initSearchOverlay() {
           }
         });
       });
+
+      // Bind click keyword
+      recentContainer.querySelectorAll(".js-search-pill-keyword").forEach(function (span) {
+        span.addEventListener("click", function () {
+          window.location.href = "/src/pages/products/list.html?q=" + encodeURIComponent(span.textContent.trim());
+        });
+      });
     }
 
     // 2. Render Trending Searches
@@ -63,9 +85,45 @@ export function initSearchOverlay() {
       }).join("");
     }
 
-    // 3. Render Popular Categories
+    // 3. Render Dynamic Categories synced with database
+    loadPopularCategories();
+  }
+
+  async function loadPopularCategories() {
     var popularContainer = overlay.querySelector(".js-popular-categories");
-    if (popularContainer) {
+    if (!popularContainer) return;
+
+    try {
+      const categories = await apiRequest("/api/user/categories");
+      const categoryImageMap = {
+        "ao": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/ao/ao_ao-blouse-lua-co-do-anh-champagne_white_01.jpg",
+        "quan": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/quan/quan_quan-short-linen-cap-cao-day-trang_ivory-white_1.jpg",
+        "dam-vay": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/dam-vay/dam-vay_dam-tweed-hai-day-that-no_emerald_01.png",
+        "ao-khoac": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/ao-khoac/ao-khoac_trench-coat-dang-dai_warm-beige_01.png",
+        "set-do": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-nau-cocoa-thanh-lich-du-tiec_01.png",
+        "phu-kien": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/main/categories/phu-kien/phu-kien_ly-giu-nhiet-matte-black_onyx_01.png",
+        "giay-dep": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/giay-dep/giay-dep_giay-sandals-quai-ngang-de-thap_matte-black_01.png"
+      };
+
+      const displayedCats = categories.slice(0, 4);
+
+      popularContainer.innerHTML = displayedCats.map(function (cat) {
+        const img = categoryImageMap[cat.slug] || "/src/assets/images/placeholder.jpg";
+        const link = `/src/pages/products/list.html?category=${cat.slug}`;
+        return '<a href="' + link + '" class="popular-card">' +
+          '<div class="popular-card__image-container">' +
+            '<img src="' + img + '" alt="' + escapeHtml(cat.name) + '" class="popular-card__img" />' +
+          '</div>' +
+          '<div class="popular-card__info">' +
+            '<h4 class="popular-card__name">' + escapeHtml(cat.name) + '</h4>' +
+            '<span class="popular-card__count">' + (cat.product_count || 0) + ' sản phẩm</span>' +
+          '</div>' +
+        '</a>';
+      }).join("");
+
+    } catch (err) {
+      console.error("Failed to load search categories from DB:", err);
+      // Fallback to static mock categories if API fails
       popularContainer.innerHTML = popularCategories.map(function (cat) {
         return '<a href="' + cat.link + '" class="popular-card">' +
           '<div class="popular-card__image-container">' +
@@ -111,6 +169,23 @@ export function initSearchOverlay() {
       document.body.classList.remove("overflow-hidden");
     }
   });
+
+  // Handle Enter key on search input inside overlay
+  if (overlayInput) {
+    overlayInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        var val = overlayInput.value.trim();
+        if (val) {
+          if (!recentSearches.includes(val)) {
+            recentSearches.unshift(val);
+            if (recentSearches.length > 5) recentSearches.pop();
+          }
+          window.location.href = "/src/pages/products/list.html?q=" + encodeURIComponent(val);
+        }
+      }
+    });
+  }
 
   // Render content on initialization
   renderSearchData();

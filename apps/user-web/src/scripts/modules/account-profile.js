@@ -1,6 +1,8 @@
 /**
  * Velura — Consolidated Account & Profile Logic
  */
+import { apiRequest } from "./api.js";
+import { addToCart } from "./cart.js";
 
 // Mock data for location dropdowns
 const locationData = {
@@ -118,9 +120,57 @@ function initAccountTabs() {
 /**
  * Profile form verification and submission
  */
+function loadProfileData(form) {
+  apiRequest("/api/user/profile")
+    .then(profile => {
+      const nameInput = form.querySelector('input[name="fullname"]');
+      const phoneInput = form.querySelector('input[name="phone"]');
+      const emailInput = form.querySelector('input[name="email"]');
+      const dobInput = form.querySelector('input[name="dob"]');
+      
+      if (nameInput) nameInput.value = profile.full_name || "";
+      if (phoneInput) {
+        phoneInput.value = profile.phone || "";
+        phoneInput.readOnly = true;
+      }
+      if (emailInput) {
+        emailInput.value = profile.email || "";
+        emailInput.readOnly = true;
+      }
+      if (dobInput && profile.date_of_birth) {
+        const parts = profile.date_of_birth.split("-");
+        if (parts.length === 3) {
+          dobInput.value = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+      }
+
+      if (profile.gender) {
+        const genderRadio = form.querySelector(`input[name="gender"][value="${profile.gender}"]`);
+        if (genderRadio) genderRadio.checked = true;
+      }
+
+      // Update names on UI
+      const sidebarName = document.querySelector(".account-sidebar__name");
+      if (sidebarName && profile.full_name) {
+        const nameParts = profile.full_name.split(" ");
+        sidebarName.textContent = nameParts.length >= 2 ? (nameParts[nameParts.length - 1] + " " + nameParts[0]) : profile.full_name;
+      }
+      const largeName = document.querySelector(".profile-avatar-name");
+      if (largeName && profile.full_name) {
+        largeName.textContent = profile.full_name;
+      }
+    })
+    .catch(err => {
+      console.error("Failed to load profile:", err);
+    });
+}
+
 function initProfileFormValidation() {
   const form = document.querySelector(".profile-form");
   if (!form) return;
+
+  // Load live data from backend
+  loadProfileData(form);
 
   const cancelBtn = form.querySelector(".js-btn-cancel");
   if (cancelBtn) {
@@ -128,6 +178,7 @@ function initProfileFormValidation() {
       e.preventDefault();
       // Reset form to default values
       form.reset();
+      loadProfileData(form);
       
       // Clear validation errors
       clearErrors(form);
@@ -181,28 +232,62 @@ function initProfileFormValidation() {
     }
 
     if (isValid) {
-      // Mock submit success and show Toast
-      showToast("Cập nhật thông tin tài khoản thành công!");
+      const fullname = nameInput.value.trim();
+      const dobVal = dobInput.value.trim();
       
-      // Sync names dynamically
-      const updatedName = nameInput.value.trim();
-      
-      // Sidebar name (Hân Nguyễn or first name / last name)
-      const sidebarName = document.querySelector(".account-sidebar__name");
-      if (sidebarName) {
-        const nameParts = updatedName.split(" ");
-        if (nameParts.length >= 2) {
-          sidebarName.textContent = nameParts[nameParts.length - 1] + " " + nameParts[0];
-        } else {
-          sidebarName.textContent = updatedName;
+      let date_of_birth = null;
+      if (dobVal) {
+        const parts = dobVal.split("/");
+        if (parts.length === 3) {
+          date_of_birth = `${parts[2]}-${parts[1]}-${parts[0]}`;
         }
       }
       
-      // Large profile header name
-      const largeName = document.querySelector(".profile-avatar-name");
-      if (largeName) {
-        largeName.textContent = updatedName;
-      }
+      const genderInput = form.querySelector('input[name="gender"]:checked');
+      const gender = genderInput ? genderInput.value : null;
+
+      apiRequest("/api/user/profile", {
+        method: "PATCH",
+        body: JSON.stringify({
+          full_name: fullname,
+          date_of_birth,
+          gender
+        })
+      })
+      .then(updated => {
+        showToast("Cập nhật thông tin tài khoản thành công!");
+        
+        // Sync header local storage if present
+        const localUser = localStorage.getItem("velura_user");
+        if (localUser) {
+          const parsed = JSON.parse(localUser);
+          parsed.full_name = updated.full_name;
+          localStorage.setItem("velura_user", JSON.stringify(parsed));
+        }
+
+        // Sync names dynamically
+        const updatedName = updated.full_name;
+        
+        // Sidebar name
+        const sidebarName = document.querySelector(".account-sidebar__name");
+        if (sidebarName) {
+          const nameParts = updatedName.split(" ");
+          if (nameParts.length >= 2) {
+            sidebarName.textContent = nameParts[nameParts.length - 1] + " " + nameParts[0];
+          } else {
+            sidebarName.textContent = updatedName;
+          }
+        }
+        
+        // Large profile header name
+        const largeName = document.querySelector(".profile-avatar-name");
+        if (largeName) {
+          largeName.textContent = updatedName;
+        }
+      })
+      .catch(err => {
+        showToast(`Cập nhật thất bại: ${err.message}`);
+      });
     }
   });
 }
@@ -234,6 +319,84 @@ function clearErrors(form) {
 /**
  * Address Manager modal and data handling
  */
+function syncAddressesToServer() {
+  const cards = document.querySelectorAll(".address-list .address-card");
+  const addresses = [];
+  cards.forEach(card => {
+    const id = card.getAttribute("data-id");
+    const name = card.querySelector(".address-card__name").textContent.trim();
+    const phone = card.querySelector(".address-card__phone").textContent.trim();
+    const detail = card.querySelector(".address-card__detail").textContent.trim();
+    const isDefault = card.classList.contains("address-card--default");
+    addresses.push({ id, name, phone, detail, is_default: isDefault });
+  });
+
+  apiRequest("/api/user/addresses", {
+    method: "PATCH",
+    body: JSON.stringify({ addresses })
+  })
+  .then(() => {
+    console.log("Addresses synced to server successfully");
+  })
+  .catch(err => {
+    console.error("Failed to sync addresses:", err);
+  });
+}
+
+function loadAddresses(addressList) {
+  apiRequest("/api/user/profile")
+    .then(profile => {
+      const addresses = profile.saved_addresses || [];
+      if (!addresses.length) {
+        addressList.innerHTML = `<p style="color:var(--soft);font-size:0.875rem;padding:16px 0;">Bạn chưa lưu địa chỉ nào.</p>`;
+        return;
+      }
+
+      addressList.innerHTML = "";
+      addresses.forEach(addr => {
+        const isDefault = addr.is_default;
+        const card = document.createElement("div");
+        card.className = `address-card ${isDefault ? "address-card--default" : ""}`;
+        card.setAttribute("data-id", addr.id || Date.now().toString());
+        card.innerHTML = `
+          <div class="address-card__icon-wrapper">
+            <svg class="address-card__location-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+          </div>
+          <div class="address-card__content">
+            <div class="address-card__header">
+              <span class="address-card__name">${addr.name}</span>
+              <span class="address-card__separator">·</span>
+              <span class="address-card__phone">${addr.phone}</span>
+              <span class="badge badge--default ${isDefault ? "" : "d-none"}">Mặc định</span>
+            </div>
+            <p class="address-card__detail">${addr.detail}</p>
+          </div>
+          <div class="address-card__actions">
+            <button class="address-card__btn js-btn-edit-address" aria-label="Chỉnh sửa" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </button>
+            <button class="address-card__btn js-btn-delete-address" aria-label="Xóa" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            </button>
+          </div>
+        `;
+        addressList.appendChild(card);
+      });
+    })
+    .catch(err => {
+      console.error("Failed to load addresses:", err);
+    });
+}
+
 function initAddressManager() {
   const modal = document.getElementById("address-modal");
   if (!modal) return;
@@ -246,6 +409,10 @@ function initAddressManager() {
   const provinceSelect = document.getElementById("address-province");
   const districtSelect = document.getElementById("address-district");
   const wardSelect = document.getElementById("address-ward");
+
+  if (addressList) {
+    loadAddresses(addressList);
+  }
 
   // Show modal for adding
   if (btnAdd) {
@@ -451,6 +618,7 @@ function initAddressManager() {
       setTimeout(() => {
         card.remove();
         showToast("Đã xóa địa chỉ thành công!");
+        syncAddressesToServer();
       }, 300);
     }
   }
@@ -580,6 +748,7 @@ function initAddressManager() {
       showToast("Thêm địa chỉ mới thành công!");
     }
 
+    syncAddressesToServer();
     closeModal();
   }
 }
@@ -588,51 +757,74 @@ function initAddressManager() {
  * Order History Tab status filtering
  */
 function initOrderFilter() {
-  const filterTabs = document.querySelectorAll(".order-filter__tab");
-  const orderCards = document.querySelectorAll(".order-card");
+  const ordersListContainer = document.querySelector(".orders-list");
+  if (!ordersListContainer) return;
 
-  if (filterTabs.length === 0 || orderCards.length === 0) return;
+  const subtitle = document.querySelector(".orders-header__info p");
 
-  filterTabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-      // 1. Remove active state from all tabs
-      filterTabs.forEach(t => t.classList.remove("is-active"));
+  ordersListContainer.innerHTML = `<div style="text-align: center; padding: 24px 0; color: var(--soft);">Đang tải danh sách đơn hàng...</div>`;
 
-      // 2. Set current tab to active
-      tab.classList.add("is-active");
+  apiRequest("/api/user/orders")
+    .then(data => {
+      const orders = data.orders || [];
+      
+      if (subtitle) {
+        subtitle.textContent = `${orders.length} đơn hàng của bạn`;
+      }
 
-      // 3. Get target status
-      const targetStatus = tab.getAttribute("data-status");
+      if (orders.length === 0) {
+        ordersListContainer.innerHTML = `<div style="text-align: center; padding: 48px 0; color: var(--soft);">Bạn chưa có đơn hàng nào gần đây.</div>`;
+        return;
+      }
 
-      // 4. Filter cards
-      orderCards.forEach(card => {
-        const cardStatus = card.getAttribute("data-status");
+      // Display the most recent 3 orders
+      const recentOrders = orders.slice(0, 3);
 
-        if (targetStatus === "all" || cardStatus === targetStatus) {
-          // Show card with fade-in effect
-          card.style.display = "flex";
-          setTimeout(() => {
-            card.style.opacity = "1";
-            card.style.transform = "translateY(0)";
-          }, 10);
-        } else {
-          // Hide card
-          card.style.opacity = "0";
-          card.style.transform = "translateY(8px)";
-          setTimeout(() => {
-            card.style.display = "none";
-          }, 200); // match transition duration
-        }
-      });
+      const statusLabels = {
+        pending: "Chờ xác nhận",
+        confirmed: "Đã xác nhận",
+        preparing: "Đang chuẩn bị",
+        shipping: "Đang giao",
+        delivered: "Đã giao",
+        completed: "Hoàn thành",
+        cancelled: "Đã hủy"
+      };
+
+      ordersListContainer.innerHTML = recentOrders.map(order => {
+        const trackingCode = order.tracking_code || order.order_id.slice(0, 8).toUpperCase();
+        const dateObj = new Date(order.created_at);
+        const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
+        const itemCount = (order.items || []).reduce((acc, cur) => acc + cur.quantity, 0);
+        const totalFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.total_amount);
+        const statusLabel = statusLabels[order.status] || order.status;
+        const statusClass = order.status;
+
+        // Find first item's image for preview
+        const firstItemImg = order.items?.[0]?.product_image || "../../assets/images/image-1.png";
+
+        return `
+          <a href="/src/pages/account/order-detail.html?id=${order.order_id}" class="order-card" data-status="${order.status}">
+            <img class="order-card__image" src="${firstItemImg}" alt="Đơn hàng" />
+            <div class="order-card__info">
+              <h3 class="order-card__sku">Mã đơn #${trackingCode}</h3>
+              <p class="order-card__date">${formattedDate} · ${itemCount} sản phẩm</p>
+            </div>
+            <div class="order-card__meta">
+              <span class="order-card__price">${totalFormatted}</span>
+              <span class="order-card__status order-card__status--${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="order-card__arrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+          </a>
+        `;
+      }).join("");
+    })
+    .catch(err => {
+      ordersListContainer.innerHTML = `<div style="text-align: center; padding: 24px 0; color: #d9534f;">Không thể tải danh sách đơn hàng: ${err.message}</div>`;
     });
-  });
-
-  // Apply basic styles for smooth transition
-  orderCards.forEach(card => {
-    card.style.transition = "opacity 0.2s ease, transform 0.2s ease";
-    card.style.opacity = "1";
-    card.style.transform = "translateY(0)";
-  });
 }
 
 /**
@@ -644,59 +836,134 @@ function initWishlistActions() {
 
   const countSubtitle = document.querySelector(".wishlist-account-header__info p");
 
+  // Load wishlist items
+  function loadWishlist() {
+    grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 48px 0; color: var(--soft);">Đang tải danh sách yêu thích...</div>`;
+    
+    apiRequest("/api/user/wishlist")
+      .then(data => {
+        const items = data.items || [];
+        updateCounter(items.length);
+
+        if (items.length === 0) {
+          grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 48px 0; color: var(--soft);">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 16px; color: #A18265;">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              <p style="margin: 0; font-size: 0.9375rem;">Không tìm thấy sản phẩm nào trong danh sách yêu thích.</p>
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = items.map(product => {
+          const priceFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.sale_price || product.base_price);
+          return `
+            <div class="product-card" data-product-id="${product.product_id}">
+              <div class="product-card__image-container">
+                <img class="product-card__image" src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" />
+                <button class="product-card__wishlist-btn js-remove-wishlist" type="button" aria-label="Xóa khỏi yêu thích">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
+              </div>
+              <div class="product-card__details">
+                <h3 class="product-card__name"><a href="/src/pages/products/detail.html?id=${product.product_id}" style="text-decoration:none; color:inherit;">${product.name}</a></h3>
+                <div class="product-card__price-row">
+                  <span class="product-card__price">${priceFormatted}</span>
+                </div>
+                <button class="btn btn--primary product-card__cart-btn js-add-cart-fast" type="button">
+                  Thêm vào giỏ nhanh
+                </button>
+              </div>
+            </div>
+          `;
+        }).join("");
+      })
+      .catch(err => {
+        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 24px 0; color: #d9534f;">Không thể tải danh sách yêu thích: ${err.message}</div>`;
+      });
+  }
+
   // Delegate clicks on grid
-  grid.addEventListener("click", (e) => {
+  grid.addEventListener("click", async (e) => {
     const removeBtn = e.target.closest(".js-remove-wishlist");
     const addCartBtn = e.target.closest(".js-add-cart-fast");
 
     if (removeBtn) {
       const card = removeBtn.closest(".product-card");
-      if (card) handleRemove(card);
+      if (!card) return;
+      const productId = card.getAttribute("data-product-id");
+
+      try {
+        await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
+        
+        card.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+        card.style.opacity = "0";
+        card.style.transform = "scale(0.9)";
+
+        setTimeout(() => {
+          card.remove();
+          const remainingCards = grid.querySelectorAll(".product-card");
+          updateCounter(remainingCards.length);
+          showToast("Đã xóa sản phẩm khỏi Wishlist!");
+          if (remainingCards.length === 0) {
+            grid.innerHTML = `
+              <div style="grid-column: 1 / -1; text-align: center; padding: 48px 0; color: var(--soft);">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 16px;">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                <p style="margin: 0; font-size: 0.9375rem;">Không tìm thấy sản phẩm nào trong danh sách yêu thích.</p>
+              </div>
+            `;
+          }
+        }, 300);
+      } catch (err) {
+        showToast("Lỗi khi xóa khỏi Wishlist: " + err.message);
+      }
     }
 
     if (addCartBtn) {
       const card = addCartBtn.closest(".product-card");
-      if (card) handleAddCart(card);
+      if (!card) return;
+      const productId = card.getAttribute("data-product-id");
+      try {
+        const product = await apiRequest(`/api/user/products/${productId}`);
+        if (product && product.variants && product.variants.length > 0) {
+          const matchedVariant = product.variants[0];
+          addToCart({
+            variant_id: matchedVariant.variant_id,
+            product_id: product.product_id,
+            product_name: product.name,
+            product_image: product.images?.[0] || "",
+            quantity: 1,
+            unit_price: product.sale_price || product.base_price,
+            color: matchedVariant.color || "Mặc định",
+            size: matchedVariant.size || "M"
+          });
+          showToast(`Đã thêm "${product.name}" vào giỏ hàng thành công!`);
+        } else {
+          showToast("Sản phẩm không có biến thể sẵn có.");
+        }
+      } catch (err) {
+        showToast("Không thể thêm vào giỏ hàng: " + err.message);
+      }
     }
   });
 
-  function handleRemove(card) {
-    // Fade out transition
-    card.style.transition = "opacity 0.3s ease, transform 0.3s ease";
-    card.style.opacity = "0";
-    card.style.transform = "scale(0.9)";
-
-    setTimeout(() => {
-      card.remove();
-      updateCounter();
-      showToast("Đã xóa sản phẩm khỏi Wishlist!");
-    }, 300);
-  }
-
-  function handleAddCart(card) {
-    const productName = card.querySelector(".product-card__name").textContent;
-    showToast(`Đã thêm "${productName}" vào giỏ hàng thành công!`);
-  }
-
-  function updateCounter() {
+  function updateCounter(count) {
     if (!countSubtitle) return;
-    const remainingCards = grid.querySelectorAll(".product-card");
-    const count = remainingCards.length;
-
     if (count === 0) {
       countSubtitle.textContent = "Bạn chưa có sản phẩm yêu thích nào";
-      grid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 48px 0; color: var(--soft);">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 16px;">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-          <p style="margin: 0; font-size: 0.9375rem;">Không tìm thấy sản phẩm nào trong danh sách yêu thích.</p>
-        </div>
-      `;
     } else {
       countSubtitle.textContent = `Những món bạn đã lưu (${count} sản phẩm)`;
     }
   }
+
+  loadWishlist();
 }
 
 /**
@@ -715,6 +982,40 @@ function initSettingsAndStyleActions() {
     updateStyleBtn.addEventListener("click", () => {
       window.location.href = "/src/pages/ai/style-quiz.html?mode=edit";
     });
+  }
+
+  // Load Style Profile details
+  const metricsContainer = document.querySelector(".style-profile__metrics");
+  if (metricsContainer) {
+    apiRequest("/api/user/style-quiz")
+      .then(res => {
+        if (res.success && res.quiz) {
+          const q = res.quiz;
+          const heading = document.querySelector(".style-profile__heading");
+          if (heading && q.style_tags) {
+            heading.textContent = Array.isArray(q.style_tags) ? q.style_tags.join(", ") : q.style_tags;
+          }
+          metricsContainer.innerHTML = `
+            <div class="style-profile__metric-row">
+              <span class="style-profile__metric-label">Chiều cao</span>
+              <span class="style-profile__metric-value">${q.height_cm ? q.height_cm + 'cm' : 'Chưa cập nhật'}</span>
+            </div>
+            <div class="style-profile__metric-row">
+              <span class="style-profile__metric-label">Cân nặng</span>
+              <span class="style-profile__metric-value">${q.weight_kg ? q.weight_kg + 'kg' : 'Chưa cập nhật'}</span>
+            </div>
+            <div class="style-profile__metric-row">
+              <span class="style-profile__metric-label">Dáng người</span>
+              <span class="style-profile__metric-value">${q.body_shape || 'Chưa cập nhật'}</span>
+            </div>
+            <div class="style-profile__metric-row">
+              <span class="style-profile__metric-label">Tông màu da / Yêu thích</span>
+              <span class="style-profile__metric-value">${q.skin_tone || 'Chưa cập nhật'}</span>
+            </div>
+          `;
+        }
+      })
+      .catch(err => console.error("Failed to load style profile:", err));
   }
 }
 

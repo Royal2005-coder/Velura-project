@@ -16,9 +16,24 @@ import { initProductReview } from "./modules/product-review.js";
 import { initCollectionsFilter } from "./modules/collections.js";
 import { initReturnRequest } from "./modules/return-request.js";
 import { initBreadcrumb } from "./modules/breadcrumb.js";
+import { initAuthClient } from "./modules/auth-client.js";
+import { initWishlistPage } from "./modules/wishlist.js";
+import { initOrderDetail } from "./modules/order-detail.js";
+import { initTrackOrder } from "./modules/track-order.js";
+import { initHomepage } from "./modules/homepage.js";
+import { initCart } from "./modules/cart.js";
 
 (function () {
   "use strict";
+
+  const path = window.location.pathname;
+  if (path.includes("/pages/account/") && !path.includes("track-order.html")) {
+    const token = localStorage.getItem("velura_token");
+    if (!token) {
+      window.location.href = "/src/pages/auth/signin.html";
+      return;
+    }
+  }
 
   // Khởi tạo các module
   initGallery();
@@ -39,6 +54,12 @@ import { initBreadcrumb } from "./modules/breadcrumb.js";
   initCollectionsFilter();
   initReturnRequest();
   initBreadcrumb();
+  initAuthClient();
+  initWishlistPage();
+  initOrderDetail();
+  initTrackOrder();
+  initHomepage();
+  initCart();
 
   /* Mobile navigation */
   var menuToggle = document.querySelector(".menu-toggle");
@@ -202,22 +223,24 @@ import { initBreadcrumb } from "./modules/breadcrumb.js";
   }
 
   /* Color Option Toggle */
-  var colorOptions = document.querySelectorAll(".color-option");
-  colorOptions.forEach(function (option) {
-    option.addEventListener("click", function () {
-      option.classList.toggle("is-selected");
+  if (!document.querySelector(".product-list-page")) {
+    var colorOptions = document.querySelectorAll(".color-option");
+    colorOptions.forEach(function (option) {
+      option.addEventListener("click", function () {
+        option.classList.toggle("is-selected");
+      });
     });
-  });
 
-  /* Size Option Toggle */
-  var sizeOptions = document.querySelectorAll(".size-option");
-  sizeOptions.forEach(function (option) {
-    option.addEventListener("click", function () {
-      option.classList.toggle("is-active");
+    /* Size Option Toggle */
+    var sizeOptions = document.querySelectorAll(".size-option");
+    sizeOptions.forEach(function (option) {
+      option.addEventListener("click", function () {
+        option.classList.toggle("is-active");
+      });
     });
-  });
+  }
 
-  /* Add to Cart Micro-Interaction */
+  /* Add to Cart Micro-Interaction (Handled dynamically in modules)
   var addBtns = document.querySelectorAll(".card__add-btn, .card__btn-cart");
   var cartBadge = document.querySelector(".cart-badge");
   addBtns.forEach(function (btn) {
@@ -238,8 +261,9 @@ import { initBreadcrumb } from "./modules/breadcrumb.js";
       }
     });
   });
+  */
 
-  /* Wishlist Heart Toggle */
+  /* Wishlist Heart Toggle (Handled dynamically in modules)
   var heartBtns = document.querySelectorAll(".card__wishlist-btn");
   heartBtns.forEach(function (btn) {
     btn.addEventListener("click", function (e) {
@@ -255,6 +279,7 @@ import { initBreadcrumb } from "./modules/breadcrumb.js";
       }, 150);
     });
   });
+  */
 
   /* Product Card Color Dot Selection */
   var cardColorDots = document.querySelectorAll(".card__color-dot");

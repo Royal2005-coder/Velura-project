@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura — Cổng thanh toán giả lập</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #A18265;
+      --primary-dark: #8C6F55;
+      --terracotta: #C97B63;
+      --dark: #2C2927;
+      --bg: #F9F7F5;
+      --card-bg: #FFFFFF;
+      --border: #E8E5E2;
+      --success: #5F9E7E;
+      --danger: #D86D6D;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--dark);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .gateway-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 480px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(44, 41, 39, 0.05);
+      text-align: center;
+    }
+
+    .gateway-logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--dark);
+      margin-bottom: 24px;
+      text-transform: uppercase;
+    }
+
+    .gateway-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .gateway-badge--vnpay {
+      background-color: rgba(0, 114, 187, 0.1);
+      color: #0072BB;
+    }
+
+    .gateway-badge--momo {
+      background-color: rgba(165, 0, 100, 0.1);
+      color: #A50064;
+    }
+
+    .transaction-details {
+      background: #F4F1EE;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 32px;
+      text-align: left;
+    }
+
+    .details-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+    }
+
+    .details-row:last-child {
+      margin-bottom: 0;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .details-label {
+      color: #8C847E;
+    }
+
+    .details-value {
+      font-weight: 600;
+    }
+
+    .details-value--amount {
+      color: var(--terracotta);
+      font-size: 1.15rem;
+    }
+
+    .action-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      margin-bottom: 12px;
+    }
+
+    .btn--success {
+      background-color: var(--success);
+      color: #FFF;
+    }
+
+    .btn--success:hover {
+      background-color: #4D8768;
+    }
+
+    .btn--danger {
+      background-color: transparent;
+      border: 1px solid var(--border);
+      color: var(--danger);
+    }
+
+    .btn--danger:hover {
+      background-color: rgba(216, 109, 109, 0.05);
+      border-color: var(--danger);
+    }
+
+    .gateway-footer {
+      font-size: 0.8rem;
+      color: #8C847E;
+      margin-top: 24px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="gateway-card">
+    <div class="gateway-logo">VELURA GATEWAY</div>
+    <div id="method-badge" class="gateway-badge">GIẢ LẬP THANH TOÁN</div>
+    
+    <div class="transaction-details">
+      <div class="details-row">
+        <span class="details-label">Mã đơn hàng:</span>
+        <span id="txt-order-id" class="details-value">#...</span>
+      </div>
+      <div class="details-row">
+        <span class="details-label">Trạng thái:</span>
+        <span class="details-value" style="color: var(--primary);">Đang chờ thanh toán</span>
+      </div>
+      <div class="details-row">
+        <span class="details-label">Số tiền:</span>
+        <span id="txt-amount" class="details-value details-value--amount">0₫</span>
+      </div>
+    </div>
+
+    <button id="btn-success" class="action-btn btn--success">Thành công (PAID)</button>
+    <button id="btn-failed" class="action-btn btn--danger">Hủy / Thất bại (FAILED)</button>
+
+    <div class="gateway-footer">
+      Môi trường kiểm thử giả lập an toàn của Velura. Không thực hiện giao dịch tiền thật.
+    </div>
+  </div>
+
+  <script>
+    // Extract query parameters
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('order_id');
+    const amount = parseInt(params.get('amount') || 0, 10);
+    const method = params.get('method') || 'VNPAY';
+
+    document.getElementById('txt-order-id').textContent = `#${orderId || 'N/A'}`;
+    document.getElementById('txt-amount').textContent = `${amount.toLocaleString('vi-VN')}₫`;
+
+    const badge = document.getElementById('method-badge');
+    if (method === 'MOMO') {
+      badge.textContent = 'MOMO SIMULATOR';
+      badge.className = 'gateway-badge gateway-badge--momo';
+    } else {
+      badge.textContent = 'VNPAY SIMULATOR';
+      badge.className = 'gateway-badge gateway-badge--vnpay';
+    }
+
+    const apiBase = 'http://localhost:8787';
+
+    async function submitCallback(status) {
+      if (!orderId) {
+        alert('Thiếu thông tin đơn hàng!');
+        return;
+      }
+      try {
+        const res = await fetch(`${apiBase}/api/user/orders/payment-callback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: orderId, status })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (status === 'PAID') {
+            window.location.href = '/src/pages/checkout/payment-confirm.html';
+          } else {
+            // Store details for conversion in payment-failed screen
+            localStorage.setItem('failed_order_id', orderId);
+            localStorage.setItem('failed_order_amount', amount.toString());
+            window.location.href = '/src/pages/checkout/payment-failed.html';
+          }
+        } else {
+          alert('Cập nhật trạng thái thanh toán thất bại: ' + (data.message || 'Lỗi hệ thống'));
+        }
+      } catch (err) {
+        alert('Lỗi kết nối cổng thanh toán: ' + err.message);
+      }
+    }
+
+    document.getElementById('btn-success').addEventListener('click', () => submitCallback('PAID'));
+    document.getElementById('btn-failed').addEventListener('click', () => submitCallback('FAILED'));
+  </script>
+</body>
+
+</html>

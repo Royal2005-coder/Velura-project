@@ -1,5 +1,6 @@
 import { HttpError } from "./http.js";
 import { getAuthUser, selectOne } from "./supabase.js";
+import { verifyJwt } from "./auth-helper.js";
 
 export const rolePages = {
   super_admin: ["dashboard", "accounts", "products", "orders", "reviews", "returns-cskh", "pricing", "promotions", "logs"],
@@ -29,6 +30,23 @@ export async function buildAuthContext(req) {
   const token = getToken(req);
   if (!token) return buildGuestContext();
 
+  // Check if it's our custom user JWT
+  const decoded = verifyJwt(token);
+  if (decoded && decoded.user_id) {
+    const user = await selectOne("users", { user_id: `eq.${decoded.user_id}` });
+    if (user && user.is_active) {
+      return {
+        authUser: { id: user.user_id, email: user.email },
+        profile: user,
+        roleCode: user.role || "member",
+        roleName: user.role === "admin" ? "Admin" : "Member",
+        isAdmin: user.role === "admin",
+        allowedPages: rolePages[user.role] || rolePages.member
+      };
+    }
+  }
+
+  // Fallback to Supabase Auth (for Admins)
   const authUser = await getAuthUser(token);
   if (!authUser?.id) return buildGuestContext();
 

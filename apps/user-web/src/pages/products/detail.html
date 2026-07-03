@@ -26,35 +26,24 @@
       <div class="product-detail-layout">
         <!-- Left: Product Image Gallery -->
         <div class="product-detail__gallery">
-          <div class="gallery-main">
-            <img src="/src/assets/images/products/detail/detail-img-1.png" alt="Set đồ len — Ảnh chính"
-              class="gallery-main__img product-detail__main-img js-gallery-main" loading="lazy" />
+          <div class="gallery-main" style="background: #f7f5f2; aspect-ratio: 4/5; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; position: relative;">
+            <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Ảnh sản phẩm"
+              class="gallery-main__img product-detail__main-img js-gallery-main" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" />
+            
+            <!-- Navigation arrows -->
+            <button type="button" class="gallery-nav-btn gallery-nav-btn--prev js-gallery-prev" aria-label="Hình trước" style="display: none;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <button type="button" class="gallery-nav-btn gallery-nav-btn--next js-gallery-next" aria-label="Hình sau" style="display: none;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
           </div>
           <div class="gallery-thumbs">
-            <button type="button" class="gallery-thumbs__btn active js-gallery-thumb"
-              data-src="/src/assets/images/products/detail/detail-img-1.png" aria-label="Hình ảnh thu nhỏ 1">
-              <img src="/src/assets/images/products/detail/detail-img-1.png" alt="Thu nhỏ 1" loading="lazy" />
-            </button>
-            <button type="button" class="gallery-thumbs__btn js-gallery-thumb"
-              data-src="/src/assets/images/products/detail/detail-img-2.png" aria-label="Hình ảnh thu nhỏ 2">
-              <img src="/src/assets/images/products/detail/detail-img-2.png" alt="Thu nhỏ 2" loading="lazy" />
-            </button>
-            <button type="button" class="gallery-thumbs__btn js-gallery-thumb"
-              data-src="/src/assets/images/products/detail/detail-img-3.png" aria-label="Hình ảnh thu nhỏ 3">
-              <div class="thumb-placeholder"
-                style="display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; background: #F8F8F8;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B635D" stroke-width="1.5"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                  <polyline points="21 15 16 10 5 21"></polyline>
-                </svg>
-              </div>
-            </button>
-            <button type="button" class="gallery-thumbs__btn js-gallery-thumb"
-              data-src="/src/assets/images/products/detail/detail-img-4.png" aria-label="Hình ảnh thu nhỏ 4">
-              <img src="/src/assets/images/products/detail/detail-img-4.png" alt="Thu nhỏ 4" loading="lazy" />
-            </button>
+            <!-- Dynamic thumbnails will load here -->
           </div>
         </div>
 
@@ -63,13 +52,13 @@
           <div class="product-info__head">
             <div class="product-info__badge-group">
               <span class="product-badge product-badge--hot">Bán chạy</span>
-              <span class="product-badge product-badge--stock">Còn 34 sản phẩm</span>
+              <span class="product-badge product-badge--stock">Đang cập nhật...</span>
             </div>
 
-            <h1 class="product-info__title">Set đồ len</h1>
+            <h1 class="product-info__title">Đang tải sản phẩm...</h1>
 
             <div class="product-info__rating">
-              <div class="rating-stars" aria-label="Xếp hạng 4.9 trên 5 sao">
+              <div class="rating-stars" aria-label="Xếp hạng 5 sao">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="#C97B63">
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
@@ -86,43 +75,31 @@
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
               </div>
-              <span class="rating-count">4.9 &nbsp;·&nbsp; 218 đánh giá &nbsp;·&nbsp; 1.2K đã bán</span>
+              <span class="rating-count">5.0 &nbsp;·&nbsp; Đánh giá từ khách hàng</span>
             </div>
           </div>
 
           <div class="product-info__price">
-            <span class="price-current">1.290.000₫</span>
-            <span class="price-old">1.590.000₫</span>
+            <span class="price-current">...₫</span>
+            <span class="price-old" style="display: none;"></span>
           </div>
 
           <!-- Options Color Selection -->
           <div class="product-option option-color">
-            <h3 class="product-option__title">Màu sắc: <span class="option-selected-label js-color-name">Đỏ rượu
-                vang</span></h3>
+            <h3 class="product-option__title">Màu sắc: <span class="option-selected-label js-color-name">Đang tải...</span></h3>
             <div class="product-option__list">
-              <button type="button" class="color-btn js-color-btn" data-color="Hồng kem" style="background: #F5E6E3;"
-                title="Hồng kem"></button>
-              <button type="button" class="color-btn js-color-btn" data-color="Be nhạt" style="background: #EADCD9;"
-                title="Be nhạt"></button>
-              <button type="button" class="color-btn js-color-btn" data-color="Xanh rêu" style="background: #9CB4A4;"
-                title="Xanh rêu"></button>
-              <button type="button" class="color-btn is-selected js-color-btn" data-color="Đỏ rượu vang"
-                style="background: #5D3A3A;" title="Đỏ rượu vang"></button>
+              <!-- Dynamic colors will load here -->
             </div>
           </div>
 
           <!-- Options Size Selection -->
           <div class="product-option option-size">
             <div class="product-option__header">
-              <h3 class="product-option__title">Kích cỡ: <span class="option-selected-label js-size-name">M</span></h3>
+              <h3 class="product-option__title">Kích cỡ: <span class="option-selected-label js-size-name">Đang tải...</span></h3>
               <a href="#" class="size-guide-link">Hướng dẫn chọn size</a>
             </div>
             <div class="product-option__list">
-              <button type="button" class="size-btn js-size-btn" data-size="XS">XS</button>
-              <button type="button" class="size-btn js-size-btn" data-size="S">S</button>
-              <button type="button" class="size-btn is-selected js-size-btn" data-size="M">M</button>
-              <button type="button" class="size-btn js-size-btn" data-size="L">L</button>
-              <button type="button" class="size-btn js-size-btn" data-size="XL">XL</button>
+              <!-- Dynamic sizes will load here -->
             </div>
           </div>
 
@@ -160,8 +137,7 @@
                 </svg>
                 Thêm vào giỏ
               </button>
-              <button type="button" class="btn btn--primary buy-now-btn"
-                onclick="window.location.href='/src/pages/cart/cart.html'">Mua ngay</button>
+              <button type="button" class="btn btn--primary buy-now-btn js-buy-now">Mua ngay</button>
             </div>
 
             <button type="button" class="btn btn--secondary wishlist-btn js-wishlist"
@@ -218,14 +194,7 @@
         <div class="tabs-content">
           <!-- Tab Panel: Mô tả -->
           <div class="tab-panel active js-tab-panel" id="panel-desc" role="tabpanel" aria-labelledby="tab-desc">
-            <p>Set đồ len được làm từ chất liệu linen D1 cao cấp, mềm mại, thoáng mát và giữ dáng tốt. Thiết kế tay
-              phồng nhẹ tạo điểm nhấn nữ tính, vô cùng thanh lịch phù hợp với mọi vóc dáng.</p>
-            <ul>
-              <li>Chất liệu: 100% linen tự nhiên</li>
-              <li>Phom dáng: Nhẹ nhàng, tinh tế, dễ phối</li>
-              <li>Xuất xứ: Velura Atelier – Việt Nam</li>
-              <li>Bảo quản: Giặt tay với nước lạnh, không sấy</li>
-            </ul>
+            <p>Đang tải thông tin mô tả chi tiết...</p>
           </div>
 
           <!-- Tab Panel: Bảng size -->

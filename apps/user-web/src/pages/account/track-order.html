@@ -36,10 +36,10 @@
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="text" value="#VL-20260524-1234" aria-label="Mã đơn hàng cần tra cứu"
+            <input type="text" id="js-track-search-input" value="" aria-label="Mã đơn hàng cần tra cứu"
               placeholder="Nhập mã đơn hàng của bạn..." />
           </div>
-          <button class="track-search-btn" type="button">Tra cứu</button>
+          <button class="track-search-btn" id="js-track-search-btn" type="button">Tra cứu</button>
         </div>
 
         <!-- Order Detail & Tracker Grid -->
@@ -51,14 +51,14 @@
               <div class="track-timeline-header">
                 <div>
                   <span class="track-code-label">Mã đơn hàng</span>
-                  <div class="track-code-value">#VL-20260524-1234</div>
+                  <div class="track-code-value" id="js-track-code">#VL-20260524-1234</div>
                 </div>
-                <span class="track-status-badge">Đang giao</span>
+                <span class="track-status-badge" id="js-track-status">Đang giao</span>
               </div>
 
               <h2 class="track-section-title">Hành trình đơn hàng</h2>
 
-              <div class="track-timeline">
+              <div class="track-timeline" id="js-track-timeline">
                 <!-- Step 1: Completed -->
                 <div class="track-step track-step--completed">
                   <div class="track-step__marker">
@@ -188,7 +188,7 @@
           <!-- Right Column -->
           <div class="track-side-column">
             <!-- ETA Card -->
-            <div class="track-card track-eta-card">
+            <div class="track-card track-eta-card" id="js-track-eta-card">
               <div class="track-eta-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
@@ -197,18 +197,18 @@
                 </svg>
               </div>
               <span class="track-eta-title">Thời gian giao dự kiến</span>
-              <div class="track-eta-date">26/05/2026</div>
-              <div class="track-eta-time">Trong khoảng 09:00 - 12:00</div>
+              <div class="track-eta-date" id="js-track-eta-date">26/05/2026</div>
+              <div class="track-eta-time" id="js-track-eta-time">Trong khoảng 09:00 - 12:00</div>
             </div>
 
             <!-- Shipper Card -->
-            <div class="track-card track-shipper-card">
+            <div class="track-card track-shipper-card" id="js-track-shipper-card">
               <h3 class="track-side-title">Thông tin shipper</h3>
               <div class="track-shipper-profile">
-                <div class="track-shipper-avatar">TVH</div>
+                <div class="track-shipper-avatar" id="js-track-shipper-avatar">TVH</div>
                 <div>
-                  <div class="track-shipper-name">Trần Văn Hùng</div>
-                  <div class="track-shipper-rating">
+                  <div class="track-shipper-name" id="js-track-shipper-name">Trần Văn Hùng</div>
+                  <div class="track-shipper-rating" id="js-track-shipper-rating">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                       <polygon
                         points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -220,14 +220,14 @@
               <div class="track-shipper-details">
                 <div class="track-detail-row">
                   <span class="track-detail-label">Số điện thoại</span>
-                  <span class="track-detail-value">0905 678 234</span>
+                  <span class="track-detail-value" id="js-track-shipper-phone">0905 678 234</span>
                 </div>
                 <div class="track-detail-row">
                   <span class="track-detail-label">Biển số xe</span>
-                  <span class="track-detail-value">59-K1 234.56</span>
+                  <span class="track-detail-value" id="js-track-shipper-plate">59-K1 234.56</span>
                 </div>
               </div>
-              <button class="track-shipper-call-btn" type="button">
+              <button class="track-shipper-call-btn" type="button" id="js-track-shipper-call">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
                   <path
@@ -247,9 +247,9 @@
                 </svg>
                 <h3 class="track-side-title">Giao đến</h3>
               </div>
-              <div class="track-address-recipient">Nguyễn Minh Anh</div>
-              <div class="track-address-text">123 Nguyễn Huệ, P. Bến Nghé, Q.1, TP. Hồ Chí Minh</div>
-              <div class="track-address-phone">0912 345 678</div>
+              <div class="track-address-recipient" id="js-track-recipient">Nguyễn Minh Anh</div>
+              <div class="track-address-text" id="js-track-address">123 Nguyễn Huệ, P. Bến Nghé, Q.1, TP. Hồ Chí Minh</div>
+              <div class="track-address-phone" id="js-track-phone">0912 345 678</div>
             </div>
           </div>
         </div>

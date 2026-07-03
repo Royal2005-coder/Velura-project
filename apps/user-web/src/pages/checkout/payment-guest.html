@@ -58,6 +58,10 @@
                   <input class="form-input" type="email" id="guest-email" placeholder="email@example.com" />
                 </div>
               </div>
+              <div class="form-group" id="guest-password-group" style="display: none; margin-top: 16px; margin-bottom: 16px;">
+                <label for="guest-password" style="color: var(--terracotta); font-weight: 600; display: block; margin-bottom: 6px;">Mật khẩu Thành viên</label>
+                <input class="form-input" type="password" id="guest-password" placeholder="Nhập mật khẩu của bạn để đăng nhập" style="border-color: var(--terracotta); width: 100%;" />
+              </div>
               <div class="form-group">
                 <label for="guest-address">Địa chỉ giao hàng</label>
                 <input class="form-input" type="text" id="guest-address"
@@ -68,7 +72,7 @@
                 <textarea class="form-textarea" id="guest-note" placeholder="Ghi chú về đơn hàng..."></textarea>
               </div>
               <div class="checkout-actions">
-                <a class="btn btn--primary" href="./shipping-payment.html">Tiếp tục</a>
+                <button class="btn btn--primary" type="button" style="border: none; cursor: pointer; width: 100%;">Tiếp tục</button>
               </div>
             </form>
           </div>

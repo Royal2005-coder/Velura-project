@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Velura — Đăng ký</title>
+  <meta name="description" content="Tạo tài khoản Velura để bắt đầu mua sắm thời trang cao cấp và nhận ưu đãi độc quyền." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -15,78 +16,99 @@
 
 <body class="page-signin page-signin--mobile-stack">
   <main class="signin-stage" role="main" aria-label="Đăng ký tài khoản Velura">
-    <img class="bg-texture" src="../../assets/images/bg-texture.png" alt="" aria-hidden="true" />
-    <img class="product product--8" src="../../assets/images/image-8.png" alt="" aria-hidden="true" />
-    <img class="product product--3" src="../../assets/images/image-3.png" alt="" aria-hidden="true" />
-    <img class="product product--6" src="../../assets/images/image-6.png" alt="" aria-hidden="true" />
-    <img class="product product--1" src="../../assets/images/image-1.png" alt="" aria-hidden="true" />
-    <img class="product product--5" src="../../assets/images/image-5.png" alt="" aria-hidden="true" />
-    <img class="product product--4" src="../../assets/images/image-4.png" alt="" aria-hidden="true" />
-    <img class="brand-logo" src="../../assets/images/logo.png" alt="Velura" />
+    <div class="auth-bg-gradient" aria-hidden="true"></div>
 
-    <form class="login-card" action="/src/pages/auth/signin.html" method="get">
+    <a href="/index.html" class="brand-logo-link" aria-label="Về trang chủ Velura">
+      <span class="brand-logo-text">Velura</span>
+    </a>
+
+    <form class="login-card" id="js-signup-form" action="#" method="post" novalidate>
       <header class="login-card__head">
         <h1 class="login-card__title" style="margin-bottom: 8px;">Tạo tài khoản</h1>
         <p class="login-card__subtitle" style="margin-bottom: 24px;">Đăng ký để nhận được nhiều ưu đãi từ Velura</p>
       </header>
 
       <div class="fields">
+        <!-- Họ và tên -->
         <div class="field">
-          <label class="field__label" for="fullname">Họ và tên</label>
+          <label class="field__label" for="fullname">Họ và tên <span class="field__required">*</span></label>
           <div class="field__control">
             <input class="field__input" type="text" id="fullname" name="fullname" placeholder="Nhập họ và tên của bạn"
-              required />
+              autocomplete="name" required />
           </div>
+          <div class="field__error" id="error-fullname" aria-live="polite"></div>
         </div>
 
+        <!-- Số điện thoại -->
         <div class="field" style="margin-top: 16px;">
-          <label class="field__label" for="phone">Số điện thoại</label>
+          <label class="field__label" for="phone-signup">
+            Số điện thoại <span class="field__required">*</span>
+            <span class="field__hint">(dùng để đăng nhập)</span>
+          </label>
           <div class="field__control">
-            <input class="field__input" type="tel" id="phone" name="phone" placeholder="Nhập số điện thoại của bạn"
-              required />
+            <input class="field__input" type="tel" id="phone-signup" name="phone" placeholder="0912 345 678"
+              autocomplete="tel" inputmode="numeric" required />
+            <span class="field__check-icon" id="phone-check-icon" hidden></span>
           </div>
+          <div class="field__error" id="error-phone-signup" aria-live="polite"></div>
         </div>
 
+        <!-- Email (tuỳ chọn) -->
         <div class="field" style="margin-top: 16px;">
-          <label class="field__label" for="email">Gmail</label>
+          <label class="field__label" for="email-signup">
+            Email <span class="field__optional">(tùy chọn)</span>
+          </label>
           <div class="field__control">
-            <input class="field__input" type="email" id="email" name="email" placeholder="example@gmail.com" required />
+            <input class="field__input" type="email" id="email-signup" name="email"
+              placeholder="example@gmail.com" autocomplete="email" />
+            <span class="field__check-icon" id="email-check-icon" hidden></span>
           </div>
+          <div class="field__error" id="error-email-signup" aria-live="polite"></div>
         </div>
 
+        <!-- Mật khẩu -->
         <div class="field field--password" style="margin-top: 16px;">
-          <label class="field__label" for="password">Mật khẩu</label>
+          <label class="field__label" for="password-signup">Mật khẩu <span class="field__required">*</span></label>
           <div class="field__control">
-            <input class="field__input" type="password" id="password" name="password"
-              placeholder="Nhập mật khẩu (tối thiểu 8 ký tự)" minlength="8" required />
-            <button class="field__toggle" type="button" aria-label="Hiển thị mật khẩu">
+            <input class="field__input" type="password" id="password-signup" name="password"
+              placeholder="Tối thiểu 8 ký tự" autocomplete="new-password" required />
+            <button class="field__toggle" type="button" aria-label="Hiển thị mật khẩu" data-toggle="password-signup">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M1.37 7.77C2.84 5.33 5.19 3.33 8 3.33s5.16 2 6.63 4.44M8 10a2 2 0 100-4 2 2 0 000 4z"
                   stroke="#6B635D" stroke-width="1.33" stroke-linecap="round" />
               </svg>
             </button>
           </div>
+          <!-- Password strength indicator -->
+          <div class="password-strength" id="password-strength" hidden>
+            <div class="password-strength__bar">
+              <div class="password-strength__fill" id="strength-fill"></div>
+            </div>
+            <span class="password-strength__label" id="strength-label"></span>
+          </div>
+          <div class="field__error" id="error-password-signup" aria-live="polite"></div>
         </div>
 
+        <!-- Xác nhận mật khẩu -->
         <div class="field field--password" style="margin-top: 16px;">
-          <label class="field__label" for="password-confirm">Xác nhận mật khẩu</label>
+          <label class="field__label" for="password-confirm">Xác nhận mật khẩu <span class="field__required">*</span></label>
           <div class="field__control">
             <input class="field__input" type="password" id="password-confirm" name="password_confirm"
-              placeholder="Xác nhận mật khẩu" minlength="8" required />
-            <button class="field__toggle" type="button" aria-label="Hiển thị mật khẩu">
+              placeholder="Nhập lại mật khẩu" autocomplete="new-password" required />
+            <button class="field__toggle" type="button" aria-label="Hiển thị mật khẩu" data-toggle="password-confirm">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path d="M1.37 7.77C2.84 5.33 5.19 3.33 8 3.33s5.16 2 6.63 4.44M8 10a2 2 0 100-4 2 2 0 000 4z"
                   stroke="#6B635D" stroke-width="1.33" stroke-linecap="round" />
               </svg>
             </button>
           </div>
+          <div class="field__error" id="error-confirm" aria-live="polite"></div>
         </div>
       </div>
 
-      <button class="btn btn--login" type="submit" style="margin-top: 32px;">Đăng ký</button>
+      <button class="btn btn--login" type="submit" id="btn-signup" style="margin-top: 32px;">Đăng ký</button>
 
-      <p class="signup" style="margin-top: 32px;">Đã có tài khoản? <a href="/src/pages/auth/signin.html">Đăng nhập
-          ngay</a></p>
+      <p class="signup" style="margin-top: 24px;">Đã có tài khoản? <a href="/src/pages/auth/signin.html">Đăng nhập ngay</a></p>
     </form>
   </main>
   <script type="module" src="../../scripts/main.js"></script>
