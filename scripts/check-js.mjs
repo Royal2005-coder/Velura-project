@@ -2,7 +2,8 @@ import { readdir } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 
-const roots = ["apps/api/src", "packages", "database/seed"];
+const roots = ["apps/api/src", "packages", "database/seed", "scripts", "src/scripts"];
+const ignoredDirectories = new Set(["node_modules", "dist", "coverage", ".git"]);
 const files = [];
 
 for (const root of roots) {
@@ -29,6 +30,7 @@ async function collectJs(dir, output) {
   for (const entry of entries) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (ignoredDirectories.has(entry.name)) continue;
       await collectJs(path, output);
     } else if (/\.(mjs|js)$/.test(entry.name)) {
       output.push(path);

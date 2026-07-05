@@ -22,6 +22,7 @@ import { initOrderDetail } from "./modules/order-detail.js";
 import { initTrackOrder } from "./modules/track-order.js";
 import { initHomepage } from "./modules/homepage.js";
 import { initCart } from "./modules/cart.js";
+import { initContentPages } from "./modules/content.js";
 
 (function () {
   "use strict";
@@ -60,6 +61,7 @@ import { initCart } from "./modules/cart.js";
   initTrackOrder();
   initHomepage();
   initCart();
+  initContentPages();
 
   /* Mobile navigation */
   var menuToggle = document.querySelector(".menu-toggle");

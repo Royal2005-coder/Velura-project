@@ -1,21 +1,76 @@
 import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
 import { config, assertRuntimeConfig } from "./config.js";
-import { applyCors, HttpError, parsePathname, readJson, sendError, sendJson, sendNoContent } from "./http.js";
+import { applyCors, applySecurityHeaders, getRequestIp, HttpError, parsePathname, sendError, sendJson, sendNoContent } from "./http.js";
 import { buildAuthContext, requireAdmin, requirePermission } from "./rbac.js";
 import { buildDashboardSummary } from "./dashboard.js";
-import { getResource, buildListQuery } from "./resources.js";
-import { deleteRows, insertRow, selectRows, updateRows } from "./supabase.js";
-import { writeAuditLog } from "./audit.js";
-import { handleAction } from "./actions.js";
+import { createAccountRepository } from "./accounts/account-repository.js";
+import { createAccountService } from "./accounts/account-service.js";
+import { handleAccountRoute } from "./accounts/account-router.js";
+import { startAccountMaintenance } from "./accounts/account-maintenance.js";
+import { startEmailOutboxWorker } from "./email/outbox-worker.js";
+import { createProductRepository } from "./products/product-repository.js";
+import { createProductService } from "./products/product-service.js";
+import { handleProductRoute } from "./products/product-router.js";
+import { createOrderRepository } from "./orders/order-repository.js";
+import { createOrderService } from "./orders/order-service.js";
+import { handleOrderRoute } from "./orders/order-router.js";
+import { createReviewRepository } from "./reviews/review-repository.js";
+import { createReviewService } from "./reviews/review-service.js";
+import { handleReviewRoute } from "./reviews/review-router.js";
+import { createReturnRepository } from "./returns/return-repository.js";
+import { createReturnService } from "./returns/return-service.js";
+import { handleReturnRoute } from "./returns/return-router.js";
+import { createPricingRepository } from "./pricing/pricing-repository.js";
+import { createPricingService } from "./pricing/pricing-service.js";
+import { handlePricingRoute } from "./pricing/pricing-router.js";
+import { createAuditLogRepository } from "./audit-logs/audit-log-repository.js";
+import { createAuditLogService } from "./audit-logs/audit-log-service.js";
+import { handleAuditLogRoute } from "./audit-logs/audit-log-router.js";
+import { createChatbotRepository } from "./chatbot/chatbot-repository.js";
+import { createChatbotService } from "./chatbot/chatbot-service.js";
+import { handleChatbotRoute } from "./chatbot/chatbot-router.js";
+import { createContentRepository } from "./content/content-repository.js";
+import { createContentService } from "./content/content-service.js";
+import { handleContentRoute } from "./content/content-router.js";
+import { createFixedWindowLimiter } from "./rate-limit.js";
 import { handleUserRoute } from "./user-routes.js";
 import { handleWishlistRoute } from "./v1-wishlist-routes.js";
 
 assertRuntimeConfig();
 
+const accountService = createAccountService({ repository: createAccountRepository() });
+const productService = createProductService({ repository: createProductRepository() });
+const orderService = createOrderService({ repository: createOrderRepository() });
+const reviewService = createReviewService({ repository: createReviewRepository() });
+const returnService = createReturnService({ repository: createReturnRepository() });
+const pricingService = createPricingService({ repository: createPricingRepository() });
+const auditLogService = createAuditLogService({ repository: createAuditLogRepository() });
+const chatbotService = createChatbotService({ repository: createChatbotRepository() });
+const contentService = createContentService({ repository: createContentRepository() });
+const mutationLimiter = createFixedWindowLimiter({
+  limit: config.adminMutationLimitPerMinute,
+  windowMs: 60_000
+});
+const chatLimiter = createFixedWindowLimiter({
+  limit: 30,
+  windowMs: 60_000
+});
+startAccountMaintenance();
+startEmailOutboxWorker();
+
 const server = createServer(async (req, res) => {
-  const corsHeaders = applyCors(req, res, config.corsOrigin);
+  const requestId = String(req.headers["x-request-id"] || randomUUID()).slice(0, 128);
+  applySecurityHeaders(res, config.nodeEnv);
+  res.setHeader("x-request-id", requestId);
+  const corsHeaders = applyCors(req, res, config.corsOrigins);
 
   try {
+    if (req.headers.origin && !res.hasHeader("access-control-allow-origin")) {
+      for (const [key, value] of Object.entries(corsHeaders)) {
+        res.setHeader(key, value);
+      }
+    }
     if (req.method === "OPTIONS") return sendNoContent(res, corsHeaders);
 
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
@@ -36,9 +91,25 @@ const server = createServer(async (req, res) => {
 
     const context = await buildAuthContext(req);
 
+    if (parts[1] === "content") {
+      const handled = await handleContentRoute({
+        req,
+        res,
+        url,
+        parts,
+        headers: corsHeaders,
+        service: contentService
+      });
+      if (handled) return;
+    }
+
     if (req.method === "GET" && parts[1] === "auth" && parts[2] === "me") {
       return sendJson(res, 200, {
-        user: context.authUser,
+        user: context.authUser ? {
+          id: context.authUser.id,
+          email: context.authUser.email,
+          phone: context.authUser.phone || null
+        } : null,
         profile: context.profile,
         role: context.roleCode,
         roleName: context.roleName,
@@ -55,6 +126,115 @@ const server = createServer(async (req, res) => {
       return await handleWishlistRoute(req, res, parts, corsHeaders, context);
     }
 
+    if (parts[1] === "v1" && parts[2] === "chat") {
+      const handled = await handleChatbotRoute({
+        req,
+        res,
+        url,
+        parts,
+        context,
+        headers: corsHeaders,
+        service: chatbotService,
+        limiter: chatLimiter
+      });
+      if (handled) return;
+    }
+
+    if (parts[1] === "v1" && parts[2] === "admin") {
+      requireAdmin(context);
+      if (["POST", "PATCH", "DELETE"].includes(req.method)) {
+        const rate = mutationLimiter.consume(context.authUser?.id || getRequestIp(req));
+        res.setHeader("x-ratelimit-remaining", String(rate.remaining));
+        res.setHeader("x-ratelimit-reset", String(Math.ceil(rate.resetAt / 1000)));
+        if (!rate.allowed) {
+          throw new HttpError(429, "RATE_LIMITED", "Too many admin mutation requests");
+        }
+      }
+      const handled = await handleAccountRoute({
+        req,
+        res,
+        url,
+        parts,
+        context,
+        headers: corsHeaders,
+        service: accountService
+      });
+      if (handled) return;
+
+      const productHandled = await handleProductRoute({
+        req,
+        res,
+        url,
+        parts,
+        context,
+        headers: corsHeaders,
+        service: productService
+      });
+      if (productHandled) return;
+
+      const orderHandled = await handleOrderRoute({
+        req,
+        res,
+        url,
+        parts,
+        context,
+        headers: corsHeaders,
+        service: orderService
+      });
+      if (orderHandled) return;
+
+      const reviewHandled = await handleReviewRoute({
+        req,
+        res,
+        url,
+        parts,
+        context,
+        headers: corsHeaders,
+        service: reviewService
+      });
+      if (reviewHandled) return;
+
+      const returnHandled = await handleReturnRoute({
+        req,
+        res,
+        url,
+        parts,
+        context,
+        headers: corsHeaders,
+        service: returnService
+      });
+      if (returnHandled) return;
+
+      const pricingHandled = await handlePricingRoute({
+        req,
+        res,
+        url,
+        parts,
+        context,
+        headers: corsHeaders,
+        service: pricingService
+      });
+      if (pricingHandled) return;
+
+      const auditLogHandled = await handleAuditLogRoute({
+        req, res, url, parts, context, headers: corsHeaders, service: auditLogService
+      });
+      if (auditLogHandled) return;
+
+      const chatHandled = await handleChatbotRoute({
+        req,
+        res,
+        url,
+        parts,
+        context,
+        headers: corsHeaders,
+        service: chatbotService
+      });
+      if (chatHandled) return;
+
+      throw new HttpError(404, "NOT_FOUND", "Route not found");
+    }
+
     if (parts[1] !== "admin") {
       throw new HttpError(404, "NOT_FOUND", "Route not found");
     }
@@ -63,97 +243,19 @@ const server = createServer(async (req, res) => {
 
     if (req.method === "GET" && parts[2] === "dashboard") {
       requirePermission(context, "dashboard", "read");
-      return sendJson(res, 200, await buildDashboardSummary(), corsHeaders);
+      return sendJson(res, 200, await buildDashboardSummary(url.searchParams), corsHeaders);
     }
 
-    const resourceName = parts[2];
-    const resource = getResource(resourceName);
-    if (!resource) throw new HttpError(404, "RESOURCE_NOT_FOUND", "Admin resource not found");
-
-    if (parts.length === 3 && req.method === "GET") {
-      requirePermission(context, resource.module, "read");
-      const result = await selectRows(resource.table, buildListQuery(resource, url));
-      return sendJson(res, 200, result, corsHeaders);
-    }
-
-    if (parts.length === 3 && req.method === "POST") {
-      if (resource.readOnly) throw new HttpError(405, "READ_ONLY_RESOURCE", "Resource is read-only");
-      requirePermission(context, resource.module, "create");
-      const payload = await readJson(req);
-      const row = await insertRow(resource.table, payload);
-      await writeAuditLog(context, {
-        module: resource.module,
-        action: "create",
-        targetTable: resource.table,
-        targetId: row?.id,
-        targetCode: row?.code || row?.sku || row?.order_code || row?.email || row?.id,
-        afterData: row,
-        summary: `Created ${resourceName}`
-      });
-      return sendJson(res, 201, row, corsHeaders);
-    }
-
-    const id = parts[3];
-    if (!id) throw new HttpError(404, "NOT_FOUND", "Route not found");
-
-    if (parts.length === 4 && req.method === "PATCH") {
-      if (resource.readOnly) throw new HttpError(405, "READ_ONLY_RESOURCE", "Resource is read-only");
-      requirePermission(context, resource.module, "update");
-      const payload = await readJson(req);
-      if (payload.expectedVersion === undefined || payload.expectedVersion === null) {
-        throw new HttpError(400, "EXPECTED_VERSION_REQUIRED", "expectedVersion is required for updates");
-      }
-      const query = { id: `eq.${id}` };
-      query.version = `eq.${payload.expectedVersion}`;
-      const { expectedVersion, ...patch } = payload;
-      const rows = await updateRows(resource.table, query, {
-        ...patch,
-        version: Number(expectedVersion || 0) + 1,
-        updated_at: new Date().toISOString()
-      });
-      if (!rows.length) throw new HttpError(409, "VERSION_CONFLICT", "Data changed before this update was saved");
-      await writeAuditLog(context, {
-        module: resource.module,
-        action: "update",
-        targetTable: resource.table,
-        targetId: id,
-        afterData: rows[0],
-        summary: `Updated ${resourceName} ${id}`
-      });
-      return sendJson(res, 200, rows[0], corsHeaders);
-    }
-
-    if (parts.length === 4 && req.method === "DELETE") {
-      if (resource.readOnly) throw new HttpError(405, "READ_ONLY_RESOURCE", "Resource is read-only");
-      requirePermission(context, resource.module, "delete");
-      await deleteRows(resource.table, { id: `eq.${id}` });
-      await writeAuditLog(context, {
-        module: resource.module,
-        action: "delete",
-        targetTable: resource.table,
-        targetId: id,
-        severity: "attention",
-        summary: `Deleted ${resourceName} ${id}`
-      });
-      return sendNoContent(res, corsHeaders);
-    }
-
-    if (parts.length === 5 && parts[4] === "actions" && req.method === "POST") {
-      const body = await readJson(req);
-      const action = body.action;
-      if (!action) throw new HttpError(400, "ACTION_REQUIRED", "action is required");
-      requirePermission(context, resource.module, "update");
-      const result = await handleAction(context, resourceName, id, action, body);
-      return sendJson(res, 200, result, corsHeaders);
-    }
-
-    throw new HttpError(404, "NOT_FOUND", "Route not found");
+    throw new HttpError(
+      410,
+      "LEGACY_ADMIN_API_DISABLED",
+      "Use a typed versioned endpoint under /api/v1/admin"
+    );
   } catch (error) {
-    sendError(res, error, corsHeaders);
+    sendError(res, error, corsHeaders, requestId);
   }
 });
 
 server.listen(config.port, () => {
   console.log(`Velura API listening on http://localhost:${config.port}`);
-  console.log(`CORS Origin config: ${config.corsOrigin}`);
 });

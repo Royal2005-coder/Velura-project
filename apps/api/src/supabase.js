@@ -12,12 +12,20 @@ export async function supabaseRequest(path, options = {}) {
   });
 
   const key = options.useAnonKey ? config.supabaseAnonKey : getSupabaseServiceKey();
+  if (!key) {
+    throw new HttpError(503, "SERVICE_ROLE_REQUIRED", "Supabase service role is not configured");
+  }
   const headers = {
     apikey: key,
-    authorization: `Bearer ${options.accessToken || key}`,
     accept: "application/json",
     ...options.headers
   };
+  if (options.accessToken) {
+    headers.authorization = `Bearer ${options.accessToken}`;
+  } else if (key.startsWith("eyJ")) {
+    // Legacy service_role keys are JWTs. New sb_secret_* keys belong only in apikey.
+    headers.authorization = `Bearer ${key}`;
+  }
 
   let body;
   if (options.body !== undefined) {
@@ -25,7 +33,6 @@ export async function supabaseRequest(path, options = {}) {
     body = JSON.stringify(options.body);
   }
 
-  console.log(`[SUPABASE REQ] ${options.method || "GET"} ${url.pathname}${url.search}`);
   try {
     const response = await fetch(url, {
       method: options.method || "GET",
@@ -34,7 +41,6 @@ export async function supabaseRequest(path, options = {}) {
       signal: controller.signal
     });
 
-    console.log(`[SUPABASE RES] ${response.status} for ${url.pathname}${url.search}`);
     const text = await response.text();
     const data = text ? parseJson(text) : null;
 
@@ -62,16 +68,22 @@ export async function supabaseRequest(path, options = {}) {
 
 export async function getAuthUser(accessToken) {
   if (!accessToken) return null;
-  const result = await supabaseRequest("/auth/v1/user", {
-    useAnonKey: true,
-    accessToken
-  });
-  return result.data;
+  try {
+    const result = await supabaseRequest("/auth/v1/user", {
+      useAnonKey: true,
+      accessToken
+    });
+    return result.data;
+  } catch {
+    return null;
+  }
 }
 
-export async function selectRows(table, query = {}) {
+export async function selectRows(table, query = {}, options = {}) {
   const result = await supabaseRequest(`/rest/v1/${table}`, {
     query,
+    useAnonKey: options.useAnonKey,
+    accessToken: options.accessToken,
     headers: {
       prefer: "count=exact"
     }
@@ -82,9 +94,22 @@ export async function selectRows(table, query = {}) {
   };
 }
 
-export async function selectOne(table, query = {}) {
-  const { rows } = await selectRows(table, { limit: 1, ...query });
+export async function selectOne(table, query = {}, options = {}) {
+  const { rows } = await selectRows(table, { limit: 1, ...query }, options);
   return rows[0] || null;
+}
+
+export async function callRpc(name, payload, options = {}) {
+  const result = await supabaseRequest(`/rest/v1/rpc/${name}`, {
+    method: "POST",
+    body: payload,
+    useAnonKey: options.useAnonKey,
+    accessToken: options.accessToken,
+    headers: {
+      prefer: "return=representation"
+    }
+  });
+  return result.data;
 }
 
 export async function insertRow(table, payload) {

@@ -1,17 +1,10 @@
 export const adminResources = {
   accounts: {
-    table: "profiles",
+    table: "users",
     module: "accounts",
-    select: "*,role:app_roles(code,name,is_admin)",
+    select: "user_id,email,phone,full_name,avatar,role,admin_role,is_active,is_verified,lock_type,lock_reason,locked_at,created_at,last_login_at,version,updated_at",
     searchColumns: ["full_name", "email", "phone"],
     defaultOrder: "created_at.desc"
-  },
-  roles: {
-    table: "app_roles",
-    module: "accounts",
-    select: "*",
-    searchColumns: ["name", "code"],
-    defaultOrder: "sort_order.asc"
   },
   products: {
     table: "products",

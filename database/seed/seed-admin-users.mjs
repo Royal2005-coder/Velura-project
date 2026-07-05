@@ -1,95 +1,178 @@
-import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+/**
+ * Seed admin users into Supabase public.users table.
+ * Run: node database/seed/seed-admin-users.mjs
+ *
+ * This creates the super_admin account needed to approve SSO users.
+ * It uses the Supabase REST API with the service role key.
+ */
 
-loadEnv();
+const SUPABASE_URL = "https://drvkrpoojyncodfytftn.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_6ELMfwBsM3SFAXQz8-jmOQ_kv1kkGh7";
 
-const supabaseUrl = stripTrailingSlash(process.env.VELURA_SUPABASE_URL || "");
-const serviceKey = process.env.VELURA_SUPABASE_SERVICE_ROLE_KEY || "";
-
-if (!supabaseUrl || !serviceKey) {
-  console.error("Missing VELURA_SUPABASE_URL or VELURA_SUPABASE_SERVICE_ROLE_KEY.");
-  process.exit(1);
+// Read service role key from env or .env file
+let SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+if (!SERVICE_KEY) {
+  try {
+    const fs = await import("fs");
+    const env = fs.readFileSync(new URL("../../.env", import.meta.url), "utf8");
+    const match = env.match(/VELURA_SUPABASE_SERVICE_ROLE_KEY=(.*)/);
+    if (match) SERVICE_KEY = match[1].trim();
+  } catch {}
 }
 
-const roles = [
-  { code: "super_admin", name: "Admin quan tri", description: "Full system administration", is_admin: true, sort_order: 1 },
-  { code: "product_admin", name: "Admin quan ly san pham", description: "Catalog and inventory administration", is_admin: true, sort_order: 10 },
-  { code: "order_admin", name: "Admin quan ly don hang", description: "Order and payment operations", is_admin: true, sort_order: 20 },
-  { code: "pricing_admin", name: "Admin quan ly gia va khuyen mai", description: "Pricing, vouchers and campaigns", is_admin: true, sort_order: 30 },
-  { code: "review_admin", name: "Admin quan ly danh gia", description: "Review moderation and escalation", is_admin: true, sort_order: 40 },
-  { code: "service_admin", name: "Admin doi tra va CSKH", description: "Return and support operations", is_admin: true, sort_order: 50 },
-  { code: "read_only_admin", name: "Admin chi xem", description: "Read-only reporting and logs", is_admin: true, sort_order: 90 },
-  { code: "member", name: "Member", description: "Customer account", is_admin: false, sort_order: 100 }
-];
+const KEY = SERVICE_KEY || SUPABASE_ANON_KEY;
 
-await upsert("app_roles", roles, "code");
-const roleRows = await getRows("app_roles", "id,code");
-const roleId = Object.fromEntries(roleRows.map((role) => [role.code, role.id]));
-
-const profiles = [
-  { email: "admin@velura.vn", phone: "0923456789", full_name: "Pham Thu Huong", role_id: roleId.super_admin, status: "active", customer_tier: "staff" },
-  { email: "product@velura.vn", phone: "0912345678", full_name: "Tran Minh Tuan", role_id: roleId.product_admin, status: "active", customer_tier: "staff" },
-  { email: "order@velura.vn", phone: "0934567890", full_name: "Le Gia Linh", role_id: roleId.order_admin, status: "active", customer_tier: "staff" },
-  { email: "price@velura.vn", phone: "0956789012", full_name: "Ngo Thanh Son", role_id: roleId.pricing_admin, status: "active", customer_tier: "staff" },
-  { email: "cskh@velura.vn", phone: "0967890123", full_name: "Vu Thanh Mai", role_id: roleId.service_admin, status: "active", customer_tier: "staff" }
-];
-
-await upsert("profiles", profiles, "email");
-console.log(`Seeded ${roles.length} roles and ${profiles.length} admin profiles.`);
-
-async function upsert(table, rows, onConflict) {
-  if (!rows.length) return [];
-  const response = await fetch(`${supabaseUrl}/rest/v1/${table}?on_conflict=${onConflict}`, {
-    method: "POST",
-    headers: headers({
-      prefer: "resolution=merge-duplicates,return=representation"
-    }),
-    body: JSON.stringify(rows)
-  });
-  return parseResponse(response);
-}
-
-async function getRows(table, select) {
-  const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=${encodeURIComponent(select)}`, {
-    headers: headers()
-  });
-  return parseResponse(response);
-}
-
-async function parseResponse(response) {
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!response.ok) {
-    console.error(data);
-    throw new Error(`Supabase ${response.status}`);
+const ADMIN_USERS = [
+  {
+    user_id: "33c7a82f-4713-4471-b651-6f0943ea2e50",
+    email: "ninhdp23406@st.uel.edu.vn",
+    full_name: "Ninh Đoàn Phương",
+    phone: null,
+    role: "admin",
+    admin_role: "super_admin",
+    is_active: true,
+    is_verified: true,
+    avatar: "NP"
+  },
+  {
+    user_id: "a0000000-0000-4000-8000-000000000001",
+    email: "admin@velura.vn",
+    full_name: "Phạm Thu Hương",
+    phone: "0923456789",
+    role: "admin",
+    admin_role: "super_admin",
+    is_active: true,
+    is_verified: true,
+    avatar: "PH"
+  },
+  {
+    user_id: "a0000000-0000-4000-8000-000000000002",
+    email: "product@velura.vn",
+    full_name: "Trần Minh Tuấn",
+    phone: "0912345678",
+    role: "admin",
+    admin_role: "admin_operator_sanpham",
+    is_active: true,
+    is_verified: true,
+    avatar: "TT"
+  },
+  {
+    user_id: "a0000000-0000-4000-8000-000000000003",
+    email: "order@velura.vn",
+    full_name: "Lê Gia Linh",
+    phone: "0934567890",
+    role: "admin",
+    admin_role: "admin_operator_donhang",
+    is_active: true,
+    is_verified: true,
+    avatar: "LG"
+  },
+  {
+    user_id: "a0000000-0000-4000-8000-000000000004",
+    email: "price@velura.vn",
+    full_name: "Ngô Thanh Sơn",
+    phone: "0956789012",
+    role: "admin",
+    admin_role: "admin_operator_gia_km",
+    is_active: true,
+    is_verified: true,
+    avatar: "NS"
+  },
+  {
+    user_id: "a0000000-0000-4000-8000-000000000005",
+    email: "cskh@velura.vn",
+    full_name: "Vũ Thanh Mai",
+    phone: "0967890123",
+    role: "admin",
+    admin_role: "admin_operator_cskh_dt",
+    is_active: true,
+    is_verified: true,
+    avatar: "VM"
+  },
+  {
+    user_id: "a0000000-0000-4000-8000-000000000006",
+    email: "review@velura.vn",
+    full_name: "Đỗ Minh Anh",
+    phone: "0978901234",
+    role: "admin",
+    admin_role: "admin_operator_danhgia_review",
+    is_active: true,
+    is_verified: true,
+    avatar: "DA"
   }
-  return data;
-}
+];
 
-function headers(extra = {}) {
-  return {
-    apikey: serviceKey,
-    authorization: `Bearer ${serviceKey}`,
-    "content-type": "application/json",
-    accept: "application/json",
-    ...extra
+async function upsertUser(user) {
+  const now = new Date().toISOString();
+  const payload = {
+    ...user,
+    password_hash: null,
+    is_quiz_completed: false,
+    failed_login_count: 0,
+    created_at: now,
+    updated_at: now,
+    version: 1
   };
+
+  const url = `${SUPABASE_URL}/rest/v1/users`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      apikey: KEY,
+      authorization: `Bearer ${KEY}`,
+      "content-type": "application/json",
+      prefer: "resolution=merge-duplicates,return=representation"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const text = await resp.text();
+  if (!resp.ok) {
+    // Try update if insert fails (duplicate)
+    const updateResp = await fetch(`${url}?user_id=eq.${user.user_id}`, {
+      method: "PATCH",
+      headers: {
+        apikey: KEY,
+        authorization: `Bearer ${KEY}`,
+        "content-type": "application/json",
+        prefer: "return=representation"
+      },
+      body: JSON.stringify({ is_active: true, is_verified: true, updated_at: now })
+    });
+    const updateText = await updateResp.text();
+    if (!updateResp.ok) {
+      console.error(`  FAIL ${user.email}: ${updateText}`);
+      return false;
+    }
+    console.log(`  UPDATED ${user.email} (${user.admin_role})`);
+    return true;
+  }
+
+  console.log(`  CREATED ${user.email} (${user.admin_role})`);
+  return true;
 }
 
-function loadEnv() {
-  const envPath = resolve(process.cwd(), ".env");
-  if (!existsSync(envPath)) return;
-  const lines = readFileSync(envPath, "utf8").split(/\r?\n/);
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
-    const [key, ...rest] = trimmed.split("=");
-    if (!process.env[key]) {
-      process.env[key] = rest.join("=").replace(/^["']|["']$/g, "");
+async function main() {
+  console.log("=== Seeding Velura Admin Users ===");
+  console.log(`URL: ${SUPABASE_URL}`);
+  console.log(`Key: ${KEY.slice(0, 10)}...`);
+  console.log(`Users: ${ADMIN_USERS.length}`);
+  console.log("");
+
+  let ok = 0;
+  let fail = 0;
+  for (const user of ADMIN_USERS) {
+    try {
+      const success = await upsertUser(user);
+      if (success) ok++; else fail++;
+    } catch (err) {
+      console.error(`  ERROR ${user.email}: ${err.message}`);
+      fail++;
     }
   }
+
+  console.log("");
+  console.log(`Done: ${ok} success, ${fail} failed`);
 }
 
-function stripTrailingSlash(value) {
-  return value.replace(/\/+$/, "");
-}
+main().catch(console.error);

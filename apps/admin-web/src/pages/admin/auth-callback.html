@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura - Đang xác thực</title>
+  <style>
+    body { display:grid; place-items:center; min-height:100vh; background:#f5f0eb; font-family:"DM Sans",sans-serif; }
+    .card { width:min(440px,calc(100% - 32px)); box-sizing:border-box; padding:40px 36px; background:#fff; border:1px solid #e5e1db; border-radius:8px; text-align:center; }
+    .card h1 { font-size:1.25rem; color:#2c2520; margin-bottom:12px; }
+    .spinner { width:36px; height:36px; border:3px solid #e5e1db; border-top-color:#c97b63; border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 16px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .sub { color:#8a817a; font-size:.875rem; }
+    .err { display:none; padding:12px; margin-top:16px; border:1px solid #dc2626; border-radius:8px; background:#fef2f2; color:#dc2626; font-size:.875rem; line-height:1.5; }
+    .err.is-visible { display:block; }
+    .btn { display:inline-block; margin-top:16px; padding:8px 20px; background:#c97b63; color:#fff; border:none; border-radius:6px; font-size:.875rem; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="spinner" id="spinner"></div>
+    <h1 id="message">Đang xác thực với Supabase...</h1>
+    <p class="sub" id="detail">Hệ thống đang kiểm tra danh tính và quyền truy cập.</p>
+    <div class="err" id="error" role="alert"></div>
+    <a class="btn" id="back" href="./login.html" hidden>Quay lại đăng nhập</a>
+  </main>
+
+  <script type="module">
+    import {
+      establishAuthoritativeSession,
+      firstAllowedPage,
+      signOut,
+      setAccessToken,
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    } from '../../scripts/supabase-auth.js';
+    const SUPABASE_AUTH_URL = SUPABASE_URL + '/auth/v1';
+    const REDIRECT_URI = window.location.origin + window.location.pathname;
+    const VERIFIER_KEY = 'velura-oauth-pkce-code-verifier';
+
+    const spinner = document.getElementById('spinner');
+    const message = document.getElementById('message');
+    const detail = document.getElementById('detail');
+    const errorBox = document.getElementById('error');
+    const back = document.getElementById('back');
+
+    function fail(text, diag) {
+      spinner.hidden = true;
+      message.textContent = 'Xác thực thất bại';
+      detail.textContent = '';
+      errorBox.textContent = text;
+      if (diag) {
+        const d = document.createElement('div');
+        d.style.cssText = 'margin-top:8px;padding:8px;border:1px dashed #dc2626;border-radius:4px;font-size:.75rem;color:#7f1d1d;word-break:break-word;white-space:pre-wrap';
+        d.textContent = diag;
+        errorBox.appendChild(d);
+      }
+      errorBox.classList.add('is-visible');
+      back.hidden = false;
+    }
+
+    async function exchangeCode(code, codeVerifier) {
+      const resp = await fetch(SUPABASE_AUTH_URL + '/token?grant_type=pkce', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'content-type': 'application/json' },
+        body: JSON.stringify({ auth_code: code, code_verifier: codeVerifier, redirect_uri: REDIRECT_URI })
+      });
+      const raw = await resp.text();
+      let parsed;
+      try { parsed = JSON.parse(raw); } catch { parsed = null; }
+      if (!resp.ok) {
+        const detail = parsed?.msg || parsed?.error_description || parsed?.message || raw || 'Unknown';
+        const code = parsed?.error_code || parsed?.code || '';
+        throw new Error(code ? code + ': ' + detail : detail);
+      }
+      if (!parsed?.access_token) throw new Error('Response missing access_token');
+      return parsed;
+    }
+
+    async function run() {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+
+      if (!code) {
+        fail('Không tìm thấy mã xác thực trong URL.');
+        return;
+      }
+
+      const codeVerifier = localStorage.getItem(VERIFIER_KEY);
+      if (!codeVerifier) {
+        fail(
+          'Không tìm thấy PKCE code verifier trong localStorage.',
+          'REDIRECT_URI: ' + REDIRECT_URI + '\nVERIFIER_KEY: ' + VERIFIER_KEY + '\n\nVui lòng quay lại trang đăng nhập và thử lại.'
+        );
+        return;
+      }
+
+      detail.textContent = 'Đã tìm thấy PKCE verifier, đang trao đổi mã với Supabase...';
+
+      window.history.replaceState({}, '', REDIRECT_URI);
+
+      let tokenData;
+      try {
+        tokenData = await exchangeCode(code, codeVerifier);
+      } catch (err) {
+        console.error('[auth-callback] exchangeCode failed', { REDIRECT_URI, err });
+        fail(
+          'Lỗi trao đổi mã xác thực với Supabase.',
+          'REDIRECT_URI: ' + REDIRECT_URI + '\nVerifier: OK (' + codeVerifier.length + ' chars)\nError: ' + err.message
+        );
+        return;
+      }
+
+      localStorage.removeItem(VERIFIER_KEY);
+      setAccessToken(tokenData.access_token);
+
+      try {
+        const appSession = await establishAuthoritativeSession(tokenData);
+        if (!appSession.isActive) {
+          await signOut();
+          fail('Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.');
+          return;
+        }
+        spinner.hidden = true;
+        message.textContent = 'Đăng nhập thành công';
+        detail.textContent = 'Xin chào, ' + appSession.name;
+        window.setTimeout(() => {
+          window.location.replace('./' + firstAllowedPage(appSession) + '.html');
+        }, 500);
+      } catch (err) {
+        console.error('[auth-callback] establishSession failed', { name: err.name, message: err.message, stack: err.stack });
+        await signOut();
+        fail('Lỗi xác thực session: ' + (err.message || err), 'Token length: ' + (tokenData.access_token || '').length + '\nKiểm tra Console để xem chi tiết.');
+      }
+    }
+
+    run();
+  </script>
+</body>
+</html>
