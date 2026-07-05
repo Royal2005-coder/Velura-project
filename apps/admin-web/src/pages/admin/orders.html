@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura — Quản lý đơn hàng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+  <link rel="stylesheet" href="../../styles/admin.css" />
+</head>
+<body class="admin-page">
+  <div class="admin-layout" data-admin-module="orders">
+    <aside class="admin-sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị">
+      <div class="admin-sidebar__brand">
+        <a class="admin-sidebar__logo" href="./orders.html"><img src="../../assets/images/logo.png" alt="Velura" /></a>
+        <span class="admin-sidebar__caption">Quản trị</span>
+      </div>
+      <nav class="admin-sidebar__nav">
+        <a class="admin-menu-item" href="./dashboard.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#dashboard" /></svg>Dashboard</a>
+        <a class="admin-menu-item" href="./accounts.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#users" /></svg>Quản lý tài khoản</a>
+        <a class="admin-menu-item" href="./products.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#box" /></svg>Quản lý sản phẩm</a>
+        <a class="admin-menu-item admin-menu-item--active" href="./orders.html" aria-current="page"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#cart" /></svg>Quản lý đơn hàng</a>
+        <a class="admin-menu-item" href="./reviews.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#star" /></svg>Quản lý đánh giá</a>
+        <a class="admin-menu-item" href="./returns-cskh.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#support" /></svg>Đổi trả &amp; CSKH</a>
+        <details class="admin-menu-group"><summary><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#tag" /></svg>Giá &amp; khuyến mãi</summary><div class="admin-menu-subnav"><a href="./pricing.html">Quản lý giá</a><a href="./promotions.html">Quản lý khuyến mãi</a></div></details>
+        <a class="admin-menu-item" href="./logs.html"><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#log" /></svg>Nhật ký hệ thống</a>
+      </nav>
+    </aside>
+
+    <div class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar__leading">
+          <button class="admin-icon-button admin-topbar__menu" type="button" data-order-sidebar aria-label="Đóng sidebar">☰</button>
+          <h1 class="admin-topbar__title">Quản lý đơn hàng</h1>
+        </div>
+        <div class="admin-topbar__actions">
+          <button class="admin-btn admin-btn--export admin-btn--sm" type="button" data-order-export>Xuất danh sách</button>
+          <button class="admin-btn admin-btn--secondary admin-btn--sm" type="button" data-order-open-logs>Xem nhật ký</button>
+          <button class="admin-profile" type="button"><span class="admin-profile__avatar">PH</span><span class="admin-profile__copy"><strong>Phạm Thu Hương</strong><small>Quản trị viên</small></span></button>
+        </div>
+      </header>
+
+      <main class="admin-content">
+        <p class="admin-page-crumb">Dashboard / Quản lý đơn hàng</p>
+        <section class="admin-kpi-grid admin-order-kpis" aria-label="Thống kê đơn hàng">
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Tổng đơn hàng</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#cart" /></svg></span></div><strong class="admin-kpi-card__value">86</strong></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Chờ xác nhận</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#clock" /></svg></span></div><strong class="admin-kpi-card__value">12</strong></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Lỗi thanh toán</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#credit-card" /></svg></span></div><strong class="admin-kpi-card__value">2</strong></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Đơn cần xử lý</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#alert" /></svg></span></div><strong class="admin-kpi-card__value">5</strong></article>
+        </section>
+
+        <section class="admin-card admin-card--flush">
+          <div class="admin-tabs" role="tablist" aria-label="Nhóm đơn hàng">
+            <button class="admin-tab admin-tab--active" type="button" data-order-tab="all">Tất cả đơn hàng <span>86</span></button>
+            <button class="admin-tab" type="button" data-order-tab="attention">Đơn cần xử lý <span>5</span></button>
+            <button class="admin-tab" type="button" data-order-tab="payment">Lỗi thanh toán <span>2</span></button>
+            <button class="admin-tab" type="button" data-order-tab="cancelled">Đơn hủy <span>2</span></button>
+            <button class="admin-tab" type="button" data-order-tab="logs">Nhật ký đơn hàng</button>
+          </div>
+          <div class="admin-tab-content" id="order-panel"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="order-overlay"></div>
+  <p class="admin-toast" id="order-toast" hidden></p>
+  <script type="module">
+    import { checkAuth, updateSidebarForRole, logout } from '../../scripts/auth.js';
+    checkAuth().then((session) => {
+      if (session) { updateSidebarForRole(session); document.addEventListener('click', e => { if (e.target.closest('[data-admin-logout]')) logout(); }); }
+    });
+  </script>
+  <script type="module" src="../../scripts/orders.js"></script>
+</body>
+</html>

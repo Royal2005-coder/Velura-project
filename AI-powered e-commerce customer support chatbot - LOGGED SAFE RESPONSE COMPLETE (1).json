@@ -1,0 +1,1491 @@
+{
+  "name": "AI-powered e-commerce customer support chatbot - LOGGED SAFE RESPONSE COMPLETE",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-ecommerce-customer-support",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f97efcf3-7372-4da1-a59b-76aaff6b6358",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -1328,
+        384
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "ai-ecommerce-customer-support"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the user query: {{ $json.body?.message || $json.message || '' }}",
+        "options": {
+          "systemMessage": "You are an intent classifier for an ecommerce customer support chatbot. Return ONLY valid minified JSON, no markdown. Schema: {\"intent\":\"order_status|support_ticket|product_recommendation|general\",\"product\":\"short extracted product/category or friendly greeting text\"}. If the user only greets or sends unclear short text, use intent=general and product as a helpful greeting. If user asks product suggestions, use product_recommendation. If user asks delivery/order/shipping/refund/payment by order id, use order_status. If user reports an issue/complaint/wants help/ticket, use support_ticket."
+        }
+      },
+      "id": "75f422f0-fa50-4cc3-9f04-11e3dba3ada9",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -976,
+        384
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first()?.json || {};\nconst webhookBody = $('Webhook').first()?.json?.body || {};\nconst message = String(webhookBody.message ?? item.message ?? '').trim();\nconst session_id = String(webhookBody.session_id ?? webhookBody.sessionId ?? item.session_id ?? `web-${Date.now()}`);\nconst raw = String(item.output ?? item.text ?? '').trim();\n\nfunction fallbackClassify(msg) {\n  const m = String(msg || '').toLowerCase();\n  if (!m || m.length <= 2 || /^(hi|hello|hey|xin chào|chào|alo|g|gu)$/i.test(m)) {\n    return { intent: 'general', product: 'Xin chào! Tôi có thể hỗ trợ kiểm tra đơn hàng, gợi ý sản phẩm, thanh toán hoặc tạo ticket hỗ trợ cho bạn.' };\n  }\n  if (/(recommend|suggest|gợi ý|đề xuất|sản phẩm|product|toys|toy|đồ chơi|category|danh mục|mua gì)/i.test(m)) {\n    const product = /toys|toy|đồ chơi/i.test(m) ? 'toys' : (/health|beauty|làm đẹp/i.test(m) ? 'health_beauty' : (/sport|thể thao/i.test(m) ? 'sports_leisure' : ''));\n    return { intent: 'product_recommendation', product };\n  }\n  if (/(order|đơn hàng|shipping|delivery|giao hàng|vận chuyển|track|theo dõi|payment|thanh toán|refund|hoàn tiền)/i.test(m)) {\n    return { intent: 'order_status', product: '' };\n  }\n  if (/(ticket|support|hỗ trợ|khiếu nại|complaint|lỗi|broken|hỏng|đổi trả|return|bảo hành)/i.test(m)) {\n    return { intent: 'support_ticket', product: '' };\n  }\n  return { intent: 'general', product: 'Mình đã nhận được tin nhắn của bạn. Bạn muốn kiểm tra đơn hàng, gợi ý sản phẩm hay tạo ticket hỗ trợ?' };\n}\n\nlet parsed;\ntry {\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(match ? match[0] : raw);\n} catch (e) {\n  parsed = fallbackClassify(message);\n}\n\nconst valid = ['order_status', 'support_ticket', 'product_recommendation', 'general'];\nif (!parsed || !valid.includes(parsed.intent)) parsed = fallbackClassify(message);\nif (!parsed.product) parsed.product = fallbackClassify(message).product || '';\n\nreturn [{\n  json: {\n    ...item,\n    body: webhookBody,\n    message,\n    session_id,\n    category: {\n      intent: parsed.intent,\n      product: String(parsed.product || '')\n    }\n  }\n}];"
+      },
+      "id": "9c778957-4655-4804-8110-f57ee95164a3",
+      "name": "Normalize Intent JSON",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -640,
+        384
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "171ffeed-66d9-4737-8874-87ce877e17bc",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.category.intent }}",
+                    "rightValue": "order_status"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "16aa8050-bf15-4e60-8550-e79f8fcb85cd",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.category.intent }}",
+                    "rightValue": "product_recommendation"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "f295192e-b5ec-4780-ac58-3b184490978a",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.category.intent }}",
+                    "rightValue": "support_ticket"
+                  }
+                ]
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "e4e31869-5520-486a-9b8e-db0105a1cee9",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.category.intent }}",
+                    "rightValue": "general"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {
+          "allMatchingOutputs": false
+        }
+      },
+      "id": "d46366b6-08b6-449b-84be-b01ad59ba7b2",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -384,
+        368
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User message: {{ $('Webhook').first().json.body?.message || $json.message }}",
+        "options": {
+          "systemMessage": "You are an ecommerce order support assistant.\n\nWhen checking an order, always call getOrderStatus if order_id is available.\n\nReturn a complete Vietnamese answer as plain text only.\nDo not return HTML. Do not return Markdown table. Do not return raw JSON.\nDo not use Markdown markers such as **, __, ###, ``` or HTML tags.\nUse clean numbered lines and short labels only.\n\nIf order data is found, include these fields when available:\n1. Mã đơn hàng\n2. Trạng thái đơn hàng\n3. Trạng thái vận chuyển\n4. Đơn vị vận chuyển\n5. Mã vận đơn\n6. Thời gian giao dự kiến\n7. Cập nhật vận chuyển mới nhất\n8. Người nhận / số điện thoại / khu vực giao\n9. Trạng thái thanh toán if available\n\nIf order data is missing, politely ask the user to check the order_id.\nNever answer only with an intro line without details.\nNever return an empty response."
+        }
+      },
+      "id": "4f944b3d-cf54-423c-802b-697e8fe86dae",
+      "name": "Order Queries",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User message: {{ $('Webhook').first().json.body?.message || $json.message }}. Extracted category/product: {{ $json.category.product }}",
+        "options": {
+          "systemMessage": "You are an ecommerce product recommendation assistant.\n\nUse product_name, brand_name, product_description, price, stock_quantity, rating, target_audience, gift_occasion, warranty_policy and return_policy when available.\nWhen product_name exists, always show product_name first. Do not only show product_id.\nFor gift recommendation, prioritize DEMO products and products with gift_occasion/tag matching the user intent.\nFor 8/3 gift, prioritize health_beauty and gift-related products.\n\nReturn a complete Vietnamese answer as plain text only.\nDo not return HTML. Do not return Markdown table. Do not return raw JSON.\nDo not use Markdown markers such as **, __, ###, ``` or HTML tags.\nUse this format:\nChào bạn, ...\n1. Tên sản phẩm (Mã: ...)\n- Giá: ... VNĐ\n- Điểm nổi bật: ...\n- Lý do phù hợp: ...\n\nIf tool returns products with only product_id, explain clearly but avoid making up unsupported details.\nNever return an empty response."
+        }
+      },
+      "id": "7bf45f24-9b53-4a89-a820-abbfef091f8b",
+      "name": "Recommendations",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        0,
+        368
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User message: {{ $('Webhook').first().json.body?.message || $json.message }}",
+        "options": {
+          "systemMessage": "You are an ecommerce support ticket assistant.\n\nFor creating a support ticket:\n- Extract user_email, product_id, product_category_name, order_id and issue when available.\n- If product_id is missing but category is known, still create ticket using product_category_name.\n- Use Code Tool to generate ticket_id.\n- Use createSupportTicket.\n- Return the ticket_id, status, issue summary and expected next step.\n\nFor checking ticket:\n- Use getTicketStatus when ticket_id is available.\n- Return a complete Vietnamese plain-text answer with:\n1. Mã ticket\n2. Email khách hàng\n3. Sản phẩm hoặc danh mục\n4. Mã đơn hàng if available\n5. Vấn đề\n6. Trạng thái\n7. Mức ưu tiên\n8. Đội phụ trách\n9. Hướng xử lý hiện tại\n\nReturn plain text only.\nDo not return HTML. Do not return Markdown table. Do not return raw JSON.\nDo not use Markdown markers such as **, __, ###, ``` or HTML tags.\nNever return an incomplete answer or an empty response.\nCuối phản hồi AI agent nhớ yêu cầu người dùng để lại số điện thoại hoặc email để liên lạc"
+        }
+      },
+      "id": "f333bb5d-1b1c-48b4-a1d1-3ff5ff8968f4",
+      "name": "Support Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        0,
+        736
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "Order",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "order_id",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions0_Value', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "id": "91a662bb-f4f2-4417-b15b-ab00c56d897b",
+      "name": "getOrderStatus",
+      "type": "n8n-nodes-base.supabaseTool",
+      "position": [
+        224,
+        192
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BE3DE98VgWBJIHJp",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Retrieve summary of a product category by product_category_name.",
+        "operation": "get",
+        "tableId": "categories",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "product_category_name",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions0_Value', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "id": "9536eb8b-e823-4abb-bfdd-6c67683140a1",
+      "name": "getCategoryRecommendations",
+      "type": "n8n-nodes-base.supabaseTool",
+      "position": [
+        272,
+        560
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BE3DE98VgWBJIHJp",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Retrieve recommended products by product_category_name.",
+        "operation": "get",
+        "tableId": "Products",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "product_category_name",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions0_Value', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "id": "66c4d529-1201-4d19-aea9-cf9b72d852d0",
+      "name": "getProductRecommendations",
+      "type": "n8n-nodes-base.supabaseTool",
+      "position": [
+        448,
+        560
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BE3DE98VgWBJIHJp",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Create a unique support ticket id.",
+        "jsCode": "const now = new Date();\nconst dateStr = now.toISOString().slice(0,10).replace(/-/g, '');\nconst random = Math.floor(1000 + Math.random() * 9000);\nreturn `TKT-${dateStr}-${random}`;"
+      },
+      "id": "d1c465ce-842e-4f69-955a-7219e2ae6009",
+      "name": "Code Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "position": [
+        -16,
+        1104
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "tableId": "support_tickets",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "ticket_id",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ticket_id', ``, 'string') }}"
+            },
+            {
+              "fieldId": "user_email",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('user_email', ``, 'string') }}"
+            },
+            {
+              "fieldId": "product_category_name",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('product_category_name', ``, 'string') }}"
+            },
+            {
+              "fieldId": "issue",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('issue', ``, 'string') }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('status', `open`, 'string') }}"
+            }
+          ]
+        }
+      },
+      "id": "155b7902-057a-43ff-9684-9cce4029769d",
+      "name": "createSupportTicket",
+      "type": "n8n-nodes-base.supabaseTool",
+      "position": [
+        160,
+        1120
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BE3DE98VgWBJIHJp",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Retrieve support ticket information by ticket_id.",
+        "operation": "get",
+        "tableId": "support_tickets",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "ticket_id",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions0_Value', ``, 'string') }}"
+            }
+          ]
+        }
+      },
+      "id": "82d52fba-ce67-4674-bee3-5c67be5ee7d0",
+      "name": "getTicketStatus",
+      "type": "n8n-nodes-base.supabaseTool",
+      "position": [
+        384,
+        1168
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BE3DE98VgWBJIHJp",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "gianth23406@st.uel.edu.vn",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', `Support ticket update`, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {}
+      },
+      "id": "a9a01b1c-b64b-4d0b-878c-da1cad780e4a",
+      "name": "Send",
+      "type": "n8n-nodes-base.gmailTool",
+      "position": [
+        624,
+        1168
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "support-gmail-tool",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "i5KK2AURN27SnGll",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').first().json.body?.session_id || $json.body?.session_id || 'default-session' }}",
+        "contextWindowLength": 7
+      },
+      "id": "158ad023-5010-4d7d-8dfd-19451e812d2a",
+      "name": "Memory Classifier",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        -976,
+        704
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').first().json.body?.session_id || $json.session_id || 'default-session' }}",
+        "contextWindowLength": 7
+      },
+      "id": "2b471719-3abf-4e11-af1c-556b0b5743a4",
+      "name": "Memory Order",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        0,
+        192
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').first().json.body?.session_id || $json.session_id || 'default-session' }}",
+        "contextWindowLength": 7
+      },
+      "id": "b1552a1d-e781-48c2-a293-2fba506b86dd",
+      "name": "Memory Recommendation",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        0,
+        544
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').first().json.body?.session_id || $json.session_id || 'default-session' }}",
+        "contextWindowLength": 7
+      },
+      "id": "5c53fc76-8d78-4b8e-acf8-68a1c664bfe0",
+      "name": "Memory Support",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        -176,
+        1088
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "7e87272c-d6e0-4881-9265-beb66a40885f",
+      "name": "Gemini Classifier",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        -1184,
+        624
+      ],
+      "typeVersion": 1.1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "m2k6rvaXCLbZgxkC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "f013bac2-fcaa-455f-a1e7-9400a4e4ab60",
+      "name": "Gemini Order",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        -160,
+        192
+      ],
+      "typeVersion": 1.1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "m2k6rvaXCLbZgxkC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "2bcf913a-d8fe-4502-b4d2-0171a5f5ed6e",
+      "name": "Gemini Recommendation",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        -160,
+        544
+      ],
+      "typeVersion": 1.1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "m2k6rvaXCLbZgxkC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "eaa28777-c9a1-4a37-8e62-068904be1758",
+      "name": "Gemini Support",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        -336,
+        1120
+      ],
+      "typeVersion": 1.1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "m2k6rvaXCLbZgxkC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function htmlDecode(text) {\n  return String(text || '')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&nbsp;/g, ' ');\n}\nfunction stripHtml(text) {\n  return String(text || '').replace(/<br\\s*\\/?>/gi, '\\n').replace(/<\\/p>/gi, '\\n').replace(/<[^>]*>/g, '');\n}\nfunction cleanText(value) {\n  let text = htmlDecode(stripHtml(value));\n  text = text\n    .replace(/```[\\s\\S]*?```/g, '')\n    .replace(/\\*\\*/g, '')\n    .replace(/__/g, '')\n    .replace(/#{1,6}\\s?/g, '')\n    .replace(/^\\s*[\\-*+]\\s+/gm, '- ')\n    .replace(/[ \\t]+/g, ' ')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n  if (!text) {\n    text = 'Xin lỗi, hệ thống chưa tạo được phản hồi đầy đủ. Bạn vui lòng thử lại hoặc cung cấp thêm thông tin.';\n  }\n  return text;\n}\nfunction escapeHtml(text) {\n  return String(text || '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;')\n    .replace(/\\n/g, '<br>');\n}\nfunction extract(regex, text) {\n  const m = String(text || '').match(regex);\n  return m ? m[0] : '';\n}\n\nconst webhook = $('Webhook').first()?.json || {};\nconst body = webhook.body || {};\nconst userMessage = String(body.message || $json.message || '').trim();\nconst rawResponse = $json.response || $json.output || $json.category?.product || '';\nconst response = cleanText(rawResponse);\nconst intent = $json.intent || $json.category?.intent || 'order_status';\nconst combined = `${userMessage}\\n${response}`;\n\nconst orderId = body.order_id || extract(/ORD-[A-Z0-9-]+|[0-9A-Za-z]{12,}/i, combined);\nconst ticketId = body.ticket_id || extract(/TKT-[0-9A-Z-]+/i, combined);\nconst productId = body.product_id || extract(/DEMO-[A-Z0-9-]+|HB-[A-Z0-9-]+|TOY-[A-Z0-9-]+|COMP-[A-Z0-9-]+|SPORT-[A-Z0-9-]+/i, combined);\nconst email = body.email || body.user_email || extract(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i, combined);\nconst category = $json.category?.product || body.product_category_name || '';\n\nreturn [{\n  json: {\n    ...$json,\n    response,\n    response_html: escapeHtml(response),\n    intent,\n    log_session_id: String(body.session_id || body.sessionId || $json.session_id || 'default-session'),\n    log_user_email: String(email || ''),\n    log_user_message: userMessage,\n    log_bot_response: response,\n    log_product_category_name: String(category || ''),\n    log_product_id: String(productId || ''),\n    log_order_id: String(orderId || ''),\n    log_ticket_id: String(ticketId || ''),\n    log_channel: String(body.channel || 'web_chat'),\n    log_status: 'success',\n    log_metadata: {\n      source: 'n8n_ecommerce_customer_support',\n      branch: 'Order',\n      webhook_url: webhook.webhookUrl || '',\n      execution_mode: webhook.executionMode || '',\n      user_agent: webhook.headers?.['user-agent'] || '',\n      origin: webhook.headers?.origin || '',\n      cleaned_html: true,\n      has_response_html: true\n    }\n  }\n}];"
+      },
+      "id": "36410254-cecc-439d-a20e-d3514e45486f",
+      "name": "Prepare Safe Response - Order",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        496,
+        0
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "tableId": "conversation_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $json.log_session_id }}"
+            },
+            {
+              "fieldId": "user_email",
+              "fieldValue": "={{ $json.log_user_email }}"
+            },
+            {
+              "fieldId": "user_message",
+              "fieldValue": "={{ $json.log_user_message }}"
+            },
+            {
+              "fieldId": "bot_response",
+              "fieldValue": "={{ $json.log_bot_response }}"
+            },
+            {
+              "fieldId": "intent",
+              "fieldValue": "={{ $json.intent }}"
+            },
+            {
+              "fieldId": "product_category_name",
+              "fieldValue": "={{ $json.log_product_category_name }}"
+            },
+            {
+              "fieldId": "product_id",
+              "fieldValue": "={{ $json.log_product_id }}"
+            },
+            {
+              "fieldId": "order_id",
+              "fieldValue": "={{ $json.log_order_id }}"
+            },
+            {
+              "fieldId": "ticket_id",
+              "fieldValue": "={{ $json.log_ticket_id }}"
+            },
+            {
+              "fieldId": "channel",
+              "fieldValue": "={{ $json.log_channel }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $json.log_status }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ $json.log_metadata }}"
+            }
+          ]
+        }
+      },
+      "id": "fe7cb0cd-3d11-4f71-9bef-28b00d49b628",
+      "name": "Insert Conversation Log - Order",
+      "type": "n8n-nodes-base.supabase",
+      "position": [
+        768,
+        0
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BE3DE98VgWBJIHJp",
+          "name": "Supabase account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Safe Response - Order').first().json;\nreturn [{ json: prepared }];"
+      },
+      "id": "b46eed71-6fdb-4dd7-8f06-a462f33eb9d0",
+      "name": "Restore Response - Order",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        0
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { response: $json.response, response_html: $json.response_html, intent: $json.intent, session_id: $json.log_session_id } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a773a897-daf4-4b63-b777-9389233338f8",
+      "name": "Respond Final - Order",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1312,
+        0
+      ],
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "jsCode": "function htmlDecode(text) {\n  return String(text || '')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&nbsp;/g, ' ');\n}\nfunction stripHtml(text) {\n  return String(text || '').replace(/<br\\s*\\/?>/gi, '\\n').replace(/<\\/p>/gi, '\\n').replace(/<[^>]*>/g, '');\n}\nfunction cleanText(value) {\n  let text = htmlDecode(stripHtml(value));\n  text = text\n    .replace(/```[\\s\\S]*?```/g, '')\n    .replace(/\\*\\*/g, '')\n    .replace(/__/g, '')\n    .replace(/#{1,6}\\s?/g, '')\n    .replace(/^\\s*[\\-*+]\\s+/gm, '- ')\n    .replace(/[ \\t]+/g, ' ')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n  if (!text) {\n    text = 'Xin lỗi, hệ thống chưa tạo được phản hồi đầy đủ. Bạn vui lòng thử lại hoặc cung cấp thêm thông tin.';\n  }\n  return text;\n}\nfunction escapeHtml(text) {\n  return String(text || '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;')\n    .replace(/\\n/g, '<br>');\n}\nfunction extract(regex, text) {\n  const m = String(text || '').match(regex);\n  return m ? m[0] : '';\n}\n\nconst webhook = $('Webhook').first()?.json || {};\nconst body = webhook.body || {};\nconst userMessage = String(body.message || $json.message || '').trim();\nconst rawResponse = $json.response || $json.output || $json.category?.product || '';\nconst response = cleanText(rawResponse);\nconst intent = $json.intent || $json.category?.intent || 'product_recommendation';\nconst combined = `${userMessage}\\n${response}`;\n\nconst orderId = body.order_id || extract(/ORD-[A-Z0-9-]+|[0-9A-Za-z]{12,}/i, combined);\nconst ticketId = body.ticket_id || extract(/TKT-[0-9A-Z-]+/i, combined);\nconst productId = body.product_id || extract(/DEMO-[A-Z0-9-]+|HB-[A-Z0-9-]+|TOY-[A-Z0-9-]+|COMP-[A-Z0-9-]+|SPORT-[A-Z0-9-]+/i, combined);\nconst email = body.email || body.user_email || extract(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i, combined);\nconst category = $json.category?.product || body.product_category_name || '';\n\nreturn [{\n  json: {\n    ...$json,\n    response,\n    response_html: escapeHtml(response),\n    intent,\n    log_session_id: String(body.session_id || body.sessionId || $json.session_id || 'default-session'),\n    log_user_email: String(email || ''),\n    log_user_message: userMessage,\n    log_bot_response: response,\n    log_product_category_name: String(category || ''),\n    log_product_id: String(productId || ''),\n    log_order_id: String(orderId || ''),\n    log_ticket_id: String(ticketId || ''),\n    log_channel: String(body.channel || 'web_chat'),\n    log_status: 'success',\n    log_metadata: {\n      source: 'n8n_ecommerce_customer_support',\n      branch: 'Recommendation',\n      webhook_url: webhook.webhookUrl || '',\n      execution_mode: webhook.executionMode || '',\n      user_agent: webhook.headers?.['user-agent'] || '',\n      origin: webhook.headers?.origin || '',\n      cleaned_html: true,\n      has_response_html: true\n    }\n  }\n}];"
+      },
+      "id": "235d9e16-56bd-4c77-955e-fe446ac0c357",
+      "name": "Prepare Safe Response - Recommendation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        496,
+        368
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "tableId": "conversation_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $json.log_session_id }}"
+            },
+            {
+              "fieldId": "user_email",
+              "fieldValue": "={{ $json.log_user_email }}"
+            },
+            {
+              "fieldId": "user_message",
+              "fieldValue": "={{ $json.log_user_message }}"
+            },
+            {
+              "fieldId": "bot_response",
+              "fieldValue": "={{ $json.log_bot_response }}"
+            },
+            {
+              "fieldId": "intent",
+              "fieldValue": "={{ $json.intent }}"
+            },
+            {
+              "fieldId": "product_category_name",
+              "fieldValue": "={{ $json.log_product_category_name }}"
+            },
+            {
+              "fieldId": "product_id",
+              "fieldValue": "={{ $json.log_product_id }}"
+            },
+            {
+              "fieldId": "order_id",
+              "fieldValue": "={{ $json.log_order_id }}"
+            },
+            {
+              "fieldId": "ticket_id",
+              "fieldValue": "={{ $json.log_ticket_id }}"
+            },
+            {
+              "fieldId": "channel",
+              "fieldValue": "={{ $json.log_channel }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $json.log_status }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ $json.log_metadata }}"
+            }
+          ]
+        }
+      },
+      "id": "2cdc7d3d-1bb3-458b-a725-570ab6705f98",
+      "name": "Insert Conversation Log - Recommendation",
+      "type": "n8n-nodes-base.supabase",
+      "position": [
+        768,
+        368
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BE3DE98VgWBJIHJp",
+          "name": "Supabase account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Safe Response - Recommendation').first().json;\nreturn [{ json: prepared }];"
+      },
+      "id": "1bcea519-271e-48c5-86da-ba62a6a7cb82",
+      "name": "Restore Response - Recommendation",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        368
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { response: $json.response, response_html: $json.response_html, intent: $json.intent, session_id: $json.log_session_id } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "id": "1da268d2-32f5-4c24-bd17-924f1062d099",
+      "name": "Respond Final - Recommendation",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1312,
+        368
+      ],
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "jsCode": "function htmlDecode(text) {\n  return String(text || '')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&nbsp;/g, ' ');\n}\nfunction stripHtml(text) {\n  return String(text || '').replace(/<br\\s*\\/?>/gi, '\\n').replace(/<\\/p>/gi, '\\n').replace(/<[^>]*>/g, '');\n}\nfunction cleanText(value) {\n  let text = htmlDecode(stripHtml(value));\n  text = text\n    .replace(/```[\\s\\S]*?```/g, '')\n    .replace(/\\*\\*/g, '')\n    .replace(/__/g, '')\n    .replace(/#{1,6}\\s?/g, '')\n    .replace(/^\\s*[\\-*+]\\s+/gm, '- ')\n    .replace(/[ \\t]+/g, ' ')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n  if (!text) {\n    text = 'Xin lỗi, hệ thống chưa tạo được phản hồi đầy đủ. Bạn vui lòng thử lại hoặc cung cấp thêm thông tin.';\n  }\n  return text;\n}\nfunction escapeHtml(text) {\n  return String(text || '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;')\n    .replace(/\\n/g, '<br>');\n}\nfunction extract(regex, text) {\n  const m = String(text || '').match(regex);\n  return m ? m[0] : '';\n}\n\nconst webhook = $('Webhook').first()?.json || {};\nconst body = webhook.body || {};\nconst userMessage = String(body.message || $json.message || '').trim();\nconst rawResponse = $json.response || $json.output || $json.category?.product || '';\nconst response = cleanText(rawResponse);\nconst intent = $json.intent || $json.category?.intent || 'support_ticket';\nconst combined = `${userMessage}\\n${response}`;\n\nconst orderId = body.order_id || extract(/ORD-[A-Z0-9-]+|[0-9A-Za-z]{12,}/i, combined);\nconst ticketId = body.ticket_id || extract(/TKT-[0-9A-Z-]+/i, combined);\nconst productId = body.product_id || extract(/DEMO-[A-Z0-9-]+|HB-[A-Z0-9-]+|TOY-[A-Z0-9-]+|COMP-[A-Z0-9-]+|SPORT-[A-Z0-9-]+/i, combined);\nconst email = body.email || body.user_email || extract(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i, combined);\nconst category = $json.category?.product || body.product_category_name || '';\n\nreturn [{\n  json: {\n    ...$json,\n    response,\n    response_html: escapeHtml(response),\n    intent,\n    log_session_id: String(body.session_id || body.sessionId || $json.session_id || 'default-session'),\n    log_user_email: String(email || ''),\n    log_user_message: userMessage,\n    log_bot_response: response,\n    log_product_category_name: String(category || ''),\n    log_product_id: String(productId || ''),\n    log_order_id: String(orderId || ''),\n    log_ticket_id: String(ticketId || ''),\n    log_channel: String(body.channel || 'web_chat'),\n    log_status: 'success',\n    log_metadata: {\n      source: 'n8n_ecommerce_customer_support',\n      branch: 'Support',\n      webhook_url: webhook.webhookUrl || '',\n      execution_mode: webhook.executionMode || '',\n      user_agent: webhook.headers?.['user-agent'] || '',\n      origin: webhook.headers?.origin || '',\n      cleaned_html: true,\n      has_response_html: true\n    }\n  }\n}];"
+      },
+      "id": "2fceada2-a2dd-4a6d-b8e3-06010ce33abc",
+      "name": "Prepare Safe Response - Support",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        496,
+        736
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "tableId": "conversation_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $json.log_session_id }}"
+            },
+            {
+              "fieldId": "user_email",
+              "fieldValue": "={{ $json.log_user_email }}"
+            },
+            {
+              "fieldId": "user_message",
+              "fieldValue": "={{ $json.log_user_message }}"
+            },
+            {
+              "fieldId": "bot_response",
+              "fieldValue": "={{ $json.log_bot_response }}"
+            },
+            {
+              "fieldId": "intent",
+              "fieldValue": "={{ $json.intent }}"
+            },
+            {
+              "fieldId": "product_category_name",
+              "fieldValue": "={{ $json.log_product_category_name }}"
+            },
+            {
+              "fieldId": "product_id",
+              "fieldValue": "={{ $json.log_product_id }}"
+            },
+            {
+              "fieldId": "order_id",
+              "fieldValue": "={{ $json.log_order_id }}"
+            },
+            {
+              "fieldId": "ticket_id",
+              "fieldValue": "={{ $json.log_ticket_id }}"
+            },
+            {
+              "fieldId": "channel",
+              "fieldValue": "={{ $json.log_channel }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $json.log_status }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ $json.log_metadata }}"
+            }
+          ]
+        }
+      },
+      "id": "8d7ee670-64a2-48f6-9add-4ad810e16b39",
+      "name": "Insert Conversation Log - Support",
+      "type": "n8n-nodes-base.supabase",
+      "position": [
+        768,
+        736
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BE3DE98VgWBJIHJp",
+          "name": "Supabase account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Safe Response - Support').first().json;\nreturn [{ json: prepared }];"
+      },
+      "id": "766de528-2ba5-4318-8cff-2cb5e6a6b54b",
+      "name": "Restore Response - Support",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        736
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { response: $json.response, response_html: $json.response_html, intent: $json.intent, session_id: $json.log_session_id } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "id": "daa10183-4e53-460e-a514-6f87a1f3b8f7",
+      "name": "Respond Final - Support",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1312,
+        736
+      ],
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "jsCode": "function htmlDecode(text) {\n  return String(text || '')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&nbsp;/g, ' ');\n}\nfunction stripHtml(text) {\n  return String(text || '').replace(/<br\\s*\\/?>/gi, '\\n').replace(/<\\/p>/gi, '\\n').replace(/<[^>]*>/g, '');\n}\nfunction cleanText(value) {\n  let text = htmlDecode(stripHtml(value));\n  text = text\n    .replace(/```[\\s\\S]*?```/g, '')\n    .replace(/\\*\\*/g, '')\n    .replace(/__/g, '')\n    .replace(/#{1,6}\\s?/g, '')\n    .replace(/^\\s*[\\-*+]\\s+/gm, '- ')\n    .replace(/[ \\t]+/g, ' ')\n    .replace(/\\n{3,}/g, '\\n\\n')\n    .trim();\n  if (!text) {\n    text = 'Xin lỗi, hệ thống chưa tạo được phản hồi đầy đủ. Bạn vui lòng thử lại hoặc cung cấp thêm thông tin.';\n  }\n  return text;\n}\nfunction escapeHtml(text) {\n  return String(text || '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;')\n    .replace(/\\n/g, '<br>');\n}\nfunction extract(regex, text) {\n  const m = String(text || '').match(regex);\n  return m ? m[0] : '';\n}\n\nconst webhook = $('Webhook').first()?.json || {};\nconst body = webhook.body || {};\nconst userMessage = String(body.message || $json.message || '').trim();\nconst rawResponse = $json.response || $json.output || $json.category?.product || '';\nconst response = cleanText(rawResponse);\nconst intent = $json.intent || $json.category?.intent || 'general';\nconst combined = `${userMessage}\\n${response}`;\n\nconst orderId = body.order_id || extract(/ORD-[A-Z0-9-]+|[0-9A-Za-z]{12,}/i, combined);\nconst ticketId = body.ticket_id || extract(/TKT-[0-9A-Z-]+/i, combined);\nconst productId = body.product_id || extract(/DEMO-[A-Z0-9-]+|HB-[A-Z0-9-]+|TOY-[A-Z0-9-]+|COMP-[A-Z0-9-]+|SPORT-[A-Z0-9-]+/i, combined);\nconst email = body.email || body.user_email || extract(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i, combined);\nconst category = $json.category?.product || body.product_category_name || '';\n\nreturn [{\n  json: {\n    ...$json,\n    response,\n    response_html: escapeHtml(response),\n    intent,\n    log_session_id: String(body.session_id || body.sessionId || $json.session_id || 'default-session'),\n    log_user_email: String(email || ''),\n    log_user_message: userMessage,\n    log_bot_response: response,\n    log_product_category_name: String(category || ''),\n    log_product_id: String(productId || ''),\n    log_order_id: String(orderId || ''),\n    log_ticket_id: String(ticketId || ''),\n    log_channel: String(body.channel || 'web_chat'),\n    log_status: 'success',\n    log_metadata: {\n      source: 'n8n_ecommerce_customer_support',\n      branch: 'General',\n      webhook_url: webhook.webhookUrl || '',\n      execution_mode: webhook.executionMode || '',\n      user_agent: webhook.headers?.['user-agent'] || '',\n      origin: webhook.headers?.origin || '',\n      cleaned_html: true,\n      has_response_html: true\n    }\n  }\n}];"
+      },
+      "id": "09be0ffb-0251-4bba-8407-3dc7006e5580",
+      "name": "Prepare Safe Response - General",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        496,
+        976
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "tableId": "conversation_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $json.log_session_id }}"
+            },
+            {
+              "fieldId": "user_email",
+              "fieldValue": "={{ $json.log_user_email }}"
+            },
+            {
+              "fieldId": "user_message",
+              "fieldValue": "={{ $json.log_user_message }}"
+            },
+            {
+              "fieldId": "bot_response",
+              "fieldValue": "={{ $json.log_bot_response }}"
+            },
+            {
+              "fieldId": "intent",
+              "fieldValue": "={{ $json.intent }}"
+            },
+            {
+              "fieldId": "product_category_name",
+              "fieldValue": "={{ $json.log_product_category_name }}"
+            },
+            {
+              "fieldId": "product_id",
+              "fieldValue": "={{ $json.log_product_id }}"
+            },
+            {
+              "fieldId": "order_id",
+              "fieldValue": "={{ $json.log_order_id }}"
+            },
+            {
+              "fieldId": "ticket_id",
+              "fieldValue": "={{ $json.log_ticket_id }}"
+            },
+            {
+              "fieldId": "channel",
+              "fieldValue": "={{ $json.log_channel }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $json.log_status }}"
+            },
+            {
+              "fieldId": "metadata",
+              "fieldValue": "={{ $json.log_metadata }}"
+            }
+          ]
+        }
+      },
+      "id": "1f17b5e0-4935-41a3-9ff1-3ff629ebce68",
+      "name": "Insert Conversation Log - General",
+      "type": "n8n-nodes-base.supabase",
+      "position": [
+        768,
+        992
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "BE3DE98VgWBJIHJp",
+          "name": "Supabase account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Safe Response - General').first().json;\nreturn [{ json: prepared }];"
+      },
+      "id": "0507d2a4-4d83-498d-850a-87d53dce66a0",
+      "name": "Restore Response - General",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1040,
+        992
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { response: $json.response, response_html: $json.response_html, intent: $json.intent, session_id: $json.log_session_id } }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json; charset=utf-8"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "id": "8d02847b-9c23-44ee-81b1-8582bde0c897",
+      "name": "Respond Final - General",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        1296,
+        1008
+      ],
+      "typeVersion": 1.4
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Normalize Intent JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Intent JSON": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Order Queries",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Recommendations",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Support Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Safe Response - General",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Order Queries": {
+      "main": [
+        [
+          {
+            "node": "Prepare Safe Response - Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recommendations": {
+      "main": [
+        [
+          {
+            "node": "Prepare Safe Response - Recommendation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Support Agent": {
+      "main": [
+        [
+          {
+            "node": "Prepare Safe Response - Support",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Classifier": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Order": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Order Queries",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Recommendation": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Recommendations",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Support": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Support Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory Classifier": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory Order": {
+      "ai_memory": [
+        [
+          {
+            "node": "Order Queries",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory Recommendation": {
+      "ai_memory": [
+        [
+          {
+            "node": "Recommendations",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memory Support": {
+      "ai_memory": [
+        [
+          {
+            "node": "Support Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getOrderStatus": {
+      "ai_tool": [
+        [
+          {
+            "node": "Order Queries",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getCategoryRecommendations": {
+      "ai_tool": [
+        [
+          {
+            "node": "Recommendations",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getProductRecommendations": {
+      "ai_tool": [
+        [
+          {
+            "node": "Recommendations",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "createSupportTicket": {
+      "ai_tool": [
+        [
+          {
+            "node": "Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getTicketStatus": {
+      "ai_tool": [
+        [
+          {
+            "node": "Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send": {
+      "ai_tool": [
+        [
+          {
+            "node": "Support Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Safe Response - Order": {
+      "main": [
+        [
+          {
+            "node": "Insert Conversation Log - Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Conversation Log - Order": {
+      "main": [
+        [
+          {
+            "node": "Restore Response - Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Response - Order": {
+      "main": [
+        [
+          {
+            "node": "Respond Final - Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Safe Response - Recommendation": {
+      "main": [
+        [
+          {
+            "node": "Insert Conversation Log - Recommendation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Conversation Log - Recommendation": {
+      "main": [
+        [
+          {
+            "node": "Restore Response - Recommendation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Response - Recommendation": {
+      "main": [
+        [
+          {
+            "node": "Respond Final - Recommendation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Safe Response - Support": {
+      "main": [
+        [
+          {
+            "node": "Insert Conversation Log - Support",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Conversation Log - Support": {
+      "main": [
+        [
+          {
+            "node": "Restore Response - Support",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Response - Support": {
+      "main": [
+        [
+          {
+            "node": "Respond Final - Support",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Safe Response - General": {
+      "main": [
+        [
+          {
+            "node": "Insert Conversation Log - General",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Conversation Log - General": {
+      "main": [
+        [
+          {
+            "node": "Restore Response - General",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Response - General": {
+      "main": [
+        [
+          {
+            "node": "Respond Final - General",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "16e36875-bd13-4c30-ba9c-623bb6ef7189",
+  "meta": {
+    "instanceId": "223ef8e089b8348312b21affc0f9b2e4594234c85b0f5384cfc1a01bb94dcb32"
+  },
+  "nodeGroups": [],
+  "id": "oR6ejYixm9FTl7uM",
+  "tags": []
+}

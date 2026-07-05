@@ -1,368 +1,471 @@
-import { mockHistoryData, mockRecommendedProducts } from "../data/chat-history.js";
+import { apiRequest } from "./api.js";
+import { addToCart, showToast } from "./cart.js";
+
+const GUEST_ID_KEY = "velura_chat_guest_id";
+const SESSION_ID_KEY = "velura_chat_session_id";
+const MODE_KEY = "chatbotStateMode";
 
 export function initChatbot() {
-  var chatbotWidget = document.querySelector(".chatbot-widget");
-  var chatbotPage = document.querySelector(".chatbot-page");
-  if (!chatbotWidget && !chatbotPage) return; // Safe Execution check
+  const containers = Array.from(document.querySelectorAll(".chatbot-widget, .chatbot-page"));
+  if (!containers.length) return;
 
-  var chatContainer = chatbotWidget || chatbotPage;
-
-  var togglers = chatContainer.querySelectorAll(".js-chatbot-toggle");
-  var form = chatContainer.querySelector(".js-chatbot-form");
-  var input = chatContainer.querySelector(".js-chatbot-input");
-  var messagesContainer = chatContainer.querySelector(".chatbot-messages");
-  var switcher = chatContainer.querySelector(".js-chatbot-state-select");
-  var recsContainer = chatContainer.querySelector(".js-chatbot-recommendations");
-
-  // --- BỔ SUNG DOM ELEMENTS CHO TÍNH NĂNG MỚI ---
-  var imgInput = document.getElementById("img-input");
-  var attachBtn = chatContainer.querySelector(".chatbot-attach-btn");
-  var sidebar = document.querySelector(".js-chatbot-sidebar");
-  var closeSidebarBtn = document.querySelector(".js-close-sidebar");
-  var openSidebarBtn = document.querySelector(".js-open-sidebar");
-  var sessionsContainer = document.querySelector(".js-chatbot-sessions");
-  // ----------------------------------------------
-
-  var currentMode = "guest";
-
-  // Toggle chatbot box (only runs on pages where floating widget togglers exist)
-  togglers.forEach(function (toggle) {
-    toggle.addEventListener("click", function (e) {
-      e.stopPropagation();
-      chatContainer.classList.toggle("chatbot-widget--open");
-
-      // Auto focus input when opened
-      if (chatContainer.classList.contains("chatbot-widget--open") && input) {
-        setTimeout(function () {
-          input.focus();
-        }, 300);
-
-        // Auto scroll to bottom when opened
-        if (messagesContainer) {
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-      }
-    });
-  });
-
-  // Sidebar Collapse / Expand Handlers
-  if (sidebar) {
-    if (closeSidebarBtn) {
-      closeSidebarBtn.addEventListener("click", function () {
-        sidebar.classList.add("is-collapsed");
-      });
-    }
-    if (openSidebarBtn) {
-      openSidebarBtn.addEventListener("click", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        sidebar.classList.toggle("is-collapsed");
-      });
-    }
-  }
-
-  // Session list mock data and renderer
-  var mockSessions = {
-    guest: [
-      { id: "s-guest-1", title: "Tư vấn khách vãng lai", date: "Hôm nay" }
-    ],
-    user: [
-      { id: "s-user-1", title: "Tư vấn váy đầm dự tiệc", date: "27/06/2026" },
-      { id: "s-user-2", title: "Chọn đầm xếp ly đỏ", date: "24/05/2026" },
-      { id: "s-user-3", title: "Tư vấn áo len cổ lọ", date: "23/05/2026" }
-    ]
+  const state = {
+    guestId: getOrCreateGuestId(),
+    mode: localStorage.getItem(MODE_KEY) || "guest",
+    sessionId: localStorage.getItem(SESSION_ID_KEY) || "",
+    sessions: [],
+    messages: [],
+    productsById: new Map(),
+    loading: false,
+    handoffActive: false
   };
 
-  function renderSessions() {
-    if (!sessionsContainer) return;
-    sessionsContainer.innerHTML = "";
-    var currentSessions = mockSessions[currentMode] || [];
-    if (currentSessions.length === 0) {
-      sessionsContainer.innerHTML = '<p class="history-list__empty">Chưa có lịch sử trò chuyện</p>';
-      return;
-    }
-    currentSessions.forEach(function (session) {
-      var item = document.createElement("div");
-      item.className = "chatbot-session-item";
-      item.innerHTML = '\
-        <div class="chatbot-session-item__left">\
-          <span class="chatbot-session-item__icon">\
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>\
-            </svg>\
-          </span>\
-          <span class="chatbot-session-item__title" title="' + escapeHtml(session.title) + '" data-bind="chat_session.title">' + escapeHtml(session.title) + ' (' + escapeHtml(session.date) + ')</span>\
-        </div>\
-        <button class="chatbot-session-item__delete js-delete-session" type="button" aria-label="Xóa phiên" data-id="' + session.id + '" data-bind="chat_session.delete_btn">\
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">\
-            <polyline points="3 6 5 6 21 6"></polyline>\
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>\
-          </svg>\
-        </button>\
-      ';
+  containers.forEach((container) => bindChatContainer(container, state));
+  bindSidebar(state);
+  loadSessions(state).catch(() => renderAll(containers, state));
+}
 
-      var delBtn = item.querySelector(".js-delete-session");
-      if (delBtn) {
-        delBtn.addEventListener("click", function (e) {
-          e.stopPropagation();
-          e.preventDefault();
-          var id = delBtn.getAttribute("data-id");
-          mockSessions[currentMode] = mockSessions[currentMode].filter(function (s) {
-            return s.id !== id;
-          });
-          renderSessions();
-        });
-      }
+function bindChatContainer(container, state) {
+  const togglers = container.querySelectorAll(".js-chatbot-toggle");
+  const form = container.querySelector(".js-chatbot-form");
+  const input = container.querySelector(".js-chatbot-input");
+  const switcher = container.querySelector(".js-chatbot-state-select");
+  const attachBtn = container.querySelector(".chatbot-attach-btn");
+  const imgInput = document.getElementById("img-input");
+  const newChatBtn = container.querySelector(".js-new-chat");
 
-      sessionsContainer.appendChild(item);
-    });
-  }
-
-  // --- BỔ SUNG LOGIC ĐÍNH KÈM ẢNH ---
-  if (attachBtn && imgInput) {
-    attachBtn.addEventListener("click", function () {
-      imgInput.click();
-    });
-  }
-  // -----------------------------------
-
-  // Helper escape HTML helper
-  function escapeHtml(text) {
-    return String(text).replace(/[&<>"']/g, function (s) {
-      return {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-      }[s];
-    });
-  }
-
-  // Format time as AM/PM
-  function formatTime(date) {
-    var hours = date.getHours();
-    var minutes = date.getMinutes();
-    var ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-    minutes = minutes < 10 ? '0' + minutes : minutes;
-    return hours + ':' + minutes + ' ' + ampm;
-  }
-
-  // Render messages to container
-  function renderMessages(messages, smooth) {
-    if (!messagesContainer) return;
-    messagesContainer.innerHTML = "";
-
-    messages.forEach(function (msg) {
-      var msgEl = document.createElement("div");
-      var senderClass = msg.sender === "user" ? "chatbot-message--user" : "chatbot-message--bot";
-      var historyClass = msg.isHistory ? " chatbot-message--history" : "";
-      msgEl.className = "chatbot-message " + senderClass + historyClass;
-
-      // --- CẬP NHẬT LOGIC RENDER SẢN PHẨM TRONG TIN NHẮN ---
-      var contentHtml = '<div class="chatbot-message__text">' + escapeHtml(msg.text) + '</div>';
-
-      if (msg.product) {
-        contentHtml +=
-          '<div class="chat-product-card" data-bind="product.card">' +
-          '<img src="' + msg.product.image + '" alt="' + escapeHtml(msg.product.title) + '" data-bind="product.image_url">' +
-          '<div class="chat-product-card__info">' +
-          '<h4 class="chat-product-card__title" data-bind="product.name">' + escapeHtml(msg.product.title) + '</h4>' +
-          '<p class="chat-product-card__price" data-bind="product.price">' + escapeHtml(msg.product.price) + '</p>' +
-          '</div>' +
-          '<div class="chat-product-card__actions">' +
-          '<a href="#" class="btn-buy" data-bind="product.buy_link">Mua ngay</a>' +
-          '<a href="#" class="btn-detail" data-bind="product.detail_link">Xem chi tiết</a>' +
-          '</div>' +
-          '</div>';
-      }
-
-      msgEl.innerHTML = contentHtml + '<span class="chatbot-message__time">' + escapeHtml(msg.time) + '</span>';
-      // -----------------------------------------------------
-
-      messagesContainer.appendChild(msgEl);
-    });
-
-    // Auto scroll to bottom
-    if (smooth) {
-      messagesContainer.scrollTo({
-        top: messagesContainer.scrollHeight,
-        behavior: "smooth"
-      });
-    } else {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-  }
-
-  // Render recommendations in sidebar
-  function renderRecommendations() {
-    if (!recsContainer) return;
-
-    // Reset animation by removing class
-    recsContainer.classList.remove("fade-in");
-    recsContainer.innerHTML = "";
-
-    if (currentMode === "guest") {
-      recsContainer.innerHTML = '<div class="chatbot-recommendations--empty">Chưa có gợi ý phong cách cho bạn. Hãy trò chuyện với AI Stylist hoặc chuyển sang User Mode để xem gợi ý cá nhân hóa!</div>';
-    } else {
-      if (mockRecommendedProducts && mockRecommendedProducts.length) {
-        mockRecommendedProducts.forEach(function (prod) {
-          var itemEl = document.createElement("a");
-          itemEl.className = "recommendation-item";
-          itemEl.href = prod.link;
-
-          itemEl.setAttribute("data-bind", "product.link");
-          itemEl.innerHTML =
-            '<img src="' + prod.image + '" alt="' + escapeHtml(prod.title) + '" class="recommendation-item__img" data-bind="product.image_url" />' +
-            '<div class="recommendation-item__info">' +
-            '<h4 class="recommendation-item__title" data-bind="product.name">' + escapeHtml(prod.title) + '</h4>' +
-            '<span class="recommendation-item__price" data-bind="product.price">' + escapeHtml(prod.price) + '</span>' +
-            '</div>';
-
-          recsContainer.appendChild(itemEl);
-        });
-      } else {
-        recsContainer.innerHTML = '<div class="chatbot-recommendations--empty">Không có gợi ý sản phẩm nào.</div>';
-      }
-    }
-
-    // Trigger reflow to restart css animation
-    void recsContainer.offsetWidth;
-    recsContainer.classList.add("fade-in");
-  }
-
-  // Load chat messages based on current mode
-  function loadChat(smooth) {
-    var storedHistory = localStorage.getItem("chatHistory");
-    var historyObj = { guest: [], user: [] };
-    if (storedHistory) {
-      try {
-        historyObj = JSON.parse(storedHistory);
-      } catch (e) {
-        // ignore
-      }
-    }
-    if (!historyObj) historyObj = { guest: [], user: [] };
-    if (!historyObj.guest) historyObj.guest = [];
-    if (!historyObj.user) historyObj.user = [];
-
-    var messagesToRender = [];
-
-    if (currentMode === "guest") {
-      // Guest welcome message
-      var welcomeMsg = {
-        sender: "bot",
-        text: "Chào bạn, AI Stylist của Velura có thể giúp gì cho bạn hôm nay?",
-        time: "17:05", // Default welcome time
-        isHistory: false
-      };
-      messagesToRender = [welcomeMsg].concat(historyObj.guest);
-    } else {
-      // User mock history + user session history
-      messagesToRender = mockHistoryData.concat(historyObj.user);
-    }
-
-    renderMessages(messagesToRender, smooth);
-    renderRecommendations();
-    renderSessions();
-  }
-
-  // Set up switcher dropdown
-  if (switcher) {
-    var savedMode = localStorage.getItem("chatbotStateMode");
-    if (savedMode) {
-      switcher.value = savedMode;
-      currentMode = savedMode;
-    } else {
-      currentMode = switcher.value || "guest";
-    }
-
-    switcher.addEventListener("change", function () {
-      currentMode = switcher.value;
-      localStorage.setItem("chatbotStateMode", currentMode);
-      loadChat(false);
-    });
-  }
-
-  // Initialize chatbot messages list on startup
-  loadChat(false);
-
-  // Handle messages submit
-  if (form && input && messagesContainer) {
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      var text = input.value.trim();
-      if (!text) return;
-
-      var userTimeStr = formatTime(new Date());
-      var newMsg = { sender: "user", text: text, time: userTimeStr, isHistory: false };
-
-      // Save to localStorage
-      var storedHistory = localStorage.getItem("chatHistory");
-      var historyObj = { guest: [], user: [] };
-      if (storedHistory) {
-        try {
-          historyObj = JSON.parse(storedHistory);
-        } catch (e) { }
-      }
-      if (!historyObj) historyObj = { guest: [], user: [] };
-      if (!historyObj.guest) historyObj.guest = [];
-      if (!historyObj.user) historyObj.user = [];
-
-      historyObj[currentMode].push(newMsg);
-      localStorage.setItem("chatHistory", JSON.stringify(historyObj));
-
-      input.value = "";
-      loadChat(false);
-
-      // Simulated Bot Reply after 1 second delay
-      setTimeout(function () {
-        var botTimeStr = formatTime(new Date());
-
-        // --- CẬP NHẬT MOCK BOT REPLY CÓ CHỨA SẢN PHẨM ---
-        var botMsg = {
-          sender: "bot",
-          text: "Cảm ơn tin nhắn của bạn! Đây là gợi ý sản phẩm phù hợp với phong cách của bạn:",
-          time: botTimeStr,
-          isHistory: false,
-          product: {
-            image: "/src/assets/images/products/detail/image-1.png",
-            title: "Áo sơ mi linen trắng cao cấp",
-            price: "890.000đ"
-          }
-        };
-        // ------------------------------------------------
-
-        // Save bot reply to localStorage
-        var storedHistoryObj = localStorage.getItem("chatHistory");
-        var historyObjUpdate = { guest: [], user: [] };
-        if (storedHistoryObj) {
-          try {
-            historyObjUpdate = JSON.parse(storedHistoryObj);
-          } catch (e) { }
-        }
-        if (!historyObjUpdate) historyObjUpdate = { guest: [], user: [] };
-        if (!historyObjUpdate.guest) historyObjUpdate.guest = [];
-        if (!historyObjUpdate.user) historyObjUpdate.user = [];
-
-        historyObjUpdate[currentMode].push(botMsg);
-        localStorage.setItem("chatHistory", JSON.stringify(historyObjUpdate));
-
-        loadChat(true);
-      }, 1000);
-    });
-  }
-
-  // Handle quick suggestion chips click
-  var chips = chatContainer.querySelectorAll(".js-quick-chip");
-  chips.forEach(function (chip) {
-    chip.addEventListener("click", function () {
-      if (input) {
-        input.value = chip.textContent.trim();
-        input.focus();
+  togglers.forEach((toggle) => {
+    toggle.addEventListener("click", (event) => {
+      event.stopPropagation();
+      container.classList.toggle("chatbot-widget--open");
+      if (container.classList.contains("chatbot-widget--open")) {
+        setTimeout(() => input?.focus(), 250);
+        scrollMessages(container, false);
       }
     });
   });
+
+  if (switcher) {
+    switcher.value = state.mode;
+    switcher.addEventListener("change", () => {
+      state.mode = switcher.value || "guest";
+      localStorage.setItem(MODE_KEY, state.mode);
+      renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state);
+    });
+  }
+
+  attachBtn?.addEventListener("click", () => imgInput?.click());
+
+  newChatBtn?.addEventListener("click", async () => {
+    state.sessionId = "";
+    localStorage.removeItem(SESSION_ID_KEY);
+    state.messages = [localGreeting()];
+    state.handoffActive = false;
+    renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state);
+    input?.focus();
+  });
+
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const text = input?.value.trim();
+    if (!text || state.loading) return;
+    input.value = "";
+    await sendChatMessage(state, text);
+  });
+
+  container.querySelectorAll(".js-quick-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      if (!input) return;
+      input.value = chip.textContent.trim();
+      input.focus();
+    });
+  });
+
+  container.addEventListener("click", (event) => {
+    const btn = event.target.closest(".js-chat-product-cart");
+    if (!btn) return;
+    const product = state.productsById.get(btn.dataset.productId);
+    addProductToCart(product);
+  });
+
+  const messagesContainer = container.querySelector(".chatbot-messages");
+  const scrollBtn = container.querySelector(".chatbot-scroll-bottom");
+  messagesContainer?.addEventListener("scroll", () => {
+    const nearBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 120;
+    state._userScrolled = !nearBottom;
+    if (scrollBtn) scrollBtn.style.display = nearBottom ? "none" : "flex";
+  });
+  scrollBtn?.addEventListener("click", () => {
+    scrollMessages(container, true);
+    state._userScrolled = false;
+    if (scrollBtn) scrollBtn.style.display = "none";
+  });
+
+  renderContainer(container, state, false);
+}
+
+function bindSidebar(state) {
+  const sidebar = document.querySelector(".js-chatbot-sidebar");
+  const closeSidebarBtn = document.querySelector(".js-close-sidebar");
+  const openSidebarBtn = document.querySelector(".js-open-sidebar");
+  const sessionsContainer = document.querySelector(".js-chatbot-sessions");
+
+  closeSidebarBtn?.addEventListener("click", () => sidebar?.classList.add("is-collapsed"));
+  openSidebarBtn?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    sidebar?.classList.toggle("is-collapsed");
+  });
+
+  sessionsContainer?.addEventListener("click", async (event) => {
+    const deleteBtn = event.target.closest(".js-delete-session");
+    if (deleteBtn) {
+      event.preventDefault();
+      event.stopPropagation();
+      await deleteSession(state, deleteBtn.dataset.id);
+      return;
+    }
+
+    const item = event.target.closest(".chatbot-session-item");
+    if (!item?.dataset.id) return;
+    state.sessionId = item.dataset.id;
+    localStorage.setItem(SESSION_ID_KEY, state.sessionId);
+    await loadMessages(state, state.sessionId);
+  });
+}
+
+async function loadSessions(state) {
+  const data = await apiRequest(`/api/v1/chat/sessions?guestId=${encodeURIComponent(state.guestId)}&limit=50`);
+  state.sessions = data.rows || [];
+  if (!state.sessionId || !state.sessions.some((session) => session.session_id === state.sessionId)) {
+    state.sessionId = state.sessions[0]?.session_id || "";
+  }
+  if (state.sessionId) {
+    localStorage.setItem(SESSION_ID_KEY, state.sessionId);
+    await loadMessages(state, state.sessionId, false);
+  } else {
+    state.messages = [localGreeting()];
+    renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state);
+  }
+}
+
+async function loadMessages(state, sessionId, reloadSessions = true) {
+  const data = await apiRequest(`/api/v1/chat/${encodeURIComponent(sessionId)}/messages?guestId=${encodeURIComponent(state.guestId)}&limit=150`);
+  state.messages = data.messages?.length ? data.messages : [localGreeting()];
+  state.handoffActive = data.session?.handoff_status === "requested" || data.session?.handoff_status === "assigned";
+  rememberProducts(state, data.products || []);
+  if (reloadSessions) {
+    const sessions = await apiRequest(`/api/v1/chat/sessions?guestId=${encodeURIComponent(state.guestId)}&limit=50`);
+    state.sessions = sessions.rows || state.sessions;
+  }
+  renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
+}
+
+async function sendChatMessage(state, text) {
+  state.loading = true;
+  const tempUser = {
+    message_id: `tmp-user-${Date.now()}`,
+    sender: "user",
+    text,
+    created_at: new Date().toISOString(),
+    metadata: {}
+  };
+  const typing = {
+    message_id: "typing",
+    sender: "bot",
+    text: "Velura đang tìm gợi ý phù hợp...",
+    created_at: new Date().toISOString(),
+    metadata: { typing: true }
+  };
+  state.messages = state.messages.filter((msg) => !msg.metadata?.local_greeting).concat([tempUser, typing]);
+  renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
+
+  try {
+    const payload = {
+      sessionId: state.sessionId || undefined,
+      guestId: state.guestId,
+      mode: state.mode,
+      message: text
+    };
+    const data = await apiRequest("/api/v1/chat/messages", {
+      method: "POST",
+      body: payload
+    });
+    if (data.session?.session_id) {
+      state.sessionId = data.session.session_id;
+      localStorage.setItem(SESSION_ID_KEY, state.sessionId);
+    }
+    if (data.handoff) {
+      state.handoffActive = true;
+    }
+    rememberProducts(state, data.products || []);
+    state.messages = state.messages.filter((msg) => msg.message_id !== tempUser.message_id && msg.message_id !== "typing");
+    state.messages = state.messages.concat(data.messages || []);
+    await refreshSessionsQuietly(state);
+    renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
+  } catch (error) {
+    state.messages = state.messages.filter((msg) => msg.message_id !== "typing").concat({
+      message_id: `err-${Date.now()}`,
+      sender: "bot",
+      text: error.message || "Mình chưa thể kết nối hệ thống tư vấn. Bạn thử lại giúp mình nhé.",
+      created_at: new Date().toISOString(),
+      metadata: { error: true }
+    });
+    renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
+  } finally {
+    state.loading = false;
+  }
+}
+
+async function refreshSessionsQuietly(state) {
+  try {
+    const data = await apiRequest(`/api/v1/chat/sessions?guestId=${encodeURIComponent(state.guestId)}&limit=50`);
+    state.sessions = data.rows || state.sessions;
+  } catch {
+    // Keep current sidebar if refresh fails.
+  }
+}
+
+async function deleteSession(state, sessionId) {
+  if (!sessionId) return;
+  try {
+    await apiRequest(`/api/v1/chat/${encodeURIComponent(sessionId)}`, {
+      method: "DELETE",
+      body: { guestId: state.guestId }
+    });
+    state.sessions = state.sessions.filter((session) => session.session_id !== sessionId);
+    if (state.sessionId === sessionId) {
+      state.sessionId = state.sessions[0]?.session_id || "";
+      if (state.sessionId) {
+        localStorage.setItem(SESSION_ID_KEY, state.sessionId);
+        await loadMessages(state, state.sessionId, false);
+      } else {
+        localStorage.removeItem(SESSION_ID_KEY);
+        state.messages = [localGreeting()];
+      }
+    }
+    renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
+  } catch (error) {
+    showToast(error.message || "Không thể xóa phiên chat.");
+  }
+}
+
+function renderAll(containers, state, smooth = false) {
+  Array.from(containers).forEach((container) => renderContainer(container, state, smooth));
+  renderSessions(state);
+}
+
+function renderContainer(container, state, smooth) {
+  const messagesContainer = container.querySelector(".chatbot-messages");
+  if (!messagesContainer) return;
+  messagesContainer.innerHTML = state.messages.map((message) => renderMessage(message, state)).join("");
+  if (state.handoffActive) {
+    messagesContainer.innerHTML += renderHandoffBanner();
+  }
+  const isNearBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 120;
+  if (smooth || isNearBottom || !state._userScrolled) {
+    scrollMessages(container, smooth);
+  }
+  state._userScrolled = false;
+}
+
+function renderMessage(message, state) {
+  const senderClass = message.sender === "user" ? "chatbot-message--user" : "chatbot-message--bot";
+  const typingClass = message.metadata?.typing ? " chatbot-message--typing" : "";
+  const agentClass = message.sender === "agent" ? " chatbot-message--agent" : "";
+  const productIds = collectProductIds(message);
+  const productCards = productIds
+    .map((id) => state.productsById.get(id))
+    .filter(Boolean)
+    .map((product) => renderProductCard(product))
+    .join("");
+  const formattedText = message.metadata?.typing
+    ? '<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>'
+    : formatBotText(message.text);
+  return `
+    <div class="chatbot-message ${senderClass}${typingClass}${agentClass}">
+      ${message.sender === "agent" ? '<span class="chatbot-message__sender">CSKH</span>' : ""}
+      <div class="chatbot-message__text">${formattedText}</div>
+      ${productCards ? `<div class="chat-product-list">${productCards}</div>` : ""}
+      <span class="chatbot-message__time">${escapeHtml(formatTime(message.created_at))}</span>
+    </div>
+  `;
+}
+
+function renderProductCard(product) {
+  const price = formatMoney(product.sale_price || product.price || product.base_price);
+  const oldPrice = product.base_price && product.sale_price && product.base_price > product.sale_price
+    ? `<span class="chat-product-card__old-price">${escapeHtml(formatMoney(product.base_price))}</span>`
+    : "";
+  const cartDisabled = product.variant?.variant_id ? "" : "disabled";
+  const isOutOfStock = product.variant && product.variant.stock_quantity <= 0;
+  const stockNote = isOutOfStock
+    ? '<span class="chat-product-card__stock-note">Tạm hết hàng</span>'
+    : "";
+  return `
+    <article class="chat-product-card" data-product-id="${escapeHtml(product.product_id)}">
+      <a href="${escapeHtml(product.detail_url)}" class="chat-product-card__image-link" target="_blank" rel="noopener">
+        <img src="${escapeHtml(product.image_url || "/src/assets/images/placeholder.jpg")}" alt="${escapeHtml(product.name)}" loading="lazy">
+      </a>
+      <div class="chat-product-card__info">
+        <h4 class="chat-product-card__title">${escapeHtml(product.name)}</h4>
+        <p class="chat-product-card__price">${escapeHtml(price)}${oldPrice}</p>
+        ${stockNote}
+      </div>
+      <div class="chat-product-card__actions">
+        <a href="${escapeHtml(product.detail_url)}" class="btn-detail" target="_blank" rel="noopener">Xem chi tiết</a>
+        ${isOutOfStock ? '' : `<button type="button" class="btn-buy js-chat-product-cart" data-product-id="${escapeHtml(product.product_id)}">Thêm vào giỏ hàng</button>`}
+      </div>
+    </article>
+  `;
+}
+
+function renderHandoffBanner() {
+  return `
+    <div class="chatbot-handoff-banner">
+      <div class="chatbot-handoff-banner__icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      </div>
+      <div class="chatbot-handoff-banner__text">
+        <strong>Đang kết nối với nhân viên CSKH...</strong>
+        <span>Vui lòng chờ trong giây lát. Nhân viên sẽ phản hồi ngay.</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderSessions(state) {
+  const sessionsContainer = document.querySelector(".js-chatbot-sessions");
+  if (!sessionsContainer) return;
+  if (!state.sessions.length) {
+    sessionsContainer.innerHTML = '<p class="history-list__empty">Chưa có lịch sử trò chuyện</p>';
+    return;
+  }
+  sessionsContainer.innerHTML = state.sessions.map((session) => {
+    const isActive = session.session_id === state.sessionId;
+    const handoffBadge = session.handoff_status === "requested" || session.handoff_status === "assigned"
+      ? '<span class="chatbot-session-item__badge">CSKH</span>'
+      : "";
+    return `
+      <div class="chatbot-session-item ${isActive ? "is-active" : ""}" data-id="${escapeHtml(session.session_id)}">
+        <div class="chatbot-session-item__left">
+          <span class="chatbot-session-item__icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </span>
+          <span class="chatbot-session-item__title" title="${escapeHtml(session.title)}">
+            ${escapeHtml(session.title)}
+            ${handoffBadge}
+            <small>${escapeHtml(formatSessionDate(session.updated_at))}</small>
+          </span>
+        </div>
+        <button class="chatbot-session-item__delete js-delete-session" type="button" aria-label="Xóa phiên" data-id="${escapeHtml(session.session_id)}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
+function addProductToCart(product) {
+  if (!product?.variant?.variant_id) {
+    showToast("Sản phẩm này chưa có biến thể sẵn sàng để thêm vào giỏ.");
+    return;
+  }
+  addToCart({
+    variant_id: product.variant.variant_id,
+    product_id: product.product_id,
+    product_name: product.name,
+    product_image: product.image_url || "",
+    quantity: 1,
+    unit_price: product.sale_price || product.price || product.base_price,
+    color: product.variant.color || "Mặc định",
+    size: product.variant.size || "M"
+  });
+}
+
+function rememberProducts(state, products) {
+  products.forEach((product) => {
+    if (product?.product_id) state.productsById.set(product.product_id, product);
+  });
+}
+
+function collectProductIds(message) {
+  const metadataIds = Array.isArray(message.metadata?.product_ids) ? message.metadata.product_ids : [];
+  const columnIds = Array.isArray(message.product_ids) ? message.product_ids : [];
+  return Array.from(new Set([...columnIds, ...metadataIds].filter(Boolean)));
+}
+
+function scrollMessages(container, smooth) {
+  const messagesContainer = container.querySelector(".chatbot-messages");
+  if (!messagesContainer) return;
+  if (smooth) {
+    messagesContainer.scrollTo({ top: messagesContainer.scrollHeight, behavior: "smooth" });
+  } else {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+}
+
+function localGreeting() {
+  return {
+    message_id: "local-greeting",
+    sender: "bot",
+    text: "Chào bạn, mình là AI Stylist của Velura. Bạn cần tìm outfit, chọn size hay muốn được gợi ý sản phẩm hôm nay?",
+    created_at: new Date().toISOString(),
+    metadata: { local_greeting: true }
+  };
+}
+
+function getOrCreateGuestId() {
+  let guestId = localStorage.getItem(GUEST_ID_KEY);
+  if (!isUuid(guestId)) {
+    guestId = crypto.randomUUID();
+    localStorage.setItem(GUEST_ID_KEY, guestId);
+  }
+  return guestId;
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
+}
+
+function escapeHtml(text) {
+  return String(text ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+function formatBotText(text) {
+  if (!text) return "";
+  let html = escapeHtml(text);
+  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/__(.*?)__/g, "<strong>$1</strong>");
+  html = html.replace(/\n/g, "<br>");
+  return html;
+}
+
+function formatMoney(value) {
+  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(Number(value || 0));
+}
+
+function formatTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit" }).format(date);
+}
+
+function formatSessionDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "mới";
+  const today = new Date();
+  if (date.toDateString() === today.toDateString()) return "Hôm nay";
+  return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit" }).format(date);
 }

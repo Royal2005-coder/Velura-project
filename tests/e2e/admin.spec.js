@@ -9,6 +9,7 @@ async function loginAs(page, email, password) {
   await page.fill('#login-password', password);
   await page.click('.auth-btn--primary');
   await page.waitForURL(/admin/, { timeout: 10000 });
+  await page.waitForSelector('.admin-layout', { state: 'visible', timeout: 10000 });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -54,7 +55,7 @@ test.describe('Admin Login & RBAC', () => {
   });
 
   test('Login as CSKH admin → returns-cskh page', async ({ page }) => {
-    await loginAs(page, 'cskh@velura.vn', 'cskh123');
+    await loginAs(page, 'cskh-test@velura.vn', 'cskh123');
     await expect(page).toHaveURL(/returns-cskh/);
   });
 
@@ -86,7 +87,7 @@ test.describe('Admin Login & RBAC', () => {
   });
 
   test('CSKH admin cannot access products page → redirected', async ({ page }) => {
-    await loginAs(page, 'cskh@velura.vn', 'cskh123');
+    await loginAs(page, 'cskh-test@velura.vn', 'cskh123');
     await page.goto(`${BASE}/products.html`);
     await expect(page).toHaveURL(/returns-cskh/);
   });
@@ -305,6 +306,7 @@ test.describe('Returns & CSKH (AD_CSKH_* rules)', () => {
   });
 
   test('AD_CSKH_04: Return action buttons exist', async ({ page }) => {
+    await page.waitForSelector('[data-menu]', { state: 'attached', timeout: 10000 });
     const actionBtns = page.locator('[data-menu]');
     const count = await actionBtns.count();
     expect(count).toBeGreaterThan(0);

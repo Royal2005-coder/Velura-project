@@ -11,7 +11,7 @@ export default defineConfig({
     actionTimeout: 10000,
   },
   webServer: {
-    command: 'npx vite --port 5174',
+    command: 'npm run dev -w apps/admin-web -- --port 5174',
     port: 5174,
     reuseExistingServer: true,
     timeout: 15000,

@@ -1,27 +1,26 @@
 import { HttpError } from "./http.js";
 import { getAuthUser, selectOne } from "./supabase.js";
-import { verifyJwt } from "./auth-helper.js";
 
 export const rolePages = {
   super_admin: ["dashboard", "accounts", "products", "orders", "reviews", "returns-cskh", "pricing", "promotions", "logs"],
-  product_admin: ["dashboard", "products"],
-  order_admin: ["dashboard", "orders"],
-  pricing_admin: ["dashboard", "pricing", "promotions"],
-  review_admin: ["dashboard", "reviews"],
-  service_admin: ["dashboard", "returns-cskh"],
-  read_only_admin: ["dashboard", "logs"],
+  admin_operator_sanpham: ["products", "dashboard"],
+  admin_operator_donhang: ["orders", "dashboard"],
+  admin_operator_gia_km: ["pricing", "dashboard", "promotions"],
+  admin_operator_danhgia_review: ["reviews", "dashboard"],
+  admin_operator_cskh_dt: ["returns-cskh", "dashboard"],
+  admin_viewer: ["dashboard"],
   member: ["welcome"],
   guest: ["welcome"]
 };
 
 export const roleModules = {
   super_admin: ["*"],
-  product_admin: ["dashboard", "products", "categories", "inventory", "audit_logs"],
-  order_admin: ["dashboard", "orders", "payments", "shipments", "audit_logs"],
-  pricing_admin: ["dashboard", "pricing", "promotions", "vouchers", "bundles", "budgets", "audit_logs"],
-  review_admin: ["dashboard", "reviews", "support_tickets", "audit_logs"],
-  service_admin: ["dashboard", "returns", "support_tickets", "orders", "audit_logs"],
-  read_only_admin: ["dashboard", "audit_logs"],
+  admin_operator_sanpham: ["dashboard", "products", "categories", "inventory", "audit_logs"],
+  admin_operator_donhang: ["dashboard", "orders", "payments", "shipments", "audit_logs"],
+  admin_operator_gia_km: ["dashboard", "pricing", "promotions", "vouchers", "bundles", "budgets", "audit_logs"],
+  admin_operator_danhgia_review: ["dashboard", "reviews", "support_tickets", "audit_logs"],
+  admin_operator_cskh_dt: ["dashboard", "returns", "support_tickets", "orders", "audit_logs"],
+  admin_viewer: ["dashboard"],
   member: [],
   guest: []
 };
@@ -30,30 +29,30 @@ export async function buildAuthContext(req) {
   const token = getToken(req);
   if (!token) return buildGuestContext();
 
-  // Check if it's our custom user JWT
-  const decoded = verifyJwt(token);
-  if (decoded && decoded.user_id) {
-    const user = await selectOne("users", { user_id: `eq.${decoded.user_id}` });
-    if (user && user.is_active) {
-      return {
-        authUser: { id: user.user_id, email: user.email },
-        profile: user,
-        roleCode: user.role || "member",
-        roleName: user.role === "admin" ? "Admin" : "Member",
-        isAdmin: user.role === "admin",
-        allowedPages: rolePages[user.role] || rolePages.member
-      };
-    }
-  }
-
-  // Fallback to Supabase Auth (for Admins)
   const authUser = await getAuthUser(token);
   if (!authUser?.id) return buildGuestContext();
 
-  const profile = await selectOne("profiles", {
-    select: "*,role:app_roles(code,name,is_admin)",
-    auth_user_id: `eq.${authUser.id}`
-  });
+  const accountSelect = [
+    "user_id", "auth_user_id", "email", "phone", "full_name", "avatar",
+    "role", "admin_role", "is_active", "is_verified", "created_at",
+    "last_login_at", "version", "updated_at"
+  ].join(",");
+  const dbOptions = { useAnonKey: false };
+  let profile = null;
+  try {
+    profile = await selectOne("users", {
+      select: accountSelect,
+      auth_user_id: `eq.${authUser.id}`
+    }, dbOptions);
+    if (!profile) {
+      profile = await selectOne("users", {
+        select: accountSelect,
+        user_id: `eq.${authUser.id}`
+      }, dbOptions);
+    }
+  } catch {
+    profile = null;
+  }
 
   if (!profile) {
     return {
@@ -62,18 +61,20 @@ export async function buildAuthContext(req) {
       roleCode: "member",
       roleName: "Member",
       isAdmin: false,
-      allowedPages: rolePages.member
+      allowedPages: rolePages.member,
+      accessToken: token
     };
   }
 
-  const roleCode = profile.role?.code || "member";
+  const roleCode = profile.role === "admin" ? profile.admin_role : profile.role || "member";
   return {
     authUser,
     profile,
     roleCode,
-    roleName: profile.role?.name || "Member",
-    isAdmin: Boolean(profile.role?.is_admin),
-    allowedPages: rolePages[roleCode] || rolePages.member
+    roleName: roleNames[roleCode] || "Member",
+    isAdmin: profile.role === "admin",
+    allowedPages: rolePages[roleCode] || rolePages.member,
+    accessToken: token
   };
 }
 
@@ -85,7 +86,7 @@ export function requireAuthenticated(context) {
 
 export function requireAdmin(context) {
   requireAuthenticated(context);
-  if (!context.isAdmin || context.profile?.status !== "active") {
+  if (!context.isAdmin || !context.profile?.is_active) {
     throw new HttpError(403, "ADMIN_REQUIRED", "Admin access is required");
   }
 }
@@ -94,7 +95,7 @@ export function requirePermission(context, moduleName, action = "read") {
   requireAdmin(context);
   const modules = roleModules[context.roleCode] || [];
   const canAccessModule = modules.includes("*") || modules.includes(moduleName);
-  const readOnlyBlocked = context.roleCode === "read_only_admin" && action !== "read";
+  const readOnlyBlocked = context.roleCode === "admin_viewer" && action !== "read";
 
   if (!canAccessModule || readOnlyBlocked) {
     throw new HttpError(403, "RBAC_DENIED", "This admin role cannot perform the requested action", {
@@ -112,7 +113,8 @@ function buildGuestContext() {
     roleCode: "guest",
     roleName: "Guest",
     isAdmin: false,
-    allowedPages: rolePages.guest
+    allowedPages: rolePages.guest,
+    accessToken: ""
   };
 }
 
@@ -121,3 +123,15 @@ function getToken(req) {
   const match = header.match(/^Bearer\s+(.+)$/i);
   return match ? match[1].trim() : "";
 }
+
+const roleNames = {
+  super_admin: "Admin quan tri",
+  admin_viewer: "Admin chi xem",
+  admin_operator_sanpham: "Admin quan ly san pham",
+  admin_operator_donhang: "Admin quan ly don hang",
+  admin_operator_cskh_dt: "Admin doi tra va CSKH",
+  admin_operator_gia_km: "Admin quan ly gia va khuyen mai",
+  admin_operator_danhgia_review: "Admin quan ly danh gia",
+  member: "Member",
+  guest: "Guest"
+};
