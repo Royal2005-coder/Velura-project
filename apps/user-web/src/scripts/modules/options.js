@@ -1,5 +1,6 @@
 import { apiRequest } from "./api.js";
 import { showToast, addToCart } from "./cart.js";
+import { updateWishlistBadge } from "./wishlist.js";
 
 /**
  * ES6 Module: Product Detail Page Options Controller
@@ -364,6 +365,9 @@ export async function initOptions() {
       // Load related products dynamically
       loadRelatedProducts(product);
 
+      // Render product reviews
+      renderReviews(product.reviews || []);
+
       // Cart binding in product details
       const detailCartBtn = document.querySelector(".js-add-cart");
       if (detailCartBtn) {
@@ -463,6 +467,9 @@ export async function initOptions() {
           await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
           wishlistBtn.classList.remove("is-wishlist-active");
           showToast("Đã xóa khỏi danh sách yêu thích");
+          const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+          localStorage.setItem("velura_wishlist_count", Math.max(0, currentCount - 1));
+          updateWishlistBadge();
         } else {
           await apiRequest("/api/user/wishlist", {
             method: "POST",
@@ -470,6 +477,9 @@ export async function initOptions() {
           });
           wishlistBtn.classList.add("is-wishlist-active");
           showToast("Đã thêm vào danh sách yêu thích!");
+          const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+          localStorage.setItem("velura_wishlist_count", currentCount + 1);
+          updateWishlistBadge();
         }
       } catch (err) {
         if (err.status === 401) {
@@ -488,6 +498,8 @@ async function checkWishlistStatus(productId) {
   try {
     const data = await apiRequest("/api/user/wishlist");
     const items = data.items || [];
+    localStorage.setItem("velura_wishlist_count", items.length);
+    updateWishlistBadge();
     const isSaved = items.some(item => item.product_id === productId);
     if (isSaved) {
       wishlistBtn.classList.add("is-wishlist-active");
@@ -669,4 +681,133 @@ async function loadRelatedProducts(product) {
   } catch (err) {
     console.error("Failed to load related products:", err);
   }
+}
+
+function renderReviews(reviews) {
+  const reviewsListEl = document.querySelector(".reviews-list");
+  if (!reviewsListEl) return;
+
+  const count = reviews.length;
+  let avgRating = 5.0;
+  
+  // Calculate average rating
+  if (count > 0) {
+    const totalRating = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
+    avgRating = (totalRating / count).toFixed(1);
+  }
+
+  // Helper to generate stars
+  const getStarsHtml = (rating, size = 14) => {
+    let html = "";
+    const rounded = Math.round(rating);
+    for (let i = 1; i <= 5; i++) {
+      if (i <= rounded) {
+        html += `
+          <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="#C97B63" style="margin-right: 2px;">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          </svg>
+        `;
+      } else {
+        html += `
+          <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#C97B63" stroke-width="2" style="margin-right: 2px;">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          </svg>
+        `;
+      }
+    }
+    return html;
+  };
+
+  // 1. Update top product-info__rating
+  const topRatingStars = document.querySelector(".product-info__rating .rating-stars");
+  const topRatingCount = document.querySelector(".product-info__rating .rating-count");
+  if (topRatingStars) {
+    topRatingStars.innerHTML = getStarsHtml(avgRating, 14);
+  }
+  if (topRatingCount) {
+    topRatingCount.innerHTML = `${avgRating} &nbsp;·&nbsp; ${count} Đánh giá từ khách hàng`;
+  }
+
+  // 2. Update reviews-summary__left
+  const summaryLeftTitle = document.querySelector(".reviews-summary__left .reviews-summary__title");
+  const summaryLeftStars = document.querySelector(".reviews-summary__left .rating-stars");
+  const summaryLeftSubtitle = document.querySelector(".reviews-summary__left .reviews-summary__subtitle");
+  
+  if (summaryLeftTitle) {
+    summaryLeftTitle.textContent = avgRating;
+  }
+  if (summaryLeftStars) {
+    summaryLeftStars.innerHTML = getStarsHtml(avgRating, 18);
+  }
+  if (summaryLeftSubtitle) {
+    summaryLeftSubtitle.textContent = `Tổng số ${count} đánh giá`;
+  }
+
+  // 3. Update reviews-summary__right (Rating Bars)
+  const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  reviews.forEach(r => {
+    const star = Math.max(1, Math.min(5, Math.round(r.rating || 5)));
+    starCounts[star] = (starCounts[star] || 0) + 1;
+  });
+
+  const summaryRight = document.querySelector(".reviews-summary__right");
+  if (summaryRight) {
+    summaryRight.innerHTML = [5, 4, 3, 2, 1].map(star => {
+      const starCount = starCounts[star] || 0;
+      const percent = count > 0 ? Math.round((starCount / count) * 100) : 0;
+      return `
+        <div class="rating-bar-item">
+          <span class="rating-bar__label">${star} ★</span>
+          <div class="rating-bar__track">
+            <div class="rating-bar__fill" style="width: ${percent}%;"></div>
+          </div>
+          <span class="rating-bar__value">${starCount}</span>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // 4. Render Reviews List
+  if (count === 0) {
+    reviewsListEl.innerHTML = `
+      <div style="text-align: center; padding: 48px 0; color: var(--soft);">
+        <p style="margin: 0; font-size: 1rem; color: var(--text-dark); font-weight: 500;">Sản phẩm chưa có đánh giá nào.</p>
+        <p style="margin: 4px 0 0 0; font-size: 0.85rem;">Hãy mua hàng và trở thành người đầu tiên chia sẻ cảm nhận!</p>
+      </div>
+    `;
+    return;
+  }
+
+  reviewsListEl.innerHTML = reviews.map(r => {
+    const formattedDate = r.submitted_at || r.created_at
+      ? new Date(r.submitted_at || r.created_at).toLocaleDateString("vi-VN")
+      : "Đang cập nhật";
+
+    const tagsHtml = r.review_tags && r.review_tags.length > 0
+      ? `<div class="review-item__tags" style="display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap;">
+          ${r.review_tags.map(tag => `<span class="review-tag" style="background: #f7f5f2; border: 1px solid #e5dfd8; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; color: #8A6D3B; font-weight: 500;">${tag}</span>`).join("")}
+         </div>`
+      : "";
+
+    const imagesHtml = r.images && r.images.length > 0
+      ? `<div class="review-item__gallery" style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+          ${r.images.map(img => `<img src="${img}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #e5dfd8; cursor: pointer;" onclick="window.open('${img}', '_blank')" />`).join("")}
+         </div>`
+      : "";
+
+    return `
+      <article class="review-item" style="border-bottom: 1px solid #f0edf0; padding: 24px 0;">
+        <div class="review-item__head" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span class="review-item__author" style="font-weight: 600; color: var(--text-dark);">${r.user_full_name}</span>
+          <span class="review-item__date" style="font-size: 0.85rem; color: var(--soft);">${formattedDate}</span>
+        </div>
+        <div class="rating-stars" style="margin-bottom: 8px;">
+          ${getStarsHtml(r.rating, 12)}
+        </div>
+        ${tagsHtml}
+        <p class="review-item__text" style="color: var(--text-dark); margin: 0; line-height: 1.6;">${r.comment || "Không có nhận xét chi tiết."}</p>
+        ${imagesHtml}
+      </article>
+    `;
+  }).join("");
 }

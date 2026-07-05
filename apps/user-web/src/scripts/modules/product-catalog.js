@@ -1,6 +1,7 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
 import { addToCart } from "./cart.js";
+import { updateWishlistBadge } from "./wishlist.js";
 
 /**
  * ES6 Module: Product Catalog Controller
@@ -202,6 +203,8 @@ export function initProductCatalog() {
         const wishlistData = await apiRequest("/api/user/wishlist");
         const items = wishlistData.items || [];
         wishlistedProductIds = new Set(items.map(item => item.product_id));
+        localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+        updateWishlistBadge();
       } catch (wishlistErr) {
         // Quietly fail if guest
         wishlistedProductIds = new Set();
@@ -675,6 +678,8 @@ export function initProductCatalog() {
             btn.classList.remove("active");
             wishlistedProductIds.delete(productId);
             showToast("Đã xóa khỏi danh sách yêu thích");
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+            updateWishlistBadge();
           } else {
             await apiRequest("/api/user/wishlist", {
               method: "POST",
@@ -683,6 +688,8 @@ export function initProductCatalog() {
             btn.classList.add("active");
             wishlistedProductIds.add(productId);
             showToast("Đã thêm vào danh sách yêu thích!");
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+            updateWishlistBadge();
           }
         } catch (err) {
           if (err.status === 401) {

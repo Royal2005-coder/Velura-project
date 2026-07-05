@@ -1,5 +1,5 @@
 import { HttpError, readJson, sendJson } from "./http.js";
-import { selectOne, selectRows, insertRow, updateRows } from "./supabase.js";
+import { selectOne, selectRows, insertRow, updateRows, deleteRows } from "./supabase.js";
 import { hashPassword, verifyPassword, signJwt } from "./auth-helper.js";
 
 // Helper to validate email format
@@ -24,6 +24,363 @@ function requireUserAuth(context) {
   }
   return context.profile;
 }
+
+// Helper to parse Postgres date as UTC robustly
+function parseUtcDate(dateStr) {
+  if (!dateStr) return new Date();
+  const cleanStr = dateStr.replace(" ", "T");
+  if (!cleanStr.endsWith("Z") && !/[+-]\d{2}(:\d{2})?$/.test(cleanStr)) {
+    return new Date(cleanStr + "Z");
+  }
+  return new Date(cleanStr);
+}
+
+// Auto-progress order statuses based on time elapsed since creation
+async function autoProgressOrder(order) {
+  if (!order || ["cancelled", "completed", "failed_delivery"].includes(order.status)) {
+    return order;
+  }
+
+  const createdAt = parseUtcDate(order.created_at);
+  const now = new Date();
+  const elapsedSeconds = Math.floor((now - createdAt) / 1000);
+
+  let newStatus = order.status;
+  let deliveredAt = order.delivered_at;
+  let trackingCode = order.tracking_code;
+  let changed = false;
+
+  // 1. Time-based progression for intermediate states (1 minute = 60s per step)
+  if (order.status === "pending" && elapsedSeconds >= 60) {
+    newStatus = "confirmed";
+    changed = true;
+  }
+  if (["pending", "confirmed"].includes(newStatus) && elapsedSeconds >= 120) {
+    newStatus = "preparing";
+    changed = true;
+  }
+  if (["pending", "confirmed", "preparing"].includes(newStatus) && elapsedSeconds >= 180) {
+    newStatus = "shipping";
+    if (!trackingCode) {
+      trackingCode = "VN" + Math.floor(100000000 + Math.random() * 900000000);
+    }
+    changed = true;
+  }
+  if (["pending", "confirmed", "preparing", "shipping"].includes(newStatus) && elapsedSeconds >= 240) {
+    newStatus = "delivered";
+    if (!deliveredAt) {
+      deliveredAt = now.toISOString();
+    }
+    changed = true;
+  }
+
+  // 2. Auto-complete: if delivered for more than 60 seconds (1 minute), auto transition to completed
+  if (newStatus === "delivered" && deliveredAt) {
+    const deliveredTime = new Date(deliveredAt);
+    const elapsedSinceDelivery = Math.floor((now - deliveredTime) / 1000);
+    if (elapsedSinceDelivery >= 60) {
+      newStatus = "completed";
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    const updateData = {
+      status: newStatus,
+      updated_at: now.toISOString()
+    };
+    if (deliveredAt) {
+      updateData.delivered_at = deliveredAt;
+    }
+    if (trackingCode) {
+      updateData.tracking_code = trackingCode;
+    }
+    
+    try {
+      await updateRows("orders", { order_id: `eq.${order.order_id}` }, updateData);
+    } catch (e) {
+      console.error(`Failed to auto-progress order ${order.order_id}:`, e.message);
+    }
+    
+    return {
+      ...order,
+      status: newStatus,
+      delivered_at: deliveredAt,
+      tracking_code: trackingCode,
+      updated_at: updateData.updated_at
+    };
+  }
+
+  return order;
+}
+
+// Calculate total amount to refund for a return request
+async function calculateReturnAmount(returnId) {
+  const { rows: items } = await selectRows("return_item", { return_id: `eq.${returnId}` });
+  let total = 0;
+  for (const item of items) {
+    const orderItem = await selectOne("order_item", { item_id: `eq.${item.order_item_id}` });
+    if (orderItem) {
+      total += Number(orderItem.unit_price) * Number(item.quantity);
+    }
+  }
+  return total;
+}
+
+// Process refund status in payment
+async function processRefundPayment(orderId, refundAmount) {
+  const payment = await selectOne("payment", { order_id: `eq.${orderId}` });
+  if (payment) {
+    await updateRows("payment", { payment_id: `eq.${payment.payment_id}` }, {
+      payment_status: "refunded",
+      refund_amount: refundAmount,
+      refund_at: new Date().toISOString()
+    });
+  }
+}
+
+// Create new exchange order
+async function createExchangeOrder(ret, exchangeVariantId) {
+  const originalOrder = await selectOne("orders", { order_id: `eq.${ret.order_id}` });
+  if (!originalOrder) {
+    throw new Error("Không tìm thấy đơn hàng gốc");
+  }
+
+  // Get returned items
+  const { rows: returnItems } = await selectRows("return_item", { return_id: `eq.${ret.return_id}` });
+  if (returnItems.length === 0) {
+    throw new Error("Không tìm thấy sản phẩm trả về");
+  }
+
+  // Find the variant we are exchanging to (or default to the returned variant)
+  let targetVariantId = exchangeVariantId;
+  if (!targetVariantId) {
+    const firstReturnItem = returnItems[0];
+    const originalOrderItem = await selectOne("order_item", { item_id: `eq.${firstReturnItem.order_item_id}` });
+    if (originalOrderItem) {
+      targetVariantId = originalOrderItem.variant_id;
+    }
+  }
+
+  if (!targetVariantId) {
+    throw new Error("Không xác định được sản phẩm đổi mới");
+  }
+
+  const v = await selectOne("variant", { variant_id: `eq.${targetVariantId}` });
+  if (!v) {
+    throw new Error("Variant đổi mới không tồn tại");
+  }
+
+  const p = await selectOne("product", { product_id: `eq.${v.product_id}` });
+  if (!p) {
+    throw new Error("Product đổi mới không tồn tại");
+  }
+
+  // Calculate pricing
+  const firstReturnItem = returnItems[0];
+  const originalOrderItem = await selectOne("order_item", { item_id: `eq.${firstReturnItem.order_item_id}` });
+  const originalUnitPrice = originalOrderItem ? Number(originalOrderItem.unit_price) : 0;
+  const newUnitPrice = Number(p.sale_price);
+
+  const qty = firstReturnItem.quantity;
+  const originalTotal = originalUnitPrice * qty;
+  const newTotal = newUnitPrice * qty;
+
+  const priceDiff = newTotal - originalTotal; // positive if new is more expensive
+
+  let orderStatus = "confirmed";
+  let paymentStatus = "paid";
+  
+  if (priceDiff > 0) {
+    orderStatus = "pending"; // waiting for additional payment
+    paymentStatus = "pending";
+  }
+
+  // Create new order
+  const trackingCode = "EXC" + Date.now().toString().slice(-8).toUpperCase();
+  const exchangeOrder = await insertRow("orders", {
+    user_id: ret.user_id,
+    status: orderStatus,
+    shipping_name: originalOrder.shipping_name,
+    shipping_phone: originalOrder.shipping_phone,
+    shipping_address: originalOrder.shipping_address,
+    shipping_fee: 0, // exchange is free shipping
+    discount_amount: priceDiff > 0 ? originalTotal : newTotal,
+    subtotal: newTotal,
+    total_amount: priceDiff > 0 ? priceDiff : 0,
+    payment_method: originalOrder.payment_method,
+    tracking_code: trackingCode,
+    internal_note: `Đơn hàng đổi mới từ yêu cầu ${ret.tracking_return_code}. Chênh lệch: ${priceDiff}₫`,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  });
+
+  // Create order item for the exchange order
+  await insertRow("order_item", {
+    order_id: exchangeOrder.order_id,
+    variant_id: targetVariantId,
+    product_name: p.name,
+    product_image: (p.images && p.images[0]) || null,
+    quantity: qty,
+    unit_price: newUnitPrice,
+    subtotal_item: newTotal
+  });
+
+  // Create payment record
+  await insertRow("payment", {
+    order_id: exchangeOrder.order_id,
+    payment_method: originalOrder.payment_method,
+    amount: priceDiff > 0 ? priceDiff : 0,
+    payment_status: paymentStatus,
+    created_at: new Date().toISOString()
+  });
+
+  // If priceDiff is negative, refund the difference
+  if (priceDiff < 0) {
+    await processRefundPayment(ret.order_id, Math.abs(priceDiff));
+  }
+
+  return exchangeOrder;
+}
+
+// Auto-progress return status based on elapsed time since creation
+async function autoProgressReturn(ret) {
+  if (!ret || ["completed", "rejected"].includes(ret.status)) {
+    return ret;
+  }
+
+  const createdAt = parseUtcDate(ret.created_at);
+  const now = new Date();
+  const elapsedSeconds = Math.floor((now - createdAt) / 1000);
+
+  let newStatus = ret.status;
+  let changed = false;
+  let rejectionReason = ret.rejection_reason;
+  let conditionCheckResult = ret.condition_check_result;
+  let refundAmount = ret.refund_amount;
+  let exchangeOrderId = ret.exchange_order_id;
+  let adminNote = ret.admin_note;
+
+  // 1. pending -> approved / rejected (after 30 seconds)
+  if (newStatus === "pending" && elapsedSeconds >= 30) {
+    const desc = (ret.description || "").toLowerCase();
+    if (desc.includes("violation")) {
+      newStatus = "rejected";
+      rejectionReason = "Không đạt tiêu chuẩn hồ sơ (chụp thiếu ảnh/mác bẩn)";
+    } else {
+      newStatus = "approved";
+    }
+    changed = true;
+  }
+
+  // 2. approved -> shipping_back (after 60 seconds)
+  if (newStatus === "approved" && elapsedSeconds >= 60) {
+    newStatus = "shipping_back";
+    changed = true;
+  }
+
+  // 3. shipping_back -> received (after 90 seconds)
+  if (newStatus === "shipping_back" && elapsedSeconds >= 90) {
+    newStatus = "received";
+    changed = true;
+  }
+
+  // 4. received -> completed / rejected (after 120 seconds)
+  if (newStatus === "received" && elapsedSeconds >= 120) {
+    const desc = (ret.description || "").toLowerCase();
+
+    // Tình huống 3: Hàng hoàn trả bị hư hỏng nặng khi kiểm kho -> Từ chối
+    if (desc.includes("transit_damage") && !desc.includes("minor_damage")) {
+      newStatus = "rejected";
+      rejectionReason = "Sản phẩm hoàn trả bị hư hỏng nặng trong quá trình vận chuyển";
+      changed = true;
+    } else {
+      newStatus = "completed";
+      changed = true;
+
+      // Handle branches: refund vs exchange
+      let returnType = ret.return_type;
+
+      // Tình huống 4: Hết mẫu đổi trả -> Tự động rẽ nhánh sang hoàn tiền
+      if (desc.includes("stock_out") && returnType === "exchange") {
+        returnType = "refund";
+        adminNote = "Stock Out - Refunded instead";
+      }
+
+      if (returnType === "refund") {
+        // Tình huống 6: Lỗi cổng thanh toán
+        if (desc.includes("payment_error")) {
+          refundAmount = await calculateReturnAmount(ret.return_id);
+          adminNote = "Refund Failed: Lỗi cổng thanh toán. Cần xử lý thủ công (Manual Review Required)";
+          const payment = await selectOne("payment", { order_id: `eq.${ret.order_id}` });
+          if (payment) {
+            await updateRows("payment", { payment_id: `eq.${payment.payment_id}` }, {
+              payment_status: "failed",
+              refund_amount: refundAmount,
+              refund_reason: "Lỗi cổng thanh toán khi hoàn tiền tự động",
+              refund_at: new Date().toISOString()
+            });
+          }
+        } else {
+          refundAmount = await calculateReturnAmount(ret.return_id);
+          await processRefundPayment(ret.order_id, refundAmount);
+        }
+      } else if (returnType === "exchange") {
+        // Tình huống 7: Đổi hàng thành công (Hao tổn nhẹ)
+        if (desc.includes("minor_damage")) {
+          conditionCheckResult = "minor_damage";
+        } else {
+          conditionCheckResult = "passed";
+        }
+
+        // Tình huống 5: Chênh lệch giá khi đổi hàng
+        // Check if desc has "exchange_to: [variant_id]"
+        let exchangeVariantId = null;
+        const match = desc.match(/exchange_to:\s*([a-f0-9-]+)/);
+        if (match) {
+          exchangeVariantId = match[1];
+        }
+
+        try {
+          const exchangeOrder = await createExchangeOrder(ret, exchangeVariantId);
+          exchangeOrderId = exchangeOrder.order_id;
+        } catch (err) {
+          console.error("Failed to create exchange order:", err.message);
+          // If creation fails (e.g. invalid variant), fallback to refund
+          returnType = "refund";
+          refundAmount = await calculateReturnAmount(ret.return_id);
+          await processRefundPayment(ret.order_id, refundAmount);
+        }
+      }
+    }
+  }
+
+  if (changed) {
+    const updateData = {
+      status: newStatus,
+      rejection_reason: rejectionReason || null,
+      condition_check_result: conditionCheckResult || null,
+      refund_amount: refundAmount || null,
+      exchange_order_id: exchangeOrderId || null,
+      admin_note: adminNote || null,
+      resolved_at: ["completed", "rejected"].includes(newStatus) ? now.toISOString() : null
+    };
+
+    try {
+      await updateRows("return_exchange", { return_id: `eq.${ret.return_id}` }, updateData);
+    } catch (e) {
+      console.error(`Failed to auto-progress return ${ret.return_id}:`, e.message);
+    }
+
+    return {
+      ...ret,
+      ...updateData
+    };
+  }
+
+  return ret;
+}
+
 
 export async function handleUserRoute(req, res, parts, corsHeaders, context) {
   const subRoute = parts[2]; // e.g. "auth", "profile", "addresses", "style-quiz", "wishlist", "orders", "reviews", "returns"
@@ -52,7 +409,27 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
           variants = dbVariants;
         }
         const category = product.category_id ? await selectOne("category", { category_id: `eq.${product.category_id}` }) : null;
-        return sendJson(res, 200, { ...product, variants, category }, corsHeaders);
+        
+        // Fetch approved reviews for this product
+        const { rows: dbReviews } = await selectRows("review", {
+          product_id: `eq.${action}`,
+          status: "eq.approved"
+        });
+        
+        let reviews = [];
+        if (dbReviews && dbReviews.length > 0) {
+          const userIds = [...new Set(dbReviews.map(r => r.user_id))];
+          const { rows: reviewUsers } = await selectRows("users", {
+            user_id: `in.(${userIds.join(",")})`
+          });
+          const userMap = new Map(reviewUsers.map(u => [u.user_id, u.full_name]));
+          reviews = dbReviews.map(r => ({
+            ...r,
+            user_full_name: userMap.get(r.user_id) || "Khách hàng ẩn danh"
+          }));
+        }
+
+        return sendJson(res, 200, { ...product, variants, category, reviews }, corsHeaders);
       }
 
       const { rows: products } = await selectRows("product", { status: "eq.on_sale" });
@@ -194,7 +571,7 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
     // POST /api/user/auth/otp-verify
     if (action === "otp-verify" && req.method === "POST") {
       const body = await readJson(req);
-      const { identity, otp_code } = body;
+      const { identity, otp_code, purpose } = body;
 
       if (!identity || !otp_code) {
         throw new HttpError(400, "BAD_REQUEST", "Thiếu thông tin identity hoặc mã OTP");
@@ -235,10 +612,13 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
 
       // Activate user if inactive
       const updates = {
-        otp_code: null,
-        otp_expires_at: null,
         is_active: true
       };
+      // Keep OTP for password reset flow because reset-password endpoint needs to check it.
+      if (purpose !== "reset-password") {
+        updates.otp_code = null;
+        updates.otp_expires_at = null;
+      }
       await updateRows("users", { user_id: `eq.${user.user_id}` }, updates);
 
       const token = signJwt({ user_id: user.user_id, email: user.email, role: user.role });
@@ -274,10 +654,27 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
       }
 
       // Check lock status (AUTH-02)
-      const now = new Date().toISOString();
-      if (user.locked_until && user.locked_until > now) {
-        const lockedTimeLeft = Math.ceil((new Date(user.locked_until) - new Date()) / 1000 / 60);
-        throw new HttpError(403, "LOCKED", `Tài khoản bị khóa tạm thời trong ${lockedTimeLeft} phút do nhập sai mật khẩu quá 5 lần`);
+      const now = new Date();
+      if (user.locked_until) {
+        const lockedUntil = new Date(user.locked_until);
+        if (lockedUntil > now) {
+          const lockedTimeLeft = Math.ceil((lockedUntil - now) / 1000 / 60);
+          throw new HttpError(403, "LOCKED", `Tài khoản bị khóa tạm thời trong ${lockedTimeLeft} phút do nhập sai mật khẩu quá 5 lần`);
+        }
+      }
+
+      // Reset login failures if last attempt was > 15 minutes ago, or if lock has expired
+      if (user.login_fail_count > 0) {
+        const lastUpdate = new Date(user.updated_at || user.created_at);
+        const elapsedMinutes = (now - lastUpdate) / 1000 / 60;
+        if (elapsedMinutes >= 15 || (user.locked_until && new Date(user.locked_until) <= now)) {
+          user.login_fail_count = 0;
+          user.locked_until = null;
+          await updateRows("users", { user_id: `eq.${user.user_id}` }, {
+            login_fail_count: 0,
+            locked_until: null
+          });
+        }
       }
 
       // Verify password
@@ -720,19 +1117,28 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
         if (order.user_id && profile && order.user_id !== profile.user_id) {
           throw new HttpError(403, "FORBIDDEN", "Bạn không có quyền xem đơn hàng này");
         }
-        const items = await selectRows("order_item", { order_id: `eq.${order.order_id}` });
+        order = await autoProgressOrder(order);
+        const { rows: items } = await selectRows("order_item", { order_id: `eq.${order.order_id}` });
         const itemsWithProduct = [];
         for (const item of items) {
           let productId = null;
+          let categoryName = null;
           try {
             const v = await selectOne("variant", { variant_id: `eq.${item.variant_id}` });
             if (v) {
               productId = v.product_id;
+              const product = await selectOne("product", { product_id: `eq.${productId}` });
+              if (product) {
+                const cat = await selectOne("category", { category_id: `eq.${product.category_id}` });
+                if (cat) {
+                  categoryName = cat.name;
+                }
+              }
             }
           } catch (e) {
             console.error("Error retrieving variant product_id:", e.message);
           }
-          itemsWithProduct.push({ ...item, product_id: productId });
+          itemsWithProduct.push({ ...item, product_id: productId, category_name: categoryName });
         }
         return sendJson(res, 200, { ...order, items: itemsWithProduct }, corsHeaders);
       }
@@ -745,20 +1151,29 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
         const { rows: orders } = await selectRows("orders", { user_id: `eq.${profile.user_id}` });
         orders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         const ordersWithItems = [];
-        for (const order of orders) {
+        for (let order of orders) {
+          order = await autoProgressOrder(order);
           const { rows: items } = await selectRows("order_item", { order_id: `eq.${order.order_id}` });
           const itemsWithProduct = [];
           for (const item of items) {
             let productId = null;
+            let categoryName = null;
             try {
               const v = await selectOne("variant", { variant_id: `eq.${item.variant_id}` });
               if (v) {
                 productId = v.product_id;
+                const product = await selectOne("product", { product_id: `eq.${productId}` });
+                if (product) {
+                  const cat = await selectOne("category", { category_id: `eq.${product.category_id}` });
+                  if (cat) {
+                    categoryName = cat.name;
+                  }
+                }
               }
             } catch (e) {
               console.error("Error retrieving variant product_id:", e.message);
             }
-            itemsWithProduct.push({ ...item, product_id: productId });
+            itemsWithProduct.push({ ...item, product_id: productId, category_name: categoryName });
           }
           ordersWithItems.push({ ...order, items: itemsWithProduct });
         }
@@ -769,7 +1184,7 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
     if (req.method === "PATCH") {
       const profile = requireUserAuth(context);
       const body = await readJson(req);
-      const { order_id, status } = body;
+      const { order_id, status, cancelled_reason } = body;
 
       if (!order_id || !status) {
         throw new HttpError(400, "BAD_REQUEST", "Thiếu order_id hoặc status");
@@ -787,6 +1202,13 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
       const allowedStatuses = ["cancelled", "delivered", "completed"];
       if (!allowedStatuses.includes(status)) {
         throw new HttpError(400, "BAD_REQUEST", `Trạng thái ${status} không được phép cập nhật bởi người dùng`);
+      }
+
+      if (status === "cancelled") {
+        const nonCancellable = ["shipping", "delivered", "failed_delivery", "completed", "cancelled"];
+        if (nonCancellable.includes(order.status)) {
+          throw new HttpError(400, "BAD_REQUEST", "Đơn hàng đã được giao cho đơn vị vận chuyển hoặc đã kết thúc, không thể hủy");
+        }
       }
 
       // Handle stock recovery on cancellation
@@ -818,10 +1240,15 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
         }
       }
 
-      const updated = await updateRows("orders", { order_id: `eq.${order_id}` }, {
+      const updateData = {
         status,
         updated_at: new Date().toISOString()
-      });
+      };
+      if (status === "cancelled") {
+        updateData.cancelled_reason = cancelled_reason || "Hủy bởi khách hàng";
+      }
+
+      const updated = await updateRows("orders", { order_id: `eq.${order_id}` }, updateData);
 
       return sendJson(res, 200, { success: true, order: updated[0] }, corsHeaders);
     }
@@ -1254,6 +1681,13 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
   // ==================================================================
   if (subRoute === "reviews") {
     const profile = requireUserAuth(context);
+
+    // GET /api/user/reviews
+    if (req.method === "GET") {
+      const { rows: reviews } = await selectRows("review", { user_id: `eq.${profile.user_id}` });
+      return sendJson(res, 200, { success: true, reviews }, corsHeaders);
+    }
+
     // POST /api/user/reviews
     if (req.method === "POST") {
       const body = await readJson(req);
@@ -1269,6 +1703,27 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
         throw new HttpError(403, "FORBIDDEN", "Đơn hàng không hợp lệ");
       }
 
+      if (order.status !== "delivered" && order.status !== "completed") {
+        throw new HttpError(400, "BAD_REQUEST", "Chỉ có thể đánh giá sản phẩm sau khi đơn hàng đã giao thành công hoặc hoàn thành");
+      }
+
+      // Check if review already exists for this product in this order
+      const existingReview = await selectOne("review", {
+        product_id: `eq.${product_id}`,
+        order_id: `eq.${order_id}`,
+        user_id: `eq.${profile.user_id}`
+      });
+
+      if (existingReview) {
+        if (existingReview.status === "rejected") {
+          // Delete old rejected review to allow re-review
+          await deleteRows("review", { review_id: `eq.${existingReview.review_id}` });
+        } else {
+          throw new HttpError(400, "BAD_REQUEST", "Sản phẩm này trong đơn hàng đã được đánh giá rồi");
+        }
+      }
+
+      // 1. Save initially as 'pending'
       const review = await insertRow("review", {
         product_id,
         user_id: profile.user_id,
@@ -1281,14 +1736,103 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
         submitted_at: new Date().toISOString()
       });
 
-      return sendJson(res, 200, { success: true, review }, corsHeaders);
+      console.log(`[AUTO-MODERATION Queue] Đã đưa đánh giá ${review.review_id} vào hàng đợi kiểm duyệt tự động.`);
+
+      // 2. Perform auto-moderation
+      const profanities = ["đéo", "chửi", "vãi", "cứt", "mẹ kiếp", "đầu buồi", "dcm", "clm", "địt", "lồn", "buồi", "cặc", "ngu", "chó", "khốn nạn"];
+      const adKeywords = ["http://", "https://", "t.me/", "zalo:", "shopee.vn", "lazada.vn", "click vào đây", "nhận quà miễn phí", "quà tặng miễn phí", "mua ngay", "giảm giá sốc"];
+
+      let finalStatus = "approved";
+      let rejectionReason = null;
+      const lowerComment = (comment || "").toLowerCase();
+
+      // Check profanities
+      for (const word of profanities) {
+        if (lowerComment.includes(word)) {
+          finalStatus = "rejected";
+          rejectionReason = "Nội dung chứa từ ngữ không phù hợp hoặc thô tục";
+          break;
+        }
+      }
+
+      // Check ads/spam
+      if (finalStatus === "approved") {
+        for (const ad of adKeywords) {
+          if (lowerComment.includes(ad)) {
+            finalStatus = "rejected";
+            rejectionReason = "Nội dung chứa quảng cáo, spam hoặc liên kết ngoài";
+            break;
+          }
+        }
+      }
+
+      // Check image validity
+      if (finalStatus === "approved" && Array.isArray(images)) {
+        for (const img of images) {
+          const lowerImg = img.toLowerCase();
+          if (lowerImg.includes("fake") || lowerImg.includes("spam") || lowerImg.includes("cheat") || lowerImg.includes("error")) {
+            finalStatus = "rejected";
+            rejectionReason = "Hình ảnh tải lên không hợp lệ hoặc chứa nội dung vi phạm";
+            break;
+          }
+        }
+      }
+
+      // 3. Update database row with auto-moderation result
+      const updatedRows = await updateRows(
+        "review",
+        { review_id: `eq.${review.review_id}` },
+        {
+          status: finalStatus,
+          rejection_reason: rejectionReason,
+          moderated_at: new Date().toISOString()
+        }
+      );
+
+      const finalReview = updatedRows[0] || review;
+
+      console.log(`[AUTO-MODERATION Result] Đánh giá ${review.review_id} -> Kết quả: ${finalStatus.toUpperCase()}${rejectionReason ? ` (Lý do: ${rejectionReason})` : ""}`);
+
+      return sendJson(res, 200, { success: true, review: finalReview }, corsHeaders);
     }
   }
 
   if (subRoute === "returns") {
     const profile = requireUserAuth(context);
+    
+    // POST /api/user/returns/cancel
+    if (req.method === "POST" && action === "cancel") {
+      const body = await readJson(req);
+      const { return_id } = body;
+      if (!return_id) {
+        throw new HttpError(400, "BAD_REQUEST", "Thiếu return_id");
+      }
+
+      const ret = await selectOne("return_exchange", { return_id: `eq.${return_id}` });
+      if (!ret) {
+        throw new HttpError(404, "NOT_FOUND", "Không tìm thấy yêu cầu đổi trả");
+      }
+      if (ret.user_id !== profile.user_id) {
+        throw new HttpError(403, "FORBIDDEN", "Không có quyền thực hiện");
+      }
+
+      // Check current status
+      const processedRet = await autoProgressReturn(ret);
+      if (!["pending", "approved"].includes(processedRet.status)) {
+        throw new HttpError(400, "BAD_REQUEST", "Chỉ có thể hủy yêu cầu khi đang ở trạng thái Chờ xác nhận hoặc Đã duyệt hồ sơ (chưa gửi hàng)");
+      }
+
+      const updated = await updateRows("return_exchange", { return_id: `eq.${return_id}` }, {
+        status: "rejected",
+        rejection_reason: "Đã hủy bởi khách hàng",
+        resolved_at: new Date().toISOString()
+      });
+
+      return sendJson(res, 200, { success: true, return: updated[0] }, corsHeaders);
+    }
+
     // POST /api/user/returns
-    if (req.method === "POST") {
+    if (req.method === "POST" && !action) {
       const body = await readJson(req);
       const { order_id, return_type, description, evidence_images, items } = body;
 
@@ -1300,6 +1844,62 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
       const order = await selectOne("orders", { order_id: `eq.${order_id}` });
       if (!order || order.user_id !== profile.user_id) {
         throw new HttpError(403, "FORBIDDEN", "Đơn hàng không hợp lệ");
+      }
+
+      // Enforce order status check
+      if (!["delivered", "completed"].includes(order.status)) {
+        throw new HttpError(400, "BAD_REQUEST", "Đơn hàng phải hoàn thành mới được yêu cầu đổi trả");
+      }
+
+      // RET-01 Time Check (2 days / 48 hours)
+      const deliveryDate = order.delivered_at ? new Date(order.delivered_at) : new Date(order.updated_at || order.created_at);
+      const now = new Date();
+      const diffHours = (now - deliveryDate) / (1000 * 60 * 60);
+      if (diffHours > 48) {
+        throw new HttpError(400, "BAD_REQUEST", "Quá thời hạn đổi/trả (2 ngày)");
+      }
+
+      // Perform category and quantity validation
+      const validatedItems = [];
+      const { rows: existingReturns } = await selectRows("return_exchange", { order_id: `eq.${order_id}` });
+
+      for (const item of items) {
+        const orderItem = await selectOne("order_item", { item_id: `eq.${item.order_item_id}` });
+        if (!orderItem || orderItem.order_id !== order_id) {
+          throw new HttpError(400, "BAD_REQUEST", "Sản phẩm không thuộc đơn hàng này");
+        }
+
+        // Category restriction check
+        const variant = await selectOne("variant", { variant_id: `eq.${orderItem.variant_id}` });
+        if (variant) {
+          const product = await selectOne("product", { product_id: `eq.${variant.product_id}` });
+          if (product) {
+            const category = await selectOne("category", { category_id: `eq.${product.category_id}` });
+            if (category && (category.name === "Phụ kiện" || category.slug === "phu-kien")) {
+              throw new HttpError(400, "BAD_REQUEST", `Sản phẩm ${product.name} thuộc danh mục hạn chế đổi trả của Velura`);
+            }
+          }
+        }
+
+        // Tình huống 8: Quantity check
+        let alreadyReturnedQty = 0;
+        for (const r of existingReturns) {
+          if (r.status !== "rejected") {
+            const { rows: rItems } = await selectRows("return_item", { return_id: `eq.${r.return_id}`, order_item_id: `eq.${item.order_item_id}` });
+            for (const ri of rItems) {
+              alreadyReturnedQty += ri.quantity;
+            }
+          }
+        }
+
+        if (alreadyReturnedQty + item.quantity > orderItem.quantity) {
+          throw new HttpError(400, "BAD_REQUEST", "Số lượng đổi trả vượt quá số lượng đã mua");
+        }
+
+        validatedItems.push({
+          order_item_id: item.order_item_id,
+          quantity: item.quantity
+        });
       }
 
       const trackingReturnCode = "RET" + Date.now().toString().slice(-8).toUpperCase();
@@ -1316,7 +1916,7 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
       });
 
       const returnItems = [];
-      for (const item of items) {
+      for (const item of validatedItems) {
         const retItem = await insertRow("return_item", {
           return_id: newReturn.return_id,
           order_item_id: item.order_item_id,
@@ -1328,6 +1928,49 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
       return sendJson(res, 200, {
         success: true,
         return: { ...newReturn, items: returnItems }
+      }, corsHeaders);
+    }
+
+    // GET /api/user/returns
+    if (req.method === "GET") {
+      const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+      const order_id = url.searchParams.get("order_id");
+
+      let queryParams = { user_id: `eq.${profile.user_id}` };
+      if (order_id) {
+        queryParams.order_id = `eq.${order_id}`;
+      }
+
+      const { rows: returns } = await selectRows("return_exchange", queryParams);
+      
+      // Auto-progress and populate items
+      const populatedReturns = [];
+      for (let ret of returns) {
+        ret = await autoProgressReturn(ret);
+        const { rows: rItems } = await selectRows("return_item", { return_id: `eq.${ret.return_id}` });
+        
+        const itemsWithDetails = [];
+        for (const ri of rItems) {
+          const orderItem = await selectOne("order_item", { item_id: `eq.${ri.order_item_id}` });
+          itemsWithDetails.push({
+            ...ri,
+            product_name: orderItem ? orderItem.product_name : "Sản phẩm",
+            product_image: orderItem ? orderItem.product_image : null,
+            unit_price: orderItem ? orderItem.unit_price : 0
+          });
+        }
+        populatedReturns.push({
+          ...ret,
+          items: itemsWithDetails
+        });
+      }
+
+      // Sort descending by created_at
+      populatedReturns.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      return sendJson(res, 200, {
+        success: true,
+        returns: populatedReturns
       }, corsHeaders);
     }
   }

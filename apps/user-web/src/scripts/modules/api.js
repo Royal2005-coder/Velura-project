@@ -12,9 +12,15 @@ export async function apiRequest(path, options = {}) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  let body = options.body;
+  if (body && typeof body === "object" && !(body instanceof FormData)) {
+    body = JSON.stringify(body);
+  }
+
   try {
     const response = await fetch(`${API_URL}${path}`, {
       ...options,
+      body,
       headers
     });
 

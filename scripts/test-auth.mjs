@@ -140,6 +140,18 @@ section("8. OTP Send (forgot password flow)");
 }
 
 // ─────────────────────────────────────────────
+section("8.5. OTP Verify for Reset Password");
+// ─────────────────────────────────────────────
+{
+  const { ok, data } = await req("/api/user/auth/otp-verify", {
+    method: "POST",
+    body: { identity: TEST_EMAIL, otp_code: DEV_OTP, purpose: "reset-password" }
+  });
+  if (ok && data.success) pass("POST /otp-verify (reset-password purpose) → OTP verified but not cleared in DB");
+  else fail("POST /otp-verify (reset-password purpose)", data);
+}
+
+// ─────────────────────────────────────────────
 section("9. Reset Password");
 // ─────────────────────────────────────────────
 {

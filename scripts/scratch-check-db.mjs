@@ -1,24 +1,21 @@
-import { selectRows, selectOne } from "../apps/api/src/supabase.js";
+import { selectOne, updateRows } from "../apps/api/src/supabase.js";
 
 async function check() {
-  console.log("Checking Supabase connection and tables...");
   try {
-    const products = await selectRows("product", {});
-    console.log("Product count:", products.rows.length, "Total:", products.count);
-    if (products.rows.length > 0) {
-      console.log("First product sample:", products.rows[0]);
-    } else {
-      console.log("No products returned! This means either table is empty or permission is denied.");
+    const user = await selectOne("users", { phone: "eq.0855808330" });
+    if (!user) {
+      console.log("User not found!");
+      return;
     }
+    console.log("Before unlock:", user);
+    await updateRows("users", { user_id: `eq.${user.user_id}` }, {
+      login_fail_count: 0,
+      locked_until: null
+    });
+    const updatedUser = await selectOne("users", { phone: "eq.0855808330" });
+    console.log("After unlock:", updatedUser);
   } catch (err) {
-    console.error("Failed to query product table:", err);
-  }
-
-  try {
-    const users = await selectRows("users", {});
-    console.log("Users count:", users.rows.length, "Total:", users.count);
-  } catch (err) {
-    console.error("Failed to query users table:", err);
+    console.error("Failed:", err);
   }
 }
 

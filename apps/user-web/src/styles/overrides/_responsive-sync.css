@@ -87,7 +87,8 @@ body:not(.page-signin) {
   flex-shrink: 0;
 }
 
-.cart-badge {
+.cart-badge,
+.wishlist-badge {
   top: -2px;
   right: -2px;
   border: 2px solid #fff;

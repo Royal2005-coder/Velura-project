@@ -1,6 +1,7 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
 import { addToCart } from "./cart.js";
+import { updateWishlistBadge } from "./wishlist.js";
 
 /**
  * ES6 Module: Homepage Controller
@@ -13,8 +14,25 @@ export function initHomepage() {
   const categoriesGrid = document.querySelector(".categories-section__grid");
   const productsGrid = document.querySelector(".products-section__grid");
 
+  // State
+  let wishlistedProductIds = new Set();
+
   // Load Homepage Data
   async function loadData() {
+    // Fetch user wishlist first to set up active classes
+    const token = localStorage.getItem("velura_token");
+    if (token) {
+      try {
+        const wishlistData = await apiRequest("/api/user/wishlist");
+        const items = wishlistData.items || [];
+        wishlistedProductIds = new Set(items.map(item => item.product_id));
+        localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+        updateWishlistBadge();
+      } catch (wishlistErr) {
+        console.error("Failed to load wishlist for homepage:", wishlistErr);
+      }
+    }
+
     try {
       // 1. Fetch categories
       if (categoriesGrid) {
@@ -165,6 +183,9 @@ export function initHomepage() {
         ? `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`
         : (product.is_featured ? `<span class="product-card__badge product-card__badge--best">HOT</span>` : "");
 
+      const isWishlisted = wishlistedProductIds.has(product.product_id);
+      const wishlistClass = isWishlisted ? "active" : "";
+
       return `
         <article class="product-card">
           <div class="product-card__img-wrapper">
@@ -172,7 +193,7 @@ export function initHomepage() {
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
               <img src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" class="product-card__img" />
             </a>
-            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-home" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
+            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-home ${wishlistClass}" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
@@ -232,13 +253,26 @@ export function initHomepage() {
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
         const productId = btn.getAttribute("data-id");
+        const isActive = btn.classList.contains("active");
         try {
-          await apiRequest("/api/user/wishlist", {
-            method: "POST",
-            body: { product_id: productId }
-          });
-          btn.classList.add("active");
-          showToast("Đã thêm vào danh sách yêu thích!");
+          if (isActive) {
+            await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
+            btn.classList.remove("active");
+            wishlistedProductIds.delete(productId);
+            showToast("Đã xóa khỏi danh sách yêu thích");
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+            updateWishlistBadge();
+          } else {
+            await apiRequest("/api/user/wishlist", {
+              method: "POST",
+              body: { product_id: productId }
+            });
+            btn.classList.add("active");
+            wishlistedProductIds.add(productId);
+            showToast("Đã thêm vào danh sách yêu thích!");
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+            updateWishlistBadge();
+          }
         } catch (err) {
           if (err.status === 401) {
             showToast("Vui lòng đăng nhập để lưu sản phẩm!");
@@ -289,6 +323,9 @@ export function initHomepage() {
         ? `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`
         : (product.is_featured ? `<span class="product-card__badge product-card__badge--best">HOT</span>` : "");
 
+      const isWishlisted = wishlistedProductIds.has(product.product_id);
+      const wishlistClass = isWishlisted ? "active" : "";
+
       return `
         <article class="product-card">
           <div class="product-card__img-wrapper">
@@ -296,7 +333,7 @@ export function initHomepage() {
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
               <img src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" class="product-card__img" />
             </a>
-            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-personalized" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
+            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-personalized ${wishlistClass}" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
@@ -352,13 +389,26 @@ export function initHomepage() {
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
         const productId = btn.getAttribute("data-id");
+        const isActive = btn.classList.contains("active");
         try {
-          await apiRequest("/api/user/wishlist", {
-            method: "POST",
-            body: { product_id: productId }
-          });
-          btn.classList.add("active");
-          showToast("Đã thêm vào danh sách yêu thích!");
+          if (isActive) {
+            await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
+            btn.classList.remove("active");
+            wishlistedProductIds.delete(productId);
+            showToast("Đã xóa khỏi danh sách yêu thích");
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+            updateWishlistBadge();
+          } else {
+            await apiRequest("/api/user/wishlist", {
+              method: "POST",
+              body: { product_id: productId }
+            });
+            btn.classList.add("active");
+            wishlistedProductIds.add(productId);
+            showToast("Đã thêm vào danh sách yêu thích!");
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+            updateWishlistBadge();
+          }
         } catch (err) {
           if (err.status === 401) {
             showToast("Vui lòng đăng nhập để lưu sản phẩm!");

@@ -85,7 +85,7 @@ async function checkDuplicate(type, value, errorId, iconId) {
 
 // ─── OTP Modal ──────────────────────────────────────────────────────────────
 
-function showOtpModal(identity, onSuccess, onResend) {
+function showOtpModal(identity, onSuccess, onResend, purpose = "") {
   const existing = document.querySelector(".otp-modal-container");
   if (existing) existing.remove();
 
@@ -187,7 +187,7 @@ function showOtpModal(identity, onSuccess, onResend) {
     verifyBtn.textContent = "Đang xác minh..."; verifyBtn.disabled = true;
     try {
       const data = await apiRequest("/api/user/auth/otp-verify", {
-        method: "POST", body: JSON.stringify({ identity, otp_code: otp })
+        method: "POST", body: JSON.stringify({ identity, otp_code: otp, purpose })
       });
       clearInterval(timerInterval); clearInterval(resendInterval);
       modal.remove();
@@ -439,7 +439,7 @@ function bindForgotPassword() {
         sessionStorage.setItem("velura_reset_otp", d._otp_used || "");
         showToast("Xác minh thành công! Tạo mật khẩu mới ngay.");
         setTimeout(() => { window.location.href = "/src/pages/auth/reset-password.html"; }, 1200);
-      }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }));
+      }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }), "reset-password");
     } catch (err) {
       setLoading(btn, false);
       setError("error-identity", err.message || "Không tìm thấy tài khoản.");
