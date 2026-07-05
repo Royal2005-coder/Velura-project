@@ -215,11 +215,11 @@
 }
 
 .chatbot-message--bot .chatbot-message__text {
-  background: #fff;
+  background: linear-gradient(135deg, rgba(242, 213, 213, 0.8), rgba(224, 231, 255, 0.8)); /* Nền gradient mượt mà 80% opacity */
   color: var(--text-dark);
   border-bottom-left-radius: 2px;
-  border: 1px solid var(--line);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(229, 221, 214, 0.6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .chatbot-message--user .chatbot-message__text {

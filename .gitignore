@@ -14,3 +14,12 @@ categories/
 Thumbs.db
 desktop.ini
 coverage/
+
+# Environment variables — KHÔNG BAO GIỜ commit file này lên Git
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+*.env

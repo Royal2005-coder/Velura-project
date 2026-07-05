@@ -316,4 +316,18 @@ import { initContentPages } from "./modules/content.js";
     });
   });
 
+  /* Sticky Header Scroll Shadow */
+  const siteHeader = document.querySelector(".site-header");
+  if (siteHeader) {
+    const handleScroll = () => {
+      if (window.scrollY > 0) {
+        siteHeader.classList.add("header-scrolled");
+      } else {
+        siteHeader.classList.remove("header-scrolled");
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+  }
+
 })();

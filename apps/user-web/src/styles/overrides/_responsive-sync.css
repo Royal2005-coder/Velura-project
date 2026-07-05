@@ -4,11 +4,16 @@
    ============================================================ */
 
 /* ---------- Global safety ---------- */
-html,
+html {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: visible;
+}
+
 body {
   width: 100%;
   min-height: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body:not(.page-signin) {
@@ -26,8 +31,7 @@ body:not(.page-signin) {
   flex: 1;
 }
 
-.page-shell>.site-header,
-.page-shell>.site-footer {
+.page-shell>.site-header {
   background: #fff;
 }
 
@@ -463,4 +467,29 @@ body:not(.page-signin) {
   .site-footer__inner {
     padding: 28px 14px;
   }
+}
+
+/* ---------- Uniform Breadcrumb Layout & Spacing across all pages ---------- */
+.product-list-page,
+.collections-page,
+.cart-page,
+.wishlist-page,
+.product-detail-page,
+.blog-page,
+.about-page,
+.profile-page,
+.my-orders-page,
+.order-detail-page,
+.return-request-page,
+.track-order-page,
+.product-review-page,
+.ai-page,
+.chatbot-page-main {
+  padding-top: 16px !important;
+}
+
+.breadcrumb {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 12px !important;
 }

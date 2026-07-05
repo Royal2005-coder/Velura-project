@@ -39,47 +39,83 @@
     <path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   </symbol>
 </svg>
+
 <header class="site-header">
-    <div class="container">
-        <div class="site-header__top">
-            <a href="/index.html" class="site-header__logo">
-                <img src="/src/assets/images/logo.png" alt="Velura" width="84" height="76" />
+    <div class="container site-header__container-grid">
+        <!-- Cột Trái: Logo (Flower top, VELURA text bottom) -->
+        <div class="header-col header-col--left">
+            <a href="/index.html" class="site-header__logo-group">
+                <div class="logo-flower-crop">
+                    <img src="/src/assets/images/logo.png" alt="Velura logo" class="logo-flower-img" />
+                </div>
+                <span class="logo-brand-name">VELURA</span>
             </a>
-
-            <label class="site-header__search">
-                <svg class="icon icon-search" aria-hidden="true" style="width: 13px; height: 13px;"><use href="#icon-search"></use></svg>
-                <input type="search" class="js-search-input" placeholder="Tìm kiếm sản phẩm..." aria-label="Tìm kiếm" />
-            </label>
-
-            <div class="site-header__actions">
-                <button class="menu-toggle" type="button" aria-label="Mở menu" aria-expanded="false">
-                    <span></span><span></span><span></span>
-                </button>
-
-                <a class="icon-btn" href="/src/pages/wishlist/wishlist.html" aria-label="Yêu thích">
-                    <svg class="icon icon-heart" aria-hidden="true" style="width: 16px; height: 16px;"><use href="#icon-heart"></use></svg>
-                </a>
-
-                <a class="icon-btn" href="/src/pages/cart/cart.html" aria-label="Giỏ hàng">
-                    <svg class="icon icon-cart" aria-hidden="true" style="width: 16px; height: 16px;"><use href="#icon-cart"></use></svg>
-                    <span class="cart-badge">4</span>
-                </a>
-
-                <a class="icon-btn" href="/src/pages/account/profile.html" aria-label="Tài khoản">
-                    <svg class="icon icon-user" style="width: 16px; height: 16px;"><use href="#icon-user"></use></svg>
-                </a>
-            </div>
         </div>
 
-        <nav class="site-header__nav" aria-label="Chính">
-            <a href="/index.html">Trang chủ</a>
-            <a href="/src/pages/products/list.html">Sản phẩm</a>
-            <a href="/src/pages/collections.html">Bộ sưu tập</a>
-            <a href="/src/pages/ai/suggestions.html">Gợi ý AI</a>
-            <!-- BỔ SUNG: Class js-menu-chatbot-trigger giúp chatbot.js kích hoạt chuyển đổi trang mượt mà từ menu điều hướng -->
-            <a href="/src/pages/chatbot.html" class="js-menu-chatbot-trigger">Chatbot</a>
-            <a href="/src/pages/blog/blog.html">Blog</a>
-            <a href="/src/pages/about/about.html">Về chúng tôi</a>
-        </nav>
+        <!-- Cột Giữa: 2 hàng (Hàng trên: Hotline/Cửa hàng/Search, Hàng dưới: Menu) -->
+        <div class="header-col header-col--center">
+            <!-- Hàng trên -->
+            <div class="center-row center-row--top">
+                <!-- Hotline -->
+                <div class="header-info-item header-info-item--hotline">
+                    <svg class="icon icon-phone" aria-hidden="true" style="width: 16px; height: 16px; margin-right: 4px;"><use href="#icon-phone"></use></svg>
+                    <span>HOTLINE: <span class="highlight-text">070 347 0938</span></span>
+                </div>
+                
+                <!-- Cửa hàng -->
+                <a href="/src/pages/about/about.html#stores" class="header-info-item header-info-item--shops">
+                    <svg class="icon icon-map-pin" aria-hidden="true" style="width: 16px; height: 16px; margin-right: 4px;"><use href="#icon-map-pin"></use></svg>
+                    <span>HỆ THỐNG CỬA HÀNG</span>
+                </a>
+
+                <!-- Tìm kiếm -->
+                <label class="site-header__search">
+                    <svg class="icon icon-search" aria-hidden="true" style="width: 14px; height: 14px;"><use href="#icon-search"></use></svg>
+                    <input type="search" class="js-search-input" placeholder="Tìm kiếm sản phẩm..." aria-label="Tìm kiếm sản phẩm" />
+                </label>
+            </div>
+
+            <!-- Hàng dưới: Menu tab -->
+            <nav class="center-row center-row--bottom site-header__nav" aria-label="Chính">
+                <a href="/index.html" class="nav-link">Trang chủ</a>
+                <a href="/src/pages/products/list.html" class="nav-link">Sản phẩm</a>
+                <a href="/src/pages/collections.html" class="nav-link">Bộ sưu tập</a>
+                <a href="/src/pages/ai/suggestions.html" class="nav-link nav-link--highlight">Gợi ý AI ✨</a>
+                <a href="/src/pages/chatbot.html" class="nav-link js-menu-chatbot-trigger">Chatbot</a>
+                <a href="/src/pages/blog/blog.html" class="nav-link">Blog</a>
+                <a href="/src/pages/about/about.html" class="nav-link">Về chúng tôi</a>
+            </nav>
+        </div>
+
+        <!-- Cột Phải: 3 Icon (Yêu thích - Giỏ hàng - Tài khoản) nằm ngang -->
+        <div class="header-col header-col--right">
+            <!-- Yêu thích -->
+            <a class="header-action-btn" href="/src/pages/wishlist/wishlist.html" aria-label="Yêu thích">
+                <span class="btn-icon-wrapper">
+                    <svg class="icon icon-heart" aria-hidden="true" style="width: 24px; height: 24px;"><use href="#icon-heart"></use></svg>
+                    <span class="wishlist-badge">0</span>
+                </span>
+            </a>
+
+            <!-- Giỏ hàng -->
+            <a class="header-action-btn" href="/src/pages/cart/cart.html" aria-label="Giỏ hàng">
+                <span class="btn-icon-wrapper">
+                    <svg class="icon icon-cart" aria-hidden="true" style="width: 24px; height: 24px;"><use href="#icon-cart"></use></svg>
+                    <span class="cart-badge">4</span>
+                </span>
+            </a>
+
+            <!-- Tài khoản -->
+            <a class="header-action-btn" href="/src/pages/account/profile.html" aria-label="Tài khoản">
+                <span class="btn-icon-wrapper">
+                    <svg class="icon icon-user" style="width: 24px; height: 24px;"><use href="#icon-user"></use></svg>
+                </span>
+            </a>
+
+            <!-- Mobile Hamburger Button Toggle -->
+            <button class="menu-toggle" type="button" aria-label="Mở menu" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
     </div>
 </header>
