@@ -31,7 +31,7 @@
 
 .product-list-header__title {
   font-family: "Playfair Display", Georgia, serif;
-  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-size: clamp(1.5rem, 4vw, 1.875rem); /* Đồng bộ kích thước với tiêu đề .page-title chung */
   font-weight: 500;
   color: var(--text-dark);
   margin: 0 0 12px;
@@ -486,7 +486,7 @@
   }
   
   .product-list-header__title {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
   
   .filter-sidebar {
