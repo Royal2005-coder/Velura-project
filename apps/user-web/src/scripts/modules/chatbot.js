@@ -81,11 +81,19 @@ function bindChatContainer(container, state) {
     });
   });
 
-  container.addEventListener("click", (event) => {
+  container.addEventListener("click", async (event) => {
     const btn = event.target.closest(".js-chat-product-cart");
-    if (!btn) return;
-    const product = state.productsById.get(btn.dataset.productId);
-    addProductToCart(product);
+    if (btn) {
+      const product = state.productsById.get(btn.dataset.productId);
+      addProductToCart(product);
+      return;
+    }
+
+    const saveOutfitBtn = event.target.closest(".js-save-outfit");
+    if (saveOutfitBtn) {
+      event.preventDefault();
+      await handleSaveOutfit(state, saveOutfitBtn.dataset.messageId, saveOutfitBtn.dataset.sessionId);
+    }
   });
 
   const messagesContainer = container.querySelector(".chatbot-messages");
@@ -286,7 +294,15 @@ function renderMessage(message, state) {
     <div class="chatbot-message ${senderClass}${typingClass}${agentClass}">
       ${message.sender === "agent" ? '<span class="chatbot-message__sender">CSKH</span>' : ""}
       <div class="chatbot-message__text">${formattedText}</div>
-      ${productCards ? `<div class="chat-product-list">${productCards}</div>` : ""}
+      ${productCards ? `
+        <div class="chat-product-list">${productCards}</div>
+        <div style="margin-top: 10px; text-align: left;">
+          <button type="button" class="btn-save-outfit js-save-outfit" data-message-id="${escapeHtml(message.message_id)}" data-session-id="${escapeHtml(message.session_id)}" style="background: rgba(115, 71, 36, 0.1); border: 1px solid rgba(115, 71, 36, 0.2); color: #734724; font-family: inherit; font-size: 12px; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Lưu phối đồ yêu thích
+          </button>
+        </div>
+      ` : ""}
       <span class="chatbot-message__time">${escapeHtml(formatTime(message.created_at))}</span>
     </div>
   `;
@@ -469,3 +485,95 @@ function formatSessionDate(value) {
   if (date.toDateString() === today.toDateString()) return "Hôm nay";
   return new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit" }).format(date);
 }
+
+export async function syncFavoriteOutfitsOnLogin() {
+  const tempFavorites = sessionStorage.getItem("velura_temporary_favorites");
+  if (!tempFavorites) return;
+  const favorites = JSON.parse(tempFavorites);
+  if (favorites.length === 0) return;
+
+  try {
+    await apiRequest("/api/v1/chat/favorites/sync", {
+      method: "POST",
+      body: { favorites }
+    });
+    sessionStorage.removeItem("velura_temporary_favorites");
+  } catch (err) {
+    console.error("Failed to sync favorite outfits on login:", err);
+  }
+}
+
+async function handleSaveOutfit(state, messageId, sessionId) {
+  if (state.mode === "user") {
+    try {
+      await apiRequest("/api/v1/chat/favorites", {
+        method: "POST",
+        body: { messageId, sessionId }
+      });
+      showToast("Đã lưu phối đồ vĩnh viễn vào tủ đồ cá nhân!");
+    } catch (err) {
+      showToast(err.message || "Không thể lưu phối đồ.");
+    }
+  } else {
+    // Guest mode
+    const message = state.messages.find(m => m.message_id === messageId);
+    if (!message) return;
+
+    let tempFavorites = JSON.parse(sessionStorage.getItem("velura_temporary_favorites") || "[]");
+    const productIds = collectProductIds(message);
+    if (!tempFavorites.some(f => f.message_id === messageId)) {
+      tempFavorites.push({
+        message_id: messageId,
+        session_id: sessionId,
+        text: message.text,
+        product_ids: productIds
+      });
+      sessionStorage.setItem("velura_temporary_favorites", JSON.stringify(tempFavorites));
+    }
+    showGuestWarningModal();
+  }
+}
+
+function showGuestWarningModal() {
+  let modal = document.getElementById("guest-warning-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "guest-warning-modal";
+    modal.style.position = "fixed";
+    modal.style.top = "0";
+    modal.style.left = "0";
+    modal.style.width = "100%";
+    modal.style.height = "100%";
+    modal.style.backgroundColor = "rgba(0,0,0,0.5)";
+    modal.style.display = "flex";
+    modal.style.alignItems = "center";
+    modal.style.justifyContent = "center";
+    modal.style.zIndex = "10000";
+    modal.innerHTML = `
+      <div class="modal-content" style="background:#fff;padding:24px;border-radius:12px;max-width:400px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.15); font-family: inherit;">
+        <h4 style="margin-top:0;color:#734724;font-size:18px;">Trải nghiệm Guest</h4>
+        <p style="font-size:14px;color:#555;line-height:1.5;margin:12px 0 20px;">Bạn đang trải nghiệm dưới quyền Khách vãng lai. Vui lòng Đăng ký hoặc Đăng nhập tài khoản để lưu giữ vĩnh viễn phối đồ này vào tủ đồ cá nhân!</p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button type="button" class="js-close-warning-modal" style="background:#f4f4f4;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:500;color:#1a1a1a;">Đóng</button>
+          <a href="/src/pages/auth/signin.html" style="background:#734724;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;display:inline-block;font-weight:500;">Đăng nhập / Đăng ký</a>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector(".js-close-warning-modal").addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+  } else {
+    modal.style.display = "flex";
+  }
+}
+
+// Bắt sự kiện beforeunload trên trình duyệt
+window.addEventListener("beforeunload", (e) => {
+  const tempFavorites = sessionStorage.getItem("velura_temporary_favorites");
+  if (tempFavorites && JSON.parse(tempFavorites).length > 0) {
+    e.preventDefault();
+    e.returnValue = "Bạn đang trải nghiệm dưới quyền Khách vãng lai. Lịch sử phối đồ yêu thích tạm thời sẽ bị mất nếu bạn tải lại hoặc đóng trang!";
+    return e.returnValue;
+  }
+});

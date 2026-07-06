@@ -20,7 +20,13 @@ export const config = {
   smtpFrom: process.env.SMTP_FROM || "",
   supportAlertTo: process.env.SUPPORT_ALERT_TO || process.env.SMTP_USER || "",
   n8nChatWebhookUrl: process.env.N8N_CHAT_WEBHOOK_URL || "",
-  n8nChatWebhookToken: process.env.N8N_CHAT_WEBHOOK_TOKEN || ""
+  n8nChatWebhookToken: process.env.N8N_CHAT_WEBHOOK_TOKEN || "",
+  openaiApiKey: process.env.OPENAI_API_KEY || "",
+  openaiModel: process.env.OPENAI_MODEL || "gpt-4o",
+  geminiApiKey: process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || "",
+  geminiModel: process.env.GEMINI_MODEL || process.env.OPENAI_MODEL || "gemini-3.5-flash",
+  mistralApiKey: process.env.MISTRAL_API_KEY || "",
+  mistralModel: process.env.MISTRAL_MODEL || "mistral-large-latest"
 };
 
 export function assertRuntimeConfig() {

@@ -1,5 +1,7 @@
 import { apiRequest } from "./api.js";
 
+let blogCategoryLabels = new Map();
+
 export function initContentPages() {
   initBlogPage();
   initPolicyPage();
@@ -10,6 +12,7 @@ async function initBlogPage() {
   const page = document.querySelector(".page-blog");
   const grid = document.querySelector("#articlesGrid");
   if (!page || !grid) return;
+  applyBlogImageFallbacks();
 
   try {
     const [categoriesResult, blogsResult] = await Promise.all([
@@ -20,13 +23,26 @@ async function initBlogPage() {
     const blogs = blogsResult.rows || [];
     if (!blogs.length) return;
 
+    blogCategoryLabels = new Map(categories.map((category) => [category.slug, category.name]));
     renderBlogTabs(categories);
     renderFeaturedPost(blogs.find((post) => post.is_featured) || blogs[0]);
     renderBlogGrid(blogs);
+    applyBlogImageFallbacks();
     bindBlogTabs();
+    hideStaticPagination();
   } catch (error) {
     console.warn("Blog content API unavailable, keeping static content.", error);
   }
+}
+
+function applyBlogImageFallbacks() {
+  document.querySelectorAll(".page-blog img").forEach((image) => {
+    image.loading = image.closest(".featured-post") ? "eager" : "lazy";
+    image.decoding = "async";
+    image.addEventListener("error", () => {
+      image.src = "/src/assets/images/image-8.png";
+    }, { once: true });
+  });
 }
 
 async function initPolicyPage() {
@@ -105,7 +121,7 @@ function renderFeaturedPost(post) {
   if (!section || !post) return;
   section.innerHTML = `
     <div class="featured-post__image">
-      <img src="${escapeHtml(post.image_url || "/src/assets/images/image-8.png")}" alt="${escapeHtml(post.title)}" />
+      <img src="${escapeHtml(post.image_url || "/src/assets/images/image-8.png")}" alt="${escapeHtml(post.title)}" loading="eager" decoding="async" onerror="this.src='/src/assets/images/image-8.png';" />
     </div>
     <div class="featured-post__content">
       <span class="blog-badge">${escapeHtml(categoryLabel(post.category_slug))}</span>
@@ -129,7 +145,7 @@ function renderBlogGrid(blogs) {
   grid.innerHTML = blogs.map((post) => `
     <article class="article-card" data-category="${escapeHtml(post.category_slug)}">
       <div class="article-card__image">
-        <img src="${escapeHtml(post.image_url || "/src/assets/images/image-8.png")}" alt="${escapeHtml(post.title)}" />
+        <img src="${escapeHtml(post.image_url || "/src/assets/images/image-8.png")}" alt="${escapeHtml(post.title)}" loading="lazy" decoding="async" onerror="this.src='/src/assets/images/image-8.png';" />
       </div>
       <div class="article-card__content">
         <span class="blog-badge">${escapeHtml(categoryLabel(post.category_slug))}</span>
@@ -186,6 +202,7 @@ function renderPolicyPanel(policy, active) {
 }
 
 function categoryLabel(slug) {
+  if (blogCategoryLabels.has(slug)) return blogCategoryLabels.get(slug);
   const labels = {
     trend: "Xu hướng",
     style: "Phối đồ",
@@ -194,6 +211,11 @@ function categoryLabel(slug) {
     event: "Sự kiện"
   };
   return labels[slug] || slug || "Velura";
+}
+
+function hideStaticPagination() {
+  const pagination = document.querySelector(".page-blog .pagination");
+  if (pagination) pagination.style.display = "none";
 }
 
 function formatDate(value) {

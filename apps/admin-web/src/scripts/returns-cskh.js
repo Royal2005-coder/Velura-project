@@ -635,11 +635,7 @@ async function loadAll() {
 
 async function loadChatSessions() {
   try {
-    const response = await fetch(`${API_BASE}/api/v1/admin/chat-sessions?limit=100`, {
-      headers: { "Content-Type": "application/json" }
-    });
-    if (!response.ok) throw new Error("Failed to load chat sessions");
-    const data = await response.json();
+    const data = await returnApi.listChatSessions({ limit: 100 });
     state.chatSessions = data.rows || [];
     renderChatSessionList();
     return data;
@@ -692,11 +688,7 @@ function renderChatSessionList() {
 
 async function loadChatMessages(sessionId) {
   try {
-    const response = await fetch(`${API_BASE}/api/v1/admin/chat-sessions/${sessionId}/messages?limit=150`, {
-      headers: { "Content-Type": "application/json" }
-    });
-    if (!response.ok) throw new Error("Failed to load messages");
-    const data = await response.json();
+    const data = await returnApi.getChatMessages(sessionId, { limit: 150 });
     state.chat.messages = data.messages || [];
     state.chat.products = data.products || [];
     renderChatMessages();
@@ -764,13 +756,7 @@ function renderChatMessages() {
 async function sendAgentReply(sessionId, message) {
   if (!sessionId || !message.trim()) return;
   try {
-    const response = await fetch(`${API_BASE}/api/v1/admin/chat-sessions/${sessionId}/reply`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
-    });
-    if (!response.ok) throw new Error("Failed to send reply");
-    const data = await response.json();
+    const data = await returnApi.sendAgentReply(sessionId, message);
     state.chat.messages.push(data.message);
     renderChatMessages();
     await loadChatSessions();
@@ -783,12 +769,7 @@ async function sendAgentReply(sessionId, message) {
 
 async function assignChatSession(sessionId) {
   try {
-    const response = await fetch(`${API_BASE}/api/v1/admin/chat-sessions/${sessionId}/assign`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "assigned" })
-    });
-    if (!response.ok) throw new Error("Failed to assign session");
+    await returnApi.assignChatSession(sessionId, "assigned");
     await loadChatSessions();
     selectChatSession(sessionId);
   } catch (error) {
@@ -799,12 +780,7 @@ async function assignChatSession(sessionId) {
 
 async function closeChatSession(sessionId) {
   try {
-    const response = await fetch(`${API_BASE}/api/v1/admin/chat-sessions/${sessionId}/assign`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "closed" })
-    });
-    if (!response.ok) throw new Error("Failed to close session");
+    await returnApi.assignChatSession(sessionId, "closed");
     await loadChatSessions();
     if (state.chat.selectedSessionId === sessionId) {
       state.chat.selectedSessionId = null;

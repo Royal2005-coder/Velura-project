@@ -790,6 +790,36 @@
   position: relative;
 }
 
+.chatbot-widget {
+  width: 56px;
+  height: 56px;
+}
+
+.chatbot-widget .chatbot-box {
+  position: absolute;
+}
+
+.chatbot-widget--open {
+  width: 360px;
+  height: 572px;
+}
+
+@media (max-width: 480px) {
+  .chatbot-widget,
+  .chatbot-widget--open {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    height: auto;
+  }
+
+  .chatbot-widget .chatbot-box {
+    position: fixed;
+  }
+}
+
 /* Handoff Banner */
 .chatbot-handoff-banner {
   display: flex;

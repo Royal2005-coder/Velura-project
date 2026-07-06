@@ -1,6 +1,7 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
 import { mergeCartOnLogin } from "./cart.js";
+import { syncFavoriteOutfitsOnLogin } from "./chatbot.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -319,6 +320,7 @@ function bindSignin() {
           localStorage.setItem("velura_token", d.token);
           localStorage.setItem("velura_user", JSON.stringify(d.user));
           mergeCartOnLogin();
+          syncFavoriteOutfitsOnLogin().catch(console.error);
           showToast("Đăng nhập thành công!");
           setTimeout(() => { window.location.href = "/index.html"; }, 1200);
         }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }));
@@ -328,6 +330,7 @@ function bindSignin() {
       localStorage.setItem("velura_token", data.token);
       localStorage.setItem("velura_user", JSON.stringify(data.user));
       mergeCartOnLogin();
+      syncFavoriteOutfitsOnLogin().catch(console.error);
       showToast("Đăng nhập thành công!");
       setTimeout(() => { window.location.href = "/index.html"; }, 1200);
     } catch (err) {
@@ -450,6 +453,7 @@ function bindSignup() {
           localStorage.setItem("velura_token", d.token);
           localStorage.setItem("velura_user", JSON.stringify(d.user));
           mergeCartOnLogin();
+          syncFavoriteOutfitsOnLogin().catch(console.error);
           showToast("Đăng ký tài khoản thành công! Chào mừng bạn đến với Velura 🎉");
           setTimeout(() => { window.location.href = "/index.html"; }, 1500);
         }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }));
