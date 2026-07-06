@@ -223,6 +223,48 @@ function memberSummary() {
   `;
 }
 
+function memberCommandCenter() {
+  const members = state.accounts.filter((row) => accountGroup(row) === "members");
+  const admins = state.accounts.filter((row) => accountGroup(row) === "admins");
+  const activeMembers = members.filter((row) => row.is_active).length;
+  const verifiedMembers = members.filter((row) => row.is_verified).length;
+  const verifiedRate = members.length ? Math.round((verifiedMembers / members.length) * 100) : 0;
+  const lockedMembers = members.filter((row) => !row.is_active).length;
+  const pendingRequests = state.requests.filter((row) => row.status === "pending").length;
+
+  return `
+    <section class="admin-member-command" aria-label="Trung tâm quản lý thành viên">
+      <div class="admin-member-command__copy">
+        <span class="admin-member-command__eyebrow">Trung tâm member</span>
+        <h2>Quản lý tài khoản member</h2>
+        <p>Theo dõi xác thực, trạng thái khóa và phân quyền từ cùng một màn hình để chăm sóc khách hàng nhanh hơn.</p>
+      </div>
+      <div class="admin-member-command__metrics">
+        <article>
+          <span>Member hoạt động</span>
+          <strong>${activeMembers}</strong>
+          <small>${members.length} tổng member</small>
+        </article>
+        <article>
+          <span>Tỷ lệ xác thực</span>
+          <strong>${verifiedRate}%</strong>
+          <small>${verifiedMembers} tài khoản đã xác thực</small>
+        </article>
+        <article>
+          <span>Cần chú ý</span>
+          <strong>${lockedMembers + pendingRequests}</strong>
+          <small>${lockedMembers} khóa, ${pendingRequests} chờ duyệt</small>
+        </article>
+      </div>
+      <div class="admin-member-command__chips" aria-label="Tổng quan nhóm tài khoản">
+        <span>${members.length} member</span>
+        <span>${admins.length} quản trị viên</span>
+        <span>${pendingRequests} yêu cầu nâng quyền</span>
+      </div>
+    </section>
+  `;
+}
+
 function accountTable() {
   const rows = getTabRows();
   const totalPages = Math.ceil(rows.length / state.itemsPerPage) || 1;
@@ -425,6 +467,7 @@ function render() {
   const shouldShowMemberSummary = state.tab === "all" || state.tab === "members";
 
   panel.innerHTML = `
+    ${memberCommandCenter()}
     ${shouldShowMemberSummary ? memberSummary() : ""}
     ${filterBar()}
     ${accountTable()}

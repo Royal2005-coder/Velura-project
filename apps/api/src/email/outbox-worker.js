@@ -1,9 +1,15 @@
 import { config } from "../config.js";
-import { callRpc } from "../supabase.js";
+import { callRpc, updateRows } from "../supabase.js";
 
 export function startEmailOutboxWorker() {
   if (!config.supabaseServiceRoleKey || config.emailWorkerIntervalMs <= 0) return null;
   if (!hasEmailProvider()) return null;
+
+  // Reset any emails stuck in 'sending' state from a previous session back to 'pending'
+  void updateRows("email_outbox", { status: "eq.sending" }, { status: "pending" })
+    .then(() => console.log("[email-outbox] reset stuck 'sending' emails to 'pending'"))
+    .catch((err) => console.error("[email-outbox] failed to reset stuck emails:", err.message));
+
   let running = false;
 
   const run = async () => {

@@ -48,7 +48,7 @@
 
 .blog-intro__copy {
   display: flex;
-  min-height: clamp(320px, 34vw, 390px);
+  min-height: clamp(300px, 30vw, 360px);
   max-width: 620px;
   flex-direction: column;
   justify-content: center;
@@ -71,7 +71,8 @@
 }
 
 .blog-intro__media {
-  min-height: clamp(320px, 34vw, 390px);
+  height: clamp(320px, 34vw, 390px);
+  min-height: 0;
   margin: 0;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.72);
@@ -522,8 +523,14 @@
     grid-template-columns: 1fr;
   }
 
-  .blog-intro::after {
-    display: none;
+  .blog-intro__copy,
+  .blog-intro__media {
+    min-height: auto;
+  }
+
+  .blog-intro__media {
+    height: auto;
+    aspect-ratio: 16 / 10;
   }
 
   .articles-grid {
@@ -549,13 +556,23 @@
   }
 
   .blog-intro {
-    min-height: 380px;
+    min-height: 0;
     padding: 28px;
     align-items: end;
   }
 
   .blog-intro::before {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.72));
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.78)),
+      url("https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1600&auto=format&fit=crop") center/cover;
+  }
+
+  .blog-intro__copy {
+    min-height: 220px;
+  }
+
+  .blog-intro__media {
+    aspect-ratio: 4 / 5;
   }
 
   .featured-post {
