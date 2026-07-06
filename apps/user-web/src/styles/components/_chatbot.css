@@ -389,6 +389,37 @@
   }
 }
 
+/* Merge-safety lock: keep the floating launcher viewport-bound even when
+   page-specific styles are concatenated after this component stylesheet. */
+body .chatbot-widget {
+  position: fixed !important;
+  inset: auto max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) auto !important;
+  width: 56px;
+  height: 56px;
+  z-index: 9999 !important;
+  isolation: isolate;
+}
+
+@media (max-width: 480px) {
+  body .chatbot-widget {
+    inset: auto max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) auto !important;
+    width: 56px;
+    height: 56px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatbot-widget,
+  .chatbot-widget *,
+  .chatbot-widget *::before,
+  .chatbot-widget *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 /* ---------- Chat State Switcher & History Styles ---------- */
 .chatbot-state-switcher {
   margin-left: auto;

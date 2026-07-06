@@ -11,7 +11,11 @@ export async function supabaseRequest(path, options = {}) {
     url.searchParams.set(key, String(value));
   });
 
-  const key = options.useAnonKey ? config.supabaseAnonKey : getSupabaseServiceKey();
+  let key = options.useAnonKey ? config.supabaseAnonKey : getSupabaseServiceKey();
+  if (!key && options.useAnonKey !== false) {
+    // Fallback to anon key if service role is not configured but not strictly disabled
+    key = config.supabaseAnonKey;
+  }
   if (!key) {
     throw new HttpError(503, "SERVICE_ROLE_REQUIRED", "Supabase service role is not configured");
   }
@@ -112,10 +116,12 @@ export async function callRpc(name, payload, options = {}) {
   return result.data;
 }
 
-export async function insertRow(table, payload) {
+export async function insertRow(table, payload, options = {}) {
   const result = await supabaseRequest(`/rest/v1/${table}`, {
     method: "POST",
     body: payload,
+    useAnonKey: options.useAnonKey,
+    accessToken: options.accessToken,
     headers: {
       prefer: "return=representation"
     }
@@ -123,11 +129,13 @@ export async function insertRow(table, payload) {
   return Array.isArray(result.data) ? result.data[0] : result.data;
 }
 
-export async function updateRows(table, query, payload) {
+export async function updateRows(table, query, payload, options = {}) {
   const result = await supabaseRequest(`/rest/v1/${table}`, {
     method: "PATCH",
     query,
     body: payload,
+    useAnonKey: options.useAnonKey,
+    accessToken: options.accessToken,
     headers: {
       prefer: "return=representation"
     }
@@ -135,10 +143,12 @@ export async function updateRows(table, query, payload) {
   return Array.isArray(result.data) ? result.data : [];
 }
 
-export async function deleteRows(table, query) {
+export async function deleteRows(table, query, options = {}) {
   await supabaseRequest(`/rest/v1/${table}`, {
     method: "DELETE",
     query,
+    useAnonKey: options.useAnonKey,
+    accessToken: options.accessToken,
     headers: {
       prefer: "return=minimal"
     }

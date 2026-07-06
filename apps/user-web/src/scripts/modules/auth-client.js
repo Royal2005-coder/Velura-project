@@ -1,6 +1,11 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
 import { mergeCartOnLogin } from "./cart.js";
+import {
+  clearAuthSession,
+  createDevMemberSession,
+  storeAuthSession
+} from "./auth-session.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -20,6 +25,20 @@ function setLoading(btn, loading, label = "Đang xử lý...") {
 
 function validatePassword(pw) {
   return pw && pw.length >= 8 && /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /[\d\W]/.test(pw);
+}
+
+function completeAuthentication(
+  data,
+  {
+    mergeCart = true,
+    message = "Đăng nhập thành công!",
+    redirectDelay = 1200
+  } = {}
+) {
+  storeAuthSession(data);
+  if (mergeCart) mergeCartOnLogin();
+  showToast(message);
+  setTimeout(() => { window.location.href = "/index.html"; }, redirectDelay);
 }
 
 function bindPasswordToggle(inputId) {
@@ -242,39 +261,20 @@ function bindSignin() {
       `;
       signupPara.after(devContainer);
 
-      const tabPhone = document.getElementById("tab-phone");
-      const tabEmail = document.getElementById("tab-email");
-      const panelPhone = document.getElementById("panel-phone");
-      const panelEmail = document.getElementById("panel-email");
-
       document.getElementById("js-dev-login-phone").addEventListener("click", () => {
-        if (tabPhone && tabEmail && panelPhone && panelEmail) {
-          tabPhone.classList.add("tab--active");
-          tabPhone.setAttribute("aria-selected", "true");
-          tabEmail.classList.remove("tab--active");
-          tabEmail.setAttribute("aria-selected", "false");
-          panelPhone.classList.add("is-active");
-          panelEmail.classList.remove("is-active");
-        }
-        const phoneInput = document.getElementById("phone");
-        const passInput = document.getElementById("password");
-        if (phoneInput) phoneInput.value = "0912345678";
-        if (passInput) passInput.value = "123456";
+        completeAuthentication(createDevMemberSession("phone"), {
+          mergeCart: false,
+          message: "Đã vào luồng Member Test (số điện thoại).",
+          redirectDelay: 300
+        });
       });
 
       document.getElementById("js-dev-login-email").addEventListener("click", () => {
-        if (tabPhone && tabEmail && panelPhone && panelEmail) {
-          tabEmail.classList.add("tab--active");
-          tabEmail.setAttribute("aria-selected", "true");
-          tabPhone.classList.remove("tab--active");
-          tabPhone.setAttribute("aria-selected", "false");
-          panelEmail.classList.add("is-active");
-          panelPhone.classList.remove("is-active");
-        }
-        const emailInput = document.getElementById("email-login");
-        const passInput = document.getElementById("password-email");
-        if (emailInput) emailInput.value = "user@velura.vn";
-        if (passInput) passInput.value = "123456";
+        completeAuthentication(createDevMemberSession("email"), {
+          mergeCart: false,
+          message: "Đã vào luồng Member Test (email).",
+          redirectDelay: 300
+        });
       });
     }
   }
@@ -316,8 +316,7 @@ function bindSignin() {
       if (data.otp_required) {
         setLoading(btn, false);
         showOtpModal(identity, (d) => {
-          localStorage.setItem("velura_token", d.token);
-          localStorage.setItem("velura_user", JSON.stringify(d.user));
+          storeAuthSession(d);
           mergeCartOnLogin();
           showToast("Đăng nhập thành công!");
           setTimeout(() => { window.location.href = "/index.html"; }, 1200);
@@ -325,8 +324,7 @@ function bindSignin() {
         return;
       }
 
-      localStorage.setItem("velura_token", data.token);
-      localStorage.setItem("velura_user", JSON.stringify(data.user));
+      storeAuthSession(data);
       mergeCartOnLogin();
       showToast("Đăng nhập thành công!");
       setTimeout(() => { window.location.href = "/index.html"; }, 1200);
@@ -447,8 +445,7 @@ function bindSignup() {
       setLoading(btn, false);
       if (data.otp_required) {
         showOtpModal(identity, (d) => {
-          localStorage.setItem("velura_token", d.token);
-          localStorage.setItem("velura_user", JSON.stringify(d.user));
+          storeAuthSession(d);
           mergeCartOnLogin();
           showToast("Đăng ký tài khoản thành công! Chào mừng bạn đến với Velura 🎉");
           setTimeout(() => { window.location.href = "/index.html"; }, 1500);
@@ -585,8 +582,7 @@ function updateHeaderAuthUI() {
       logoutBtn.style.cssText = "background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:4px 8px;";
       logoutBtn.textContent = "Đăng xuất";
       logoutBtn.addEventListener("click", () => {
-        localStorage.removeItem("velura_token");
-        localStorage.removeItem("velura_user");
+        clearAuthSession();
         showToast("Đã đăng xuất thành công.");
         setTimeout(() => { window.location.reload(); }, 1000);
       });

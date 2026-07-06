@@ -30,7 +30,7 @@
 .velura-auth-page {
   font-family: 'DM Sans', sans-serif;
   color: var(--auth-text-dark);
-  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--auth-bg);
   background-image: url('/src/assets/images/auth/bg-texture.png');
   background-repeat: no-repeat;
@@ -55,7 +55,7 @@
 .velura-auth-page .login-page {
   width: 100%;
   max-width: 1440px;
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   position: relative;
   display: flex;
@@ -159,6 +159,13 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
+.velura-auth-page .tab-btn.tab--active {
+  background: white;
+  color: var(--auth-primary);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
 /* ---- Form ---- */
 .velura-auth-page .form-group {
   margin-bottom: 18px;
@@ -209,6 +216,13 @@
   opacity: 0.6;
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--auth-text-muted);
 }
 
 .velura-auth-page .toggle-password:hover {
@@ -274,6 +288,15 @@
   box-shadow: 0 8px 20px rgba(201, 123, 99, 0.32);
 }
 
+.velura-auth-page .btn-login:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.velura-auth-page .btn-login:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 .velura-auth-page .social-login {
   display: flex;
   gap: 12px;
@@ -294,6 +317,7 @@
   color: white;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.2s;
+  text-decoration: none;
 }
 
 .velura-auth-page .btn-social:hover {
@@ -353,6 +377,117 @@
   margin-top: 6px;
 }
 
+/* ---- Trạng thái bắt buộc của logic xác thực hiện có ---- */
+.velura-auth-page .tab-panel {
+  display: none;
+}
+
+.velura-auth-page .tab-panel.is-active {
+  display: block;
+}
+
+.velura-auth-page .field__required {
+  color: #b64638;
+}
+
+.velura-auth-page .field__optional {
+  color: var(--auth-text-light);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.velura-auth-page .field__error {
+  display: none;
+  margin-top: 6px;
+  color: #b42318;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.velura-auth-page .field__check-icon {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  font-weight: 700;
+}
+
+.velura-auth-page .password-strength {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.velura-auth-page .password-strength[hidden] {
+  display: none;
+}
+
+.velura-auth-page .password-strength__bar {
+  flex: 1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--auth-border);
+}
+
+.velura-auth-page .password-strength__fill {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.velura-auth-page .password-strength__label {
+  min-width: 64px;
+  font-size: 12px;
+  text-align: right;
+}
+
+.velura-auth-page .lock-notice {
+  display: flex;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #efc7c2;
+  border-radius: 10px;
+  background: #fff5f3;
+  color: #a2372a;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.velura-auth-page .lock-notice[hidden] {
+  display: none;
+}
+
+.velura-auth-page .login-container--register {
+  padding-top: 34px;
+  padding-bottom: 34px;
+}
+
+.velura-auth-page .login-container--register .header {
+  margin-bottom: 22px;
+}
+
+.velura-auth-page .login-container--register .form-group {
+  margin-bottom: 14px;
+}
+
+.velura-auth-page .dev-quick-login {
+  flex-wrap: wrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .velura-auth-page *,
+  .velura-auth-page *::before,
+  .velura-auth-page *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 /* ============================================================
    RESPONSIVE
    ============================================================ */
@@ -382,7 +517,7 @@
 @media (max-width: 768px) {
   .velura-auth-page                  { background-attachment: scroll; }
   .velura-auth-page .main-model      { display: none; }
-  .velura-auth-page .login-page      { min-height: 100vh; padding: 30px 16px 32px; flex-direction: column; align-items: center; justify-content: flex-start; gap: 24px; }
+  .velura-auth-page .login-page      { min-height: 100dvh; padding: 30px 16px 32px; flex-direction: column; align-items: center; justify-content: flex-start; gap: 24px; }
   .velura-auth-page .logo-container  { position: static; align-self: center; margin: 8px 0 0; }
   .velura-auth-page .logo            { width: 130px; }
   .velura-auth-page .login-container { width: 100%; max-width: 460px; padding: 36px 26px; border-radius: 18px; }

@@ -1,122 +1,97 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Velura — Đăng nhập</title>
-  <meta name="description" content="Đăng nhập tài khoản Velura để mua sắm thời trang cao cấp." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Playfair+Display:wght@500&display=swap"
-    rel="stylesheet" />
-  <link rel="stylesheet" href="../../styles/main.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng nhập - Velura</title>
+  <meta name="description" content="Đăng nhập tài khoản Velura để tiếp tục mua sắm.">
+  <link rel="stylesheet" href="../../styles/main.css">
+  <link rel="stylesheet" href="../../styles/pages/_auth-external.css">
 </head>
+<body>
+  <main class="velura-auth-page" aria-label="Đăng nhập Velura">
+    <div class="login-page">
+      <a class="logo-container" href="/index.html" aria-label="Về trang chủ Velura">
+        <img src="../../assets/images/auth/logo_velura.png" alt="Velura" class="logo">
+      </a>
 
-<body class="page-signin page-signin--mobile-stack">
-  <main class="signin-stage" role="main" aria-label="Đăng nhập Velura">
-    <!-- Decorative background gradient (no image dependency) -->
-    <div class="auth-bg-gradient" aria-hidden="true"></div>
+      <img src="../../assets/images/auth/model_main.png" alt="" class="main-model" aria-hidden="true">
 
-    <a href="/index.html" class="brand-logo-link" aria-label="Về trang chủ Velura">
-      <span class="brand-logo-text">Velura</span>
-    </a>
+      <form class="login-container" id="js-signin-form" action="#" method="post" novalidate>
+        <header class="header">
+          <h1>Chào mừng bạn trở lại<br>với Velura</h1>
+          <p>Đăng nhập để tiếp tục mua sắm</p>
+        </header>
 
-    <form class="login-card" id="js-signin-form" action="#" method="post" novalidate>
-      <header class="login-card__head">
-        <h1 class="login-card__title">Chào mừng bạn trở lại<br />với Velura</h1>
-        <p class="login-card__subtitle">Đăng nhập để tiếp tục mua sắm</p>
-      </header>
-
-      <div class="tabs" role="tablist" aria-label="Phương thức đăng nhập">
-        <button type="button" class="tab tab--active" role="tab" aria-selected="true" id="tab-phone">Số điện thoại</button>
-        <button type="button" class="tab" role="tab" aria-selected="false" id="tab-email">Email</button>
-      </div>
-
-      <!-- Tab: Số điện thoại -->
-      <div class="tab-panel is-active" role="tabpanel" id="panel-phone">
-        <div class="fields">
-          <div class="field">
-            <label class="field__label" for="phone">Số điện thoại</label>
-            <div class="field__control">
-              <input class="field__input" type="tel" id="phone" name="phone" placeholder="0912 345 678"
-                autocomplete="tel" inputmode="numeric" />
-            </div>
-            <div class="field__error" id="error-phone" aria-live="polite"></div>
-          </div>
-          <div class="field field--password">
-            <label class="field__label" for="password">Mật khẩu</label>
-            <div class="field__control">
-              <input class="field__input" type="password" id="password" name="password" placeholder="Nhập mật khẩu"
-                autocomplete="current-password" />
-              <button class="field__toggle" type="button" aria-label="Hiển thị mật khẩu" data-toggle="password">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M1.37 7.77C2.84 5.33 5.19 3.33 8 3.33s5.16 2 6.63 4.44M8 10a2 2 0 100-4 2 2 0 000 4z"
-                    stroke="#6B635D" stroke-width="1.33" stroke-linecap="round" />
-                </svg>
-              </button>
-            </div>
-            <div class="field__error" id="error-password" aria-live="polite"></div>
-          </div>
+        <div class="tabs" role="tablist" aria-label="Phương thức đăng nhập">
+          <button type="button" class="tab-btn tab" role="tab" aria-selected="false" id="tab-email">Email</button>
+          <button type="button" class="tab-btn tab tab--active" role="tab" aria-selected="true" id="tab-phone">Số điện thoại</button>
         </div>
-      </div>
 
-      <!-- Tab: Email -->
-      <div class="tab-panel" role="tabpanel" id="panel-email">
-        <div class="fields">
-          <div class="field">
-            <label class="field__label" for="email-login">Email</label>
-            <div class="field__control">
-              <input class="field__input" type="email" id="email-login" name="email" placeholder="example@gmail.com"
-                autocomplete="email" />
+        <section class="tab-panel" role="tabpanel" id="panel-email" aria-labelledby="tab-email">
+          <div class="form-group">
+            <label for="email-login">Email</label>
+            <div class="input-wrapper">
+              <input type="email" id="email-login" name="email" placeholder="example@velura.com" autocomplete="email">
             </div>
             <div class="field__error" id="error-email-login" aria-live="polite"></div>
           </div>
-          <div class="field field--password">
-            <label class="field__label" for="password-email">Mật khẩu</label>
-            <div class="field__control">
-              <input class="field__input" type="password" id="password-email" name="password"
-                placeholder="Nhập mật khẩu" autocomplete="current-password" />
-              <button class="field__toggle" type="button" aria-label="Hiển thị mật khẩu" data-toggle="password-email">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M1.37 7.77C2.84 5.33 5.19 3.33 8 3.33s5.16 2 6.63 4.44M8 10a2 2 0 100-4 2 2 0 000 4z"
-                    stroke="#6B635D" stroke-width="1.33" stroke-linecap="round" />
-                </svg>
+
+          <div class="form-group">
+            <label for="password-email">Mật khẩu</label>
+            <div class="input-wrapper">
+              <input type="password" id="password-email" name="password" placeholder="Nhập mật khẩu" autocomplete="current-password">
+              <button class="toggle-password" type="button" aria-label="Hiển thị mật khẩu" data-toggle="password-email">
+                <span aria-hidden="true">◉</span>
               </button>
             </div>
             <div class="field__error" id="error-password-email" aria-live="polite"></div>
           </div>
+        </section>
+
+        <section class="tab-panel is-active" role="tabpanel" id="panel-phone" aria-labelledby="tab-phone">
+          <div class="form-group">
+            <label for="phone">Số điện thoại</label>
+            <div class="input-wrapper">
+              <input type="tel" id="phone" name="phone" placeholder="0912 345 678" autocomplete="tel" inputmode="numeric">
+            </div>
+            <div class="field__error" id="error-phone" aria-live="polite"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Mật khẩu</label>
+            <div class="input-wrapper">
+              <input type="password" id="password" name="password" placeholder="Nhập mật khẩu" autocomplete="current-password">
+              <button class="toggle-password" type="button" aria-label="Hiển thị mật khẩu" data-toggle="password">
+                <span aria-hidden="true">◉</span>
+              </button>
+            </div>
+            <div class="field__error" id="error-password" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <div class="form-options">
+          <label class="remember-me">
+            <input type="checkbox" name="remember" id="remember-me">
+            <span>Ghi nhớ đăng nhập</span>
+          </label>
+          <a href="/src/pages/auth/forgot-password.html" class="forgot-password">Quên mật khẩu?</a>
         </div>
-      </div>
 
-      <div class="options">
-        <label class="remember">
-          <input type="checkbox" name="remember" id="remember-me" />
-          <span>Ghi nhớ đăng nhập</span>
-        </label>
-        <a class="forgot" href="/src/pages/auth/forgot-password.html">Quên mật khẩu?</a>
-      </div>
+        <div class="lock-notice" id="lock-countdown" hidden aria-live="assertive">
+          <span>Tài khoản tạm khóa. Thử lại sau <strong id="lock-timer">15:00</strong></span>
+        </div>
 
-      <!-- Lock countdown notice (hidden by default) -->
-      <div class="lock-notice" id="lock-countdown" hidden aria-live="assertive">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-        </svg>
-        <span id="lock-countdown-text">Tài khoản tạm khóa. Thử lại sau <strong id="lock-timer">15:00</strong></span>
-      </div>
+        <button type="submit" class="btn-login" id="btn-signin">Đăng nhập</button>
 
-      <button type="submit" class="btn btn--login" id="btn-signin">Đăng nhập</button>
+        <div class="social-login">
+          <a class="btn-social btn-guest" href="/index.html">Tiếp tục với Guest</a>
+        </div>
 
-      <div class="oauth">
-        <a class="btn btn--guest" href="/index.html">Tiếp tục với Guest</a>
-      </div>
-
-      <p class="signup">Chưa có tài khoản? <a href="/src/pages/auth/signup.html">Đăng ký ngay</a></p>
-    </form>
+        <p class="footer signup">Chưa có tài khoản? <a href="/src/pages/auth/signup.html">Đăng ký ngay</a></p>
+      </form>
+    </div>
   </main>
   <script type="module" src="../../scripts/main.js"></script>
 </body>
-
 </html>

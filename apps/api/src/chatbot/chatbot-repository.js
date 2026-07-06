@@ -1,7 +1,30 @@
 import { randomUUID } from "node:crypto";
 import { HttpError } from "../http.js";
-import { insertRow, selectOne, selectRows, updateRows } from "../supabase.js";
+import {
+  insertRow as supabaseInsertRow,
+  selectOne as supabaseSelectOne,
+  selectRows as supabaseSelectRows,
+  updateRows as supabaseUpdateRows
+} from "../supabase.js";
 import { CHAT_MESSAGE_SELECT, CHAT_PRODUCT_SELECT, CHAT_SESSION_SELECT } from "./chatbot-constants.js";
+
+const CHAT_DB_OPTIONS = Object.freeze({ useAnonKey: false });
+
+function selectRows(table, query) {
+  return supabaseSelectRows(table, query, CHAT_DB_OPTIONS);
+}
+
+function selectOne(table, query) {
+  return supabaseSelectOne(table, query, CHAT_DB_OPTIONS);
+}
+
+function insertRow(table, payload) {
+  return supabaseInsertRow(table, payload, CHAT_DB_OPTIONS);
+}
+
+function updateRows(table, query, payload) {
+  return supabaseUpdateRows(table, query, payload, CHAT_DB_OPTIONS);
+}
 
 export function createChatbotRepository() {
   return {
@@ -194,6 +217,13 @@ async function withChatError(operation) {
   try {
     return await operation();
   } catch (error) {
+    if (error instanceof HttpError && error.code === "SERVICE_ROLE_REQUIRED") {
+      throw new HttpError(
+        503,
+        "CHAT_SERVICE_UNAVAILABLE",
+        "Chat service database credentials are not configured"
+      );
+    }
     if (error instanceof HttpError && error.code === "SUPABASE_ERROR") {
       const databaseCode = error.details?.message || error.details?.code || "CHATBOT_DATABASE_ERROR";
       const status = error.status >= 400 && error.status < 500 ? error.status : 502;

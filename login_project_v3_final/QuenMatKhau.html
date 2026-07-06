@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quên mật khẩu - Velura</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="login-page">
+
+        <div class="logo-container">
+            <img src="images/logo_velura.png" alt="Velura Logo" class="logo">
+        </div>
+
+        <img src="images/model_main.png" alt="" class="main-model">
+
+        <div class="login-container">
+            <div class="back-link">
+                <a href="index.html">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7.99967 12.6666L3.33301 7.99992L7.99967 3.33325" stroke="#8C857E" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12.6663 8H3.33301" stroke="#8C857E" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Quay lại đăng nhập
+                </a>
+            </div>
+
+            <div class="header">
+                <h1>Quên mật khẩu?</h1>
+                <p>Nhập email hoặc số điện thoại để cấp lại mật khẩu</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchForgotTab('email')">Email</button>
+                <button class="tab-btn" onclick="switchForgotTab('phone')">Số điện thoại</button>
+            </div>
+
+            <form id="forgotForm">
+                <div class="form-group" id="forgotEmailGroup">
+                    <label for="forgot-email">Địa chỉ email</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="forgot-email" placeholder="example@velura.com">
+                    </div>
+                    <p class="input-hint">Nhập email đã đăng ký tài khoản</p>
+                </div>
+
+                <div class="form-group" id="forgotPhoneGroup" style="display: none;">
+                    <label for="forgot-phone">Số điện thoại</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="forgot-phone" placeholder="000 111 222 333">
+                    </div>
+                    <p class="input-hint">Nhập số điện thoại đã đăng ký tài khoản</p>
+                </div>
+
+                <button type="submit" class="btn-login">Gửi mã xác nhận</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function switchForgotTab(type) {
+            const tabs = document.querySelectorAll('.tab-btn');
+            const emailGroup = document.getElementById('forgotEmailGroup');
+            const phoneGroup = document.getElementById('forgotPhoneGroup');
+
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.toLowerCase().includes(type === 'email' ? 'email' : 'điện')) {
+                    tab.classList.add('active');
+                }
+            });
+
+            if (type === 'email') {
+                emailGroup.style.display = 'block';
+                phoneGroup.style.display = 'none';
+            } else {
+                emailGroup.style.display = 'none';
+                phoneGroup.style.display = 'block';
+            }
+        }
+
+        document.getElementById('forgotForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Mã xác nhận đã được gửi! (Demo)');
+        });
+    </script>
+</body>
+</html>
