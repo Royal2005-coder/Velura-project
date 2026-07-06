@@ -1,4 +1,6 @@
 // Velura Frontend API Client Module
+import { clearAuthSession } from "./auth-session.js";
+
 const API_URL = "http://127.0.0.1:8787";
 
 export async function apiRequest(path, options = {}) {
@@ -23,8 +25,7 @@ export async function apiRequest(path, options = {}) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 401) {
-        localStorage.removeItem("velura_token");
-        localStorage.removeItem("velura_user");
+        clearAuthSession();
         const currentPath = window.location.pathname;
         if (currentPath.includes("/pages/account/") && !currentPath.includes("track-order.html")) {
           window.location.href = "/src/pages/auth/signin.html";
@@ -32,6 +33,9 @@ export async function apiRequest(path, options = {}) {
       }
       const error = new Error(data.error?.message || data.message || `Lỗi API (${response.status})`);
       error.status = response.status;
+      error.code = data.error?.code || data.code || "API_ERROR";
+      error.details = data.error?.details || data.details;
+      error.requestId = data.error?.requestId || response.headers.get("x-request-id") || "";
       throw error;
     }
     return data;

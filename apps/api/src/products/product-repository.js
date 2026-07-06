@@ -149,7 +149,7 @@ export function createProductRepository() {
       }, accessToken);
     },
 
-    async createVariant(productId, input) {
+    async createVariant(productId, input, accessToken) {
       return withProductError(() => insertRow("variant", {
         variant_id: randomUUID(),
         product_id: productId,
@@ -162,7 +162,7 @@ export function createProductRepository() {
         low_stock_threshold: input.lowStockThreshold,
         version: 1,
         updated_at: new Date().toISOString()
-      }));
+      }, authOptions(accessToken)));
     },
 
     async listAuditLogs(filters, accessToken) {
@@ -202,7 +202,7 @@ export function createProductRepository() {
       return withProductError(() => updateRows("combo_item", {
         combo_item_id: `eq.${itemId}`,
         combo_product_id: `eq.${productId}`
-      }, { quantity }));
+      }, { quantity }, authOptions(accessToken)));
     },
 
     async removeComboItem(productId, itemId, accessToken) {

@@ -35,41 +35,41 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
   if (subRoute === "products") {
     if (req.method === "GET") {
       if (action) {
-        const product = await selectOne("product", { product_id: `eq.${action}` });
+        const product = await selectOne("product", { product_id: `eq.${action}` }, { useAnonKey: true });
         if (!product) {
           throw new HttpError(404, "NOT_FOUND", "Không tìm thấy sản phẩm");
         }
         let variants = [];
         if (product.is_combo) {
-          const { rows: comboItems } = await selectRows("combo_item", { combo_product_id: `eq.${product.product_id}` });
+          const { rows: comboItems } = await selectRows("combo_item", { combo_product_id: `eq.${product.product_id}` }, { useAnonKey: true });
           const variantIds = comboItems.map(ci => ci.component_variant_id).filter(Boolean);
           if (variantIds.length > 0) {
-            const { rows: compVariants } = await selectRows("variant", { variant_id: `in.(${variantIds.join(",")})` });
+            const { rows: compVariants } = await selectRows("variant", { variant_id: `in.(${variantIds.join(",")})` }, { useAnonKey: true });
             variants = compVariants.map(v => ({ ...v, product_id: product.product_id }));
           }
         } else {
-          const { rows: dbVariants } = await selectRows("variant", { product_id: `eq.${action}` });
+          const { rows: dbVariants } = await selectRows("variant", { product_id: `eq.${action}` }, { useAnonKey: true });
           variants = dbVariants;
         }
-        const category = product.category_id ? await selectOne("category", { category_id: `eq.${product.category_id}` }) : null;
+        const category = product.category_id ? await selectOne("category", { category_id: `eq.${product.category_id}` }, { useAnonKey: true }) : null;
         return sendJson(res, 200, { ...product, variants, category }, corsHeaders);
       }
 
-      const { rows: products } = await selectRows("product", { status: "eq.on_sale" });
+      const { rows: products } = await selectRows("product", { status: "eq.on_sale" }, { useAnonKey: true });
       
       let allVariants = [];
       let variantOffset = 0;
       const variantLimit = 1000;
       while (true) {
-        const { rows } = await selectRows("variant", { limit: variantLimit, offset: variantOffset });
+        const { rows } = await selectRows("variant", { limit: variantLimit, offset: variantOffset }, { useAnonKey: true });
         if (rows.length === 0) break;
         allVariants = allVariants.concat(rows);
         if (rows.length < variantLimit) break;
         variantOffset += variantLimit;
       }
 
-      const { rows: categories } = await selectRows("category", {});
-      const { rows: comboItems } = await selectRows("combo_item", {});
+      const { rows: categories } = await selectRows("category", {}, { useAnonKey: true });
+      const { rows: comboItems } = await selectRows("combo_item", {}, { useAnonKey: true });
       
       const productsWithVariants = products.map(p => {
         let variants = [];
@@ -93,8 +93,8 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
 
   if (subRoute === "categories") {
     if (req.method === "GET") {
-      const { rows: categories } = await selectRows("category", {});
-      const { rows: products } = await selectRows("product", { status: "eq.on_sale" });
+      const { rows: categories } = await selectRows("category", {}, { useAnonKey: true });
+      const { rows: products } = await selectRows("product", { status: "eq.on_sale" }, { useAnonKey: true });
       const categoriesWithCount = categories.map(c => {
         const count = products.filter(p => p.category_id === c.category_id).length;
         return { ...c, product_count: count };

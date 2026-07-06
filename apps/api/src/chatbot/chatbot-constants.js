@@ -56,7 +56,7 @@ export const CHAT_SUPPORT_ROLES = [
 ];
 
 export const DEFAULT_ASSISTANT_GREETING =
-  "Chào bạn, mình là AI Stylist của Velura. Bạn cần tìm outfit, chọn size hay muốn được gợi ý sản phẩm hôm nay?";
+  "Xin chào! Tôi là AI Stylist của Velura. Tôi có thể giúp bạn tìm kiếm sản phẩm, gợi ý outfit, hoặc tư vấn phong cách. Bạn cần hỗ trợ gì không?";
 
 export const HANDOFF_REPLY =
   "Mình đã ghi nhận yêu cầu gặp nhân viên chăm sóc khách hàng. Velura sẽ nối bạn với tư vấn viên ngay, bạn vui lòng chờ trong giây lát nhé.";

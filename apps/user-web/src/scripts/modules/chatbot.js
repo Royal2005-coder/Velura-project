@@ -4,6 +4,8 @@ import { addToCart, showToast } from "./cart.js";
 const GUEST_ID_KEY = "velura_chat_guest_id";
 const SESSION_ID_KEY = "velura_chat_session_id";
 const MODE_KEY = "chatbotStateMode";
+const DEFAULT_GREETING =
+  "Xin chào! Tôi là AI Stylist của Velura. Tôi có thể giúp bạn tìm kiếm sản phẩm, gợi ý outfit, hoặc tư vấn phong cách. Bạn cần hỗ trợ gì không?";
 
 export function initChatbot() {
   const containers = Array.from(document.querySelectorAll(".chatbot-widget, .chatbot-page"));
@@ -14,7 +16,7 @@ export function initChatbot() {
     mode: localStorage.getItem(MODE_KEY) || "guest",
     sessionId: localStorage.getItem(SESSION_ID_KEY) || "",
     sessions: [],
-    messages: [],
+    messages: [localGreeting()],
     productsById: new Map(),
     loading: false,
     handoffActive: false
@@ -22,7 +24,11 @@ export function initChatbot() {
 
   containers.forEach((container) => bindChatContainer(container, state));
   bindSidebar(state);
-  loadSessions(state).catch(() => renderAll(containers, state));
+  loadSessions(state).catch((error) => {
+    console.error("[CHATBOT] Không thể tải lịch sử trò chuyện:", error);
+    if (!state.messages.length) state.messages = [localGreeting()];
+    renderAll(containers, state);
+  });
 }
 
 function bindChatContainer(container, state) {
@@ -204,12 +210,20 @@ async function sendChatMessage(state, text) {
     await refreshSessionsQuietly(state);
     renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
   } catch (error) {
+    const unavailable = [
+      "SERVICE_ROLE_REQUIRED",
+      "CHAT_SERVICE_UNAVAILABLE",
+      "SUPABASE_NETWORK_ERROR",
+      "SUPABASE_TIMEOUT"
+    ].includes(error.code) || error.status >= 500;
     state.messages = state.messages.filter((msg) => msg.message_id !== "typing").concat({
       message_id: `err-${Date.now()}`,
       sender: "bot",
-      text: error.message || "Mình chưa thể kết nối hệ thống tư vấn. Bạn thử lại giúp mình nhé.",
+      text: unavailable
+        ? "Hệ thống tư vấn đang tạm thời chưa kết nối được. Bạn vui lòng thử lại sau ít phút."
+        : (error.message || "Mình chưa thể kết nối hệ thống tư vấn. Bạn thử lại giúp mình nhé."),
       created_at: new Date().toISOString(),
-      metadata: { error: true }
+      metadata: { error: true, error_code: error.code || "CHAT_REQUEST_FAILED" }
     });
     renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
   } finally {
@@ -414,7 +428,7 @@ function localGreeting() {
   return {
     message_id: "local-greeting",
     sender: "bot",
-    text: "Chào bạn, mình là AI Stylist của Velura. Bạn cần tìm outfit, chọn size hay muốn được gợi ý sản phẩm hôm nay?",
+    text: DEFAULT_GREETING,
     created_at: new Date().toISOString(),
     metadata: { local_greeting: true }
   };

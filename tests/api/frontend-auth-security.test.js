@@ -156,3 +156,78 @@ test("source tree contains no hard-coded Supabase management or secret key", asy
   assert.doesNotMatch(combined, /sbp_[A-Za-z0-9]{20,}|sb_secret_[A-Za-z0-9_-]{20,}/);
   assert.doesNotMatch(combined, /postgresql:\/\/[^\s]+:[^\s\[]+@/);
 });
+
+test("customer auth redesign preserves the live DOM and API contracts", async () => {
+  const [signin, signup, forgot, client, authCss] = await Promise.all([
+    source("apps/user-web/src/pages/auth/signin.html"),
+    source("apps/user-web/src/pages/auth/signup.html"),
+    source("apps/user-web/src/pages/auth/forgot-password.html"),
+    source("apps/user-web/src/scripts/modules/auth-client.js"),
+    source("apps/user-web/src/styles/pages/_auth-external.css")
+  ]);
+
+  for (const page of [signin, signup, forgot]) {
+    assert.match(page, /class="velura-auth-page"/);
+    assert.match(page, /scripts\/main\.js/);
+    assert.doesNotMatch(page, /auth-external\.js|thành công! \(Demo\)/i);
+  }
+
+  for (const id of [
+    "js-signin-form", "tab-phone", "tab-email", "panel-phone", "panel-email",
+    "phone", "email-login", "password", "password-email", "btn-signin",
+    "error-phone", "error-password", "error-email-login", "error-password-email",
+    "lock-countdown", "lock-timer"
+  ]) {
+    assert.match(signin, new RegExp(`id="${id}"`));
+  }
+
+  for (const id of [
+    "js-signup-form", "fullname", "phone-signup", "email-signup",
+    "password-signup", "password-confirm", "phone-check-icon", "email-check-icon",
+    "password-strength", "strength-fill", "strength-label", "btn-signup",
+    "error-fullname", "error-phone-signup", "error-email-signup",
+    "error-password-signup", "error-confirm"
+  ]) {
+    assert.match(signup, new RegExp(`id="${id}"`));
+  }
+
+  for (const id of ["js-forgot-form", "identity", "error-identity", "btn-forgot"]) {
+    assert.match(forgot, new RegExp(`id="${id}"`));
+  }
+
+  assert.match(client, /\/api\/user\/auth\/signin/);
+  assert.match(client, /\/api\/user\/auth\/signup/);
+  assert.match(client, /\/api\/user\/auth\/otp-send/);
+  assert.match(client, /\/api\/user\/auth\/otp-verify/);
+  assert.match(client, /js-dev-login-phone/);
+  assert.match(client, /js-dev-login-email/);
+  assert.match(authCss, /\.velura-auth-page/);
+});
+
+test("customer Quick Test creates a DEV-only member session without calling signin", async () => {
+  const [client, session, api, cart] = await Promise.all([
+    source("apps/user-web/src/scripts/modules/auth-client.js"),
+    source("apps/user-web/src/scripts/modules/auth-session.js"),
+    source("apps/user-web/src/scripts/modules/api.js"),
+    source("apps/user-web/src/scripts/modules/cart.js")
+  ]);
+
+  assert.match(client, /if \(import\.meta\.env\.DEV\)/);
+  assert.match(client, /createDevMemberSession\("phone"\)/);
+  assert.match(client, /createDevMemberSession\("email"\)/);
+  const quickTestBlock = client.slice(
+    client.indexOf("/* DEV MODE ONLY"),
+    client.indexOf("/* END DEV MODE ONLY")
+  );
+  assert.doesNotMatch(quickTestBlock, /0912345678|user@velura\.vn|123456/);
+
+  assert.match(session, /localStorage\.setItem\(STORAGE_KEYS\.role,\s*normalizedUser\.role\)/);
+  assert.match(session, /localStorage\.setItem\(STORAGE_KEYS\.userId,\s*String\(normalizedUser\.user_id\)\)/);
+  assert.match(session, /role:\s*"member"/);
+  assert.match(session, /if \(!import\.meta\.env\.DEV\)/);
+
+  assert.match(api, /clearAuthSession\(\)/);
+  assert.match(cart, /body:\s*JSON\.stringify\(\{\s*phone,\s*password\s*\}\)/);
+  assert.match(cart, /storeAuthSession\(authRes\)/);
+  assert.doesNotMatch(cart, /login_id:\s*phone/);
+});

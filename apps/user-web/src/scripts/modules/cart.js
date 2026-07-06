@@ -1,4 +1,5 @@
 import { apiRequest } from "./api.js";
+import { storeAuthSession } from "./auth-session.js";
 
 // Custom premium toast helper
 export function showToast(message) {
@@ -770,11 +771,10 @@ function initPaymentGuestPage() {
         try {
           const authRes = await apiRequest("/api/user/auth/signin", {
             method: "POST",
-            body: JSON.stringify({ login_id: phone, password })
+            body: JSON.stringify({ phone, password })
           });
           if (authRes && authRes.token) {
-            localStorage.setItem("velura_token", authRes.token);
-            localStorage.setItem("velura_user", JSON.stringify(authRes.user));
+            storeAuthSession(authRes);
             showToast("Đăng nhập thành công!");
             await mergeLocalCartWithDb();
             setTimeout(() => {
@@ -1065,8 +1065,7 @@ function initOrderConfirmPage() {
           });
 
           if (verifyRes.success) {
-            localStorage.setItem("velura_token", verifyRes.token);
-            localStorage.setItem("velura_user", JSON.stringify(verifyRes.user));
+            storeAuthSession(verifyRes);
             sessionStorage.setItem("cart_merged", "true");
 
             if (verifyRes.temp_password) {
@@ -1369,4 +1368,3 @@ function initPaymentFailedPage() {
     });
   }
 }
-
