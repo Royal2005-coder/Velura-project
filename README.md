@@ -1,109 +1,132 @@
-# Velura — Modern Fashion E-Commerce Platform
+# Velura Project
 
-Velura is a modern fashion e-commerce platform built as a workspace monorepo. It features a responsive customer-facing storefront, a comprehensive admin back-office, a secure Node.js HTTP backend API, and a Supabase/PostgreSQL database with transactional integrity and strict row-level security.
+Velura is a fashion commerce workspace for customer web, admin web, shared backend API, Supabase/PostgreSQL database, and CI/CD deployment.
 
----
+This repository is now the clean baseline for team development. The previous raw image collection under `categories/` is intentionally removed from source control. Product images used by the app must live in `src/assets/images` or in managed object storage later.
 
-## 📂 Monorepo Architecture
+## Workspace
 
 ```text
 Velura-project/
 ├── apps/
-│   ├── api/             # Secure Node.js HTTP API (User and Admin endpoints)
-│   └── user-web/        # Customer-facing storefront (Vite + HTML inject + ESM Modules)
+│   ├── api/             # Shared backend/API for admin and future user backend
+│   ├── admin-web/       # Reserved boundary for admin app migration
+│   └── user-web/        # Reserved boundary for customer app migration
+├── packages/
+│   ├── shared-types/    # Shared enums/constants
+│   ├── utils/           # Shared helpers
+│   └── validation/      # Shared validation helpers
 ├── database/
-│   ├── database_user/   # User backend schemas, seed data & permissions
-│   └── fix_rls_for_api.sql
+│   ├── migrations/      # Supabase/Postgres migrations
+│   ├── seed/            # Reference/mock seed data
+│   └── schema.sql
 ├── docs/
-│   └── user/            # User-flow business rules & process flows
-├── scripts/             # Verification and database maintenance scripts
-├── tests/               # E2E Playwright test suite
+│   ├── business-rules/
+│   ├── decision-tables/
+│   └── process-flow/
+├── infra/
+│   ├── deploy/
+│   ├── docker/
+│   └── nginx/
+├── src/                 # Current Vite admin/customer static UI
+├── tests/
+├── .github/workflows/
+├── docker-compose.yml
 ├── package.json
-└── vite.config.js       # Admin panel dev config
+└── vite.config.js
 ```
 
----
+## Current Stack
 
-## 🛠️ Tech Stack & Services
+- Node.js 20
+- Vite static admin/customer pages
+- Vanilla JavaScript modules for current admin prototype
+- Node HTTP API in `apps/api`
+- Supabase Auth + Supabase Postgres
+- GitHub Actions for CI, staging gate, production gate
+- Docker/Nginx baseline for admin web and Node API
 
-- **Frontend Customer Web:** HTML5, CSS Grid/Flexbox, ES Modules, Vite (running on port `3000`)
-- **Backend Service:** Node.js HTTP REST API server with custom JWT Auth, OTP verification, and CORS integration (running on port `8787`)
-- **Database Layer:** Supabase PostgreSQL with custom functions and RLS policies
-- **End-to-End Testing:** Playwright test framework for automated browser flows
-- **CI/CD Integration:** GitHub Actions for builds, syntax checks, and deployments
+## Local Setup
 
----
-
-## 🚀 Local Development Setup
-
-### 1. Prerequisites & Dependencies
-Install the package dependencies from the monorepo root:
 ```bash
 npm install
+npm run dev
 ```
 
-### 2. Configure Environment Variables
-Copy `.env.example` to `.env` in the root workspace and populate your credentials (e.g. Supabase credentials, API URLs, VNPAY/MOMO callback setups):
+Admin UI opens at:
+
+```text
+http://localhost:5173/pages/admin/login.html
+```
+
+Run API locally:
+
 ```bash
 copy .env.example .env
+npm run api:dev
 ```
 
-### 3. Run the Development Servers
-Start both the customer storefront and the backend API server concurrently:
-* **Customer Storefront:**
-  ```bash
-  npm run dev
-  # URL: http://localhost:3000
-  ```
-* **Backend API Server:**
-  ```bash
-  npm run api:dev
-  # URL: http://localhost:8787
-  # Healthcheck: http://localhost:8787/health
-  ```
+Healthcheck:
 
----
+```text
+http://localhost:8787/health
+```
 
-## 🔬 E2E & Integration Verification
+## Verification
 
-We have implemented an automated integration suite to verify checkout, stock allocation, and order cancel lifecycles.
-
-### Run Checkout & Cancellation Lifecycle Test
-This script automatically generates a new member account, completes an OTP handshake, places a COD order, verifies variant stock decrement, fetches order history, cancels the order, and verifies that the stock is restored.
 ```bash
-node scripts/verify-lifecycle.js
+npm run check:js
+npm run build
+npm run smoke:api
 ```
 
-### Run Playwright E2E Tests
-To run automated E2E browser tests:
-```bash
-npx playwright test
+`npm run check` runs syntax checks and admin build.
+
+## Database
+
+Canonical schema:
+
+```text
+database/migrations/001_admin_backend_schema.sql
 ```
 
----
+Seed/reference data:
 
-## 🔑 Core Features & API Endpoints
+```text
+database/seed/001_reference_and_mock_data.sql
+database/seed/seed-admin-users.mjs
+```
 
-### User & Authentication Flow
-- **Registration & Recovery:** OTP verification on signup/reset passwords.
-  - `POST /api/user/auth/signup` -> Requests OTP
-  - `POST /api/user/auth/otp-verify` -> Authenticates and returns JWT
-  - `POST /api/user/auth/otp-send` -> Triggers OTP (dev console printed)
-  - `POST /api/user/auth/reset-password` -> Sets new password
+Rules:
 
-### Order & Inventory Lifecycle
-- **Stock Decrements:** Performed atomically during order checkout (`POST /api/user/orders`).
-- **Stock Restoration:** Automatically triggered on cancellation (`PATCH /api/user/orders` status set to `"cancelled"`).
-- **Guest Order Tracking:** Allowed via tracking code/UUID validation (`GET /api/user/orders/:id`).
+- Supabase tables are the source of truth.
+- User and admin flows share the same data model.
+- Admin actions must go through API/RBAC and write `audit_logs`.
+- Never commit Supabase service-role keys or database passwords.
 
-### Personalized Styling & Wishlists
-- **Wishlist:** Managed as a JSONB column (`wishlist`) inside the user table with full addition/removal API endpoints.
-- **Style Quiz:** Collects metrics (weight, height, shape) and returns fashion suggestions based on style tagging.
+## Branching
 
----
+- `main`: production baseline, protected.
+- `develop`: staging/team integration.
+- `feature/<scope>-<name>`: feature work.
+- `fix/<scope>-<name>`: bug fixes.
+- `chore/<scope>-<name>`: tooling/docs/cleanup.
 
-## 📝 Team Guidelines
-1. **Secrets Security:** Never commit `.env` or service keys to git.
-2. **Migrations:** Keep database changes organized under `database/`.
-3. **Verify Before Push:** Always run the lifecycle test script (`node scripts/verify-lifecycle.js`) before pushing to target branches.
-4. **Git Workflow:** PRs go to `develop` for testing and staging verification before merging to `main`.
+## CI/CD
+
+GitHub Actions:
+
+- `.github/workflows/ci.yml`: syntax check, build, API smoke test.
+- `.github/workflows/deploy-staging.yml`: staging gate from `develop`.
+- `.github/workflows/deploy-production.yml`: manual production gate.
+
+Production deployment must not be enabled until the team configures real cloud credentials, rollback, and monitoring.
+
+## Team Rules
+
+- Keep secrets out of Git.
+- Keep raw/generated image collections out of Git.
+- Add database changes as migrations.
+- Keep user/admin backend contracts in `docs/business-rules` and `docs/process-flow`.
+- Run `npm run check` before pushing.
+- Use PRs into `develop`; promote to `main` only after staging QA.

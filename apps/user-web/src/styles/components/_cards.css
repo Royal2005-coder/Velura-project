@@ -470,18 +470,19 @@
   transform: scale(1.12);
 }
 
-/* === 🔲  "Xem chi tiết": center ảnh, ẩn; hiện khi hover VÙNG ẢNH === */
+/* === 🔲  "Xem chi tiết": dưới ảnh, ẩn; hiện khi hover VÙNG ẢNH === */
 .card--product .product-card__img-hover {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   background: rgba(0, 0, 0, 0.26);
   z-index: 8;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
+  padding-bottom: 20px;
 }
 
 .card--product .product-card__image-wrapper:hover .product-card__img-hover {

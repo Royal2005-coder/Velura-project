@@ -36,5 +36,8 @@ jobs:
       - name: Build admin web
         run: npm run build
 
+      - name: Test admin backend modules
+        run: npm run test:api
+
       - name: Smoke test API
         run: npm run smoke:api

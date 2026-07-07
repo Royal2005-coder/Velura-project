@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velura - Đăng ký quản trị</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+  <link rel="stylesheet" href="../../styles/admin.css" />
+  <style>
+    body { min-height: 100vh; display: grid; place-items: center; background: var(--checkout-bg); font-family: "DM Sans", sans-serif; }
+    .auth-card { width: min(440px, calc(100vw - 32px)); padding: 32px; background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow-card); }
+    .auth-card img { width: 88px; display: block; margin: 0 auto 18px; }
+    .auth-card h1 { margin: 0 0 10px; color: var(--text-dark); font-family: "Playfair Display", Georgia, serif; font-size: 1.45rem; }
+    .auth-card p { color: var(--muted); line-height: 1.6; margin: 0 0 18px; }
+    .auth-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <main class="auth-card" role="main" aria-label="Đăng ký quản trị Velura">
+    <img src="../../assets/images/logo.png" alt="Velura" />
+    <h1>Đăng ký admin đã tắt trong production</h1>
+    <!-- Dang ky admin da tat trong production -->
+    <p>Tài khoản quản trị không được tạo trực tiếp trên giao diện. Hãy đăng nhập bằng Supabase SSO, sau đó super admin cấp quyền trong phân hệ Quản lý tài khoản.</p>
+    <div class="auth-actions">
+      <a class="admin-btn admin-btn--secondary" href="./login.html">Đăng nhập</a>
+      <a class="admin-btn admin-btn--ghost" href="./welcome.html">Về trang giới thiệu</a>
+    </div>
+  </main>
+</body>
+</html>

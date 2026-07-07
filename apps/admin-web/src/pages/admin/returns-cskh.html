@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Velura — Đổi trả &amp; CSKH</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../styles/main.css">
+  <link rel="stylesheet" href="../../styles/admin.css">
+</head>
+<body class="admin-page">
+  <div class="admin-layout" id="admin-layout">
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="admin-sidebar__brand">
+        <a class="admin-sidebar__logo" href="./returns-cskh.html"><img src="../../assets/images/logo.png" alt="Velura"></a>
+        <span class="admin-sidebar__caption">Quản trị</span>
+      </div>
+      <nav class="admin-sidebar__nav" aria-label="Điều hướng quản trị">
+        <a class="admin-menu-item" href="./dashboard.html"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#dashboard"></use></svg>Dashboard</a>
+        <a class="admin-menu-item" href="./accounts.html"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#users"></use></svg>Quản lý tài khoản</a>
+        <a class="admin-menu-item" href="./products.html"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#box"></use></svg>Quản lý sản phẩm</a>
+        <a class="admin-menu-item" href="./orders.html"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#cart"></use></svg>Quản lý đơn hàng</a>
+        <a class="admin-menu-item" href="./reviews.html"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#star"></use></svg>Quản lý đánh giá</a>
+        <a class="admin-menu-item admin-menu-item--active" href="./returns-cskh.html"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#support"></use></svg>Đổi trả &amp; CSKH</a>
+        <details class="admin-menu-group"><summary><svg class="admin-menu-icon"><use href="../../assets/icons/admin-icons.svg#tag"></use></svg>Giá &amp; khuyến mãi</summary><div class="admin-menu-subnav"><a href="./pricing.html">Quản lý giá</a><a href="./promotions.html">Quản lý khuyến mãi</a></div></details>
+        <a class="admin-menu-item" href="./logs.html"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#log"></use></svg>Nhật ký hệ thống</a>
+      </nav>
+    </aside>
+
+    <div class="admin-main">
+      <header class="admin-topbar">
+        <div class="admin-topbar__leading">
+          <button class="admin-icon-button admin-topbar__menu" type="button" data-sidebar-toggle title="Đóng hoặc mở sidebar">☰</button>
+          <h1 class="admin-topbar__title">Đổi trả &amp; CSKH</h1>
+        </div>
+        <div class="admin-topbar__actions">
+          <button class="admin-btn admin-btn--export admin-btn--sm" type="button" data-export>Xuất danh sách</button>
+          <button class="admin-btn admin-btn--secondary admin-btn--sm" type="button" data-show-log>Xem nhật ký</button>
+          <button class="admin-profile" type="button">
+            <span class="admin-profile__avatar">PH</span>
+            <span class="admin-profile__copy"><strong>Phạm Thu Hương</strong><small>Quản trị viên</small></span>
+          </button>
+        </div>
+      </header>
+
+      <main class="admin-content">
+        <p class="admin-page-crumb">Dashboard / Đổi trả &amp; CSKH</p>
+        <section class="admin-kpi-grid" aria-label="Thống kê đổi trả và hỗ trợ">
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Đổi/trả chờ xử lý</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#refresh"></use></svg></span></div><strong class="admin-kpi-card__value">8</strong></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Hỗ trợ chờ phản hồi</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#support"></use></svg></span></div><strong class="admin-kpi-card__value">11</strong></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Ưu tiên cao</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#alert"></use></svg></span></div><strong class="admin-kpi-card__value">5</strong></article>
+          <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Hoàn tất hôm nay</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#check"></use></svg></span></div><strong class="admin-kpi-card__value">16</strong></article>
+        </section>
+
+        <section class="admin-card" aria-label="Danh sách đổi trả và hỗ trợ">
+          <div class="admin-tabs" role="tablist">
+            <button class="admin-tab admin-tab--active" type="button" role="tab" aria-selected="true" data-zone="chat">
+              <svg class="admin-line-icon" style="width:14px;height:14px;margin-right:4px;"><use href="../../assets/icons/admin-icons.svg#support"></use></svg>
+              Chat trực tuyến <span class="admin-badge admin-badge--pending" id="chat-count-badge">0</span>
+            </button>
+            <button class="admin-tab" type="button" role="tab" aria-selected="false" data-zone="returns">Đổi/trả hàng <span class="admin-badge admin-badge--pending">8</span></button>
+            <button class="admin-tab" type="button" role="tab" aria-selected="false" data-zone="support">Phiếu hỗ trợ <span class="admin-badge admin-badge--pending">11</span></button>
+            <button class="admin-tab" type="button" role="tab" aria-selected="false" data-zone="logs">Nhật ký xử lý</button>
+          </div>
+
+          <!-- CHAT TRỰC TUYẾN PANEL -->
+          <div class="admin-tab-content" id="chat-panel">
+            <div class="admin-chat-layout">
+              <!-- Left: Session List -->
+              <div class="admin-chat-sidebar">
+                <div class="admin-chat-sidebar__header">
+                  <h4>Phiên chat</h4>
+                  <button class="admin-btn admin-btn--ghost admin-btn--sm" id="chat-refresh-btn" type="button" title="Làm mới">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  </button>
+                </div>
+                <div class="admin-chat-filter">
+                  <select class="admin-form-control" id="chat-filter-status">
+                    <option value="all">Tất cả</option>
+                    <option value="requested" selected>Chờ tiếp nhận</option>
+                    <option value="assigned">Đang xử lý</option>
+                    <option value="closed">Đã đóng</option>
+                  </select>
+                </div>
+                <div class="admin-chat-session-list" id="chat-session-list">
+                  <p class="admin-note" style="text-align:center;padding:24px;">Đang tải...</p>
+                </div>
+              </div>
+
+              <!-- Right: Chat Area -->
+              <div class="admin-chat-main" id="admin-chat-main">
+                <div class="admin-chat-empty" id="admin-chat-empty">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <p>Chọn một phiên chat để bắt đầu hỗ trợ khách hàng</p>
+                </div>
+
+                <div class="admin-chat-active" id="admin-chat-active" style="display:none;">
+                  <!-- Chat Header -->
+                  <div class="admin-chat-header" id="admin-chat-header">
+                    <div class="admin-chat-header__info">
+                      <div class="admin-chat-header__avatar" id="chat-avatar">KH</div>
+                      <div>
+                        <strong id="chat-customer-name">Khách hàng</strong>
+                        <small id="chat-customer-id" class="admin-note"></small>
+                      </div>
+                    </div>
+                    <div class="admin-chat-header__actions">
+                      <span class="admin-badge" id="chat-status-badge">AI</span>
+                      <button class="admin-btn admin-btn--sm admin-btn--secondary" id="chat-assign-btn" type="button">Tiếp nhận</button>
+                      <button class="admin-btn admin-btn--sm admin-btn--ghost" id="chat-close-btn" type="button">Đóng</button>
+                    </div>
+                  </div>
+
+                  <!-- Chat Messages -->
+                  <div class="admin-chat-messages" id="admin-chat-messages"></div>
+
+                  <!-- Chat Input -->
+                  <form class="admin-chat-input-area" id="admin-chat-form">
+                    <input type="text" class="admin-form-control" id="admin-chat-input" placeholder="Nhập tin nhắn phản hồi..." autocomplete="off" />
+                    <button class="admin-btn admin-btn--secondary" type="submit">Gửi</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-tab-content" id="returns-panel">
+            <p class="admin-note">Chỉ hiển thị phiếu đổi/trả còn trong hạn 48 giờ. Phiếu quá hạn được hệ thống tự động từ chối và ẩn khỏi danh sách quản trị.</p>
+            <div class="admin-filter-bar"><label class="admin-search-field"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#search"></use></svg><input class="admin-form-control" type="search" data-table-search="returns" placeholder="Mã phiếu, mã đơn hàng, khách hàng..."></label><select class="admin-form-control"><option>Tất cả loại yêu cầu</option><option>Trả hàng hoàn tiền</option><option>Đổi hàng</option></select><select class="admin-form-control"><option>Tất cả trạng thái</option><option>Chờ xử lý</option><option>Đang xử lý</option></select><div class="admin-filter-bar__actions"><button class="admin-btn admin-btn--filter admin-btn--sm" type="button">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="button" data-reset>Đặt lại</button></div></div>
+            <div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Phiếu / đơn hàng</th><th>Loại yêu cầu</th><th>Thời hạn</th><th>Trạng thái</th><th>Cần xử lý</th><th>Thao tác</th></tr></thead><tbody id="returns-body"></tbody></table></div>
+            <footer class="admin-card__footer"><p class="admin-table-note">Hiển thị 5 / 8 phiếu đổi/trả hợp lệ</p><nav class="admin-pagination" aria-label="Phân trang đổi trả"><button type="button">←</button><button class="is-active" type="button">1</button><button type="button">2</button><button type="button">→</button></nav></footer>
+          </div>
+
+          <div class="admin-tab-content" id="support-panel" hidden>
+            <div class="admin-filter-bar"><label class="admin-search-field"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#search"></use></svg><input class="admin-form-control" type="search" data-table-search="support" placeholder="Mã phiếu, khách hàng, email, nội dung..."></label><select class="admin-form-control"><option>Tất cả loại hỗ trợ</option><option>Khiếu nại</option><option>Đơn hàng</option><option>Sản phẩm</option></select><select class="admin-form-control"><option>Tất cả ưu tiên</option><option>Cao</option><option>Trung bình</option><option>Thấp</option></select><div class="admin-filter-bar__actions"><button class="admin-btn admin-btn--filter admin-btn--sm" type="button">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="button" data-reset>Đặt lại</button></div></div>
+            <div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Mã phiếu</th><th>Khách hàng</th><th>Loại</th><th>Nội dung</th><th>Ưu tiên</th><th>Trạng thái</th><th>CSAT</th><th>Thao tác</th></tr></thead><tbody id="support-body"></tbody></table></div>
+            <footer class="admin-card__footer"><p class="admin-table-note">Hiển thị 6 / 11 phiếu hỗ trợ</p><nav class="admin-pagination" aria-label="Phân trang hỗ trợ"><button type="button">←</button><button class="is-active" type="button">1</button><button type="button">2</button><button type="button">→</button></nav></footer>
+          </div>
+
+          <div class="admin-tab-content" id="logs-panel" hidden>
+            <div class="admin-filter-bar"><label class="admin-search-field"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#search"></use></svg><input class="admin-form-control" type="search" data-table-search="logs" placeholder="Mã phiếu, người thực hiện, hành động..."></label><select class="admin-form-control"><option>Tất cả hành động</option><option>Tiếp nhận yêu cầu</option><option>Phản hồi khách hàng</option><option>Tạo đơn đổi hàng</option></select><div class="admin-filter-bar__actions"><button class="admin-btn admin-btn--filter admin-btn--sm" type="button">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="button" data-reset>Đặt lại</button></div></div>
+            <div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Thời gian</th><th>Phân khu</th><th>Mã phiếu</th><th>Người thực hiện</th><th>Hành động</th><th>Trạng thái cũ → mới</th><th>Kết quả</th></tr></thead><tbody id="logs-body"><tr><td>20/06/2026 10:30</td><td>Đổi/trả</td><td>RTN-1024</td><td>Phạm Thu Hương</td><td>Tiếp nhận yêu cầu</td><td>Mới → Chờ xử lý</td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr><tr><td>19/06/2026 16:45</td><td>CSKH</td><td>CSKH-2047</td><td>Trần Minh Tuấn</td><td>Phản hồi khách hàng</td><td>Đang xử lý → Đã phản hồi</td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr><tr><td>18/06/2026 09:00</td><td>Đổi/trả</td><td>RTN-1021</td><td>Phạm Thu Hương</td><td>Tạo đơn đổi hàng</td><td>Đang xử lý → Chờ giao</td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr></tbody></table></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="service-layer"></div>
+  <div class="admin-toast" id="service-toast" hidden role="status"></div>
+  <script type="module">
+    import { checkAuth, updateSidebarForRole, logout } from '../../scripts/auth.js';
+    checkAuth().then((session) => {
+      if (session) { updateSidebarForRole(session); document.addEventListener('click', e => { if (e.target.closest('[data-admin-logout]')) logout(); }); }
+    });
+  </script>
+  <script type="module" src="../../scripts/returns-cskh.js"></script>
+</body>
+</html>

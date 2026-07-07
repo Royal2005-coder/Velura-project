@@ -201,13 +201,13 @@
         </div>
         <div class="collections-section__grid">
           <!-- collections-section__grid Template -->
-          <a href="/src/pages/collections.html" class="collection-card" data-bind="collection.link">
-            <img src="/src/assets/images/collection-1.png" alt="Bộ sưu tập Thu Đông" class="collection-card__image" data-bind="collection.image_url" />
+          <a href="/src/pages/collections.html?id={{collection.id}}" class="collection-card" data-bind="collection.detail_url">
+            <img src="/src/assets/images/collection-1.png" alt="Bộ sưu tập" class="collection-card__image" data-bind="collection.image_url" />
             <div class="collection-card__overlay"></div>
             <div class="collection-card__content">
-              <span class="collection-card__badge" data-bind="collection.badge">{{Nhãn}}</span>
+              <span class="collection-card__badge" data-bind="collection.badge">{{NHÃN}}</span>
               <h3 class="collection-card__title" data-bind="collection.name">{{Tên bộ sưu tập}}</h3>
-              <p class="collection-card__desc" data-bind="collection.description">{{Mô tả ngắn}}</p>
+              <p class="collection-card__desc" data-bind="collection.short_description">{{Mô tả ngắn}}</p>
               <span class="collection-card__btn">Xem chi tiết &rarr;</span>
             </div>
           </a>
@@ -435,31 +435,6 @@
         <div class="quiz-popup__logo">
           <img src="/src/assets/images/logo.png" alt="Velura Logo" width="72" />
         </div>
-
-        <!-- Blurry leaf shadow layer -->
-        <svg class="quiz-popup__leaves-shadow" viewBox="0 0 120 280" fill="none">
-          <path d="M20 280 C30 200 25 120 15 40" stroke="#4A3F35" stroke-width="3" stroke-linecap="round"
-            opacity="0.4" />
-          <path d="M23 230 C10 215 5 195 10 185 C20 180 25 200 24 215 Z" fill="#4A3F35" opacity="0.4" />
-          <path d="M25 200 C40 190 48 175 42 165 C32 160 25 175 23 190 Z" fill="#4A3F35" opacity="0.4" />
-          <path d="M20 160 C5 145 0 125 5 115 C15 110 22 125 21 145 Z" fill="#4A3F35" opacity="0.4" />
-          <path d="M19 130 C35 120 42 105 38 95 C28 90 20 105 18 120 Z" fill="#4A3F35" opacity="0.4" />
-          <path d="M17 100 C8 85 5 70 10 62 C18 58 22 72 18 90 Z" fill="#4A3F35" opacity="0.4" />
-          <path d="M16 75 C30 65 35 50 31 42 C23 38 17 52 15 67 Z" fill="#4A3F35" opacity="0.4" />
-          <path d="M15 40 C12 25 18 15 22 10 C25 20 22 32 17 38 Z" fill="#4A3F35" opacity="0.4" />
-        </svg>
-
-        <!-- Crisp line art leaf layer -->
-        <svg class="quiz-popup__leaves-line" viewBox="0 0 120 280" fill="none" stroke="#734724" stroke-width="1.2">
-          <path d="M20 280 C30 200 25 120 15 40" stroke-linecap="round" />
-          <path d="M23 230 C10 215 5 195 10 185 C20 180 25 200 24 215 Z" fill="none" />
-          <path d="M25 200 C40 190 48 175 42 165 C32 160 25 175 23 190 Z" fill="none" />
-          <path d="M20 160 C5 145 0 125 5 115 C15 110 22 125 21 145 Z" fill="none" />
-          <path d="M19 130 C35 120 42 105 38 95 C28 90 20 105 18 120 Z" fill="none" />
-          <path d="M17 100 C8 85 5 70 10 62 C18 58 22 72 18 90 Z" fill="none" />
-          <path d="M16 75 C30 65 35 50 31 42 C23 38 17 52 15 67 Z" fill="none" />
-          <path d="M15 40 C12 25 18 15 22 10 C25 20 22 32 17 38 Z" fill="none" />
-        </svg>
 
         <!-- CSS background circle -->
         <div class="quiz-popup__bg-circle"></div>

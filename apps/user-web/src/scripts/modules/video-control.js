@@ -17,6 +17,29 @@ export function initVideoControl() {
   video.muted = false;
   let autoMuted = false;
 
+  // Tích hợp IntersectionObserver để tự động phát/tạm dừng video dựa theo viewport
+  const heroSection = document.querySelector(".hero");
+  if (heroSection) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              // Xử lý lỗi play bị ngắt quãng hoặc chặn tự động phát
+              console.log("Video auto-play via viewport observer was prevented: ", error);
+            });
+          }
+        } else {
+          video.pause();
+        }
+      });
+    }, {
+      threshold: 0 // Kích hoạt ngay khi khuất hẳn hoặc bắt đầu xuất hiện lại
+    });
+    observer.observe(heroSection);
+  }
+
   audioToggle.addEventListener("click", function (e) {
     e.stopPropagation(); // Tránh kích hoạt listener click của document
     // Đảo ngược trạng thái tắt tiếng

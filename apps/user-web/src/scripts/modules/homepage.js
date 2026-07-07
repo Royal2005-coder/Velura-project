@@ -41,15 +41,20 @@ export function initHomepage() {
         renderCategories(categories);
       }
 
-      // 2. Fetch featured products
-      if (productsGrid) {
-        productsGrid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: var(--soft);">Đang tải sản phẩm nổi bật...</div>`;
-        let products = await apiRequest("/api/user/products");
-        // Filter out test/mock products
+      // Fetch products once to be shared across widgets
+      let products = [];
+      try {
+        products = await apiRequest("/api/user/products");
         products = products.filter(p => {
           const nameLower = (p.name || "").toLowerCase();
           return !nameLower.includes("test") && !nameLower.includes("validation") && !nameLower.includes("commit");
         });
+      } catch (prodErr) {
+        console.error("Failed to fetch products for homepage:", prodErr);
+      }
+
+      // 2. Fetch featured products
+      if (productsGrid && products.length > 0) {
         // Limit to 8 products for the homepage section
         const featuredProducts = products.filter(p => p.is_featured).slice(0, 8);
         // If not enough featured, just take the first 8 products
@@ -62,19 +67,13 @@ export function initHomepage() {
       const personalizedGrid = document.querySelector(".js-personalized-grid");
       const personalizedSubtitle = document.querySelector(".js-personalized-subtitle");
       
-      if (personalizedSection && personalizedGrid) {
+      if (personalizedSection && personalizedGrid && products.length > 0) {
         try {
           const profileRes = await apiRequest("/api/user/style-quiz");
           if (profileRes && profileRes.profile) {
             const bodyShape = profileRes.profile.body_shape;
             if (bodyShape) {
-              let allProds = await apiRequest("/api/user/products");
-              allProds = allProds.filter(p => {
-                const nameLower = (p.name || "").toLowerCase();
-                return !nameLower.includes("test") && !nameLower.includes("validation") && !nameLower.includes("commit");
-              });
-              
-              const matchedProds = allProds.filter(p => {
+              const matchedProds = products.filter(p => {
                 const suitable = Array.isArray(p.suitable_body_shapes)
                   ? p.suitable_body_shapes.map(s => s.toLowerCase())
                   : [];
@@ -98,6 +97,13 @@ export function initHomepage() {
         } catch (quizErr) {
           // Guest or no style profile, hide section (already hidden)
         }
+      }
+
+      // 4. Render special collections
+      const collectionsGrid = document.querySelector(".collections-section__grid");
+      if (collectionsGrid && products.length > 0) {
+        const uniqueColNames = [...new Set(products.map(p => p.collection).filter(Boolean))];
+        renderSpecialCollections(uniqueColNames);
       }
     } catch (err) {
       console.error("Failed to load homepage data:", err);
@@ -224,19 +230,11 @@ export function initHomepage() {
 
           <div class="product-card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
-              </svg>
+              <svg class="icon" style="width: 16px; height: 16px;"><use href="#icon-bag"></use></svg>
               Mua ngay
             </a>
             <button class="product-card__btn-cart js-add-cart-home" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="9" cy="21" r="1"></circle>
-                <circle cx="20" cy="21" r="1"></circle>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-              </svg>
+              <svg class="icon" style="width: 18px; height: 18px;"><use href="#icon-cart"></use></svg>
             </button>
           </div>
         </article>
@@ -364,19 +362,11 @@ export function initHomepage() {
 
           <div class="product-card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
-              </svg>
+              <svg class="icon" style="width: 16px; height: 16px;"><use href="#icon-bag"></use></svg>
               Mua ngay
             </a>
             <button class="product-card__btn-cart js-add-cart-personalized" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="9" cy="21" r="1"></circle>
-                <circle cx="20" cy="21" r="1"></circle>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-              </svg>
+              <svg class="icon" style="width: 18px; height: 18px;"><use href="#icon-cart"></use></svg>
             </button>
           </div>
         </article>
@@ -442,6 +432,88 @@ export function initHomepage() {
         }
       });
     });
+  }
+
+  // Render special collections dynamically
+  function renderSpecialCollections(uniqueColNames) {
+    const collectionsGrid = document.querySelector(".collections-section__grid");
+    if (!collectionsGrid) return;
+
+    const COLLECTION_META = {
+      'Soft Ceremony': {
+        id: 'soft-ceremony',
+        vnName: 'Nghi lễ Dịu dàng',
+        badge: 'ELEGANT',
+        story: 'Những thiết kế mang phom dáng bất đối xứng tôn eo, gam màu thanh nhã mang đến vẻ ngoài sang trọng.',
+        banner: '/src/assets/images/collection-1.png'
+      },
+      'The Urban Rhythm': {
+        id: 'the-urban-rhythm',
+        vnName: 'Nhịp điệu Đô thị',
+        badge: 'CASUAL',
+        story: 'Tập trung vào sự linh hoạt giữa phong cách công sở và dạo phố hiện đại. Chất liệu linen tự nhiên kết hợp lụa mềm mại.',
+        banner: '/src/assets/images/collection-2.png'
+      },
+      'Modern Academia': {
+        id: 'modern-academia',
+        vnName: 'Học viện Hiện đại',
+        badge: 'PREPPY',
+        story: 'Cảm hứng từ phong cách Preppy học đường pha chút phá cách hiện đại, sử dụng các gam màu ấm và họa tiết kẻ thanh lịch.',
+        banner: '/src/assets/images/image-4.png'
+      },
+      'Weekend Escape': {
+        id: 'weekend-escape',
+        vnName: 'Trốn chạy Cuối tuần',
+        badge: 'TRAVEL',
+        story: 'Bộ sưu tập của những chuyến đi ngẫu hứng đầy nắng và gió. Các chất liệu Linen mộc mạc và Silk mát mẻ.',
+        banner: '/src/assets/images/about_01.jpg'
+      },
+      'Midnight Mirage': {
+        id: 'midnight-mirage',
+        vnName: 'Ảo ảnh Nửa đêm',
+        badge: 'PARTY',
+        story: 'Sự đan xen quyến rũ của các đường khoét vai tinh tế, chất liệu len dệt kim móc (crochet) cá tính.',
+        banner: '/src/assets/images/image-5.png'
+      },
+      'The Afterglow': {
+        id: 'the-afterglow',
+        vnName: 'Rực rỡ Hoàng hôn',
+        badge: 'COUTURE',
+        story: 'Dòng sản phẩm dạ hội cao cấp nhất của Velura. Phom dáng đầm xòe phồng, đầm đuôi cá kết hợp kỹ thuật xếp nếp.',
+        banner: '/src/assets/images/about_03.jpg'
+      }
+    };
+
+    const getMeta = (name) => {
+      return COLLECTION_META[name] || {
+        id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        vnName: name,
+        badge: 'NEW',
+        story: `Khám phá các thiết kế mới nhất nằm trong bộ sưu tập ${name} của Velura.`,
+        banner: '/src/assets/images/about_02.jpg'
+      };
+    };
+
+    if (uniqueColNames.length === 0) {
+      collectionsGrid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: var(--soft);">Hiện chưa có bộ sưu tập nào hoạt động.</div>`;
+      return;
+    }
+
+    collectionsGrid.innerHTML = uniqueColNames.map(colName => {
+      const meta = getMeta(colName);
+      return `
+        <a href="/src/pages/collections.html?id=${meta.id}" class="collection-card" data-bind="collection.detail_url">
+          <img src="${meta.banner}" alt="${meta.vnName}" class="collection-card__image" data-bind="collection.image_url" />
+          <div class="collection-card__overlay"></div>
+          <div class="collection-card__content">
+            <span class="collection-card__badge" data-bind="collection.badge">${meta.badge}</span>
+            <h3 class="collection-card__title" data-bind="collection.name">${meta.vnName}</h3>
+            <p class="collection-card__desc" data-bind="collection.short_description">${meta.story}</p>
+            <span class="collection-card__btn">Xem chi tiết &rarr;</span>
+          </div>
+        </a>
+      `;
+    }).join("");
   }
 
   loadData();

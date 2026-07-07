@@ -1,6 +1,11 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
 import { mergeCartOnLogin } from "./cart.js";
+import {
+  clearAuthSession,
+  createDevMemberSession,
+  storeAuthSession
+} from "./auth-session.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -20,6 +25,20 @@ function setLoading(btn, loading, label = "Đang xử lý...") {
 
 function validatePassword(pw) {
   return pw && pw.length >= 8 && /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /[\d\W]/.test(pw);
+}
+
+function completeAuthentication(
+  data,
+  {
+    mergeCart = true,
+    message = "Đăng nhập thành công!",
+    redirectDelay = 1200
+  } = {}
+) {
+  storeAuthSession(data);
+  if (mergeCart) mergeCartOnLogin();
+  showToast(message);
+  setTimeout(() => { window.location.href = "/index.html"; }, redirectDelay);
 }
 
 function bindPasswordToggle(inputId) {
@@ -229,6 +248,38 @@ function bindSignin() {
   const form = document.getElementById("js-signin-form");
   if (!form) return;
 
+  /* DEV MODE ONLY - REMOVE BEFORE PRODUCTION */
+  if (import.meta.env.DEV) {
+    const signupPara = document.querySelector(".signup");
+    if (signupPara && !document.querySelector(".dev-quick-login")) {
+      const devContainer = document.createElement("div");
+      devContainer.className = "dev-quick-login";
+      devContainer.style.cssText = "margin-top: 16px; display: flex; justify-content: center; gap: 10px;";
+      devContainer.innerHTML = `
+        <button type="button" id="js-dev-login-phone" style="background: rgba(107, 99, 93, 0.1); border: 1px dashed #6B635D; padding: 4px 8px; font-size: 11px; border-radius: 4px; color: #6B635D; cursor: pointer; transition: all 0.2s;">Test Phone</button>
+        <button type="button" id="js-dev-login-email" style="background: rgba(107, 99, 93, 0.1); border: 1px dashed #6B635D; padding: 4px 8px; font-size: 11px; border-radius: 4px; color: #6B635D; cursor: pointer; transition: all 0.2s;">Test Email</button>
+      `;
+      signupPara.after(devContainer);
+
+      document.getElementById("js-dev-login-phone").addEventListener("click", () => {
+        completeAuthentication(createDevMemberSession("phone"), {
+          mergeCart: false,
+          message: "Đã vào luồng Member Test (số điện thoại).",
+          redirectDelay: 300
+        });
+      });
+
+      document.getElementById("js-dev-login-email").addEventListener("click", () => {
+        completeAuthentication(createDevMemberSession("email"), {
+          mergeCart: false,
+          message: "Đã vào luồng Member Test (email).",
+          redirectDelay: 300
+        });
+      });
+    }
+  }
+  /* END DEV MODE ONLY */
+
   // Store original button label
   const btn = document.getElementById("btn-signin");
   if (btn) btn.dataset.label = btn.textContent;
@@ -265,8 +316,7 @@ function bindSignin() {
       if (data.otp_required) {
         setLoading(btn, false);
         showOtpModal(identity, (d) => {
-          localStorage.setItem("velura_token", d.token);
-          localStorage.setItem("velura_user", JSON.stringify(d.user));
+          storeAuthSession(d);
           mergeCartOnLogin();
           showToast("Đăng nhập thành công!");
           setTimeout(() => { window.location.href = "/index.html"; }, 1200);
@@ -274,8 +324,7 @@ function bindSignin() {
         return;
       }
 
-      localStorage.setItem("velura_token", data.token);
-      localStorage.setItem("velura_user", JSON.stringify(data.user));
+      storeAuthSession(data);
       mergeCartOnLogin();
       showToast("Đăng nhập thành công!");
       setTimeout(() => { window.location.href = "/index.html"; }, 1200);
@@ -396,8 +445,7 @@ function bindSignup() {
       setLoading(btn, false);
       if (data.otp_required) {
         showOtpModal(identity, (d) => {
-          localStorage.setItem("velura_token", d.token);
-          localStorage.setItem("velura_user", JSON.stringify(d.user));
+          storeAuthSession(d);
           mergeCartOnLogin();
           showToast("Đăng ký tài khoản thành công! Chào mừng bạn đến với Velura 🎉");
           setTimeout(() => { window.location.href = "/index.html"; }, 1500);
@@ -534,8 +582,7 @@ function updateHeaderAuthUI() {
       logoutBtn.style.cssText = "background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:4px 8px;";
       logoutBtn.textContent = "Đăng xuất";
       logoutBtn.addEventListener("click", () => {
-        localStorage.removeItem("velura_token");
-        localStorage.removeItem("velura_user");
+        clearAuthSession();
         showToast("Đã đăng xuất thành công.");
         setTimeout(() => { window.location.reload(); }, 1000);
       });

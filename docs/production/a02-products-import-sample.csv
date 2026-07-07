@@ -1,0 +1,6 @@
+sku,name,base_price,category_id,description,sale_price,status,is_featured,image_url
+VL-A021,Velura Test Ao Linen,350000,8fee0728-1d9e-498a-a048-9b8366ac0184,San pham test import A02,350000,hidden,false,https://images.unsplash.com/photo-1525507119028-ed4c629a60a3
+VL-A022,Velura Test Quan Suong,420000,ce1a6336-4ada-4a57-9106-5f651e1bcdc9,San pham test import A02,420000,hidden,false,https://images.unsplash.com/photo-1515886657613-9f3515b0c78f
+VL-A023,Velura Test Dam Midi,620000,a60448c6-3363-43c4-8310-239cf810204b,San pham test import A02,620000,hidden,false,https://images.unsplash.com/photo-1483985988355-763728e1935b
+VL-A024,Velura Test Ao Khoac,790000,21d95344-84e7-42ca-a228-510d700e73e1,San pham test import A02,790000,hidden,false,https://images.unsplash.com/photo-1496747611176-843222e1e57c
+VL-A025,Velura Test Set Do,880000,e752a54d-6aa6-4174-aaaa-521b6f6f009a,San pham test import A02,880000,hidden,false,https://images.unsplash.com/photo-1503342217505-b0a15ec3261c
