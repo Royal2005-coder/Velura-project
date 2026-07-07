@@ -626,30 +626,222 @@ async function initPaymentUserPage() {
     `;
   }
 
+  // Address Modal HTML popup handling
+  const modal = document.getElementById("address-modal");
+  const form = document.getElementById("address-form");
+  const provinceSelect = document.getElementById("address-province");
+  const districtSelect = document.getElementById("address-district");
+  const wardSelect = document.getElementById("address-ward");
+
+  const locationData = {
+    HCM: {
+      name: "TP. Hồ Chí Minh",
+      districts: {
+        Q1: {
+          name: "Quận 1",
+          wards: ["Phường Bến Nghé", "Phường Bến Thành", "Phường Phạm Ngũ Lão"]
+        },
+        Q7: {
+          name: "Quận 7",
+          wards: ["Phường Tân Phong", "Phường Tân Kiểng", "Phường Tân Quy"]
+        },
+        QBT: {
+          name: "Quận Bình Thạnh",
+          wards: ["Phường 25", "Phường 26", "Phường 27"]
+        }
+      }
+    },
+    HN: {
+      name: "TP. Hà Nội",
+      districts: {
+        QHK: {
+          name: "Quận Hoàn Kiếm",
+          wards: ["Phường Hàng Bài", "Phường Tràng Tiền", "Phường Lý Thái Tổ"]
+        },
+        QBD: {
+          name: "Quận Ba Đình",
+          wards: ["Phường Điện Biên", "Phường Quán Thánh", "Phường Ngọc Hà"]
+        }
+      }
+    },
+    DN: {
+      name: "TP. Đà Nẵng",
+      districts: {
+        QHC: {
+          name: "Quận Hải Châu",
+          wards: ["Phường Hòa Cường Bắc", "Phường Hòa Cường Nam", "Phường Thạch Thang"]
+        }
+      }
+    }
+  };
+
+  const closeModal = () => {
+    if (modal) {
+      modal.classList.remove("is-visible");
+      document.body.style.overflow = "";
+    }
+  };
+
+  if (modal) {
+    const btnCloseList = modal.querySelectorAll(".js-btn-close-modal");
+    btnCloseList.forEach(btn => {
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      newBtn.addEventListener("click", closeModal);
+    });
+
+    const backdrop = modal.querySelector(".modal__backdrop");
+    if (backdrop) {
+      const newBackdrop = backdrop.cloneNode(true);
+      backdrop.parentNode.replaceChild(newBackdrop, backdrop);
+      newBackdrop.addEventListener("click", closeModal);
+    }
+  }
+
+  if (provinceSelect) {
+    const newProvinceSelect = provinceSelect.cloneNode(true);
+    provinceSelect.parentNode.replaceChild(newProvinceSelect, provinceSelect);
+    newProvinceSelect.addEventListener("change", (e) => {
+      const provinceKey = e.target.value;
+      const updatedDistrictSelect = document.getElementById("address-district");
+      const updatedWardSelect = document.getElementById("address-ward");
+      
+      if (updatedDistrictSelect && locationData[provinceKey]) {
+        updatedDistrictSelect.innerHTML = '<option value="" disabled selected>Chọn Quận/Huyện</option>';
+        updatedDistrictSelect.disabled = false;
+        if (updatedWardSelect) {
+          updatedWardSelect.innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
+          updatedWardSelect.disabled = true;
+        }
+        const districts = locationData[provinceKey].districts;
+        for (const key in districts) {
+          const option = document.createElement("option");
+          option.value = key;
+          option.textContent = districts[key].name;
+          updatedDistrictSelect.appendChild(option);
+        }
+      }
+    });
+  }
+
+  const activeDistrictSelect = document.getElementById("address-district");
+  if (activeDistrictSelect) {
+    const newDistrictSelect = activeDistrictSelect.cloneNode(true);
+    activeDistrictSelect.parentNode.replaceChild(newDistrictSelect, activeDistrictSelect);
+    newDistrictSelect.addEventListener("change", (e) => {
+      const activeProvSelect = document.getElementById("address-province");
+      const updatedWardSelect = document.getElementById("address-ward");
+      const provinceKey = activeProvSelect.value;
+      const districtKey = e.target.value;
+      
+      if (updatedWardSelect && locationData[provinceKey] && locationData[provinceKey].districts[districtKey]) {
+        updatedWardSelect.innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
+        updatedWardSelect.disabled = false;
+        const wards = locationData[provinceKey].districts[districtKey].wards;
+        wards.forEach(ward => {
+          const option = document.createElement("option");
+          option.value = ward;
+          option.textContent = ward;
+          updatedWardSelect.appendChild(option);
+        });
+      }
+    });
+  }
+
   // Add Address Handler
   const btnAdd = document.querySelector(".btn-add-address");
-  if (btnAdd) {
+  if (btnAdd && modal) {
     const newBtnAdd = btnAdd.cloneNode(true);
     btnAdd.parentNode.replaceChild(newBtnAdd, btnAdd);
     newBtnAdd.style.cursor = "pointer";
     
-    newBtnAdd.addEventListener("click", async () => {
-      const name = prompt("Nhập họ tên người nhận:");
-      if (!name) return;
-      const phone = prompt("Nhập số điện thoại người nhận:");
-      if (!phone) return;
-      const addrDetail = prompt("Nhập địa chỉ giao hàng chi tiết:");
-      if (!addrDetail) return;
+    newBtnAdd.addEventListener("click", () => {
+      if (form) {
+        form.reset();
+        
+        // Auto-fill logged in user info (Họ tên & Số điện thoại)
+        const addressFullnameInput = document.getElementById("address-fullname");
+        const addressPhoneInput = document.getElementById("address-phone");
+        if (addressFullnameInput) addressFullnameInput.value = user.full_name || "";
+        if (addressPhoneInput) addressPhoneInput.value = user.phone || "";
+        
+        const currentDistrict = document.getElementById("address-district");
+        const currentWard = document.getElementById("address-ward");
+        if (currentDistrict) {
+          currentDistrict.innerHTML = '<option value="" disabled selected>Chọn Quận/Huyện</option>';
+          currentDistrict.disabled = true;
+        }
+        if (currentWard) {
+          currentWard.innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
+          currentWard.disabled = true;
+        }
+      }
       
-      const newAddress = {
-        name,
-        phone,
-        detail: addrDetail,
-        is_default: addresses.length === 0
+      modal.classList.add("is-visible");
+      document.body.style.overflow = "hidden";
+    });
+  }
+
+  // Submit address modal handler
+  if (form) {
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    newForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const fullname = document.getElementById("address-fullname");
+      const phone = document.getElementById("address-phone");
+      const province = document.getElementById("address-province");
+      const district = document.getElementById("address-district");
+      const ward = document.getElementById("address-ward");
+      const detail = document.getElementById("address-detail");
+      const isDefault = document.getElementById("address-is-default").checked;
+
+      let hasError = false;
+      const validateField = (el, condition, msg) => {
+        el.classList.remove("is-invalid");
+        const parent = el.closest(".profile-form__input-wrapper") || el.parentNode;
+        const feed = parent.querySelector(".invalid-feedback");
+        if (feed) feed.remove();
+
+        if (!condition) {
+          el.classList.add("is-invalid");
+          const feedback = document.createElement("div");
+          feedback.className = "invalid-feedback";
+          feedback.textContent = msg;
+          parent.appendChild(feedback);
+          hasError = true;
+        }
       };
-      
-      const updatedAddresses = [...addresses, newAddress];
-      
+
+      validateField(fullname, fullname.value.trim() !== "", "Họ và tên không được để trống");
+      const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
+      validateField(phone, phoneRegex.test(phone.value.trim().replace(/\s+/g, "")), "Số điện thoại không hợp lệ");
+      validateField(province, province.value !== "", "Vui lòng chọn Tỉnh/Thành phố");
+      validateField(district, !district.disabled && district.value !== "", "Vui lòng chọn Quận/Huyện");
+      validateField(ward, !ward.disabled && ward.value !== "", "Vui lòng chọn Phường/Xã");
+      validateField(detail, detail.value.trim() !== "", "Địa chỉ chi tiết không được để trống");
+
+      if (hasError) return;
+
+      const provName = province.options[province.selectedIndex].text;
+      const distName = district.options[district.selectedIndex].text;
+      const wardName = ward.value;
+      const fullDetailString = `${detail.value.trim()}, ${wardName}, ${distName}, ${provName}`;
+
+      const newAddress = {
+        name: fullname.value.trim(),
+        phone: phone.value.trim(),
+        detail: fullDetailString,
+        is_default: isDefault || addresses.length === 0
+      };
+
+      let updatedAddresses = [...addresses];
+      if (newAddress.is_default) {
+        updatedAddresses = updatedAddresses.map(addr => ({ ...addr, is_default: false }));
+      }
+      updatedAddresses.push(newAddress);
+
       try {
         const res = await apiRequest("/api/user/addresses", {
           method: "PATCH",
@@ -659,6 +851,7 @@ async function initPaymentUserPage() {
           user.saved_addresses = updatedAddresses;
           localStorage.setItem("velura_user", JSON.stringify(user));
           showToast("Đã thêm địa chỉ mới thành công!");
+          closeModal();
           await initPaymentUserPage(); // Re-render address list
         } else {
           throw new Error("Lỗi lưu địa chỉ");
