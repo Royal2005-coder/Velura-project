@@ -564,7 +564,7 @@ function renderOrderSummarySidebar(shippingFee = 0) {
 }
 
 // 3. INITIALIZE MEMBER CHECKOUT PAGE (payment-user.html)
-function initPaymentUserPage() {
+async function initPaymentUserPage() {
   const token = localStorage.getItem("velura_token");
   if (!token) {
     window.location.href = "/src/pages/checkout/payment-guest.html";
@@ -573,20 +573,37 @@ function initPaymentUserPage() {
 
   renderOrderSummarySidebar(0);
 
-  // Render User Saved Addresses
   const addressListContainer = document.querySelector(".address-list");
-  const user = JSON.parse(localStorage.getItem("velura_user") || "{}");
-  const addresses = user.saved_addresses || [];
+  if (!addressListContainer) return;
 
-  if (addressListContainer && addresses.length > 0) {
+  // Show loading indicator
+  addressListContainer.innerHTML = `<div style="text-align: center; padding: 16px; color: #6B635D; font-size: 0.875rem;">Đang tải danh sách địa chỉ...</div>`;
+
+  let user = {};
+  let addresses = [];
+
+  try {
+    const freshUser = await apiRequest("/api/user/profile");
+    if (freshUser) {
+      localStorage.setItem("velura_user", JSON.stringify(freshUser));
+      user = freshUser;
+      addresses = freshUser.saved_addresses || [];
+    }
+  } catch (err) {
+    console.error("Không thể lấy thông tin địa chỉ mới nhất:", err);
+    user = JSON.parse(localStorage.getItem("velura_user") || "{}");
+    addresses = user.saved_addresses || [];
+  }
+
+  if (addresses.length > 0) {
     addressListContainer.innerHTML = addresses.map((addr, idx) => `
       <label class="address-card ${idx === 0 ? "address-card--default is-selected" : "address-card--secondary"}" style="cursor: pointer;">
         <input type="radio" name="address" value="${idx}" ${idx === 0 ? "checked" : ""} style="display: none;" />
         <div class="address-card__head">
-          <span class="address-card__name">${addr.recipient_name || addr.name || user.full_name || ""}</span>
+          <span class="address-card__name">${addr.name || addr.recipient_name || user.full_name || ""}</span>
           ${idx === 0 ? '<span class="address-card__badge">Mặc định</span>' : ""}
         </div>
-        <p class="address-card__phone">${addr.recipient_phone || addr.phone || user.phone || "Chưa cập nhật SĐT"}</p>
+        <p class="address-card__phone">${addr.phone || addr.recipient_phone || user.phone || "Chưa có SĐT"}</p>
         <p class="address-card__addr">${addr.detail || addr.address || addr.address_line || ""}</p>
       </label>
     `).join("");
@@ -600,27 +617,23 @@ function initPaymentUserPage() {
         if (radio) radio.checked = true;
       });
     });
-  } else if (addressListContainer) {
-    // If no saved addresses exist, make static HTML cards interactive
-    const cards = addressListContainer.querySelectorAll(".address-card");
-    cards.forEach(card => {
-      card.style.cursor = "pointer";
-      card.addEventListener("click", () => {
-        cards.forEach(c => c.classList.remove("is-selected"));
-        card.classList.add("is-selected");
-        const radio = card.querySelector("input[type='radio']");
-        if (radio) {
-          radio.checked = true;
-        }
-      });
-    });
+  } else {
+    addressListContainer.innerHTML = `
+      <div style="padding: 24px; border: 1.5px dashed #E8DFD6; border-radius: 8px; color: #6B635D; text-align: center; font-size: 0.875rem; line-height: 1.5;">
+        Bạn chưa lưu địa chỉ nhận hàng nào.<br/>
+        Vui lòng bấm <strong>+ Thêm địa chỉ mới</strong> ở bên dưới để tiếp tục.
+      </div>
+    `;
   }
 
   // Add Address Handler
   const btnAdd = document.querySelector(".btn-add-address");
   if (btnAdd) {
-    btnAdd.style.cursor = "pointer";
-    btnAdd.addEventListener("click", () => {
+    const newBtnAdd = btnAdd.cloneNode(true);
+    btnAdd.parentNode.replaceChild(newBtnAdd, btnAdd);
+    newBtnAdd.style.cursor = "pointer";
+    
+    newBtnAdd.addEventListener("click", async () => {
       const name = prompt("Nhập họ tên người nhận:");
       if (!name) return;
       const phone = prompt("Nhập số điện thoại người nhận:");
@@ -635,78 +648,57 @@ function initPaymentUserPage() {
         is_default: addresses.length === 0
       };
       
-      const user = JSON.parse(localStorage.getItem("velura_user") || "{}");
-      if (!user.saved_addresses) user.saved_addresses = [];
-      user.saved_addresses.push(newAddress);
+      const updatedAddresses = [...addresses, newAddress];
       
-      // Update in Supabase via API
-      apiRequest("/api/user/addresses", {
-        method: "PATCH",
-        body: JSON.stringify({ addresses: user.saved_addresses })
-      }).then((res) => {
+      try {
+        const res = await apiRequest("/api/user/addresses", {
+          method: "PATCH",
+          body: JSON.stringify({ addresses: updatedAddresses })
+        });
         if (res && res.success) {
+          user.saved_addresses = updatedAddresses;
           localStorage.setItem("velura_user", JSON.stringify(user));
           showToast("Đã thêm địa chỉ mới thành công!");
-          initPaymentUserPage(); // Re-render address list
+          await initPaymentUserPage(); // Re-render address list
         } else {
           throw new Error("Lỗi lưu địa chỉ");
         }
-      }).catch(err => {
+      } catch (err) {
         console.error(err);
-        localStorage.setItem("velura_user", JSON.stringify(user));
-        showToast("Lưu địa chỉ thành công!");
-        initPaymentUserPage();
-      });
+        showToast("Không thể thêm địa chỉ mới. Vui lòng thử lại.");
+      }
     });
   }
 
   const continueBtn = document.querySelector(".checkout-actions .btn--primary");
   if (continueBtn) {
-    continueBtn.addEventListener("click", (e) => {
+    const newContinueBtn = continueBtn.cloneNode(true);
+    continueBtn.parentNode.replaceChild(newContinueBtn, continueBtn);
+
+    newContinueBtn.addEventListener("click", (e) => {
       e.preventDefault();
       
       const selectedRadio = document.querySelector("input[name='address']:checked");
-      let shippingInfo = {};
-
-      if (selectedRadio) {
-        const card = selectedRadio.closest(".address-card");
-        const valStr = selectedRadio.value;
-        const idx = parseInt(valStr, 10);
-        const addrObj = (addresses && addresses.length > 0 && !isNaN(idx) && idx >= 0 && idx < addresses.length) ? addresses[idx] : null;
-
-        if (addrObj) {
-          shippingInfo = {
-            name: addrObj.recipient_name || addrObj.name || user.full_name || "",
-            phone: addrObj.recipient_phone || addrObj.phone || user.phone || "",
-            email: user.email || "",
-            address: addrObj.detail || addrObj.address || addrObj.address_line || "",
-            note: document.getElementById("note")?.value || ""
-          };
-        } else if (card) {
-          // Fallback: read directly from the DOM elements of the card
-          shippingInfo = {
-            name: card.querySelector(".address-card__name")?.textContent.trim() || user.full_name || "",
-            phone: card.querySelector(".address-card__phone")?.textContent.trim() || user.phone || "",
-            email: user.email || "",
-            address: card.querySelector(".address-card__addr")?.textContent.trim() || "",
-            note: document.getElementById("note")?.value || ""
-          };
-        }
-      } else {
-        const activeCard = document.querySelector(".address-card.is-selected");
-        if (activeCard) {
-          shippingInfo = {
-            name: activeCard.querySelector(".address-card__name")?.textContent.trim() || user.full_name || "",
-            phone: activeCard.querySelector(".address-card__phone")?.textContent.trim() || user.phone || "",
-            email: user.email || "",
-            address: activeCard.querySelector(".address-card__addr")?.textContent.trim() || "",
-            note: document.getElementById("note")?.value || ""
-          };
-        } else {
-          showToast("Vui lòng chọn địa chỉ giao hàng!");
-          return;
-        }
+      if (!selectedRadio) {
+        showToast("Vui lòng thêm và chọn địa chỉ giao hàng!");
+        return;
       }
+
+      const idx = parseInt(selectedRadio.value, 10);
+      const addrObj = addresses[idx];
+
+      if (!addrObj) {
+        showToast("Địa chỉ đã chọn không hợp lệ!");
+        return;
+      }
+
+      const shippingInfo = {
+        name: addrObj.name || addrObj.recipient_name || user.full_name || "",
+        phone: addrObj.phone || addrObj.recipient_phone || user.phone || "",
+        email: user.email || "",
+        address: addrObj.detail || addrObj.address || addrObj.address_line || "",
+        note: document.getElementById("note")?.value || ""
+      };
 
       if (!shippingInfo.phone || !shippingInfo.address) {
         showToast("Thông tin địa chỉ giao hàng không đầy đủ!");
