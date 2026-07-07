@@ -140,13 +140,13 @@ export async function mergeCartOnLogin() {
   }
 }
 
-export function saveCart(cart) {
+export async function saveCart(cart) {
   localStorage.setItem("velura_cart", JSON.stringify(cart));
   updateBadge();
-  syncCartWithDb(cart);
+  await syncCartWithDb(cart);
 }
 
-export function addToCart(item) {
+export async function addToCart(item) {
   const cart = getCart();
   const existing = cart.find(x => x.variant_id === item.variant_id);
 
@@ -165,7 +165,7 @@ export function addToCart(item) {
     });
   }
 
-  saveCart(cart);
+  await saveCart(cart);
   showToast(`Đã thêm ${item.product_name} vào giỏ hàng!`);
 }
 

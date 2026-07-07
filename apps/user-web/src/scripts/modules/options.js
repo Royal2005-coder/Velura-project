@@ -410,7 +410,7 @@ export async function initOptions() {
       // Buy Now binding in product details
       const buyNowBtn = document.querySelector(".js-buy-now");
       if (buyNowBtn) {
-        buyNowBtn.addEventListener("click", (e) => {
+        buyNowBtn.addEventListener("click", async (e) => {
           e.preventDefault();
 
           const selectedColorBtn = document.querySelector(".js-color-btn.is-selected");
@@ -432,7 +432,7 @@ export async function initOptions() {
             return;
           }
 
-          addToCart({
+          await addToCart({
             variant_id: matchedVariant.variant_id,
             product_id: product.product_id,
             product_name: product.name,
