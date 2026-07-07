@@ -77,7 +77,7 @@ export async function buildAuthContext(req) {
     if (!profile) {
       profile = await selectOne("users", {
         select: accountSelect,
-        user_id: `eq.${authUser.id}`
+        email: `eq.${authUser.email}`
       }, dbOptions);
     }
   } catch {

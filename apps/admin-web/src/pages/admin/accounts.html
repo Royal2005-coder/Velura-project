@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Velura — Quản lý tài khoản</title>
+  <title>Velura - Quản lý tài khoản</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
@@ -24,6 +24,7 @@
         <div id="account-app">
           <section class="admin-kpi-grid admin-kpi-grid--accounts" aria-label="Thống kê tài khoản">
             <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Tổng tài khoản</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#users"></use></svg></span></div><strong class="admin-kpi-card__value">0</strong></article>
+            <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Tài khoản member</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#users"></use></svg></span></div><strong class="admin-kpi-card__value">0</strong></article>
             <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Đang hoạt động</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#check"></use></svg></span></div><strong class="admin-kpi-card__value">0</strong></article>
             <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Bị khóa</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#lock"></use></svg></span></div><strong class="admin-kpi-card__value">0</strong></article>
             <article class="admin-kpi-card"><div class="admin-kpi-card__head"><p class="admin-kpi-card__label">Chờ phê duyệt</p><span class="admin-kpi-card__icon"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#clock"></use></svg></span></div><strong class="admin-kpi-card__value">0</strong></article>
@@ -31,6 +32,8 @@
           <section class="admin-card admin-card--flush">
             <div class="admin-tabs" role="tablist">
               <button class="admin-tab admin-tab--active" type="button" data-tab="all">Tất cả tài khoản <span></span></button>
+              <button class="admin-tab" type="button" data-tab="members">Thành viên <span></span></button>
+              <button class="admin-tab" type="button" data-tab="admins">Quản trị viên <span></span></button>
               <button class="admin-tab" type="button" data-tab="locked">Bị khóa <span></span></button>
               <button class="admin-tab" type="button" data-tab="promotions">Nâng quyền <span></span></button>
               <button class="admin-tab" type="button" data-tab="logs">Nhật ký</button>

@@ -6,6 +6,7 @@ import {
   createDevMemberSession,
   storeAuthSession
 } from "./auth-session.js";
+import { syncFavoriteOutfitsOnLogin } from "./chatbot.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -318,6 +319,7 @@ function bindSignin() {
         showOtpModal(identity, (d) => {
           storeAuthSession(d);
           mergeCartOnLogin();
+          syncFavoriteOutfitsOnLogin().catch(console.error);
           showToast("Đăng nhập thành công!");
           setTimeout(() => { window.location.href = "/index.html"; }, 1200);
         }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }));
@@ -326,6 +328,7 @@ function bindSignin() {
 
       storeAuthSession(data);
       mergeCartOnLogin();
+      syncFavoriteOutfitsOnLogin().catch(console.error);
       showToast("Đăng nhập thành công!");
       setTimeout(() => { window.location.href = "/index.html"; }, 1200);
     } catch (err) {
@@ -447,6 +450,7 @@ function bindSignup() {
         showOtpModal(identity, (d) => {
           storeAuthSession(d);
           mergeCartOnLogin();
+          syncFavoriteOutfitsOnLogin().catch(console.error);
           showToast("Đăng ký tài khoản thành công! Chào mừng bạn đến với Velura 🎉");
           setTimeout(() => { window.location.href = "/index.html"; }, 1500);
         }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }));

@@ -204,7 +204,7 @@ export function initHomepage() {
       const wishlistClass = isWishlisted ? "active" : "";
 
       return `
-        <article class="product-card">
+        <article class="product-card" data-detail-url="/src/pages/products/detail.html?id=${product.product_id}">
           <div class="product-card__img-wrapper">
             ${badgeHtml}
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
@@ -215,9 +215,6 @@ export function initHomepage() {
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
-            <div class="product-card__img-hover">
-              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
-            </div>
           </div>
 
           <div class="product-card__info">
@@ -241,11 +238,10 @@ export function initHomepage() {
 
           <div class="product-card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              <svg class="icon" style="width: 16px; height: 16px;"><use href="#icon-bag"></use></svg>
-              Mua ngay
+              Mua hàng
             </a>
             <button class="product-card__btn-cart js-add-cart-home" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              <svg class="icon" style="width: 18px; height: 18px;"><use href="#icon-cart"></use></svg>
+              Thêm vào giỏ hàng
             </button>
           </div>
         </article>
@@ -257,10 +253,13 @@ export function initHomepage() {
 
   // Bind cart/wishlist click events
   function bindHomeEvents(products) {
+    bindProductCardNavigation(productsGrid);
+
     const wishlistBtns = productsGrid.querySelectorAll(".js-add-wishlist-home");
     wishlistBtns.forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const productId = btn.getAttribute("data-id");
         const isActive = btn.classList.contains("active");
         try {
@@ -296,6 +295,7 @@ export function initHomepage() {
     cartBtns.forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const productId = btn.getAttribute("data-id");
         const prod = products.find(x => x.product_id === productId);
         if (prod && prod.variants && prod.variants.length > 0) {
@@ -343,7 +343,7 @@ export function initHomepage() {
       const wishlistClass = isWishlisted ? "active" : "";
 
       return `
-        <article class="product-card">
+        <article class="product-card" data-detail-url="/src/pages/products/detail.html?id=${product.product_id}">
           <div class="product-card__img-wrapper">
             ${badgeHtml}
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
@@ -354,9 +354,6 @@ export function initHomepage() {
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
-            <div class="product-card__img-hover">
-              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
-            </div>
           </div>
 
           <div class="product-card__info">
@@ -380,11 +377,10 @@ export function initHomepage() {
 
           <div class="product-card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              <svg class="icon" style="width: 16px; height: 16px;"><use href="#icon-bag"></use></svg>
-              Mua ngay
+              Mua hàng
             </a>
             <button class="product-card__btn-cart js-add-cart-personalized" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              <svg class="icon" style="width: 18px; height: 18px;"><use href="#icon-cart"></use></svg>
+              Thêm vào giỏ hàng
             </button>
           </div>
         </article>
@@ -392,10 +388,13 @@ export function initHomepage() {
     }).join("");
 
     // Bind events
+    bindProductCardNavigation(gridEl);
+
     const wishlistBtns = gridEl.querySelectorAll(".js-add-wishlist-personalized");
     wishlistBtns.forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const productId = btn.getAttribute("data-id");
         const isActive = btn.classList.contains("active");
         try {
@@ -431,6 +430,7 @@ export function initHomepage() {
     cartBtns.forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const productId = btn.getAttribute("data-id");
         const prod = products.find(x => x.product_id === productId);
         if (prod && prod.variants && prod.variants.length > 0) {
@@ -448,6 +448,17 @@ export function initHomepage() {
         } else {
           showToast("Sản phẩm không có biến thể sẵn có.");
         }
+      });
+    });
+  }
+
+  function bindProductCardNavigation(root) {
+    if (!root) return;
+    const cards = root.querySelectorAll(".product-card[data-detail-url]");
+    cards.forEach(card => {
+      card.addEventListener("click", (e) => {
+        if (e.target.closest("a, button, input, select, textarea, label")) return;
+        window.location.href = card.dataset.detailUrl;
       });
     });
   }

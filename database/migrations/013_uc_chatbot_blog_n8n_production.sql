@@ -251,6 +251,90 @@ values
     11,
     false,
     '2026-05-02 09:00:00+07'
+  ),
+  (
+    'dich-le-nhiet-ba-couture-viet',
+    'event',
+    'Thiết kế couture Việt trên bìa tạp chí thời trang châu Á',
+    'Câu chuyện về kỹ thuật thủ công và phom dạ hội được đón nhận trong những bộ hình mới.',
+    'Những thiết kế dành cho sự kiện không chỉ cần nổi bật trước ống kính. Điểm khó là giữ được độ rơi, độ ôm và sự thoải mái khi di chuyển. Velura nhìn về xu hướng này như một cách tinh tế tiếp cận với thời trang cao cấp.',
+    'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=1200&q=80',
+    'Trần Bảo Ngọc',
+    6,
+    false,
+    '2026-05-28 09:00:00+07'
+  ),
+  (
+    'he-mong-dao-vay-cuoi-local-brand',
+    'event',
+    'Váy cưới local brand và xu hướng cô dâu tối giản',
+    'Những bộ váy ren mềm, đường cắt sạch và phụ kiện tinh gọn đang được yêu thích.',
+    'Thời trang cưới đang rời xa những chi tiết quá nặng. Một chiếc váy đẹp cần sự vừa vặn, một chất liệu bắt sáng và cảm giác được là chính mình trong ngày quan trọng.',
+    'https://images.unsplash.com/photo-1523438885200-e635ba2c371e?auto=format&fit=crop&w=1200&q=80',
+    'Lê Minh Châu',
+    7,
+    false,
+    '2026-05-25 09:00:00+07'
+  ),
+  (
+    'london-fashion-week-thuong-hieu-viet',
+    'sustainable',
+    'Thương hiệu Việt và câu chuyện bền vững tại tuần lễ thời trang',
+    'Chất liệu tự nhiên, sản xuất có trách nhiệm và phom dáng lâu bền là trọng tâm mới.',
+    'Bền vững không còn là một nhãn dán truyền thông. Người mặc muốn biết sản phẩm được tạo ra như thế nào, có thể đi cùng họ bao lâu và có thể chăm sóc lại ra sao.',
+    'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&q=80',
+    'Phạm Hoàng Linh',
+    10,
+    false,
+    '2026-05-20 09:00:00+07'
+  ),
+  (
+    'quiet-luxury-velura',
+    'trend',
+    'Quiet luxury: vẻ sang đến từ phom dáng và chất liệu',
+    'Tối giản không có nghĩa là thiếu điểm nhấn. Chìa khóa là tỉ lệ, chất vải và cách phối.',
+    'Mốt quiet luxury đặt trọng tâm vào chi tiết khó nhìn thấy ngay: độ đứng của vai áo, độ rủ của lụa, đường lai váy và cách một màu trung tính làm sáng làn da.',
+    'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=1200&q=80',
+    'Nguyễn Thu Hà',
+    7,
+    false,
+    '2026-05-18 09:00:00+07'
+  ),
+  (
+    'dang-my-linh-phong-cach',
+    'interview',
+    'Đặng Mỹ Linh: thời trang là cách tôi ghi nhớ mỗi một giai đoạn',
+    'Một cuộc trò chuyện về tủ đồ, công việc và những mẫu thiết kế giúp phụ nữ tự tin hơn.',
+    'Phong cách cá nhân không cần phải gắn với quá nhiều quy tắc. Cô chia sẻ rằng những món đồ hay được mặc lại luôn có chung một điểm: vừa vặn với nhịp sống và giúp mình thả lỏng hơn.',
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1200&q=80',
+    'Nguyễn Thu Hà',
+    9,
+    false,
+    '2026-05-06 09:00:00+07'
+  ),
+  (
+    'ao-dai-ren-tet-2026',
+    'interview',
+    'Áo dài ren và cách làm mới trang phục truyền thống',
+    'Ren mềm, tỉ lệ cổ áo gọn và gam màu sạch giúp áo dài có cảm giác hiện đại.',
+    'Những phiên bản áo dài đương đại không gắng đổi mới bằng cách thêm nhiều chi tiết. Chúng đẹp nhờ cấu trúc và chất liệu có độ trong vừa phải.',
+    'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1200&q=80',
+    'Nguyễn Thu Hà',
+    9,
+    false,
+    '2026-05-06 10:00:00+07'
+  ),
+  (
+    'phu-kien-vang-nhe-mua-le-hoi',
+    'trend',
+    'Phụ kiện vàng nhẹ cho mùa lễ hội',
+    'Một đôi khuyên tai mảnh hoặc chiếc kẹp tóc ánh kim có thể làm trang phục sắc nét hơn.',
+    'Thay vì chọn những mẫu phụ kiện quá lớn, hãy thử ánh kim với bề mặt mờ, dáng mảnh và tỉ lệ gọn. Cách này giữ được vẻ sạch, đắt giá mà không lấn át trang phục.',
+    'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1200&q=80',
+    'Trần Bảo Ngọc',
+    6,
+    false,
+    '2026-04-28 09:00:00+07'
   )
 on conflict (slug) do update
 set category_slug = excluded.category_slug,
@@ -264,11 +348,32 @@ set category_slug = excluded.category_slug,
     status = 'published',
     updated_at = now();
 
+update public.blog as b
+set image_url = v.image_url,
+    updated_at = now()
+from (
+  values
+    ('bang-mau-mua-thu-2026', 'https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&w=1200&q=80'),
+    ('phoi-blazer-linen-mua-he', 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=1200&q=80'),
+    ('tu-do-capsule-it-hon-dep-hon', 'https://images.unsplash.com/photo-1509319117193-57bab727e09d?auto=format&fit=crop&w=1200&q=80'),
+    ('dich-le-nhiet-ba-couture-viet', 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=1200&q=80'),
+    ('he-mong-dao-vay-cuoi-local-brand', 'https://images.unsplash.com/photo-1523438885200-e635ba2c371e?auto=format&fit=crop&w=1200&q=80'),
+    ('london-fashion-week-thuong-hieu-viet', 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&q=80'),
+    ('quiet-luxury-velura', 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=1200&q=80'),
+    ('dang-my-linh-phong-cach', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1200&q=80'),
+    ('ao-dai-ren-tet-2026', 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1200&q=80'),
+    ('phu-kien-vang-nhe-mua-le-hoi', 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=1200&q=80')
+) as v(slug, image_url)
+where b.slug = v.slug;
+
 insert into public.policy (slug, title, summary, content, display_order)
 values
   ('returns', 'Chính sách đổi trả', 'Đổi trả trong 7 ngày cho sản phẩm nguyên giá đủ điều kiện.', '[{"heading":"Thời gian đổi trả","items":["7 ngày kể từ ngày nhận hàng đối với sản phẩm nguyên giá.","3 ngày đối với sản phẩm giảm giá trên 30%."]},{"heading":"Điều kiện đổi trả","items":["Sản phẩm còn nguyên tem mác, chưa qua sử dụng.","Còn hóa đơn mua hàng hoặc mã đơn trực tuyến."]}]'::jsonb, 10),
   ('privacy', 'Chính sách bảo mật', 'Velura bảo vệ thông tin cá nhân và chỉ dùng dữ liệu cho vận hành đơn hàng, chăm sóc khách hàng.', '[{"heading":"Thông tin thu thập","items":["Họ tên, số điện thoại, email và địa chỉ giao hàng.","Lịch sử mua sắm và sở thích phong cách nếu khách hàng tự nguyện chia sẻ."]},{"heading":"Cam kết","items":["Không mua bán hoặc trao đổi dữ liệu khách hàng.","Dữ liệu được dùng để xử lý đơn hàng và nâng cao trải nghiệm."]}]'::jsonb, 20),
-  ('shipping', 'Chính sách vận chuyển', 'Miễn phí vận chuyển cho đơn từ 500.000đ và hỗ trợ giao nhanh tại nội thành.', '[{"heading":"Thời gian giao hàng","items":["TP.HCM và Hà Nội: 1-2 ngày làm việc.","Các tỉnh thành khác: 3-5 ngày làm việc."]},{"heading":"Phí vận chuyển","items":["Miễn phí toàn quốc cho đơn từ 500.000đ.","Đơn dưới 500.000đ áp dụng phí theo khu vực."]}]'::jsonb, 30)
+  ('shipping', 'Chính sách vận chuyển', 'Miễn phí vận chuyển cho đơn từ 500.000đ và hỗ trợ giao nhanh tại nội thành.', '[{"heading":"Thời gian giao hàng","items":["TP.HCM và Hà Nội: 1-2 ngày làm việc.","Các tỉnh thành khác: 3-5 ngày làm việc."]},{"heading":"Phí vận chuyển","items":["Miễn phí toàn quốc cho đơn từ 500.000đ.","Đơn dưới 500.000đ áp dụng phí theo khu vực."]}]'::jsonb, 30),
+  ('terms', 'Điều khoản sử dụng', 'Các điều khoản áp dụng khi truy cập website, đặt hàng và sử dụng dịch vụ Velura.', '[{"heading":"Tài khoản và đặt hàng","items":["Khách hàng chịu trách nhiệm về độ chính xác của thông tin giao hàng.","Velura có quyền từ chối đơn hàng có dấu hiệu gian lận hoặc sai thông tin."]},{"heading":"Quyền sở hữu nội dung","items":["Hình ảnh, nội dung và thiết kế trên website thuộc quyền sở hữu của Velura.","Không sao chép hoặc sử dụng lại nội dung khi chưa có chấp thuận bằng văn bản."]}]'::jsonb, 40),
+  ('faq', 'Câu hỏi thường gặp', 'Các câu trả lời nhanh về đặt hàng, hủy đơn, tư vấn size và dịch vụ cá nhân hóa.', '[{"heading":"Tôi có thể đặt hàng không cần tài khoản không?","text":"Có. Velura hỗ trợ đặt hàng nhanh cho khách vãng lai, đồng thời khuyến khích tạo tài khoản để theo dõi đơn và lưu lịch sử mua sắm."},{"heading":"Làm sao để hủy đơn hàng?","text":"Bạn có thể hủy đơn miễn phí trong vòng 2 giờ sau khi đặt qua mục Đơn hàng hoặc liên hệ chăm sóc khách hàng."},{"heading":"Velura có tư vấn size không?","text":"Có. Bạn có thể dùng chatbot, bảng size hoặc nhắn nhân viên để được gợi ý size theo số đo."}]'::jsonb, 50),
+  ('member', 'Chính sách thành viên', 'Velura Club ghi nhận lịch sử mua sắm và mở khóa ưu đãi theo từng hạng thành viên.', '[{"heading":"Các hạng thành viên","items":["Silk: hạng mặc định, tích lũy điểm cho mỗi đơn hàng.","Pearl: từ 5 triệu chi tiêu, ưu đãi 5% trọn năm.","Rose: từ 15 triệu chi tiêu, ưu đãi 10% và quyền tham dự sự kiện.","Onyx: từ 35 triệu chi tiêu, ưu đãi 15% và tư vấn phong cách riêng."]},{"heading":"Sử dụng điểm","text":"Điểm Velura được quy đổi vào đơn hàng kế tiếp theo tỷ lệ do hệ thống hiển thị tại thời điểm thanh toán."}]'::jsonb, 60)
 on conflict (slug) do update
 set title = excluded.title,
     summary = excluded.summary,

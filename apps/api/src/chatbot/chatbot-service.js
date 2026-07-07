@@ -1,9 +1,15 @@
 import { config } from "../config.js";
 import { HttpError } from "../http.js";
 import { CHAT_SUPPORT_ROLES, DEFAULT_ASSISTANT_GREETING, HANDOFF_REPLY } from "./chatbot-constants.js";
+import { createLLMService } from "./llm-service.js";
+
+console.log("[CHATBOT-INIT] config.geminiApiKey:", config.geminiApiKey ? "SET" : "EMPTY");
+console.log("[CHATBOT-INIT] config.geminiModel:", config.geminiModel);
 
 export function createChatbotService({ repository }) {
   if (!repository) throw new TypeError("repository is required");
+
+  const llm = createLLMService({ repository });
 
   return {
     async listSessions(context, searchParams) {
@@ -118,26 +124,89 @@ export function createChatbotService({ repository }) {
         candidateProducts = fallbackSearch.rows || [];
       }
 
-      const n8n = await callN8nWorkflow({
-        session,
-        actor,
-        message: input.message,
-        history: recent.rows || [],
-        products: candidateProducts.map(formatProductForWorkflow)
-      });
+      const conversationHistory = recent.rows || [];
 
-      const responseText = n8n.text || createFallbackReply(input.message, candidateProducts);
-      const selectedProducts = await selectResponseProducts(repository, n8n.productIds, candidateProducts);
-      const productIds = selectedProducts.map((product) => product.product_id);
+      let n8nResult = { used: false };
+      // n8n chatbot disabled per user request, routing directly to Gemini LLM
+      if (false) {
+        n8nResult = await callN8nWorkflow({
+          session,
+          actor,
+          message: input.message,
+          history: conversationHistory,
+          products: candidateProducts.map(formatProductForWorkflow)
+        });
+      }
+
+      // Escalation check based on n8n intent
+      if (false) {
+        return handleHandoff({
+          repository,
+          actor,
+          input,
+          session,
+          userMessage,
+          createdSession
+        });
+      }
+
+      let responseText;
+      let selectedProducts = [];
+      let productIds = [];
+      let llmResult = { used: false, metadata: {}, intent: "" };
+
+      if (n8nResult.used && n8nResult.text) {
+        responseText = n8nResult.text;
+        productIds = n8nResult.productIds || [];
+        if (productIds.length > 0) {
+          selectedProducts = await selectResponseProducts(repository, productIds, []);
+        }
+        llmResult = {
+          used: true,
+          metadata: {
+            ...n8nResult.metadata,
+            n8n_used: true
+          },
+          intent: n8nResult.intent || "general"
+        };
+      } else {
+        let styleProfile = null;
+        if (actor.profileUserId) {
+          styleProfile = await repository.getStyleProfile(actor.profileUserId);
+        }
+        const previousInteractionId = session.metadata?.previous_interaction_id || null;
+
+        const chatResult = await llm.chat(
+          [...conversationHistory, { sender: "user", text: input.message }],
+          candidateProducts,
+          previousInteractionId,
+          styleProfile,
+          actor.profileUserId
+        );
+        responseText = chatResult.text || createFallbackReply(input.message, candidateProducts);
+        selectedProducts = await selectResponseProducts(repository, chatResult.productIds, candidateProducts);
+        productIds = selectedProducts.map((product) => product.product_id);
+        llmResult = {
+          used: chatResult.used,
+          interactionId: chatResult.interactionId,
+          createdTicket: chatResult.createdTicket,
+          metadata: {
+            ...chatResult.metadata,
+            n8n_error: n8nResult.metadata?.n8n_error || undefined
+          },
+          intent: chatResult.intent || "general"
+        };
+      }
+
       const assistantMessage = await repository.insertMessage({
         sessionId: session.session_id,
         sender: "bot",
         text: responseText,
         metadata: {
           product_ids: productIds,
-          n8n: n8n.used,
-          intent: n8n.intent || "product_advice",
-          ...n8n.metadata
+          llm_used: llmResult.used,
+          intent: llmResult.intent || "product_advice",
+          ...llmResult.metadata
         },
         productIds
       });
@@ -146,8 +215,42 @@ export function createChatbotService({ repository }) {
         profileUserId: actor.profileUserId,
         messages: buildAiLogMessages(session.session_id, recent.rows || [], userMessage, assistantMessage),
         recommendedProducts: productIds,
-        escalatedToHuman: false
+        escalatedToHuman: Boolean(llmResult.createdTicket)
       });
+
+      if (llmResult.createdTicket) {
+        const updatedSession = await repository.updateSession(session.session_id, {
+          handoff_status: "requested",
+          support_ticket_id: llmResult.createdTicket.ticket_id,
+          last_message_preview: responseText.slice(0, 180),
+          last_message_at: new Date().toISOString(),
+          metadata: {
+            ...(session.metadata || {}),
+            last_product_ids: productIds,
+            llm_used: llmResult.used,
+            previous_interaction_id: llmResult.interactionId || session.metadata?.previous_interaction_id,
+            support_ticket_id: llmResult.createdTicket.ticket_id,
+            handoff_requested_at: new Date().toISOString()
+          }
+        });
+
+        await queueSupportAlert(repository, {
+          ticket: llmResult.createdTicket,
+          session,
+          message: input.message,
+          actor,
+          guestEmail: input.guestEmail || cleanEmail(session.metadata?.guest_email),
+          guestPhone: input.guestPhone || cleanPhone(session.metadata?.guest_phone)
+        });
+
+        return {
+          session: updatedSession || session,
+          createdSession,
+          messages: [userMessage, assistantMessage],
+          products: selectedProducts.map(formatProductCard),
+          handoff: { ticketId: llmResult.createdTicket.ticket_id, status: "requested" }
+        };
+      }
 
       const updatedSession = await repository.updateSession(session.session_id, {
         last_message_preview: responseText.slice(0, 180),
@@ -155,7 +258,8 @@ export function createChatbotService({ repository }) {
         metadata: {
           ...(session.metadata || {}),
           last_product_ids: productIds,
-          n8n_used: n8n.used
+          llm_used: llmResult.used,
+          previous_interaction_id: llmResult.interactionId || session.metadata?.previous_interaction_id
         }
       });
 
@@ -166,6 +270,60 @@ export function createChatbotService({ repository }) {
         products: selectedProducts.map(formatProductCard),
         handoff: null
       };
+    },
+
+    async saveFavorite(context, body) {
+      if (!context.authUser?.id) {
+        throw new HttpError(401, "AUTH_REQUIRED", "Authentication is required to save favorites");
+      }
+      const { messageId, sessionId } = body;
+      if (!messageId) throw new HttpError(400, "BAD_REQUEST", "messageId is required");
+
+      const messages = await repository.listMessages(sessionId, 150);
+      const message = (messages.rows || []).find(m => m.message_id === messageId);
+      if (!message) throw new HttpError(404, "MESSAGE_NOT_FOUND", "Message not found");
+
+      const productIds = message.product_ids || [];
+
+      const aiLog = await repository.insertAiLog({
+        profileUserId: context.profile.user_id,
+        messages: [{
+          action: "save_favorite_outfit",
+          message_id: messageId,
+          session_id: sessionId,
+          text: message.text
+        }],
+        recommendedProducts: productIds,
+        escalatedToHuman: false
+      });
+
+      return { ok: true, logId: aiLog.log_id };
+    },
+
+    async syncFavorites(context, body) {
+      if (!context.authUser?.id) {
+        throw new HttpError(401, "AUTH_REQUIRED", "Authentication is required to sync favorites");
+      }
+      const favorites = body.favorites || [];
+      const synced = [];
+
+      for (const fav of favorites) {
+        if (!fav.product_ids || fav.product_ids.length === 0) continue;
+        const aiLog = await repository.insertAiLog({
+          profileUserId: context.profile.user_id,
+          messages: [{
+            action: "save_favorite_outfit",
+            message_id: fav.message_id || fav.id,
+            session_id: fav.session_id,
+            text: fav.text || ""
+          }],
+          recommendedProducts: fav.product_ids,
+          escalatedToHuman: false
+        });
+        synced.push(aiLog.log_id);
+      }
+
+      return { ok: true, count: synced.length };
     },
 
     async listAdminSessions(context, searchParams) {
