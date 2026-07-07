@@ -42,7 +42,29 @@ export async function handleProductsRoute(req, res, subRoute, action, corsHeader
           }));
         }
 
-        return sendJson(res, 200, { ...product, variants, category, reviews }, corsHeaders);
+        // Calculate sold_count dynamically for this single product
+        let sold_count = 0;
+        try {
+          const { rows: activeOrders } = await selectRows("orders", { status: "neq.cancelled" }, { useAnonKey: true });
+          const activeOrderIds = new Set(activeOrders.map(o => o.order_id));
+
+          const variantIds = variants.map(v => v.variant_id);
+          const { rows: allOrderItems } = await selectRows("order_item", {}, { useAnonKey: true });
+
+          allOrderItems.forEach(item => {
+            if (activeOrderIds.has(item.order_id)) {
+              const matchesName = item.product_name && product.name && item.product_name.toLowerCase() === product.name.toLowerCase();
+              const matchesVariant = variantIds.includes(item.variant_id);
+              if (matchesName || matchesVariant) {
+                sold_count += Number(item.quantity || 0);
+              }
+            }
+          });
+        } catch (err) {
+          console.error("Error calculating sold_count for single product:", err);
+        }
+
+        return sendJson(res, 200, { ...product, variants, category, reviews, sold_count }, corsHeaders);
       }
 
       const { rows: products } = await selectRows("product", { status: "eq.on_sale" }, { useAnonKey: true });
@@ -61,6 +83,30 @@ export async function handleProductsRoute(req, res, subRoute, action, corsHeader
       const { rows: categories } = await selectRows("category", {}, { useAnonKey: true });
       const { rows: comboItems } = await selectRows("combo_item", {}, { useAnonKey: true });
       
+      // Calculate bulk sold counts
+      const variantSalesMap = new Map();
+      const nameSalesMap = new Map();
+      try {
+        const { rows: activeOrders } = await selectRows("orders", { status: "neq.cancelled" }, { useAnonKey: true });
+        const activeOrderIds = new Set(activeOrders.map(o => o.order_id));
+
+        const { rows: orderItems } = await selectRows("order_item", {}, { useAnonKey: true });
+        orderItems.forEach(item => {
+          if (activeOrderIds.has(item.order_id)) {
+            const qty = Number(item.quantity || 0);
+            if (item.variant_id) {
+              variantSalesMap.set(item.variant_id, (variantSalesMap.get(item.variant_id) || 0) + qty);
+            }
+            if (item.product_name) {
+              const nameKey = item.product_name.toLowerCase();
+              nameSalesMap.set(nameKey, (nameSalesMap.get(nameKey) || 0) + qty);
+            }
+          }
+        });
+      } catch (err) {
+        console.error("Error calculating bulk sold counts:", err);
+      }
+
       const productsWithVariants = products.map(p => {
         let variants = [];
         if (p.is_combo) {
@@ -73,8 +119,26 @@ export async function handleProductsRoute(req, res, subRoute, action, corsHeader
         } else {
           variants = allVariants.filter(v => v.product_id === p.product_id);
         }
+
+        // Calculate sold_count based on either matching name or variants
+        let sold_count = 0;
+        if (p.name) {
+          sold_count = nameSalesMap.get(p.name.toLowerCase()) || 0;
+        }
+        if (sold_count === 0) {
+          variants.forEach(v => {
+            sold_count += variantSalesMap.get(v.variant_id) || 0;
+          });
+        }
+
         const category = categories.find(c => c.category_id === p.category_id);
-        return { ...p, variants, category_slug: category ? category.slug : null, category_name: category ? category.name : null };
+        return { 
+          ...p, 
+          variants, 
+          category_slug: category ? category.slug : null, 
+          category_name: category ? category.name : null,
+          sold_count
+        };
       });
 
       return sendJson(res, 200, productsWithVariants, corsHeaders);

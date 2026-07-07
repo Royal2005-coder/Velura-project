@@ -54,6 +54,11 @@ export async function initOptions() {
       
       // Bind basic info
       titleEl.textContent = product.name;
+      document.title = `${product.name} — Velura`;
+      const breadcrumbTitleEl = document.querySelector(".js-breadcrumb-title");
+      if (breadcrumbTitleEl) {
+        breadcrumbTitleEl.textContent = product.name;
+      }
       
       const formatVND = (val) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(val);
       priceCurrentEl.textContent = formatVND(product.sale_price || product.base_price);
@@ -118,8 +123,10 @@ export async function initOptions() {
             badgesHtml += `<span class="product-badge product-badge--sale" style="background: #E05A47; color: #fff; text-transform: uppercase;">-${discountPct}%</span>`;
           }
         }
-        if (product.is_featured) {
+        if ((product.sold_count || 0) > 0) {
           badgesHtml += `<span class="product-badge product-badge--hot">Bán chạy</span>`;
+        } else if (product.is_featured) {
+          badgesHtml += `<span class="product-badge product-badge--new" style="background:#89A894;color:#fff;">Nổi bật</span>`;
         }
         if (product.is_combo) {
           badgesHtml += `<span class="product-badge product-badge--combo" style="background: #4A90E2; color: #fff; text-transform: uppercase;">Combo Set</span>`;
@@ -338,9 +345,46 @@ export async function initOptions() {
         btn.addEventListener("click", () => {
           colorBtns.forEach(b => b.classList.remove("is-selected"));
           btn.classList.add("is-selected");
+          const selectedColor = btn.getAttribute("data-color");
           if (colorNameLabel) {
-            colorNameLabel.textContent = btn.getAttribute("data-color");
+            colorNameLabel.textContent = selectedColor;
           }
+          
+          // Switch main image to match selected color if found in image URLs
+          if (selectedColor && images.length > 0) {
+            const colorSlug = selectedColor.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+            const tokens = colorSlug.split("-").filter(t => t.length >= 3);
+            
+            let bestIdx = -1;
+            let maxScore = 0;
+            
+            images.forEach((img, idx) => {
+              const urlLower = img.toLowerCase();
+              let score = 0;
+              
+              // Exact slug match (highest priority)
+              if (urlLower.includes(colorSlug) || urlLower.includes(colorSlug.replace("-", ""))) {
+                score += 10;
+              }
+              
+              // Partial token match (e.g. "beige" in "Champagne Beige", or "terracotta" in "Terracotta Rose")
+              tokens.forEach(tok => {
+                if (urlLower.includes(tok)) {
+                  score += 5;
+                }
+              });
+              
+              if (score > maxScore) {
+                maxScore = score;
+                bestIdx = idx;
+              }
+            });
+            
+            if (bestIdx > -1 && maxScore > 0) {
+              setActiveImage(bestIdx);
+            }
+          }
+
           updateStockDisplay();
         });
       });

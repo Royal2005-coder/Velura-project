@@ -53,14 +53,18 @@ export function initHomepage() {
         console.error("Failed to fetch products for homepage:", prodErr);
       }
 
-      // 2. Fetch featured products
-      if (productsGrid && products.length > 0) {
-        // Limit to 8 products for the homepage section
-        const featuredProducts = products.filter(p => p.is_featured).slice(0, 8);
-        // If not enough featured, just take the first 8 products
-        const productsToRender = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 8);
+        // Get featured products that have sales, sorted by sold_count DESC
+        const activeFeatured = products
+          .filter(p => p.is_featured && (p.sold_count || 0) > 0)
+          .sort((a, b) => (b.sold_count || 0) - (a.sold_count || 0));
+        
+        // Get featured products that do not have sales yet
+        const quietFeatured = products
+          .filter(p => p.is_featured && (p.sold_count || 0) === 0);
+
+        // Combine both lists and take the top 8 (best-selling will always appear first)
+        const productsToRender = [...activeFeatured, ...quietFeatured].slice(0, 8);
         renderProducts(productsToRender);
-      }
 
       // 3. Fetch personalized products based on Style Profile body shape
       const personalizedSection = document.querySelector("#personalized-recommendations");
@@ -185,9 +189,16 @@ export function initHomepage() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
-      const badgeHtml = discountPercent > 0
-        ? `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`
-        : (product.is_featured ? `<span class="product-card__badge product-card__badge--best">HOT</span>` : "");
+      let badgeHtml = "";
+      if (discountPercent > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`;
+      } else if (product.is_combo) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
+      } else if ((product.sold_count || 0) > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--best">BÁN CHẠY</span>`;
+      } else if (product.is_featured) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--hot">NỔI BẬT</span>`;
+      }
 
       const isWishlisted = wishlistedProductIds.has(product.product_id);
       const wishlistClass = isWishlisted ? "active" : "";
@@ -317,9 +328,16 @@ export function initHomepage() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
-      const badgeHtml = discountPercent > 0
-        ? `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`
-        : (product.is_featured ? `<span class="product-card__badge product-card__badge--best">HOT</span>` : "");
+      let badgeHtml = "";
+      if (discountPercent > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`;
+      } else if (product.is_combo) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
+      } else if ((product.sold_count || 0) > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--best">BÁN CHẠY</span>`;
+      } else if (product.is_featured) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--hot">NỔI BẬT</span>`;
+      }
 
       const isWishlisted = wishlistedProductIds.has(product.product_id);
       const wishlistClass = isWishlisted ? "active" : "";

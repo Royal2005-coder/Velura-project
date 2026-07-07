@@ -1,5 +1,6 @@
 import { HttpError } from "./http.js";
 import { getAuthUser, selectOne } from "./supabase.js";
+import { verifyJwt } from "./auth-helper.js";
 
 export const rolePages = {
   super_admin: ["dashboard", "accounts", "products", "orders", "reviews", "returns-cskh", "pricing", "promotions", "logs"],
@@ -29,15 +30,44 @@ export async function buildAuthContext(req) {
   const token = getToken(req);
   if (!token) return buildGuestContext();
 
-  const authUser = await getAuthUser(token);
-  if (!authUser?.id) return buildGuestContext();
-
   const accountSelect = [
     "user_id", "auth_user_id", "email", "phone", "full_name", "avatar",
     "role", "admin_role", "is_active", "is_verified", "created_at",
     "last_login_at", "version", "updated_at"
   ].join(",");
   const dbOptions = { useAnonKey: false };
+
+  // 1. Try local custom JWT verification (used by front-end customer accounts)
+  const decoded = verifyJwt(token);
+  if (decoded) {
+    let profile = null;
+    try {
+      profile = await selectOne("users", {
+        select: accountSelect,
+        user_id: `eq.${decoded.user_id}`
+      }, dbOptions);
+    } catch {
+      profile = null;
+    }
+
+    if (!profile) return buildGuestContext();
+
+    const roleCode = profile.role === "admin" ? profile.admin_role : profile.role || "member";
+    return {
+      authUser: { id: profile.user_id, email: profile.email },
+      profile,
+      roleCode,
+      roleName: roleNames[roleCode] || "Member",
+      isAdmin: profile.role === "admin",
+      allowedPages: rolePages[roleCode] || rolePages.member,
+      accessToken: token
+    };
+  }
+
+  // 2. Fallback to Supabase Auth token validation (used by Admin Dashboard)
+  const authUser = await getAuthUser(token);
+  if (!authUser?.id) return buildGuestContext();
+
   let profile = null;
   try {
     profile = await selectOne("users", {

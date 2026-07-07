@@ -566,7 +566,15 @@ function renderOrderSummarySidebar(shippingFee = 0) {
 // 3. INITIALIZE MEMBER CHECKOUT PAGE (payment-user.html)
 async function initPaymentUserPage() {
   const token = localStorage.getItem("velura_token");
-  if (!token) {
+  const rawUser = localStorage.getItem("velura_user");
+  let isLoggedIn = !!token;
+  if (!isLoggedIn && rawUser) {
+    try {
+      const userObj = JSON.parse(rawUser);
+      isLoggedIn = !!userObj.is_dev_mock;
+    } catch (e) {}
+  }
+  if (!isLoggedIn) {
     window.location.href = "/src/pages/checkout/payment-guest.html";
     return;
   }

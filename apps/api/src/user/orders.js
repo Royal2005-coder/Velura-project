@@ -330,6 +330,18 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
       if (existingUser && existingUser.is_active) {
         throw new HttpError(400, "DUPLICATE_ACCOUNT", "Số điện thoại này đã có tài khoản thành viên. Vui lòng đăng nhập để thanh toán.");
       }
+
+      if (email) {
+        const existingUserByEmail = await selectOne("users", { email: `eq.${email}` });
+        if (existingUserByEmail) {
+          if (existingUserByEmail.is_active) {
+            throw new HttpError(400, "DUPLICATE_EMAIL", "Email này đã được sử dụng bởi một tài khoản thành viên. Vui lòng đăng nhập hoặc sử dụng email khác.");
+          }
+          if (!existingUser || existingUser.user_id !== existingUserByEmail.user_id) {
+            throw new HttpError(400, "DUPLICATE_EMAIL", "Email này đã được đăng ký với một số điện thoại khác. Vui lòng sử dụng email khác.");
+          }
+        }
+      }
       
       const otpCode = Math.floor(1000 + Math.random() * 9000).toString(); // 4 digits
       const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();

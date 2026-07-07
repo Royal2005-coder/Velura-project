@@ -561,7 +561,7 @@ function bindResetPassword() {
 
 // ─── Header Auth UI ───────────────────────────────────────────────────────────
 
-function updateHeaderAuthUI() {
+function applyHeaderAuthUI() {
   const token = localStorage.getItem("velura_token");
   const raw = localStorage.getItem("velura_user");
 
@@ -570,10 +570,24 @@ function updateHeaderAuthUI() {
   const profileBtns = document.querySelectorAll(".js-menu-profile-btn");
   const logoutBtns = document.querySelectorAll(".js-menu-logout-btn");
 
-  if (token && raw) {
+  // If header hasn't been injected yet, return false so caller can retry
+  if (signinBtns.length === 0 && profileBtns.length === 0) {
+    return false;
+  }
+
+  const isLoggedIn = raw && (() => {
     try {
       const user = JSON.parse(raw);
-      
+      return !!(token || user.is_dev_mock);
+    } catch {
+      return false;
+    }
+  })();
+
+  if (isLoggedIn) {
+    try {
+      const user = JSON.parse(raw);
+
       // Update dropdown visibility
       signinBtns.forEach(btn => btn.style.display = "none");
       signupBtns.forEach(btn => btn.style.display = "none");
@@ -603,7 +617,7 @@ function updateHeaderAuthUI() {
   logoutBtns.forEach(btn => {
     if (btn.dataset.listenerBound === "true") return;
     btn.dataset.listenerBound = "true";
-    
+
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       clearAuthSession();
@@ -613,6 +627,33 @@ function updateHeaderAuthUI() {
       }, 1000);
     });
   });
+
+  return true;
+}
+
+/**
+ * Update header auth UI. If header is not yet in the DOM (happens when the
+ * vite-plugin-html-inject hasn't finished), retry with a MutationObserver.
+ * Exported so other modules (e.g. after a successful login) can call it.
+ */
+export function updateHeaderAuthUI() {
+  // Try immediately
+  if (applyHeaderAuthUI()) return;
+
+  // Header not ready yet — observe DOM and retry when it appears
+  const observer = new MutationObserver(() => {
+    if (applyHeaderAuthUI()) {
+      observer.disconnect();
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Safety timeout — give up after 3 seconds to avoid memory leaks
+  setTimeout(() => {
+    observer.disconnect();
+    applyHeaderAuthUI(); // One final attempt
+  }, 3000);
 }
 
 // ─── Main entry ──────────────────────────────────────────────────────────────

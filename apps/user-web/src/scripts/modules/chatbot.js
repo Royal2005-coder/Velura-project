@@ -437,7 +437,15 @@ function localGreeting() {
 function getOrCreateGuestId() {
   let guestId = localStorage.getItem(GUEST_ID_KEY);
   if (!isUuid(guestId)) {
-    guestId = crypto.randomUUID();
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      guestId = crypto.randomUUID();
+    } else {
+      guestId = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      });
+    }
     localStorage.setItem(GUEST_ID_KEY, guestId);
   }
   return guestId;

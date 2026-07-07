@@ -162,6 +162,38 @@ function loadProfileData(form) {
     })
     .catch(err => {
       console.error("Failed to load profile:", err);
+      // Fallback: load details from local storage user
+      const rawUser = localStorage.getItem("velura_user");
+      if (rawUser) {
+        try {
+          const profile = JSON.parse(rawUser);
+          const nameInput = form.querySelector('input[name="fullname"]');
+          const phoneInput = form.querySelector('input[name="phone"]');
+          const emailInput = form.querySelector('input[name="email"]');
+          
+          if (nameInput) nameInput.value = profile.full_name || "";
+          if (phoneInput) {
+            phoneInput.value = profile.phone || "";
+            phoneInput.readOnly = true;
+          }
+          if (emailInput) {
+            emailInput.value = profile.email || "";
+            emailInput.readOnly = true;
+          }
+          // Update names on UI
+          const sidebarName = document.querySelector(".account-sidebar__name");
+          if (sidebarName && profile.full_name) {
+            const nameParts = profile.full_name.split(" ");
+            sidebarName.textContent = nameParts.length >= 2 ? (nameParts[nameParts.length - 1] + " " + nameParts[0]) : profile.full_name;
+          }
+          const largeName = document.querySelector(".profile-avatar-name");
+          if (largeName && profile.full_name) {
+            largeName.textContent = profile.full_name;
+          }
+        } catch (e) {
+          console.error("Failed to parse fallback user profile:", e);
+        }
+      }
     });
 }
 

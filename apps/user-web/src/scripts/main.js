@@ -16,7 +16,7 @@ import { initProductReview } from "./modules/product-review.js";
 import { initCollectionsFilter } from "./modules/collections.js";
 import { initReturnRequest } from "./modules/return-request.js";
 import { initBreadcrumb } from "./modules/breadcrumb.js";
-import { initAuthClient } from "./modules/auth-client.js";
+import { initAuthClient, updateHeaderAuthUI } from "./modules/auth-client.js";
 import { initWishlistPage, initWishlistBadge } from "./modules/wishlist.js";
 import { initOrderDetail } from "./modules/order-detail.js";
 import { initTrackOrder } from "./modules/track-order.js";
@@ -27,10 +27,22 @@ import { initContentPages } from "./modules/content.js";
 (function () {
   "use strict";
 
+  // ── Run header auth UI update IMMEDIATELY so header never flashes as "Guest"
+  // updateHeaderAuthUI has built-in retry via MutationObserver if header isn't injected yet.
+  updateHeaderAuthUI();
+
   const path = window.location.pathname;
   if (path.includes("/pages/account/") && !path.includes("track-order.html")) {
     const token = localStorage.getItem("velura_token");
-    if (!token) {
+    const rawUser = localStorage.getItem("velura_user");
+    let isLoggedIn = !!token;
+    if (!isLoggedIn && rawUser) {
+      try {
+        const userObj = JSON.parse(rawUser);
+        isLoggedIn = !!userObj.is_dev_mock;
+      } catch (e) {}
+    }
+    if (!isLoggedIn) {
       window.location.href = "/src/pages/auth/signin.html";
       return;
     }
@@ -56,6 +68,7 @@ import { initContentPages } from "./modules/content.js";
   initReturnRequest();
   initBreadcrumb();
   initAuthClient();
+
   initWishlistPage();
   initWishlistBadge();
   initOrderDetail();

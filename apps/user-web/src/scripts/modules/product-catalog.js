@@ -686,7 +686,7 @@ export function initProductCatalog() {
     } else if (sortVal === "price-desc") {
       filtered.sort((a, b) => (b.sale_price || b.base_price) - (a.sale_price || a.base_price));
     } else if (sortVal === "popular") {
-      filtered.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
+      filtered.sort((a, b) => (b.sold_count || 0) - (a.sold_count || 0));
     } else {
       // newest default
       filtered.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
@@ -760,9 +760,16 @@ export function initProductCatalog() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
-      const badgeHtml = discountPercent > 0
-        ? `<span class="card__badge card__badge--sale">-${discountPercent}%</span>`
-        : (product.is_featured ? `<span class="card__badge" style="background:#A18265;color:#fff;">HOT</span>` : "");
+      let badgeHtml = "";
+      if (discountPercent > 0) {
+        badgeHtml = `<span class="card__badge card__badge--sale">-${discountPercent}%</span>`;
+      } else if (product.is_combo) {
+        badgeHtml = `<span class="card__badge card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
+      } else if ((product.sold_count || 0) > 0) {
+        badgeHtml = `<span class="card__badge card__badge--hot">BÁN CHẠY</span>`;
+      } else if (product.is_featured) {
+        badgeHtml = `<span class="card__badge card__badge--new">NỔI BẬT</span>`;
+      }
 
       // Get unique colors with their hex codes from the variants
       const colorMap = new Map();
