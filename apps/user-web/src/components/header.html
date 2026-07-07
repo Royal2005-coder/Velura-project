@@ -107,11 +107,19 @@
             </a>
 
             <!-- Tài khoản -->
-            <a class="header-action-btn" href="/src/pages/account/profile.html" aria-label="Tài khoản">
-                <span class="btn-icon-wrapper">
-                    <svg class="icon icon-user" style="width: 24px; height: 24px;"><use href="#icon-user"></use></svg>
-                </span>
-            </a>
+            <div class="header-user-dropdown">
+                <a class="header-action-btn" href="/src/pages/account/profile.html" aria-label="Tài khoản">
+                    <span class="btn-icon-wrapper">
+                        <svg class="icon icon-user" style="width: 24px; height: 24px;"><use href="#icon-user"></use></svg>
+                    </span>
+                </a>
+                <div class="user-dropdown-menu">
+                    <a href="/src/pages/auth/signin.html" class="user-dropdown-item js-menu-signin-btn">Đăng nhập</a>
+                    <a href="/src/pages/auth/signin.html?tab=signup" class="user-dropdown-item js-menu-signup-btn">Đăng ký</a>
+                    <a href="/src/pages/account/profile.html" class="user-dropdown-item js-menu-profile-btn" style="display: none;">Tài khoản của tôi</a>
+                    <button class="user-dropdown-item js-menu-logout-btn" style="display: none;">Đăng xuất</button>
+                </div>
+            </div>
 
             <!-- Mobile Hamburger Button Toggle -->
             <button class="menu-toggle" type="button" aria-label="Mở menu" aria-expanded="false">

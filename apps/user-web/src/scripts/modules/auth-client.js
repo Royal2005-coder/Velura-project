@@ -562,33 +562,57 @@ function bindResetPassword() {
 // ─── Header Auth UI ───────────────────────────────────────────────────────────
 
 function updateHeaderAuthUI() {
+  const token = localStorage.getItem("velura_token");
   const raw = localStorage.getItem("velura_user");
-  if (!raw) return;
-  try {
-    const user = JSON.parse(raw);
-    // Update all signin links to profile
-    document.querySelectorAll("a[href*='signin.html']").forEach(link => {
-      link.href = "/src/pages/account/profile.html";
-      const name = (user.full_name || "").split(" ").pop() || "Tài khoản";
-      link.innerHTML = `<span style="font-weight:500;font-size:0.875rem;">${name}</span>`;
-    });
 
-    // Add logout button to header if nav exists
-    const nav = document.querySelector(".site-header__nav-actions, .site-header__actions");
-    if (nav && !nav.querySelector(".js-logout-btn")) {
-      const logoutBtn = document.createElement("button");
-      logoutBtn.className = "js-logout-btn";
-      logoutBtn.setAttribute("title", "Đăng xuất");
-      logoutBtn.style.cssText = "background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:4px 8px;";
-      logoutBtn.textContent = "Đăng xuất";
-      logoutBtn.addEventListener("click", () => {
-        clearAuthSession();
-        showToast("Đã đăng xuất thành công.");
-        setTimeout(() => { window.location.reload(); }, 1000);
+  const signinBtns = document.querySelectorAll(".js-menu-signin-btn");
+  const signupBtns = document.querySelectorAll(".js-menu-signup-btn");
+  const profileBtns = document.querySelectorAll(".js-menu-profile-btn");
+  const logoutBtns = document.querySelectorAll(".js-menu-logout-btn");
+
+  if (token && raw) {
+    try {
+      const user = JSON.parse(raw);
+      
+      // Update dropdown visibility
+      signinBtns.forEach(btn => btn.style.display = "none");
+      signupBtns.forEach(btn => btn.style.display = "none");
+      profileBtns.forEach(btn => btn.style.display = "block");
+      logoutBtns.forEach(btn => btn.style.display = "block");
+
+      // Fallback: Update legacy signin links if any exist outside dropdown
+      document.querySelectorAll("a[href*='signin.html']").forEach(link => {
+        if (!link.classList.contains("user-dropdown-item")) {
+          link.href = "/src/pages/account/profile.html";
+          const name = (user.full_name || "").split(" ").pop() || "Tài khoản";
+          link.innerHTML = `<span style="font-weight:500;font-size:0.875rem;">${name}</span>`;
+        }
       });
-      nav.appendChild(logoutBtn);
+    } catch (e) {
+      console.error("Lỗi parse thông tin user:", e);
     }
-  } catch { /* silent */ }
+  } else {
+    // Not logged in
+    signinBtns.forEach(btn => btn.style.display = "block");
+    signupBtns.forEach(btn => btn.style.display = "block");
+    profileBtns.forEach(btn => btn.style.display = "none");
+    logoutBtns.forEach(btn => btn.style.display = "none");
+  }
+
+  // Bind logout listener
+  logoutBtns.forEach(btn => {
+    if (btn.dataset.listenerBound === "true") return;
+    btn.dataset.listenerBound = "true";
+    
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      clearAuthSession();
+      showToast("Đã đăng xuất thành công.");
+      setTimeout(() => {
+        window.location.href = "/index.html";
+      }, 1000);
+    });
+  });
 }
 
 // ─── Main entry ──────────────────────────────────────────────────────────────
