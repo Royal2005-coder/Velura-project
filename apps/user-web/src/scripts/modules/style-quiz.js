@@ -663,7 +663,7 @@ export function initStyleQuiz() {
     const apiPromise = import("./api.js").then(({ apiRequest }) => {
       return apiRequest("/api/user/style-quiz", {
         method: "POST",
-        body: JSON.stringify({
+        body: {
           height_cm,
           weight_kg,
           chest_cm,
@@ -675,7 +675,7 @@ export function initStyleQuiz() {
           preferred_occasions: occasions,
           favorite_brands: ["Velura"],
           budget_range
-        })
+        }
       });
     }).then((res) => {
       console.log("Style Profile saved successfully!");

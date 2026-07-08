@@ -64,10 +64,10 @@ export function initAiSuggestions() {
   }
 
   // 2. Fetch recommendations from server
-  apiRequest("/api/user/recommendations/style-profile")
+  loadAiSuggestionPayload()
     .then(res => {
       const quiz = res.quiz;
-      if (quiz && (quiz.body_shape || quiz.style_tags)) {
+      if (hasCompletedQuiz(quiz)) {
         // User has already completed the style profile quiz!
         emptyState.style.display = "none";
         if (comboSection) comboSection.style.display = "block";
@@ -364,6 +364,42 @@ export function initAiSuggestions() {
     });
 }
 
+async function loadAiSuggestionPayload() {
+  const recommendations = await apiRequest("/api/user/recommendations/style-profile");
+  if (recommendations?.quiz && hasCompletedQuiz(recommendations.quiz)) {
+    return recommendations;
+  }
+
+  try {
+    const profileResponse = await apiRequest("/api/user/style-quiz");
+    if (profileResponse?.quiz && hasCompletedQuiz(profileResponse.quiz)) {
+      return {
+        ...recommendations,
+        success: true,
+        quiz: profileResponse.quiz,
+        source: recommendations?.source || "style_quiz_recovery"
+      };
+    }
+  } catch (error) {
+    console.warn("[AI Suggestions] Could not recover style quiz directly:", error);
+  }
+
+  return recommendations;
+}
+
+function hasCompletedQuiz(quiz) {
+  return Boolean(
+    quiz &&
+    (
+      quiz.body_shape ||
+      (Array.isArray(quiz.style_tags) && quiz.style_tags.length > 0) ||
+      quiz.skin_tone ||
+      quiz.height_cm ||
+      quiz.weight_kg
+    )
+  );
+}
+
 function translateBodyShape(shape) {
   const shapes = {
     "Hourglass": "Đồng hồ cát",
@@ -521,4 +557,3 @@ async function addComboProductsToCart(combo) {
   await saveCart(cart);
   updateBadge();
 }
-

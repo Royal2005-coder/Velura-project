@@ -108,7 +108,7 @@ export async function buildProductEmbeddingText(product) {
 
 async function getStyleProfile(context, req) {
   if (context?.profile?.user_id) {
-    return selectOne("style_profile", { user_id: `eq.${context.profile.user_id}` }, { useAnonKey: true });
+    return selectOne("style_profile", { user_id: `eq.${context.profile.user_id}` });
   }
 
   const guestSessionId = req.headers["x-guest-session-id"] || "";
