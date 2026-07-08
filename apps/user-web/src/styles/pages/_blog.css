@@ -72,11 +72,11 @@
 .featured-post {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
-  min-height: 520px;
+  min-height: 487px;
   margin-bottom: 42px;
   overflow: hidden;
-  border: 1px solid var(--line, #e8dfd6);
-  border-radius: var(--radius-md, 8px);
+  border: 0.8px solid var(--line, #e8dfd6);
+  border-radius: 16px;
   background: #fff;
 }
 
@@ -270,8 +270,8 @@
   display: flex;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--line, #e8dfd6);
-  border-radius: var(--radius-md, 8px);
+  border: 0.8px solid var(--line, #e8dfd6);
+  border-radius: 16px;
   background: #fff;
   flex-direction: column;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;

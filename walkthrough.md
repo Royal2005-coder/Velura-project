@@ -84,3 +84,20 @@ Hệ thống đã triển khai đầy đủ, tối ưu hóa thiết kế theo ch
     - `AD_CSKH_01+02: Returns page loads with two tabs` ✓
     - `AD_CSKH_03: Returns note about 48h deadline visible` ✓
     - `AD_CSKH_04: Return action buttons exist` ✓
+
+---
+
+## 3. Redesign Blog & Database Migration
+- **Figma Design Alignment (`blog.html` & `_blog.css`)**:
+  - Centered the main header intro according to Figma layers (VELURA JOURNAL -> Tạp chí phong cách -> description).
+  - Redesigned the featured post banner with a landscape-oriented layout (image left, meta details/action right), border radius of `16px`, and thin `0.8px` border matching the precise Figma layer parameters.
+  - Implemented a 3-column articles grid of 9 high-density blog cards, removing the arbitrary sidebar.
+- **Elle-Style Premium Visual Assets Overhaul**:
+  - Replaced all placeholders with high-fidelity, hand-picked fashion editorial images from Unsplash.
+  - Added dynamic parameters (`fit=crop&w=800&h=600&q=80`) to ensure all photos display in crisp fashion and exact portrait/landscape aspect ratios without awkward cropping or stretching.
+- **Database Schema Hardening & Seeding**:
+  - Identified database column discrepancies on the remote Supabase instance (tables like `blog`, `policy`, `static_page` existed with older schemas, blocking the PostgREST API).
+  - Executed a custom migration script (`apply-migrations.mjs`) to cleanly apply SQL migrations `008` (base/sale pricing), `013` (UC Chatbot & blogs), and `014` (vector embeddings) directly via PostgreSQL client connection.
+  - Created and ran `db-seed.mjs` to truncate the stale tables and directly seed all 10 high-quality blog posts with complete content structures, making the dynamic API fully functional.
+  - Re-ran `verify:a06:supabase` to ensure all remote pricing, schema, and anonymous access checks pass with flying colors.
+
