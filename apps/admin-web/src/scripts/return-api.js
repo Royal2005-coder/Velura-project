@@ -50,6 +50,12 @@ export const returnApi = {
   getChatMessages(sessionId, params = {}) {
     return request(`/api/v1/admin/chat-sessions/${encodeURIComponent(sessionId)}/messages${query(params)}`);
   },
+  assignChatSession(sessionId, status) {
+    return request(`/api/v1/admin/chat-sessions/${encodeURIComponent(sessionId)}/assign`, { method: "POST", body: { status } });
+  },
+  sendAgentReply(sessionId, message) {
+    return request(`/api/v1/admin/chat-sessions/${encodeURIComponent(sessionId)}/reply`, { method: "POST", body: { message } });
+  },
   auditLogs(params = {}) {
     return request(`/api/v1/admin/service-audit-logs${query(params)}`);
   }

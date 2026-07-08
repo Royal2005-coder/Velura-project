@@ -1,7 +1,24 @@
 // Velura Frontend API Client Module
-import { clearAuthSession } from "./auth-session.js";
 
 const API_URL = "http://localhost:8787";
+
+
+/**
+ * Check if there is any valid session (real JWT or dev-mock).
+ * Used by UI components to determine login state without making API calls.
+ */
+export function isSessionValid() {
+  const token = localStorage.getItem("velura_token");
+  if (token) return true;
+  const rawUser = localStorage.getItem("velura_user");
+  if (rawUser) {
+    try {
+      const user = JSON.parse(rawUser);
+      return !!user.is_dev_mock;
+    } catch { return false; }
+  }
+  return false;
+}
 
 export async function apiRequest(path, options = {}) {
   const token = localStorage.getItem("velura_token");
@@ -39,7 +56,8 @@ export async function apiRequest(path, options = {}) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 401) {
-        clearAuthSession();
+        // Clear local token session
+        localStorage.removeItem("velura_token");
         const currentPath = window.location.pathname;
         if (
           currentPath.includes("/pages/account/") &&
@@ -49,6 +67,7 @@ export async function apiRequest(path, options = {}) {
           window.location.href = "/src/pages/auth/signin.html";
         }
       }
+
       const error = new Error(data.error?.message || data.message || `Lỗi API (${response.status})`);
       error.status = response.status;
       error.code = data.error?.code || data.code || "API_ERROR";
@@ -58,6 +77,12 @@ export async function apiRequest(path, options = {}) {
     }
     return data;
   } catch (error) {
+    if (!(error.status)) {
+      // Network error (fetch itself failed) — do NOT touch auth session.
+      // This prevents wiping the session when the API server is temporarily down.
+      console.error(`[API ERROR] ${path}:`, error);
+      throw error;
+    }
     console.error(`[API ERROR] ${path}:`, error);
     throw error;
   }

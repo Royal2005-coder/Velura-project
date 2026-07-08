@@ -25,6 +25,20 @@ export async function handleChatbotRoute({ req, res, url, parts, context, header
       return true;
     }
 
+    if (req.method === "POST" && parts[3] === "favorites" && parts.length === 4) {
+      applyChatRateLimit(req, res, limiter, requestMeta.ipAddress);
+      const body = await readJson(req, config.maxBodyBytes);
+      sendJson(res, 200, await service.saveFavorite(context, body), headers);
+      return true;
+    }
+
+    if (req.method === "POST" && parts[3] === "favorites" && parts[4] === "sync" && parts.length === 5) {
+      applyChatRateLimit(req, res, limiter, requestMeta.ipAddress);
+      const body = await readJson(req, config.maxBodyBytes);
+      sendJson(res, 200, await service.syncFavorites(context, body), headers);
+      return true;
+    }
+
     const sessionId = parts[3];
     if (!sessionId) return false;
 

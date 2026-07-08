@@ -108,6 +108,104 @@
       </div>
     </main>
 
+    <!-- Modal Dialog -->
+    <div class="modal" id="address-modal" aria-hidden="true">
+      <div class="modal__backdrop"></div>
+      <div class="modal__container">
+        <div class="modal__content card">
+          <div class="modal__header">
+            <h3 class="modal__title" id="modal-title">Thêm địa chỉ mới</h3>
+            <button class="modal__close js-btn-close-modal" type="button" aria-label="Đóng modal">×</button>
+          </div>
+          <form class="modal__form" id="address-form" novalidate>
+            <input type="hidden" id="address-id" name="addressId" value="" />
+            <div class="profile-form__row-grid">
+              <div class="profile-form__group">
+                <label for="address-fullname">Họ và tên</label>
+                <div class="profile-form__input-wrapper">
+                  <svg class="profile-form__field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <input class="profile-form__input" type="text" id="address-fullname" name="fullname"
+                    placeholder="Nhập họ và tên" required />
+                </div>
+              </div>
+              <div class="profile-form__group">
+                <label for="address-phone">Số điện thoại</label>
+                <div class="profile-form__input-wrapper">
+                  <svg class="profile-form__field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <path
+                      d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                  </svg>
+                  <input class="profile-form__input" type="tel" id="address-phone" name="phone"
+                    placeholder="Nhập số điện thoại" required />
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-form__row-grid profile-form__row-grid--three">
+              <div class="profile-form__group">
+                <label for="address-province">Tỉnh/Thành phố</label>
+                <div class="profile-form__input-wrapper">
+                  <select class="profile-form__input" id="address-province" name="province" required>
+                    <option value="" disabled selected>Chọn Tỉnh/Thành</option>
+                    <option value="HCM">TP. Hồ Chí Minh</option>
+                    <option value="HN">TP. Hà Nội</option>
+                    <option value="DN">TP. Đà Nẵng</option>
+                  </select>
+                </div>
+              </div>
+              <div class="profile-form__group">
+                <label for="address-district">Quận/Huyện</label>
+                <div class="profile-form__input-wrapper">
+                  <select class="profile-form__input" id="address-district" name="district" required disabled>
+                    <option value="" disabled selected>Chọn Quận/Huyện</option>
+                  </select>
+                </div>
+              </div>
+              <div class="profile-form__group">
+                <label for="address-ward">Phường/Xã</label>
+                <div class="profile-form__input-wrapper">
+                  <select class="profile-form__input" id="address-ward" name="ward" required disabled>
+                    <option value="" disabled selected>Chọn Phường/Xã</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="profile-form__group" style="margin-top: 24px;">
+              <label for="address-detail">Địa chỉ chi tiết</label>
+              <div class="profile-form__input-wrapper">
+                <svg class="profile-form__field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                <input class="profile-form__input" type="text" id="address-detail" name="detail"
+                  placeholder="Số nhà, tên đường, khu phố..." required />
+              </div>
+            </div>
+
+            <div class="profile-form__group" style="margin-top: 20px;">
+              <label class="checkbox-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input class="checkbox-input" type="checkbox" id="address-is-default" name="isDefault" />
+                <span class="checkbox-custom"></span>
+                <span>Đặt làm địa chỉ mặc định</span>
+              </label>
+            </div>
+
+            <div class="profile-form__actions" style="margin-top: 32px;">
+              <button class="btn btn--primary" type="submit">Lưu địa chỉ</button>
+              <button class="btn btn--outline js-btn-close-modal" type="button">Hủy</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <load src="/src/components/footer.html" />
   </div>
   <script type="module" src="../../scripts/main.js"></script>

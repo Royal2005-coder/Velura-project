@@ -389,29 +389,80 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 24px;
 }
 
 .detail-action-title {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #2a2522;
   margin: 0;
+  white-space: nowrap;
 }
 
-.detail-support-btn {
-  background-color: #ececf0;
-  color: #2a2522;
-  border: none;
-  padding: 12px 32px;
+.detail-action-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.detail-action-btn {
+  height: 48px;
+  padding: 0 28px;
   border-radius: 8px;
   font-size: 1.0625rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
+  transition: all 0.2s ease;
   font-family: "DM Sans", sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
-.detail-support-btn:hover {
+.detail-action-btn--primary {
+  background-color: var(--terracotta, #c97b63);
+  color: #ffffff;
+  border: none;
+}
+
+.detail-action-btn--primary:hover {
+  background-color: var(--terracotta-h, #b36a53);
+  transform: translateY(-1px);
+}
+
+.detail-action-btn--outline {
+  background-color: #faf6f2;
+  border: 1px solid #d6c3b0;
+  color: #734724;
+}
+
+.detail-action-btn--outline:hover {
+  background-color: #efe7dd;
+  transform: translateY(-1px);
+}
+
+.detail-action-btn--danger {
+  background-color: transparent;
+  border: 1px solid #d93838;
+  color: #d93838;
+}
+
+.detail-action-btn--danger:hover {
+  background-color: #fff2f2;
+  transform: translateY(-1px);
+}
+
+.detail-action-btn--support {
+  background-color: #ececf0;
+  color: #2a2522;
+  border: none;
+}
+
+.detail-action-btn--support:hover {
   background-color: #dfdfe4;
   transform: translateY(-1px);
 }
@@ -453,11 +504,18 @@
 
   .detail-action-card {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
     gap: 16px;
   }
 
-  .detail-support-btn {
+  .detail-action-group {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .detail-action-btn {
     width: 100%;
     text-align: center;
   }

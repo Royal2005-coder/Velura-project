@@ -119,17 +119,74 @@ export function createChatbotRepository() {
     },
 
     async searchProducts(query, limit = 6) {
-      const value = sanitizeSearch(query);
+      const rawValue = String(query || "").trim();
+      if (!rawValue) {
+        return withChatError(() => selectRows("product", {
+          select: CHAT_PRODUCT_SELECT,
+          status: "eq.on_sale",
+          order: "is_featured.desc,updated_at.desc",
+          limit
+        }));
+      }
+
+      const value = sanitizeSearch(rawValue);
       const request = {
         select: CHAT_PRODUCT_SELECT,
         status: "eq.on_sale",
         order: "is_featured.desc,updated_at.desc",
         limit
       };
-      if (value) {
-        request.or = `(name.ilike.*${value}*,sku.ilike.*${value}*,description.ilike.*${value}*)`;
+      
+      request.or = `(name.ilike.*${value}*,sku.ilike.*${value}*,description.ilike.*${value}*)`;
+      const res = await withChatError(() => selectRows("product", request));
+      if (res.rows && res.rows.length > 0) {
+        return res;
       }
-      return withChatError(() => selectRows("product", request));
+
+      const words = value.split(" ")
+        .map(w => w.trim())
+        .filter(w => w.length > 1 && !["cho", "toi", "tôi", "mot", "một", "cai", "cái", "mau", "màu", "cua", "của", "nay", "này", "chiec", "chiếc", "voi", "với", "ban", "bạn"].includes(w.toLowerCase()));
+
+      if (words.length > 0) {
+        const allProducts = [];
+        const seenIds = new Set();
+        
+        for (const word of words.slice(0, 4)) {
+          const wordReq = {
+            select: CHAT_PRODUCT_SELECT,
+            status: "eq.on_sale",
+            or: `(name.ilike.*${word}*,sku.ilike.*${word}*,description.ilike.*${word}*)`,
+            limit: limit * 2
+          };
+          const wordRes = await withChatError(() => selectRows("product", wordReq));
+          for (const p of wordRes.rows || []) {
+            if (!seenIds.has(p.product_id)) {
+              seenIds.add(p.product_id);
+              p._matchScore = 1;
+              allProducts.push(p);
+            } else {
+              const existing = allProducts.find(x => x.product_id === p.product_id);
+              if (existing) existing._matchScore += 1;
+            }
+          }
+        }
+
+        allProducts.sort((a, b) => {
+          if (b._matchScore !== a._matchScore) {
+            return b._matchScore - a._matchScore;
+          }
+          const aFeatured = a.is_featured ? 1 : 0;
+          const bFeatured = b.is_featured ? 1 : 0;
+          if (bFeatured !== aFeatured) {
+            return bFeatured - aFeatured;
+          }
+          return new Date(b.updated_at) - new Date(a.updated_at);
+        });
+
+        return { rows: allProducts.slice(0, limit) };
+      }
+
+      return res;
     },
 
     async listProductsByIds(productIds) {
@@ -141,6 +198,49 @@ export function createChatbotRepository() {
         status: "eq.on_sale",
         limit: Math.min(ids.length, 12)
       }));
+    },
+
+    async listCategories() {
+      return withChatError(() => selectRows("category", {
+        select: "category_id,name,slug",
+        order: "name.asc",
+        limit: 50
+      }));
+    },
+
+    async getProductById(productId) {
+      const result = await withChatError(() => selectRows("product", {
+        select: CHAT_PRODUCT_SELECT,
+        product_id: `eq.${productId}`,
+        limit: 1
+      }));
+      return result.rows?.[0] || null;
+    },
+
+    async searchOrders(filter) {
+      return withChatError(() => selectRows("orders", {
+        select: "order_id,order_date,status,shipping_name,shipping_phone,total_amount,tracking_code",
+        limit: 5,
+        ...filter
+      }));
+    },
+
+    async getStyleProfile(userId) {
+      if (!userId) return null;
+      return withChatError(() => selectOne("style_profile", {
+        user_id: `eq.${userId}`
+      }));
+    },
+
+    async updateStyleProfile(userId, patch) {
+      if (!userId) return null;
+      const rows = await withChatError(() => updateRows("style_profile", {
+        user_id: `eq.${userId}`
+      }, {
+        ...patch,
+        updated_at: new Date().toISOString()
+      }));
+      return rows[0] || null;
     },
 
     async insertAiLog(input) {

@@ -25,6 +25,9 @@ export function sendNoContent(res, extraHeaders = {}) {
 
 export function sendError(res, error, extraHeaders = {}, requestId = "") {
   const status = error.status || 500;
+  if (status >= 500) {
+    console.error("Internal Server Error:", error);
+  }
   const payload = {
     error: {
       code: error.code || "INTERNAL_ERROR",

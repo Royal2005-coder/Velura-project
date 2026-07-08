@@ -34,7 +34,7 @@ import { createContentRepository } from "./content/content-repository.js";
 import { createContentService } from "./content/content-service.js";
 import { handleContentRoute } from "./content/content-router.js";
 import { createFixedWindowLimiter } from "./rate-limit.js";
-import { handleUserRoute } from "./user-routes.js";
+import { handleUserRoute } from "./user/index.js";
 import { handleWishlistRoute } from "./v1-wishlist-routes.js";
 import { handleRecommendationRoute } from "./recommendation.controller.js";
 

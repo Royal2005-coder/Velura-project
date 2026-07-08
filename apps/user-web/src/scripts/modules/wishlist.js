@@ -2,6 +2,37 @@ import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
 import { addToCart } from "./cart.js";
 
+// Helper to update all wishlist badges in the UI
+export function updateWishlistBadge() {
+  const token = localStorage.getItem("velura_token");
+  if (!token) {
+    const badges = document.querySelectorAll(".wishlist-badge");
+    badges.forEach(b => b.style.display = "none");
+    return;
+  }
+  const count = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+  const badges = document.querySelectorAll(".wishlist-badge");
+  badges.forEach(badge => {
+    badge.textContent = count;
+    badge.style.display = count > 0 ? "inline-flex" : "none";
+  });
+}
+
+// Initial fetch of wishlist to cache the count in localStorage
+export async function initWishlistBadge() {
+  updateWishlistBadge();
+  const token = localStorage.getItem("velura_token");
+  if (!token) return;
+  try {
+    const data = await apiRequest("/api/user/wishlist");
+    const items = data.items || [];
+    localStorage.setItem("velura_wishlist_count", items.length);
+    updateWishlistBadge();
+  } catch (err) {
+    console.error("Failed to load wishlist count:", err);
+  }
+}
+
 export function initWishlistPage() {
   const pageContainer = document.querySelector(".page-wishlist");
   if (!pageContainer) return;
@@ -17,6 +48,9 @@ export function initWishlistPage() {
   apiRequest("/api/user/wishlist")
     .then(data => {
       const items = data.items || [];
+      localStorage.setItem("velura_wishlist_count", items.length);
+      updateWishlistBadge();
+
       if (subtitle) {
         subtitle.textContent = `Bạn đã lưu ${items.length} sản phẩm`;
       }
@@ -41,7 +75,11 @@ export function initWishlistPage() {
         card.setAttribute("data-id", product.product_id);
         
         // Format price
-        const priceFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.sale_price);
+        const priceVal = product.sale_price || product.base_price;
+        const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
+
+        const priceFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(priceVal);
+        const oldPriceFormatted = oldPriceVal ? new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(oldPriceVal) : "";
 
         card.innerHTML = `
           <div class="wishlist-card__image-wrapper">
@@ -56,6 +94,7 @@ export function initWishlistPage() {
             <h3 class="wishlist-card__name"><a href="/src/pages/products/detail.html?id=${product.product_id}" style="text-decoration:none; color:inherit;">${product.name}</a></h3>
             <div class="wishlist-card__price-block">
               <span class="wishlist-card__price">${priceFormatted}</span>
+              ${oldPriceVal ? `<span class="wishlist-card__old-price" style="text-decoration: line-through; color: #8c857e; font-size: 1.0625rem;">${oldPriceFormatted}</span>` : ""}
             </div>
             <button class="wishlist-card__action-btn js-add-cart-fast" type="button">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -76,6 +115,29 @@ export function initWishlistPage() {
     .catch(err => {
       grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 48px 0; color: #d9534f;">Không thể tải danh sách yêu thích: ${err.message}</div>`;
     });
+
+  // Handle wishlist sharing functionality
+  const shareBtn = document.querySelector(".wishlist-share-btn");
+  if (shareBtn) {
+    shareBtn.addEventListener("click", () => {
+      const shareUrl = window.location.href;
+      if (navigator.share) {
+        navigator.share({
+          title: "Danh sách sản phẩm yêu thích của tôi tại Velura Store",
+          url: shareUrl
+        }).catch(err => console.log(err));
+      } else {
+        // Fallback: Copy to clipboard
+        navigator.clipboard.writeText(shareUrl)
+          .then(() => {
+            showToast("Đã sao chép liên kết danh sách yêu thích vào bộ nhớ tạm!");
+          })
+          .catch(() => {
+            showToast("Không thể sao chép liên kết");
+          });
+      }
+    });
+  }
 }
 
 function bindWishlistEvents(grid, subtitle) {
@@ -103,6 +165,9 @@ function bindWishlistEvents(grid, subtitle) {
           
           // Update count
           const remainingCards = grid.querySelectorAll(".wishlist-card");
+          localStorage.setItem("velura_wishlist_count", remainingCards.length);
+          updateWishlistBadge();
+
           if (subtitle) {
             subtitle.textContent = `Bạn đã lưu ${remainingCards.length} sản phẩm`;
           }
@@ -121,7 +186,7 @@ function bindWishlistEvents(grid, subtitle) {
         }, 300);
 
       } catch (err) {
-        alert(err.message || "Xóa sản phẩm thất bại");
+        showToast(err.message || "Xóa sản phẩm thất bại");
       }
       return;
     }

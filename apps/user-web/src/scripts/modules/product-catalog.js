@@ -2,6 +2,7 @@ import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
 import { addToCart } from "./cart.js";
 import { getCurrentRole } from "./auth-session.js";
+import { updateWishlistBadge } from "./wishlist.js";
 
 /**
  * ES6 Module: Product Catalog Controller
@@ -432,6 +433,8 @@ export function initProductCatalog() {
         const wishlistData = await apiRequest("/api/user/wishlist");
         const items = wishlistData.items || [];
         wishlistedProductIds = new Set(items.map(item => item.product_id));
+        localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+        updateWishlistBadge();
       } catch (wishlistErr) {
         // Quietly fail if guest
         wishlistedProductIds = new Set();
@@ -710,7 +713,7 @@ export function initProductCatalog() {
     } else if (sortVal === "price-desc") {
       filtered.sort((a, b) => (b.sale_price || b.base_price) - (a.sale_price || a.base_price));
     } else if (sortVal === "popular") {
-      filtered.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
+      filtered.sort((a, b) => (b.sold_count || 0) - (a.sold_count || 0));
     } else {
       // newest default
       filtered.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
@@ -784,9 +787,16 @@ export function initProductCatalog() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
-      const badgeHtml = discountPercent > 0
-        ? `<span class="card__badge card__badge--sale">-${discountPercent}%</span>`
-        : (product.is_featured ? `<span class="card__badge" style="background:#A18265;color:#fff;">HOT</span>` : "");
+      let badgeHtml = "";
+      if (discountPercent > 0) {
+        badgeHtml = `<span class="card__badge card__badge--sale">-${discountPercent}%</span>`;
+      } else if (product.is_combo) {
+        badgeHtml = `<span class="card__badge card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
+      } else if ((product.sold_count || 0) > 0) {
+        badgeHtml = `<span class="card__badge card__badge--hot">BÁN CHẠY</span>`;
+      } else if (product.is_featured) {
+        badgeHtml = `<span class="card__badge card__badge--new">NỔI BẬT</span>`;
+      }
 
       // Get unique colors with their hex codes from the variants
       const colorMap = new Map();
@@ -803,7 +813,7 @@ export function initProductCatalog() {
       const wishlistClass = isWishlisted ? "active" : "";
 
       return `
-        <article class="card card--product">
+        <article class="card card--product" data-detail-url="/src/pages/products/detail.html?id=${product.product_id}">
           <div class="card__image-container product-card__image-wrapper">
             ${badgeHtml}
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
@@ -814,9 +824,6 @@ export function initProductCatalog() {
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
-            <div class="product-card__img-hover">
-              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
-            </div>
           </div>
           <div class="card__info">
             <div class="card__rating">
@@ -840,11 +847,10 @@ export function initProductCatalog() {
           </div>
           <div class="card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              <svg class="icon" style="width: 16px; height: 16px;"><use href="#icon-bag"></use></svg>
-              Mua ngay
+              Mua hàng
             </a>
             <button class="card__btn-cart js-add-cart-catalog" type="button" aria-label="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              <svg class="icon" style="width: 18px; height: 18px;"><use href="#icon-cart"></use></svg>
+              Thêm vào giỏ hàng
             </button>
           </div>
         </article>
@@ -886,10 +892,19 @@ export function initProductCatalog() {
 
   // Wishlist and Cart Event Listeners
   function bindCardEvents(productsList) {
+    const cards = productGrid.querySelectorAll(".card--product[data-detail-url]");
+    cards.forEach(card => {
+      card.addEventListener("click", (e) => {
+        if (e.target.closest("a, button, input, select, textarea, label")) return;
+        window.location.href = card.dataset.detailUrl;
+      });
+    });
+
     const wishlistBtns = productGrid.querySelectorAll(".js-add-wishlist-catalog");
     wishlistBtns.forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const productId = btn.getAttribute("data-id");
         const isActive = btn.classList.contains("active");
         try {
@@ -898,6 +913,8 @@ export function initProductCatalog() {
             btn.classList.remove("active");
             wishlistedProductIds.delete(productId);
             showToast("Đã xóa khỏi danh sách yêu thích");
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+            updateWishlistBadge();
           } else {
             await apiRequest("/api/user/wishlist", {
               method: "POST",
@@ -906,6 +923,8 @@ export function initProductCatalog() {
             btn.classList.add("active");
             wishlistedProductIds.add(productId);
             showToast("Đã thêm vào danh sách yêu thích!");
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+            updateWishlistBadge();
           }
         } catch (err) {
           if (err.status === 401) {
@@ -921,6 +940,7 @@ export function initProductCatalog() {
     cartBtns.forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const productId = btn.getAttribute("data-id");
         const prod = productsList.find(x => x.product_id === productId);
         if (prod && prod.variants && prod.variants.length > 0) {
