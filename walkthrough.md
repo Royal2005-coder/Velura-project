@@ -59,6 +59,17 @@ Hệ thống đã triển khai đầy đủ, tối ưu hóa thiết kế theo ch
 ### 2.3. Active Returns Seed Script
 - Created a robust seed script [seed-active-returns.mjs](file:///c:/Users/ADMIN/Downloads/Velura-Images/database/seed/seed-active-returns.mjs) that auto-discovers database orders containing items (or generates a mock user, order, and order item structure if none exist), inserting fresh return requests in multiple statuses (`pending`, `approved`, `received`) and open/processing tickets.
 
+### 3. About Us Page
+- **Structure Refining ([about.html](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/user-web/src/pages/about/about.html))**:
+  - Removed overlapping text box overlay inside the hero section to let the visual photo breathe as a clean, full-width photo showcase.
+  - Aligned all layout components dynamically.
+  - Upgraded the Triết lý thương hiệu grid to have a symmetric 3-column layout of value cards, stripping away all inline styles.
+- **Styling Refinements ([_about.css](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/user-web/src/styles/pages/_about.css))**:
+  - Styled `.about-hero` as a clean responsive showcase banner.
+  - Styled symmetric value cards with a warm soft peach tint (`#fdf6f2`), terracotta border (`rgba(201, 123, 99, 0.12)`), and round icon containers (`rgba(201, 123, 99, 0.1)`).
+  - Paired Playfair Display and Outfit typography appropriately.
+  - Enabled active scale animations (`scale(0.98)`) and translations on all clickable cards and buttons.
+
 ---
 
 ## Verification Results
