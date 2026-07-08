@@ -1,6 +1,7 @@
 import { HttpError, readJson, sendJson } from "../http.js";
 import { selectOne, selectRows, insertRow, updateRows, deleteRows } from "../supabase.js";
 import { requireUserAuth } from "./auth.js";
+import { createNotification } from "./notifications.js";
 
 export async function handleReviewsRoute(req, res, corsHeaders, context) {
   const profile = requireUserAuth(context);
@@ -113,6 +114,25 @@ export async function handleReviewsRoute(req, res, corsHeaders, context) {
     );
 
     const finalReview = updatedRows[0] || review;
+
+    // Send moderation notification
+    if (finalStatus === "approved") {
+      await createNotification(
+        profile.user_id,
+        "review_moderation",
+        "Đánh giá của bạn đã được duyệt ✅",
+        "Cảm ơn bạn! Đánh giá sản phẩm trong đơn hàng của bạn đã được duyệt thành công.",
+        "/src/pages/account/my-orders.html"
+      );
+    } else if (finalStatus === "rejected") {
+      await createNotification(
+        profile.user_id,
+        "review_moderation",
+        "Đánh giá không đạt kiểm duyệt ❌",
+        `Đánh giá sản phẩm của bạn bị từ chối. Lý do: ${rejectionReason || "Không xác định"}`,
+        "/src/pages/account/my-orders.html"
+      );
+    }
 
     console.log(`[AUTO-MODERATION Result] Đánh giá ${review.review_id} -> Kết quả: ${finalStatus.toUpperCase()}${rejectionReason ? ` (Lý do: ${rejectionReason})` : ""}`);
 

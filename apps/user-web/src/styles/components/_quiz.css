@@ -184,6 +184,17 @@ body.page-quiz-flow {
   width: calc(25% - 9px);
 }
 
+.quiz-option-group--flex-wrap {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.quiz-option-group--flex-wrap .quiz-btn-select {
+  flex: 1 1 calc(25% - 9px);
+  min-width: 130px;
+}
+
 .quiz-btn-select {
   height: 48px;
   background: #fff;
@@ -832,7 +843,8 @@ body.page-quiz-flow {
   }
 
   .quiz-option-group--thirds .quiz-btn-select,
-  .quiz-option-group--quarters .quiz-btn-select {
+  .quiz-option-group--quarters .quiz-btn-select,
+  .quiz-option-group--flex-wrap .quiz-btn-select {
     width: 100%;
   }
 

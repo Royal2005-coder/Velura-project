@@ -1,11 +1,12 @@
 import { apiRequest } from "./api.js";
+import { showToast } from "./account-profile.js";
 
 export function initTrackOrder() {
   const container = document.querySelector(".track-order-page");
   if (!container) return;
 
   const urlParams = new URLSearchParams(window.location.search);
-  const orderId = urlParams.get("id");
+  const orderId = urlParams.get("id") || urlParams.get("code") || urlParams.get("tracking_code");
 
   // DOM elements
   const searchInput = document.getElementById("js-track-search-input");
@@ -24,6 +25,9 @@ export function initTrackOrder() {
   const addressTextEl = document.getElementById("js-track-address");
   const phoneEl = document.getElementById("js-track-phone");
 
+  const trackGridEl = document.getElementById("js-track-grid");
+  const emptyStateEl = document.getElementById("js-track-empty-state");
+
   // Setup search input initial value
   if (orderId && searchInput) {
     searchInput.value = orderId;
@@ -32,6 +36,10 @@ export function initTrackOrder() {
   // Load initial order if provided in URL
   if (orderId) {
     fetchOrderTracking(orderId);
+  } else {
+    // Show empty state by default if no code/id in URL
+    if (trackGridEl) trackGridEl.style.display = "none";
+    if (emptyStateEl) emptyStateEl.style.display = "flex";
   }
 
   // Add Event Listeners
@@ -97,7 +105,17 @@ export function initTrackOrder() {
       });
   }
 
+  function getDistrict(address) {
+    if (!address) return "Điểm nhận";
+    const match = address.match(/(Quận\s+\d+|Quận\s+[A-Za-zĐđĂăÂâÊêÔôƠơƯưỨứ\s]+|Q\.\d+|Q\.[A-Za-zĐđ\s]+|Huyện\s+[A-Za-zĐđ\s]+|Thành\s+phố\s+[A-Za-zĐđ\s]+|Thị\s+xã\s+[A-Za-zĐđ\s]+)/i);
+    return match ? match[0].trim() : "Điểm nhận";
+  }
+
   function renderTracking(order) {
+    // Show grid and hide empty state
+    if (trackGridEl) trackGridEl.style.display = "grid";
+    if (emptyStateEl) emptyStateEl.style.display = "none";
+
     // 1. Set codes and status
     const trackingCode = order.tracking_code || order.order_id.slice(0, 8).toUpperCase();
     if (trackCodeEl) trackCodeEl.textContent = `#${trackingCode}`;
@@ -158,6 +176,52 @@ export function initTrackOrder() {
     if (recipientNameEl) recipientNameEl.textContent = order.shipping_name || "Chưa cập nhật";
     if (addressTextEl) addressTextEl.textContent = order.shipping_address || "Chưa cập nhật";
     if (phoneEl) phoneEl.textContent = order.shipping_phone || "Chưa cập nhật";
+
+    // 6. Map Visualization Details
+    const mapStartLabel = document.getElementById("js-track-map-start-label");
+    const mapEndLabel = document.getElementById("js-track-map-end-label");
+    const mapProgress = document.getElementById("js-track-map-progress");
+    const mapTruckIcon = document.getElementById("js-track-map-truck-icon");
+    const mapDetailsText = document.getElementById("js-track-map-details-text");
+
+    const destDistrict = getDistrict(order.shipping_address);
+    if (mapStartLabel) mapStartLabel.textContent = "Kho Velura";
+    if (mapEndLabel) mapEndLabel.textContent = destDistrict;
+
+    let progressPercent = "0%";
+    let detailsText = `Kho Velura → ${destDistrict} • Chờ xác nhận`;
+
+    switch (order.status) {
+      case "pending":
+        progressPercent = "0%";
+        detailsText = `Kho Velura → ${destDistrict} • Đang chờ xác nhận`;
+        break;
+      case "confirmed":
+        progressPercent = "20%";
+        detailsText = `Kho Velura → ${destDistrict} • Đã xác nhận đơn hàng`;
+        break;
+      case "preparing":
+        progressPercent = "45%";
+        detailsText = `Kho Velura → ${destDistrict} • Đang đóng gói sản phẩm`;
+        break;
+      case "shipping":
+        progressPercent = "75%";
+        detailsText = `Kho Velura → ${destDistrict} • Đang vận chuyển`;
+        break;
+      case "delivered":
+      case "completed":
+        progressPercent = "100%";
+        detailsText = `Kho Velura → ${destDistrict} • Đã giao hàng thành công`;
+        break;
+      case "cancelled":
+        progressPercent = "0%";
+        detailsText = `Kho Velura → ${destDistrict} • Đơn hàng đã bị hủy`;
+        break;
+    }
+
+    if (mapProgress) mapProgress.style.width = progressPercent;
+    if (mapTruckIcon) mapTruckIcon.style.left = progressPercent;
+    if (mapDetailsText) mapDetailsText.textContent = detailsText;
   }
 
   function renderTimeline(order) {
@@ -249,6 +313,11 @@ export function initTrackOrder() {
   }
 
   function showError(msg) {
-    alert(msg);
+    try {
+      showToast(msg);
+    } catch (e) {
+      alert(msg);
+    }
   }
 }
+

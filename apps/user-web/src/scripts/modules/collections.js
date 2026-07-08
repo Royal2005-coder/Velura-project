@@ -17,51 +17,43 @@ export function initCollectionsFilter() {
   const COLLECTION_META = {
     'Soft Ceremony': {
       id: 'soft-ceremony',
-      vnName: 'Nghi lễ Dịu dàng',
+      vnName: 'Soft Ceremony',
       year: 'SOFT CEREMONY 2026',
       tag: 'Thanh lịch & Kiêu sa',
-      story: 'Những thiết kế mang phom dáng bất đối xứng tôn eo, gam màu thanh nhã như Ivory, Cocoa mang đến vẻ ngoài sang trọng, chỉn chu cho các buổi tiệc nhẹ và dịp đặc biệt.',
-      banner: '/src/assets/images/collection-1.png'
+      story: 'Soft Ceremony là bộ sưu tập dành cho những dịp cần sự chỉn chu hơn thường ngày như tiệc nhẹ, hẹn hò, chụp ảnh hay những buổi gặp gỡ đặc biệt. Lấy cảm hứng từ vẻ đẹp nữ tính và thanh lịch, các thiết kế được xây dựng với phom dáng mềm mại, đường cắt tinh tế cùng những điểm nhấn vừa đủ, giúp tôn lên nét duyên dáng và sự tự tin của người mặc. Với bảng màu trung tính, ấm và dịu, bộ sưu tập mang đến cảm giác sang trọng, hiện đại, dễ ứng dụng và phù hợp với nhiều hoàn cảnh khác nhau.',
+      banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Soft-Ceremony_cover.png'
     },
     'The Urban Rhythm': {
       id: 'the-urban-rhythm',
-      vnName: 'Nhịp điệu Đô thị',
-      year: 'THE URBAN RHYTHM',
+      vnName: 'The Urban Rhythm',
+      year: 'THE URBAN RHYTHM 2026',
       tag: 'Năng động & Thời thượng',
-      story: 'Tập trung vào sự linh hoạt giữa phong cách công sở và dạo phố hiện đại. Chất liệu linen tự nhiên kết hợp lụa mềm mại tạo cảm giác tự tin cả ngày dài bận rộn.',
-      banner: '/src/assets/images/collection-2.png'
-    },
-    'Modern Academia': {
-      id: 'modern-academia',
-      vnName: 'Học viện Hiện đại',
-      year: 'MODERN ACADEMIA 2026',
-      tag: 'Trẻ trung & Tri thức',
-      story: 'Cảm hứng từ phong cách Preppy học đường pha chút phá cách hiện đại, sử dụng các gam màu ấm và họa tiết kẻ thanh lịch đầy cá tính.',
-      banner: '/src/assets/images/image-4.png'
+      story: 'Urban Rhythm là bộ sưu tập dành cho những quý cô hiện đại, yêu thích sự linh hoạt và cân bằng giữa môi trường công sở lẫn nhịp sống phố thị năng động. Lấy cảm hứng từ phong cách tối giản và thanh lịch, các thiết kế tập trung vào phom dáng hiện đại, đường cắt sắc sảo cùng tính ứng dụng cao, giúp tôn lên thần thái tự tin, độc lập của người mặc. Với bảng màu trung tính, thời thượng như beige ấm, xám charcoal, trắng kem và xanh olive, bộ sưu tập mang đến diện mạo sang trọng, dễ dàng mix-and-match và phù hợp cho cả những ngày làm việc bận rộn hay những buổi dạo phố cuối tuần.',
+      banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/Velura_urban-rythm_cover.png'
     },
     'Weekend Escape': {
       id: 'weekend-escape',
-      vnName: 'Trốn chạy Cuối tuần',
-      year: 'WEEKEND ESCAPE',
+      vnName: 'Weekend Escape',
+      year: 'WEEKEND ESCAPE 2026',
       tag: 'Tự do & Phóng khoáng',
-      story: 'Bộ sưu tập của những chuyến đi ngẫu hứng đầy nắng và gió. Các chất liệu Linen mộc mạc và Silk mát mẻ giúp bạn tận hưởng những ngày nghỉ trọn vẹn.',
-      banner: '/src/assets/images/about_01.jpg'
+      story: 'Weekend Escape là bộ sưu tập lấy cảm hứng từ những chuyến đi cuối tuần và những ngày thư giãn trọn vẹn, nơi thời trang đề cao sự thoải mái nhưng vẫn giữ được vẻ thanh lịch và tinh tế. Các thiết kế được lựa chọn với phom dáng nhẹ nhàng, chất liệu thoáng mát cùng bảng màu trung tính như trắng, kem, be, đen và xanh olive, dễ dàng phối hợp với các phụ kiện tối giản để tạo nên diện mạo hiện đại và nữ tính. Dù là dạo phố, cà phê cuối tuần, du lịch hay nghỉ dưỡng, Weekend Escape mang đến những set đồ linh hoạt, giúp người mặc luôn cảm thấy tự tin, thanh lịch và thoải mái trong mọi hành trình.',
+      banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Weekend-Escape_cover.png'
     },
     'Midnight Mirage': {
       id: 'midnight-mirage',
-      vnName: 'Ảo ảnh Nửa đêm',
-      year: 'MIDNIGHT MIRAGE',
-      tag: 'Quyến rũ & Bí ẩn',
-      story: 'Sự đan xen quyến rũ của các đường khoét vai tinh tế, chất liệu len dệt kim móc (crochet) cá tính mang lại diện mạo nổi bật trong các buổi tiệc tối.',
-      banner: '/src/assets/images/image-5.png'
+      vnName: 'Midnight Mirage',
+      year: 'MIDNIGHT MIRAGE 2026',
+      tag: 'Cá tính & Đường phố',
+      story: 'Midnight Mirage là bộ sưu tập lấy cảm hứng từ phong cách thời trang đường phố Hàn Quốc, kết hợp giữa nét cá tính, tối giản và hiện đại. Bộ sưu tập mang đến 5 outfit với những sắc thái khác nhau như Grunge, Soft Neutral, Campus Girl, Street Prep và Y2K Minimal, giúp người mặc dễ dàng thể hiện cá tính riêng trong mọi hoạt động thường ngày như đi học, đi làm, dạo phố hay cà phê cuối tuần. Bảng màu trung tính pha chút pastel cùng các thiết kế trẻ trung tạo nên tổng thể thời thượng, linh hoạt và dễ phối đồ.',
+      banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Midnight-Mirage_cover.png'
     },
     'The Afterglow': {
       id: 'the-afterglow',
-      vnName: 'Rực rỡ Hoàng hôn',
+      vnName: 'The Afterglow',
       year: 'THE AFTERGLOW 2026',
-      tag: 'Dạ tiệc Thượng lưu',
-      story: 'Dòng sản phẩm dạ hội cao cấp nhất của Velura. Phom dáng đầm xòe phồng, đầm đuôi cá kết hợp kỹ thuật xếp nếp ruffles tạo nên vẻ đẹp đẳng cấp.',
-      banner: '/src/assets/images/about_03.jpg'
+      tag: 'Dư âm Vương giả',
+      story: 'Lấy cảm hứng từ ánh hoàng hôn diễm lệ, The Afterglow là bản hòa ca dành cho vẻ đẹp kiêu sa và lãng mạn – nơi tà áo lụa satin mềm mại, corset siết eo tinh tế và sắc màu từ hồng tulle ngọt ngào đến xanh Sapphire huyền bí cùng hòa quyện để tôn vinh người phụ nữ. Khi kết hợp cùng trang sức ngọc trai và giày đính đá lấp lánh, bộ sưu tập không chỉ kể câu chuyện về một tiểu thư tài phiệt, mà còn lưu giữ dư âm rực rỡ – tựa hào quang khó phai của một dấu ấn vương giả, để mỗi khoảnh khắc bạn xuất hiện đều trở thành một kỷ niệm đáng nhớ.',
+      banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_The-Afterglow_cover.png'
     }
   };
 
@@ -87,17 +79,21 @@ export function initCollectionsFilter() {
         const nameLower = (p.name || "").toLowerCase();
         return !nameLower.includes("test") && !nameLower.includes("validation") && !nameLower.includes("commit");
       });
-      // Get all unique collections present in database
-      const uniqueColNames = [...new Set(products.map(p => p.collection).filter(Boolean))];
+      // Get all unique collections — only from set/combo products to avoid wrongly-tagged individual items
+      const uniqueColNames = [...new Set(products.filter(p => p.is_combo === true).map(p => p.collection).filter(Boolean))];
 
-      if (uniqueColNames.length === 0) {
+      // Fixed display order — skip Modern Academia and any unlisted collections
+      const DISPLAY_ORDER = ['Soft Ceremony', 'The Urban Rhythm', 'Weekend Escape', 'Midnight Mirage', 'The Afterglow'];
+      const orderedColNames = DISPLAY_ORDER.filter(name => uniqueColNames.includes(name));
+
+      if (orderedColNames.length === 0) {
         listContainer.innerHTML = `<div style="text-align: center; color: var(--soft); padding: 64px 0;">Hiện chưa có bộ sưu tập nào hoạt động.</div>`;
         return;
       }
 
       // 1. Build tabs
       let tabsHtml = `<button class="collections-tab active" data-filter="all">Tất cả</button>`;
-      uniqueColNames.forEach(colName => {
+      orderedColNames.forEach(colName => {
         const meta = getMeta(colName);
         tabsHtml += `<button class="collections-tab" data-filter="${meta.id}">${meta.vnName}</button>`;
       });
@@ -105,9 +101,9 @@ export function initCollectionsFilter() {
 
       // 2. Build collection list blocks
       let listHtml = "";
-      uniqueColNames.forEach(colName => {
+      orderedColNames.forEach(colName => {
         const meta = getMeta(colName);
-        const colProducts = products.filter(p => p.collection === colName);
+        const colProducts = products.filter(p => p.collection === colName && p.is_combo === true);
         const displayedProducts = colProducts.slice(0, 4);
 
         const productsGridHtml = displayedProducts.map(p => {

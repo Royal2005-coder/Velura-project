@@ -33,13 +33,21 @@ export async function buildAuthContext(req) {
   const accountSelect = [
     "user_id", "auth_user_id", "email", "phone", "full_name", "avatar",
     "role", "admin_role", "is_active", "is_verified", "created_at",
-    "last_login_at", "version", "updated_at"
+    "last_login_at", "version", "updated_at", "saved_addresses"
   ].join(",");
   const dbOptions = { useAnonKey: true }; // Use anon key fallback for token validation too
 
-  // 1. Try local custom JWT verification (used by front-end customer accounts)
+  // Try Supabase Auth first
+  let authUser = null;
+  try {
+    authUser = await getAuthUser(token);
+  } catch (err) {
+    // Ignore error and fall back to local custom JWT
+  }
+
   const decoded = verifyJwt(token);
-  if (decoded) {
+
+  if (decoded && !authUser?.id) {
     let profile = null;
     try {
       profile = await selectOne("users", {
@@ -64,8 +72,6 @@ export async function buildAuthContext(req) {
     };
   }
 
-  // 2. Fallback to Supabase Auth token validation (used by Admin Dashboard)
-  const authUser = await getAuthUser(token);
   if (!authUser?.id) return buildGuestContext();
 
   let profile = null;

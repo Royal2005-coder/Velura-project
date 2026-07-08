@@ -36,6 +36,7 @@ function completeAuthentication(
   } = {}
 ) {
   storeAuthSession(data);
+  migrateStyleQuizOnLogin().catch(console.error);
   if (mergeCart) mergeCartOnLogin();
   showToast(message);
   setTimeout(() => { window.location.href = "/index.html"; }, redirectDelay);
@@ -100,6 +101,63 @@ async function checkDuplicate(type, value, errorId, iconId) {
       if (icon) { icon.textContent = "✓"; icon.style.color = "#5cb85c"; icon.hidden = false; }
     }
   } catch { /* silent */ }
+}
+
+// ─── Style Quiz Migration ───────────────────────────────────────────────────
+
+export async function migrateStyleQuizOnLogin() {
+  const guestSessionId = localStorage.getItem("velura_guest_session_id");
+  
+  // Construct fallback payload from sessionStorage if present
+  const height_cm = sessionStorage.getItem("quiz-height");
+  const weight_kg = sessionStorage.getItem("quiz-weight");
+  const chest_cm = sessionStorage.getItem("quiz-vong1");
+  const waist_cm = sessionStorage.getItem("quiz-vong2");
+  const hip_cm = sessionStorage.getItem("quiz-vong3");
+  const body_shape = sessionStorage.getItem("quiz-body-shape");
+  const styleStr = sessionStorage.getItem("quiz-main-style");
+  const context = sessionStorage.getItem("quiz-context");
+  const budget = sessionStorage.getItem("quiz-budget");
+  
+  let style_tags = null;
+  if (styleStr) {
+    try {
+      style_tags = JSON.parse(styleStr);
+    } catch (e) {
+      style_tags = [styleStr];
+    }
+  }
+  
+  const payload = {};
+  if (height_cm) payload.height_cm = parseInt(height_cm, 10);
+  if (weight_kg) payload.weight_kg = parseInt(weight_kg, 10);
+  if (chest_cm) payload.chest_cm = parseInt(chest_cm, 10);
+  if (waist_cm) payload.waist_cm = parseInt(waist_cm, 10);
+  if (hip_cm) payload.hip_cm = parseInt(hip_cm, 10);
+  if (body_shape) payload.body_shape = body_shape;
+  if (style_tags) payload.style_tags = style_tags;
+  if (context) payload.preferred_occasions = [context];
+  if (budget) payload.budget_range = budget;
+  
+  try {
+    const res = await apiRequest("/api/user/style-quiz/migrate", {
+      method: "POST",
+      body: payload
+    });
+    if (res.success && res.migrated) {
+      console.log("Style Quiz migrated successfully on login!");
+      localStorage.setItem("velura_guest_quiz_completed", "true");
+    }
+  } catch (err) {
+    console.error("Failed to migrate Style Quiz on login:", err);
+  } finally {
+    // Clean up local storage and session storage style quiz items
+    const keysToRemove = [
+      "quiz-height", "quiz-weight", "quiz-vong1", "quiz-vong2", "quiz-vong3",
+      "quiz-body-shape", "quiz-main-style", "quiz-context", "quiz-colors", "quiz-budget"
+    ];
+    keysToRemove.forEach(key => sessionStorage.removeItem(key));
+  }
 }
 
 // ─── OTP Modal ──────────────────────────────────────────────────────────────
@@ -285,6 +343,7 @@ function bindSignin() {
         setLoading(btn, false);
         showOtpModal(identity, (d) => {
           storeAuthSession(d);
+          migrateStyleQuizOnLogin().catch(console.error);
           mergeCartOnLogin();
           syncFavoriteOutfitsOnLogin().catch(console.error);
           showToast("Đăng nhập thành công!");
@@ -294,6 +353,7 @@ function bindSignin() {
       }
 
       storeAuthSession(data);
+      migrateStyleQuizOnLogin().catch(console.error);
       mergeCartOnLogin();
       syncFavoriteOutfitsOnLogin().catch(console.error);
       showToast("Đăng nhập thành công!");
@@ -416,6 +476,7 @@ function bindSignup() {
       if (data.otp_required) {
         showOtpModal(identity, (d) => {
           storeAuthSession(d);
+          migrateStyleQuizOnLogin().catch(console.error);
           mergeCartOnLogin();
           syncFavoriteOutfitsOnLogin().catch(console.error);
           showToast("Đăng ký tài khoản thành công! Chào mừng bạn đến với Velura 🎉");
@@ -565,6 +626,14 @@ function applyHeaderAuthUI() {
       profileBtns.forEach(btn => btn.style.display = "block");
       logoutBtns.forEach(btn => btn.style.display = "block");
 
+      const notifEl = document.getElementById("js-header-notifications");
+      if (notifEl) {
+        notifEl.style.display = "inline-flex";
+        import("./notifications.js").then(({ updateNotificationsUI }) => {
+          updateNotificationsUI().catch(console.error);
+        });
+      }
+
       // Fallback: Update legacy signin links if any exist outside dropdown
       document.querySelectorAll("a[href*='signin.html']").forEach(link => {
         if (!link.classList.contains("user-dropdown-item")) {
@@ -582,6 +651,9 @@ function applyHeaderAuthUI() {
     signupBtns.forEach(btn => btn.style.display = "block");
     profileBtns.forEach(btn => btn.style.display = "none");
     logoutBtns.forEach(btn => btn.style.display = "none");
+
+    const notifEl = document.getElementById("js-header-notifications");
+    if (notifEl) notifEl.style.display = "none";
   }
 
   // Bind logout listener

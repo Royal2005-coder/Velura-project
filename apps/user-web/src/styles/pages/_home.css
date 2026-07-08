@@ -615,11 +615,8 @@
   color: var(--terracotta, #C97B63);
   padding: 11px 16px;
   border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  text-decoration: none;
-  border: none;
-  cursor: pointer;
   line-height: 1.2;
   text-align: center;
   transition: background 0.2s ease, color 0.2s ease;
@@ -649,7 +646,6 @@
   border: none;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.2s ease, color 0.2s ease;
   padding: 0;
 }
 
@@ -1082,8 +1078,7 @@
   color: #1f1d1b;
 }
 
-.product-card__actions .btn-buy,
-.product-card__btn-cart {
+.product-card__actions .btn-buy {
   min-height: 40px;
   border-radius: 8px;
   font-size: 0.76rem;
@@ -1091,8 +1086,7 @@
 }
 
 @media (max-width: 420px) {
-  .product-card__actions .btn-buy,
-  .product-card__btn-cart {
+  .product-card__actions .btn-buy {
     white-space: normal;
   }
 }

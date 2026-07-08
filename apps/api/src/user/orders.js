@@ -2,6 +2,7 @@ import { HttpError, readJson, sendJson } from "../http.js";
 import { selectOne, selectRows, insertRow, updateRows } from "../supabase.js";
 import { hashPassword, signJwt } from "../auth-helper.js";
 import { requireUserAuth } from "./auth.js";
+import { createNotification } from "./notifications.js";
 
 // Helper to parse Postgres date as UTC robustly
 export function parseUtcDate(dateStr) {
@@ -76,6 +77,42 @@ export async function autoProgressOrder(order) {
     
     try {
       await updateRows("orders", { order_id: `eq.${order.order_id}` }, updateData);
+
+      // Trigger notification for order status progression
+      let title = "";
+      let content = "";
+      const displayTracking = trackingCode || order.tracking_code || order.order_id.slice(0, 8).toUpperCase();
+      switch (newStatus) {
+        case "confirmed":
+          title = `Đơn hàng #${displayTracking} đã được xác nhận ✅`;
+          content = "Người bán đã xác nhận đơn hàng của bạn.";
+          break;
+        case "preparing":
+          title = `Đơn hàng #${displayTracking} đang được chuẩn bị 📦`;
+          content = "Velura đang chuẩn bị hàng để gửi cho đơn vị vận chuyển.";
+          break;
+        case "shipping":
+          title = `Đơn hàng #${displayTracking} đang được giao 🚚`;
+          content = "Đơn hàng đã được bàn giao cho đơn vị vận chuyển.";
+          break;
+        case "delivered":
+          title = `Đơn hàng #${displayTracking} đã giao thành công 🎉`;
+          content = "Đơn hàng đã được giao đến bạn. Hãy kiểm tra sản phẩm và để lại đánh giá nhé!";
+          break;
+        case "completed":
+          title = `Đơn hàng #${displayTracking} hoàn thành ✨`;
+          content = "Cảm ơn bạn đã mua sắm tại Velura! Đơn hàng của bạn đã hoàn thành.";
+          break;
+      }
+      if (title && order.user_id) {
+        await createNotification(
+          order.user_id,
+          "order_status",
+          title,
+          content,
+          `/src/pages/account/order-detail.html?id=${order.order_id}`
+        );
+      }
     } catch (e) {
       console.error(`Failed to auto-progress order ${order.order_id}:`, e.message);
     }
@@ -313,8 +350,39 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
       }
 
       const updated = await updateRows("orders", { order_id: `eq.${order_id}` }, updateData);
+      const updatedOrder = updated[0] || order;
 
-      return sendJson(res, 200, { success: true, order: updated[0] }, corsHeaders);
+      if (updatedOrder && updatedOrder.user_id) {
+        const displayTracking = updatedOrder.tracking_code || updatedOrder.order_id.slice(0, 8).toUpperCase();
+        if (status === "cancelled") {
+          await createNotification(
+            updatedOrder.user_id,
+            "order_status",
+            `Đơn hàng #${displayTracking} đã bị hủy ❌`,
+            `Đơn hàng đã bị hủy thành công. Lý do: ${updateData.cancelled_reason}.`,
+            `/src/pages/account/order-detail.html?id=${updatedOrder.order_id}`
+          );
+        } else {
+          let title = `Cập nhật đơn hàng #${displayTracking}`;
+          let content = `Trạng thái đơn hàng của bạn đã thay đổi thành: ${status}.`;
+          if (status === "delivered") {
+            title = `Đơn hàng #${displayTracking} đã giao thành công 🎉`;
+            content = "Đơn hàng đã được giao đến bạn. Hãy kiểm tra sản phẩm và để lại đánh giá nhé!";
+          } else if (status === "completed") {
+            title = `Đơn hàng #${displayTracking} hoàn thành ✨`;
+            content = "Cảm ơn bạn đã mua sắm tại Velura! Đơn hàng của bạn đã hoàn thành.";
+          }
+          await createNotification(
+            updatedOrder.user_id,
+            "order_status",
+            title,
+            content,
+            `/src/pages/account/order-detail.html?id=${updatedOrder.order_id}`
+          );
+        }
+      }
+
+      return sendJson(res, 200, { success: true, order: updatedOrder }, corsHeaders);
     }
 
     // POST /api/user/orders/otp-send (Send OTP)
@@ -518,6 +586,24 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
           console.error(e.message);
         }
       }
+
+      // Send welcome notification
+      await createNotification(
+        guestUser.user_id,
+        "system",
+        "Chào mừng bạn đến với Velura! 🎉",
+        "Chúc mừng bạn đã đăng ký tài khoản thành viên thành công. Nhận ngay ưu đãi thành viên và bắt đầu mua sắm ngay!",
+        "/src/pages/products/list.html"
+      );
+
+      // Send order placed notification
+      await createNotification(
+        guestUser.user_id,
+        "order_status",
+        `Đơn hàng #${trackingCode} đã được đặt thành công ✅`,
+        "Cảm ơn bạn đã mua sắm tại Velura. Đơn hàng của bạn đang được xử lý.",
+        `/src/pages/account/order-detail.html?id=${newOrder.order_id}`
+      );
       
       const token = signJwt({ user_id: guestUser.user_id, email: guestUser.email || `${phone}@velura.vn`, role: "member" });
       
@@ -583,6 +669,17 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
           status: "confirmed",
           updated_at: new Date().toISOString()
         });
+
+        if (order && order.user_id) {
+          const displayTracking = order.tracking_code || order.order_id.slice(0, 8).toUpperCase();
+          await createNotification(
+            order.user_id,
+            "order_status",
+            `Thanh toán đơn hàng #${displayTracking} thành công 💳`,
+            "Chúng tôi đã nhận được thanh toán cho đơn hàng của bạn. Đơn hàng đang chuẩn bị được đóng gói.",
+            `/src/pages/account/order-detail.html?id=${order_id}`
+          );
+        }
         
         // Decrement stock
         const { rows: items } = await selectRows("order_item", { order_id: `eq.${order_id}` });
@@ -744,6 +841,14 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
           console.error(e.message);
         }
       }
+
+      await createNotification(
+        profile.user_id,
+        "order_status",
+        `Đơn hàng #${trackingCode} đã được đặt thành công ✅`,
+        "Cảm ơn bạn đã mua sắm tại Velura. Đơn hàng của bạn đang được xử lý.",
+        `/src/pages/account/order-detail.html?id=${newOrder.order_id}`
+      );
 
       return sendJson(res, 200, {
         success: true,

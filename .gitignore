@@ -23,3 +23,10 @@ coverage/
 .env.production
 .env.staging
 *.env
+
+# Scratch / debug scripts — có thể chứa credentials, không commit
+scratch_*.mjs
+scratch_*.js
+scratch_*.cjs
+test.jpg
+scratch_screenshot*.png

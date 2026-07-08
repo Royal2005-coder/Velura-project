@@ -331,6 +331,46 @@ export function initReturnRequest() {
   // 4. IMAGE UPLOAD HANDLING
   // ──────────────────────────────────────────────────
 
+  /**
+   * Upload evidence image files to Supabase Storage via the backend proxy.
+   * Returns an array of public URLs.
+   */
+  async function uploadEvidenceImages(files) {
+    const token = localStorage.getItem("velura_token");
+    const urls = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const formData = new FormData();
+      formData.append("file", file, file.name);
+
+      const headers = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const response = await fetch("http://localhost:8787/api/user/upload/evidence", {
+        method: "POST",
+        headers,
+        body: formData
+      });
+
+      if (!response.ok) {
+        let errMsg = `Lỗi tải ảnh ${i + 1}/${files.length}`;
+        try {
+          const errData = await response.json();
+          errMsg = errData?.error?.message || errData?.message || errMsg;
+        } catch {}
+        throw new Error(errMsg);
+      }
+
+      const data = await response.json().catch(() => ({}));
+      if (!data.url) throw new Error(`Ảnh ${i + 1}: Server không trả về URL`);
+      urls.push(data.url);
+    }
+
+    return urls;
+  }
+
+
   const uploadBtn = document.querySelector(".btn-upload");
   if (uploadBtn && fileInput) {
     uploadBtn.addEventListener("click", () => {
@@ -420,7 +460,7 @@ export function initReturnRequest() {
   // ──────────────────────────────────────────────────
 
   if (returnForm) {
-    returnForm.addEventListener("submit", function (e) {
+    returnForm.addEventListener("submit", async function (e) {
       e.preventDefault();
 
       // Validate selections
@@ -459,8 +499,23 @@ export function initReturnRequest() {
       const submitBtn = returnForm.querySelector(".btn-submit");
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = "Đang gửi...";
+        submitBtn.textContent = "Đang tải ảnh...";
       }
+
+      // Upload evidence images to storage first
+      let evidenceUrls = [];
+      try {
+        evidenceUrls = await uploadEvidenceImages(uploadedFiles);
+      } catch (uploadErr) {
+        createToast(`Lỗi tải ảnh lên: ${uploadErr.message}`, "warning");
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Gửi yêu cầu";
+        }
+        return;
+      }
+
+      if (submitBtn) submitBtn.textContent = "Đang gửi...";
 
       // Map return items
       const itemsPayload = Array.from(selectedProducts).map(input => {
@@ -474,7 +529,7 @@ export function initReturnRequest() {
         order_id: selectedOrder,
         return_type: selectedMethod.value, // "refund" or "exchange"
         description: `${selectedReason.options[selectedReason.selectedIndex].text}. Chi tiết: ${returnDesc ? returnDesc.value : ""}`,
-        evidence_images: [], // evidence images normally uploaded to cloud storage
+        evidence_images: evidenceUrls,
         items: itemsPayload
       };
 

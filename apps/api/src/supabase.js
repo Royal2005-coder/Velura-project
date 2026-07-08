@@ -49,7 +49,9 @@ export async function supabaseRequest(path, options = {}) {
     const data = text ? parseJson(text) : null;
 
     if (!response.ok) {
-      console.error(`[SUPABASE ERROR] Status: ${response.status} URL: ${url} Response:`, data);
+      if (!options.silentError) {
+        console.error(`[SUPABASE ERROR] Status: ${response.status} URL: ${url} Response:`, data);
+      }
       throw new HttpError(response.status, "SUPABASE_ERROR", "Supabase request failed", data);
     }
 
@@ -76,12 +78,37 @@ export async function getAuthUser(accessToken) {
   try {
     const result = await supabaseRequest("/auth/v1/user", {
       useAnonKey: true,
-      accessToken
+      accessToken,
+      silentError: true
     });
     return result.data;
   } catch {
     return null;
   }
+}
+
+function convertRawGithubUrls(rows) {
+  if (!Array.isArray(rows)) return rows;
+  return rows.map(r => {
+    if (r && typeof r === "object") {
+      if (r.images && Array.isArray(r.images)) {
+        r.images = r.images.map(img => {
+          if (typeof img === "string" && img.includes("raw.githubusercontent.com")) {
+            const regex = /https:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/(refs\/heads\/|)([^\/]+)\/(.*)/;
+            return img.replace(regex, "https://cdn.jsdelivr.net/gh/$1/$2@$4/$5");
+          }
+          return img;
+        });
+      }
+      for (const key of ["image_url", "image", "product_image"]) {
+        if (typeof r[key] === "string" && r[key].includes("raw.githubusercontent.com")) {
+          const regex = /https:\/\/raw\.githubusercontent\.com\/([^\/]+)\/([^\/]+)\/(refs\/heads\/|)([^\/]+)\/(.*)/;
+          r[key] = r[key].replace(regex, "https://cdn.jsdelivr.net/gh/$1/$2@$4/$5");
+        }
+      }
+    }
+    return r;
+  });
 }
 
 export async function selectRows(table, query = {}, options = {}) {
@@ -93,8 +120,9 @@ export async function selectRows(table, query = {}, options = {}) {
       prefer: "count=exact"
     }
   });
+  const rawRows = Array.isArray(result.data) ? result.data : [];
   return {
-    rows: Array.isArray(result.data) ? result.data : [],
+    rows: convertRawGithubUrls(rawRows),
     count: result.count
   };
 }
@@ -114,7 +142,10 @@ export async function callRpc(name, payload, options = {}) {
       prefer: "return=representation"
     }
   });
-  return result.data;
+  const data = result.data;
+  return Array.isArray(data)
+    ? convertRawGithubUrls(data)
+    : (data && typeof data === "object" ? convertRawGithubUrls([data])[0] : data);
 }
 
 export async function insertRow(table, payload, options = {}) {

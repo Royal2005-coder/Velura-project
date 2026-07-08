@@ -33,6 +33,7 @@ ALTER TABLE public.price_history    DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payment          DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_log        DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.approval_admin_request DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications     DISABLE ROW LEVEL SECURITY;
 
 -- 2. Cấp đầy đủ quyền cho role anon (dùng bởi API server qua anon key)
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;

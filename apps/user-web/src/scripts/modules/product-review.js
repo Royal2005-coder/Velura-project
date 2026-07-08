@@ -180,7 +180,7 @@ export function initProductReview() {
   function setupSubmit() {
     if (!submitBtn) return;
 
-    submitBtn.addEventListener("click", () => {
+    submitBtn.addEventListener("click", async () => {
       if (ratingValue === 0) {
         alert("Vui lòng chọn số sao đánh giá sản phẩm!");
         return;
@@ -198,21 +198,33 @@ export function initProductReview() {
       }
 
       submitBtn.disabled = true;
+
+      // Upload images first (if any)
+      let fileUrls = [];
+      if (selectedFiles.length > 0) {
+        submitBtn.textContent = "Đang tải ảnh...";
+        try {
+          fileUrls = await uploadReviewImages(selectedFiles);
+        } catch (uploadErr) {
+          createToast(`Lỗi tải ảnh: ${uploadErr.message}`);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Gửi đánh giá";
+          return;
+        }
+      }
+
       submitBtn.textContent = "Đang gửi...";
 
       const activeTags = Array.from(tagBtns)
         .filter(btn => btn.classList.contains("is-active"))
         .map(btn => btn.getAttribute("data-text"));
 
-      // Pass selected files names to simulate images checking in backend
-      const fileNames = selectedFiles.map(f => f.name);
-
       const payload = {
         product_id: currentProduct.product_id,
         order_id: orderId,
         rating: ratingValue,
         comment: textarea.value.trim(),
-        images: fileNames,
+        images: fileUrls,
         review_tags: activeTags
       };
 
@@ -238,6 +250,48 @@ export function initProductReview() {
         });
     });
   }
+
+  /**
+   * Upload review image files to Supabase Storage via the backend proxy.
+   * Uses the same endpoint as return evidence images.
+   * Returns an array of public URLs.
+   */
+  async function uploadReviewImages(files) {
+    const token = localStorage.getItem("velura_token");
+    const urls = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const formData = new FormData();
+      formData.append("file", file, file.name);
+
+      const headers = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const response = await fetch("http://localhost:8787/api/user/upload/evidence", {
+        method: "POST",
+        headers,
+        body: formData
+      });
+
+      if (!response.ok) {
+        let errMsg = `Lỗi tải ảnh ${i + 1}/${files.length}`;
+        try {
+          const errData = await response.json();
+          errMsg = errData?.error?.message || errData?.message || errMsg;
+        } catch {}
+        throw new Error(errMsg);
+      }
+
+      const data = await response.json().catch(() => ({}));
+      if (!data.url) throw new Error(`Ảnh ${i + 1}: Server không trả về URL`);
+      urls.push(data.url);
+    }
+
+    return urls;
+  }
+
+
 
   // Toast alert system
   function createToast(message, duration = 3000) {

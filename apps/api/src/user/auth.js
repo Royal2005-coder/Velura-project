@@ -1,6 +1,7 @@
 import { HttpError, readJson, sendJson } from "../http.js";
 import { selectOne, insertRow, updateRows } from "../supabase.js";
 import { hashPassword, verifyPassword, signJwt } from "../auth-helper.js";
+import { createNotification } from "./notifications.js";
 
 // Helper to validate email format
 export function validateEmail(email) {
@@ -156,12 +157,23 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
     const updates = {
       is_active: true
     };
+    const wasInactive = !user.is_active;
     // Keep OTP for password reset flow because reset-password endpoint needs to check it.
     if (purpose !== "reset-password") {
       updates.otp_code = null;
       updates.otp_expires_at = null;
     }
     await updateRows("users", { user_id: `eq.${user.user_id}` }, updates);
+
+    if (wasInactive) {
+      await createNotification(
+        user.user_id,
+        "system",
+        "Chào mừng bạn đến với Velura! 🎉",
+        "Chúc mừng bạn đã đăng ký tài khoản thành viên thành công. Nhận ngay ưu đãi thành viên và bắt đầu mua sắm ngay!",
+        "/src/pages/products/list.html"
+      );
+    }
 
     const token = signJwt({ user_id: user.user_id, email: user.email, role: user.role });
 

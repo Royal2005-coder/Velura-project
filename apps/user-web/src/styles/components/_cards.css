@@ -555,7 +555,7 @@
   color: var(--terracotta, #C97B63);
   padding: 11px 16px;
   border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
   border: none;
@@ -652,6 +652,7 @@
   align-items: baseline;
   min-height: 28px;
 }
+
 
 @media (max-width: 420px) {
   .card--product .card__actions .btn-buy {
