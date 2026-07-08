@@ -1,5 +1,5 @@
 import { apiRequest } from "./api.js";
-import { storeAuthSession } from "./auth-session.js";
+import { getCurrentRole, hasRealAuthSession, storeAuthSession } from "./auth-session.js";
 
 // Custom premium toast helper
 export function showToast(message) {
@@ -288,6 +288,9 @@ export async function initCart() {
   updateBadge();
 
   const path = window.location.pathname;
+  if (path.includes("/pages/checkout/")) {
+    renderCheckoutLayout(getCurrentRole());
+  }
 
   if (path.includes("/cart.html")) {
     renderCartPage();
@@ -304,6 +307,55 @@ export async function initCart() {
   } else if (path.includes("/payment-failed.html")) {
     initPaymentFailedPage();
   }
+}
+
+function renderCheckoutLayout(role) {
+  const path = window.location.pathname;
+  const isMember = role === "member" && hasRealAuthSession();
+
+  if (path.includes("/payment-user.html") && !isMember) {
+    window.location.href = "/src/pages/checkout/payment-guest.html";
+    return;
+  }
+
+  if (path.includes("/payment-guest.html") && isMember) {
+    window.location.href = "/src/pages/checkout/payment-user.html";
+    return;
+  }
+
+  document.body.dataset.checkoutRole = isMember ? "member" : "guest";
+}
+
+function showGuestOrderConfirmModal(shipping, onConfirm) {
+  const existing = document.querySelector(".guest-order-confirm-modal");
+  if (existing) existing.remove();
+
+  const modal = document.createElement("div");
+  modal.className = "guest-order-confirm-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.innerHTML = `
+    <div class="guest-order-confirm-modal__card">
+      <h2>Xác nhận thông tin đặt hàng</h2>
+      <dl>
+        <div><dt>Họ tên</dt><dd>${shipping.name || "-"}</dd></div>
+        <div><dt>Số điện thoại</dt><dd>${shipping.phone || "-"}</dd></div>
+        <div><dt>Email</dt><dd>${shipping.email || "-"}</dd></div>
+        <div><dt>Địa chỉ</dt><dd>${shipping.address || "-"}</dd></div>
+      </dl>
+      <div class="guest-order-confirm-modal__actions">
+        <button class="guest-order-confirm-modal__btn guest-order-confirm-modal__btn--secondary" type="button" data-action="cancel">Kiểm tra lại</button>
+        <button class="guest-order-confirm-modal__btn guest-order-confirm-modal__btn--primary" type="button" data-action="confirm">Đồng ý</button>
+      </div>
+    </div>
+  `;
+
+  modal.querySelector("[data-action='cancel']").addEventListener("click", () => modal.remove());
+  modal.querySelector("[data-action='confirm']").addEventListener("click", () => {
+    modal.remove();
+    onConfirm();
+  });
+  document.body.appendChild(modal);
 }
 
 // 1. RENDER CART PAGE (cart.html)
@@ -514,8 +566,7 @@ function renderCartPage() {
 
       sessionStorage.setItem("checkout_items", JSON.stringify(finalSelectedItems));
 
-      const token = localStorage.getItem("velura_token");
-      if (token) {
+      if (hasRealAuthSession()) {
         window.location.href = "/src/pages/checkout/payment-user.html";
       } else {
         window.location.href = "/src/pages/checkout/payment-guest.html";
@@ -565,8 +616,7 @@ function renderOrderSummarySidebar(shippingFee = 0) {
 
 // 3. INITIALIZE MEMBER CHECKOUT PAGE (payment-user.html)
 function initPaymentUserPage() {
-  const token = localStorage.getItem("velura_token");
-  if (!token) {
+  if (!hasRealAuthSession()) {
     window.location.href = "/src/pages/checkout/payment-guest.html";
     return;
   }
@@ -1118,8 +1168,8 @@ function initOrderConfirmPage() {
   // Submit Order Button
   const submitOrderBtn = document.querySelector(".checkout-actions .btn");
   if (submitOrderBtn && !isOtpPage) {
-    const token = localStorage.getItem("velura_token");
-    if (!token) {
+    const isMemberCheckout = hasRealAuthSession();
+    if (!isMemberCheckout) {
       submitOrderBtn.textContent = "Nhận mã OTP & Đặt hàng";
     }
 
@@ -1131,7 +1181,7 @@ function initOrderConfirmPage() {
         submitOrderBtn.style.pointerEvents = "none";
         submitOrderBtn.style.opacity = "0.7";
 
-        if (token) {
+        if (isMemberCheckout) {
           // Member Checkout
           const orderItems = cart.map(item => ({
             variant_id: item.variant_id,
@@ -1195,43 +1245,55 @@ function initOrderConfirmPage() {
             throw new Error(res.message || "Đặt hàng thất bại");
           }
         } else {
-          // Guest Checkout - Send OTP
-          const sendRes = await apiRequest("/api/user/orders/otp-send", {
-            method: "POST",
-            body: JSON.stringify({
-              phone: shipping.phone,
-              email: shipping.email || "",
-              full_name: shipping.name
-            })
+          // Guest Checkout - confirm details before sending OTP
+          showGuestOrderConfirmModal(shipping, async () => {
+            try {
+              submitOrderBtn.textContent = "Đang gửi OTP...";
+              submitOrderBtn.style.pointerEvents = "none";
+              submitOrderBtn.style.opacity = "0.7";
+
+              const sendRes = await apiRequest("/api/user/orders/otp-send", {
+                method: "POST",
+                body: JSON.stringify({
+                  phone: shipping.phone,
+                  email: shipping.email || "",
+                  full_name: shipping.name
+                })
+              });
+
+              if (sendRes.success) {
+                showToast("Mã xác thực OTP đã được gửi!");
+                sessionStorage.setItem("guest_checkout_payload", JSON.stringify({
+                  phone: shipping.phone,
+                  shipping_name: shipping.name,
+                  shipping_address: shipping.address,
+                  shipping_fee: methods.shippingFee,
+                  voucher_id: localStorage.getItem("checkout_voucher_id") || null,
+                  discount_amount: discountAmount,
+                  subtotal: subtotal,
+                  total_amount: grandTotal,
+                  payment_method: methods.paymentMethod,
+                  email: shipping.email || "",
+                  items: cart
+                }));
+
+                setTimeout(() => {
+                  window.location.href = "/src/pages/checkout/otp-verify.html";
+                }, 1500);
+              } else {
+                throw new Error(sendRes.message || "Không thể gửi mã xác thực");
+              }
+            } catch (err) {
+              showToast(err.message || "Lỗi xử lý đặt hàng");
+              submitOrderBtn.textContent = "Nhận mã OTP & Đặt hàng";
+              submitOrderBtn.style.pointerEvents = "auto";
+              submitOrderBtn.style.opacity = "1";
+            }
           });
-
-          if (sendRes.success) {
-            showToast("Mã xác thực OTP đã được gửi!");
-            // Stash payload for verification page
-            sessionStorage.setItem("guest_checkout_payload", JSON.stringify({
-              phone: shipping.phone,
-              shipping_name: shipping.name,
-              shipping_address: shipping.address,
-              shipping_fee: methods.shippingFee,
-              voucher_id: localStorage.getItem("checkout_voucher_id") || null,
-              discount_amount: discountAmount,
-              subtotal: subtotal,
-              total_amount: grandTotal,
-              payment_method: methods.paymentMethod,
-              email: shipping.email || "",
-              items: cart
-            }));
-
-            setTimeout(() => {
-              window.location.href = "/src/pages/checkout/otp-verify.html";
-            }, 1500);
-          } else {
-            throw new Error(sendRes.message || "Không thể gửi mã xác thực");
-          }
         }
       } catch (err) {
         showToast(err.message || "Lỗi xử lý đặt hàng");
-        submitOrderBtn.textContent = token ? "Xác nhận đặt hàng" : "Nhận mã OTP & Đặt hàng";
+        submitOrderBtn.textContent = isMemberCheckout ? "Xác nhận đặt hàng" : "Nhận mã OTP & Đặt hàng";
         submitOrderBtn.style.pointerEvents = "auto";
         submitOrderBtn.style.opacity = "1";
       }

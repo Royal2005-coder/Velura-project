@@ -73,7 +73,7 @@ export function applyCors(req, res, corsOrigin) {
   const allowOrigin = wildcard ? requestOrigin || "*" : configured.includes(requestOrigin) ? requestOrigin : "";
   const headers = {
     "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
-    "access-control-allow-headers": "authorization,content-type,x-request-id",
+    "access-control-allow-headers": "authorization,content-type,x-request-id,x-guest-session-id",
     "access-control-max-age": "86400",
     vary: "origin"
   };

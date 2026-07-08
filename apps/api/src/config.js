@@ -20,7 +20,13 @@ export const config = {
   smtpFrom: process.env.SMTP_FROM || "",
   supportAlertTo: process.env.SUPPORT_ALERT_TO || process.env.SMTP_USER || "",
   n8nChatWebhookUrl: process.env.N8N_CHAT_WEBHOOK_URL || "",
-  n8nChatWebhookToken: process.env.N8N_CHAT_WEBHOOK_TOKEN || ""
+  n8nChatWebhookToken: process.env.N8N_CHAT_WEBHOOK_TOKEN || "",
+  geminiApiKey: process.env.GEMINI_API_KEY || "",
+  geminiEmbeddingModel: process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-2",
+  geminiEmbeddingDimensions: Number(process.env.GEMINI_EMBEDDING_DIMENSIONS || 1536),
+  geminiStylistModel: process.env.GEMINI_STYLIST_MODEL || "gemini-3.5-flash",
+  recommendationMatchThreshold: Number(process.env.RECOMMENDATION_MATCH_THRESHOLD || 0.45),
+  recommendationMatchCount: Number(process.env.RECOMMENDATION_MATCH_COUNT || 20)
 };
 
 export function assertRuntimeConfig() {

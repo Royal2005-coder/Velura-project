@@ -473,10 +473,6 @@
   margin-bottom: 14px;
 }
 
-.velura-auth-page .dev-quick-login {
-  flex-wrap: wrap;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .velura-auth-page *,
   .velura-auth-page *::before,

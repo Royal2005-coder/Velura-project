@@ -370,3 +370,99 @@
     display: flex; /* Show hamburger toggle */
   }
 }
+
+/* ==================================================================
+   ACCOUNT DROPDOWN STYLING
+   ================================================================== */
+.header-account-dropdown {
+  position: relative;
+}
+
+.account-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 50%;
+  transform: translateX(50%) translateY(10px);
+  background-color: #ffffff;
+  min-width: 160px;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--line, #E8DFD6);
+  padding: 8px 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s;
+}
+
+/* Hover to show dropdown */
+.header-account-dropdown:hover .account-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(50%) translateY(4px);
+}
+
+/* Dropdown upward arrow */
+.account-dropdown-arrow {
+  position: absolute;
+  top: -6px;
+  right: 50%;
+  transform: translateX(50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background-color: #ffffff;
+  border-left: 1px solid var(--line, #E8DFD6);
+  border-top: 1px solid var(--line, #E8DFD6);
+  z-index: -1;
+}
+
+.account-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 18px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1a1a1a;
+  text-decoration: none;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.account-dropdown-item svg {
+  color: #8c8c8c;
+  transition: color 0.2s ease;
+}
+
+.account-dropdown-item:hover {
+  background-color: var(--theme-hover, #F8F5F2);
+  color: #731F21;
+}
+
+.account-dropdown-item:hover svg {
+  color: #731F21;
+}
+
+/* Mobile adjusts for dropdown menu */
+@media (max-width: 768px) {
+  .account-dropdown-menu {
+    right: 0;
+    transform: translateY(10px);
+  }
+  .header-account-dropdown:hover .account-dropdown-menu {
+    transform: translateY(4px);
+  }
+  .account-dropdown-arrow {
+    right: 14px;
+    transform: rotate(45deg);
+  }
+}

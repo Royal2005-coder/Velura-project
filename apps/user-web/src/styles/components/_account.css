@@ -6,6 +6,71 @@ body.page-profile {
   background-color: #FAF6F2 !important; /* Soft warm cream page background */
 }
 
+.account-guest-empty {
+  color: var(--soft);
+  font-size: 1rem;
+  margin: 0;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.account-login-required-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: rgba(45, 39, 34, 0.18);
+}
+
+.account-login-required-modal__card {
+  width: min(500px, calc(100vw - 32px));
+  border-radius: 12px;
+  background: #efd8d1;
+  color: #2d2722;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(45, 39, 34, 0.16);
+}
+
+.account-login-required-modal__card h2 {
+  margin: 0 0 26px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.account-login-required-modal__card p {
+  margin: 0 0 28px;
+  font-size: 1rem;
+}
+
+.account-login-required-modal__actions {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+}
+
+.account-login-required-modal__btn {
+  min-width: 156px;
+  border: 0;
+  border-radius: 10px;
+  padding: 15px 24px;
+  color: #201915;
+  cursor: pointer;
+  font: 600 1rem "DM Sans", sans-serif;
+  text-decoration: none;
+}
+
+.account-login-required-modal__btn--primary {
+  background: #cf7d63;
+}
+
+.account-login-required-modal__btn--secondary {
+  background: #d9a4a8;
+}
+
 /* Page title section outside layout */
 .account-title-block {
   margin-top: 0; /* Đưa về 0 để đồng nhất vị trí bắt đầu của breadcrumb với các trang khác */

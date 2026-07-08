@@ -1,6 +1,7 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
 import { addToCart } from "./cart.js";
+import { getCurrentRole } from "./auth-session.js";
 
 /**
  * ES6 Module: Product Catalog Controller
@@ -36,6 +37,7 @@ export function initProductCatalog() {
   let userBodyShape = "";
   let isSuggestionsEnabled = localStorage.getItem("velura_suggestions_enabled") !== "false";
   let quizData = null;
+  const isMember = () => getCurrentRole() === "member";
 
   const CATEGORY_MAP = {
     top: "ao",
@@ -254,7 +256,7 @@ export function initProductCatalog() {
     const fitHelperEl = document.querySelector(".fit-helper");
     const lockOverlay = document.querySelector(".js-body-shape-lock");
     const shapeListContainer = document.querySelector(".js-body-shape-list");
-    const isLoggedIn = !!localStorage.getItem("velura_token");
+    const isLoggedIn = isMember();
 
     if (hasStyleProfile && quizData) {
       if (lockOverlay) lockOverlay.style.display = "none";
@@ -330,6 +332,31 @@ export function initProductCatalog() {
         `;
       }
     }
+
+    applyMemberFeatureGate();
+  }
+
+  function applyMemberFeatureGate() {
+    const group = document.getElementById("body-shape-filter-group");
+    const lockOverlay = document.querySelector(".js-body-shape-lock");
+    const shapeListContainer = document.querySelector(".js-body-shape-list");
+    if (!group || !lockOverlay || !shapeListContainer || isMember()) return;
+
+    shapeListContainer.style.opacity = "0.5";
+    shapeListContainer.style.filter = "blur(2px)";
+    shapeListContainer.style.pointerEvents = "none";
+
+    lockOverlay.style.display = "flex";
+    lockOverlay.style.cursor = "pointer";
+    lockOverlay.innerHTML = `
+      <div class="member-lock-badge">
+        <span aria-hidden="true">🔒</span>
+        Chỉ thành viên. Lọc theo dáng người - đăng ký để mở khóa.
+      </div>
+    `;
+    lockOverlay.addEventListener("click", () => {
+      window.location.href = "/src/pages/auth/signup.html";
+    }, { once: true });
   }
 
   // Initialize

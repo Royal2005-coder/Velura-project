@@ -401,6 +401,60 @@
   color: #c97b63;
 }
 
+/* Category Tab Panel Controls */
+.ai-category-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ai-category-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.ai-category-tabs::-webkit-scrollbar-thumb {
+  background: #e8c9be;
+  border-radius: 4px;
+}
+
+.ai-tab-btn {
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 550;
+  padding: 8px 18px;
+  border: 1px solid #eee2d6;
+  border-radius: 99px;
+  background-color: #ffffff;
+  color: #6b635d;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.ai-tab-btn:hover {
+  background-color: #fbf7f2;
+  color: #731F21;
+  border-color: #e8c9be;
+}
+
+.ai-tab-btn.is-active {
+  background-color: #731F21;
+  color: #ffffff;
+  border-color: #731F21;
+  box-shadow: 0 4px 12px rgba(115, 31, 33, 0.15);
+}
+
+.ai-category-panel {
+  display: none;
+}
+
+.ai-category-panel.is-active {
+  display: block;
+}
+
 /* Call To Action Banner */
 .ai-cta {
   display: flex;

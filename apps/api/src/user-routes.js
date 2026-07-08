@@ -469,10 +469,17 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
   }
 
   if (subRoute === "style-quiz") {
-    const profile = requireUserAuth(context);
     // GET /api/user/style-quiz
     if (req.method === "GET") {
-      const quiz = await selectOne("style_profile", { user_id: `eq.${profile.user_id}` });
+      let quiz = null;
+      if (context && context.profile && context.profile.user_id) {
+        quiz = await selectOne("style_profile", { user_id: `eq.${context.profile.user_id}` }, { useAnonKey: true });
+      } else {
+        const guestSessionId = req.headers["x-guest-session-id"] || "";
+        if (guestSessionId) {
+          quiz = await selectOne("style_profile", { guest_session_id: `eq.${guestSessionId}` }, { useAnonKey: true });
+        }
+      }
       return sendJson(res, 200, { success: true, quiz: quiz || null }, corsHeaders);
     }
 
@@ -486,7 +493,6 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
       } = body;
 
       const payload = {
-        user_id: profile.user_id,
         height_cm: height_cm || null,
         weight_kg: weight_kg || null,
         chest_cm: chest_cm || null,
@@ -502,12 +508,28 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
         updated_at: new Date().toISOString()
       };
 
-      const existing = await selectOne("style_profile", { user_id: `eq.${profile.user_id}` });
       let result;
-      if (existing) {
-        result = await updateRows("style_profile", { user_id: `eq.${profile.user_id}` }, payload);
+      if (context && context.profile && context.profile.user_id) {
+        payload.user_id = context.profile.user_id;
+        const existing = await selectOne("style_profile", { user_id: `eq.${context.profile.user_id}` }, { useAnonKey: true });
+        if (existing) {
+          result = await updateRows("style_profile", { user_id: `eq.${context.profile.user_id}` }, payload, { useAnonKey: true });
+        } else {
+          result = await insertRow("style_profile", payload, { useAnonKey: true });
+        }
       } else {
-        result = await insertRow("style_profile", payload);
+        const guestSessionId = req.headers["x-guest-session-id"] || "";
+        if (!guestSessionId) {
+          throw new HttpError(400, "BAD_REQUEST", "Thiếu Guest Session ID");
+        }
+        payload.guest_session_id = guestSessionId;
+        // In Supabase, if a foreign key is optional or not enforced, we can save guest profile under guest_session_id
+        const existing = await selectOne("style_profile", { guest_session_id: `eq.${guestSessionId}` }, { useAnonKey: true });
+        if (existing) {
+          result = await updateRows("style_profile", { guest_session_id: `eq.${guestSessionId}` }, payload, { useAnonKey: true });
+        } else {
+          result = await insertRow("style_profile", payload, { useAnonKey: true });
+        }
       }
 
       return sendJson(res, 200, { success: true, quiz: result }, corsHeaders);

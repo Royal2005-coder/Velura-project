@@ -199,35 +199,49 @@ test("customer auth redesign preserves the live DOM and API contracts", async ()
   assert.match(client, /\/api\/user\/auth\/signup/);
   assert.match(client, /\/api\/user\/auth\/otp-send/);
   assert.match(client, /\/api\/user\/auth\/otp-verify/);
-  assert.match(client, /js-dev-login-phone/);
-  assert.match(client, /js-dev-login-email/);
+  assert.doesNotMatch(client, /js-dev-login-phone|js-dev-login-email|dev-quick-login|Test Phone|Test Email/);
   assert.match(authCss, /\.velura-auth-page/);
 });
 
-test("customer Quick Test creates a DEV-only member session without calling signin", async () => {
-  const [client, session, api, cart] = await Promise.all([
+test("customer member and guest flows require real auth sessions", async () => {
+  const [client, session, api, cart, main, profile, product, rbac] = await Promise.all([
     source("apps/user-web/src/scripts/modules/auth-client.js"),
     source("apps/user-web/src/scripts/modules/auth-session.js"),
     source("apps/user-web/src/scripts/modules/api.js"),
-    source("apps/user-web/src/scripts/modules/cart.js")
+    source("apps/user-web/src/scripts/modules/cart.js"),
+    source("apps/user-web/src/scripts/main.js"),
+    source("apps/user-web/src/scripts/modules/account-profile.js"),
+    source("apps/user-web/src/scripts/modules/product-catalog.js"),
+    source("apps/api/src/rbac.js")
   ]);
 
-  assert.match(client, /if \(import\.meta\.env\.DEV\)/);
-  assert.match(client, /createDevMemberSession\("phone"\)/);
-  assert.match(client, /createDevMemberSession\("email"\)/);
-  const quickTestBlock = client.slice(
-    client.indexOf("/* DEV MODE ONLY"),
-    client.indexOf("/* END DEV MODE ONLY")
-  );
-  assert.doesNotMatch(quickTestBlock, /0912345678|user@velura\.vn|123456/);
+  assert.doesNotMatch(client, /createDevMemberSession|import\.meta\.env\.DEV|js-dev-login|Test Phone|Test Email/);
+  assert.doesNotMatch(session, /createDevMemberSession|DEV_MEMBER_ID|is_dev_mock|member\.test@velura\.local|0901234567/);
 
+  assert.match(session, /if \(!token\)/);
+  assert.match(session, /hasRealAuthSession\s*\(/);
+  assert.match(session, /getStoredUser\(\)\?\.user_id/);
+  assert.match(session, /getCurrentRole\s*\(/);
   assert.match(session, /localStorage\.setItem\(STORAGE_KEYS\.role,\s*normalizedUser\.role\)/);
   assert.match(session, /localStorage\.setItem\(STORAGE_KEYS\.userId,\s*String\(normalizedUser\.user_id\)\)/);
-  assert.match(session, /role:\s*"member"/);
-  assert.match(session, /if \(!import\.meta\.env\.DEV\)/);
 
   assert.match(api, /clearAuthSession\(\)/);
+  assert.match(api, /!currentPath\.includes\("profile\.html"\)/);
   assert.match(cart, /body:\s*JSON\.stringify\(\{\s*phone,\s*password\s*\}\)/);
   assert.match(cart, /storeAuthSession\(authRes\)/);
   assert.doesNotMatch(cart, /login_id:\s*phone/);
+  assert.match(cart, /renderCheckoutLayout\(getCurrentRole\(\)\)/);
+  assert.match(cart, /showGuestOrderConfirmModal\(shipping/);
+  assert.match(cart, /hasRealAuthSession\(\)/);
+
+  assert.match(main, /profile\.html/);
+  assert.match(profile, /renderGuestProfileState\(\)/);
+  assert.match(profile, /showGuestLoginModal\(\)/);
+  assert.match(profile, /err\.status === 401 && !hasRealAuthSession\(\)/);
+  assert.match(product, /member-lock-badge/);
+  assert.match(product, /\/src\/pages\/auth\/signup\.html/);
+
+  assert.match(rbac, /import \{ verifyJwt \} from "\.\/auth-helper\.js"/);
+  assert.match(rbac, /const localJwt = authUser\?\.id \? null : verifyJwt\(token\)/);
+  assert.match(rbac, /id: localJwt\.user_id/);
 });

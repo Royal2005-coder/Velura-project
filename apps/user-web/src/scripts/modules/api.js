@@ -1,7 +1,7 @@
 // Velura Frontend API Client Module
 import { clearAuthSession } from "./auth-session.js";
 
-const API_URL = "http://127.0.0.1:8787";
+const API_URL = "http://localhost:8787";
 
 export async function apiRequest(path, options = {}) {
   const token = localStorage.getItem("velura_token");
@@ -9,7 +9,18 @@ export async function apiRequest(path, options = {}) {
     "Content-Type": "application/json",
     ...options.headers
   };
-  
+
+  // Auto-generate or reuse guest session id
+  let guestSessionId = localStorage.getItem("velura_guest_session_id");
+  if (!guestSessionId) {
+    guestSessionId = "gs_" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem("velura_guest_session_id", guestSessionId);
+  }
+
+  if (guestSessionId) {
+    headers["X-Guest-Session-ID"] = guestSessionId;
+  }
+
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
@@ -17,6 +28,9 @@ export async function apiRequest(path, options = {}) {
   let fetchOptions = { ...options, headers };
   if (options.body && typeof options.body === "object" && !(options.body instanceof FormData)) {
     fetchOptions.body = JSON.stringify(options.body);
+  } else if (options.body && typeof options.body === "string") {
+    // If it's already a string, keep it as is
+    fetchOptions.body = options.body;
   }
 
   try {
@@ -27,7 +41,11 @@ export async function apiRequest(path, options = {}) {
       if (response.status === 401) {
         clearAuthSession();
         const currentPath = window.location.pathname;
-        if (currentPath.includes("/pages/account/") && !currentPath.includes("track-order.html")) {
+        if (
+          currentPath.includes("/pages/account/") &&
+          !currentPath.includes("profile.html") &&
+          !currentPath.includes("track-order.html")
+        ) {
           window.location.href = "/src/pages/auth/signin.html";
         }
       }

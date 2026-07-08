@@ -23,14 +23,15 @@ import { initTrackOrder } from "./modules/track-order.js";
 import { initHomepage } from "./modules/homepage.js";
 import { initCart } from "./modules/cart.js";
 import { initContentPages } from "./modules/content.js";
+import { hasRealAuthSession } from "./modules/auth-session.js";
+import { initAiSuggestions } from "./modules/ai-suggestions.js";
 
 (function () {
   "use strict";
 
   const path = window.location.pathname;
-  if (path.includes("/pages/account/") && !path.includes("track-order.html")) {
-    const token = localStorage.getItem("velura_token");
-    if (!token) {
+  if (path.includes("/pages/account/") && !path.includes("profile.html") && !path.includes("track-order.html")) {
+    if (!hasRealAuthSession()) {
       window.location.href = "/src/pages/auth/signin.html";
       return;
     }
@@ -62,6 +63,7 @@ import { initContentPages } from "./modules/content.js";
   initHomepage();
   initCart();
   initContentPages();
+  initAiSuggestions();
 
   /* Mobile navigation */
   var menuToggle = document.querySelector(".menu-toggle");

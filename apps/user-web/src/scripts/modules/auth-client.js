@@ -3,7 +3,6 @@ import { showToast } from "./account-profile.js";
 import { mergeCartOnLogin } from "./cart.js";
 import {
   clearAuthSession,
-  createDevMemberSession,
   storeAuthSession
 } from "./auth-session.js";
 
@@ -247,38 +246,6 @@ function showOtpModal(identity, onSuccess, onResend) {
 function bindSignin() {
   const form = document.getElementById("js-signin-form");
   if (!form) return;
-
-  /* DEV MODE ONLY - REMOVE BEFORE PRODUCTION */
-  if (import.meta.env.DEV) {
-    const signupPara = document.querySelector(".signup");
-    if (signupPara && !document.querySelector(".dev-quick-login")) {
-      const devContainer = document.createElement("div");
-      devContainer.className = "dev-quick-login";
-      devContainer.style.cssText = "margin-top: 16px; display: flex; justify-content: center; gap: 10px;";
-      devContainer.innerHTML = `
-        <button type="button" id="js-dev-login-phone" style="background: rgba(107, 99, 93, 0.1); border: 1px dashed #6B635D; padding: 4px 8px; font-size: 11px; border-radius: 4px; color: #6B635D; cursor: pointer; transition: all 0.2s;">Test Phone</button>
-        <button type="button" id="js-dev-login-email" style="background: rgba(107, 99, 93, 0.1); border: 1px dashed #6B635D; padding: 4px 8px; font-size: 11px; border-radius: 4px; color: #6B635D; cursor: pointer; transition: all 0.2s;">Test Email</button>
-      `;
-      signupPara.after(devContainer);
-
-      document.getElementById("js-dev-login-phone").addEventListener("click", () => {
-        completeAuthentication(createDevMemberSession("phone"), {
-          mergeCart: false,
-          message: "Đã vào luồng Member Test (số điện thoại).",
-          redirectDelay: 300
-        });
-      });
-
-      document.getElementById("js-dev-login-email").addEventListener("click", () => {
-        completeAuthentication(createDevMemberSession("email"), {
-          mergeCart: false,
-          message: "Đã vào luồng Member Test (email).",
-          redirectDelay: 300
-        });
-      });
-    }
-  }
-  /* END DEV MODE ONLY */
 
   // Store original button label
   const btn = document.getElementById("btn-signin");
@@ -599,4 +566,39 @@ export function initAuthClient() {
   bindForgotPassword();
   bindResetPassword();
   updateHeaderAuthUI();
+
+  // Bind Account Dropdown Item Listeners
+  const logoutBtn = document.querySelector(".js-dropdown-logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      clearAuthSession();
+      showToast("Đăng xuất thành công!");
+      setTimeout(() => {
+        window.location.href = "/src/pages/auth/signin.html";
+      }, 1000);
+    });
+  }
+
+  const dropdownTrigger = document.querySelector(".header-account-dropdown .btn-icon-wrapper");
+  if (dropdownTrigger) {
+    dropdownTrigger.addEventListener("click", (e) => {
+      // Toggle dropdown behavior on mobile devices / fallback
+      const hasSession = localStorage.getItem("velura_token");
+      if (!hasSession) {
+        window.location.href = "/src/pages/auth/signin.html";
+      } else if (window.innerWidth <= 768) {
+        // Toggle active class on mobile for click events
+        const menu = document.querySelector(".account-dropdown-menu");
+        if (menu) {
+          const isVisible = menu.style.visibility === "visible";
+          menu.style.opacity = isVisible ? "0" : "1";
+          menu.style.visibility = isVisible ? "hidden" : "visible";
+          menu.style.pointerEvents = isVisible ? "none" : "auto";
+        }
+      } else {
+        window.location.href = "/src/pages/account/profile.html";
+      }
+    });
+  }
 }

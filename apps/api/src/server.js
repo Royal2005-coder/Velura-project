@@ -36,6 +36,7 @@ import { handleContentRoute } from "./content/content-router.js";
 import { createFixedWindowLimiter } from "./rate-limit.js";
 import { handleUserRoute } from "./user-routes.js";
 import { handleWishlistRoute } from "./v1-wishlist-routes.js";
+import { handleRecommendationRoute } from "./recommendation.controller.js";
 
 assertRuntimeConfig();
 
@@ -119,6 +120,9 @@ const server = createServer(async (req, res) => {
     }
 
     if (parts[1] === "user") {
+      if (parts[2] === "recommendations" && parts[3] === "style-profile") {
+        return await handleRecommendationRoute(req, res, parts, corsHeaders, context);
+      }
       return await handleUserRoute(req, res, parts, corsHeaders, context);
     }
 

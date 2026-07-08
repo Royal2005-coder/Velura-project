@@ -3,6 +3,7 @@
  */
 import { apiRequest } from "./api.js";
 import { addToCart } from "./cart.js";
+import { getCurrentRole, hasRealAuthSession } from "./auth-session.js";
 
 // Mock data for location dropdowns
 const locationData = {
@@ -51,6 +52,12 @@ export function initProfileForm() {
   // 1. Tab Switching System
   initAccountTabs();
 
+  if (document.querySelector(".profile-page") && !hasRealAuthSession()) {
+    renderGuestProfileState();
+    showGuestLoginModal();
+    return;
+  }
+
   // 2. Profile Details Form
   initProfileFormValidation();
 
@@ -65,6 +72,71 @@ export function initProfileForm() {
 
   // 6. Settings & Style Profile Actions
   initSettingsAndStyleActions();
+}
+
+function renderGuestProfileState() {
+  const dash = "-";
+
+  document.querySelectorAll(".account-sidebar__name, .profile-avatar-name").forEach((el) => {
+    el.textContent = dash;
+  });
+
+  document.querySelectorAll(".profile-form input, .profile-form select, .profile-form textarea").forEach((field) => {
+    if (field.type === "radio" || field.type === "checkbox") {
+      field.checked = false;
+    } else {
+      field.value = dash;
+    }
+    field.disabled = true;
+  });
+
+  document.querySelectorAll(
+    ".profile-form button, .js-btn-add-address, .js-btn-save-settings, .style-profile__update-btn, .js-remove-wishlist, .js-add-cart-fast"
+  ).forEach((btn) => {
+    btn.disabled = true;
+    btn.setAttribute("aria-disabled", "true");
+  });
+
+  const addressList = document.querySelector(".address-list");
+  if (addressList) addressList.innerHTML = `<p class="account-guest-empty">-</p>`;
+
+  const ordersList = document.querySelector(".orders-list");
+  if (ordersList) ordersList.innerHTML = `<p class="account-guest-empty">-</p>`;
+
+  const wishlistGrid = document.getElementById("wishlist-product-grid");
+  if (wishlistGrid) wishlistGrid.innerHTML = `<p class="account-guest-empty">-</p>`;
+
+  const styleMetrics = document.querySelector(".style-profile__metrics");
+  if (styleMetrics) {
+    styleMetrics.querySelectorAll(".style-profile__metric-value").forEach((el) => {
+      el.textContent = dash;
+    });
+  }
+}
+
+function showGuestLoginModal() {
+  if (hasRealAuthSession() || document.querySelector(".account-login-required-modal")) return;
+
+  const modal = document.createElement("div");
+  modal.className = "account-login-required-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.innerHTML = `
+    <div class="account-login-required-modal__card">
+      <h2>BẠN CHƯA ĐĂNG NHẬP TRANG WEB</h2>
+      <p>Đăng nhập để tiếp tục?</p>
+      <div class="account-login-required-modal__actions">
+        <a class="account-login-required-modal__btn account-login-required-modal__btn--primary" href="/src/pages/auth/signin.html">Đăng nhập</a>
+        <button class="account-login-required-modal__btn account-login-required-modal__btn--secondary" type="button">Thoát</button>
+      </div>
+    </div>
+  `;
+
+  modal.querySelector("button").addEventListener("click", () => {
+    window.location.href = "/index.html";
+  });
+
+  document.body.appendChild(modal);
 }
 
 /**
@@ -162,6 +234,12 @@ function loadProfileData(form) {
     })
     .catch(err => {
       console.error("Failed to load profile:", err);
+      if (err.status === 401 && !hasRealAuthSession()) {
+        renderGuestProfileState();
+        showGuestLoginModal();
+      } else {
+        showToast("Không thể tải thông tin hồ sơ. Vui lòng thử lại sau.");
+      }
     });
 }
 

@@ -1,4 +1,5 @@
 import { HttpError } from "./http.js";
+import { verifyJwt } from "./auth-helper.js";
 import { getAuthUser, selectOne } from "./supabase.js";
 
 export const rolePages = {
@@ -29,7 +30,15 @@ export async function buildAuthContext(req) {
   const token = getToken(req);
   if (!token) return buildGuestContext();
 
-  const authUser = await getAuthUser(token);
+  let authUser = await getAuthUser(token);
+  const localJwt = authUser?.id ? null : verifyJwt(token);
+  if (!authUser?.id && localJwt?.user_id) {
+    authUser = {
+      id: localJwt.user_id,
+      email: localJwt.email || null,
+      phone: localJwt.phone || null
+    };
+  }
   if (!authUser?.id) return buildGuestContext();
 
   const accountSelect = [
@@ -37,7 +46,7 @@ export async function buildAuthContext(req) {
     "role", "admin_role", "is_active", "is_verified", "created_at",
     "last_login_at", "version", "updated_at"
   ].join(",");
-  const dbOptions = { useAnonKey: false };
+  const dbOptions = { useAnonKey: true }; // Use anon key fallback for token validation too
   let profile = null;
   try {
     profile = await selectOne("users", {
