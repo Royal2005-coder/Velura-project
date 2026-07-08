@@ -637,3 +637,42 @@
     font-size: 2.25rem;
   }
 }
+
+/* Empty State Styling */
+.track-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px 32px;
+  background-color: #ffffff;
+  border: 1.5px dashed #eee2d6;
+  border-radius: 12px;
+  margin-top: 40px;
+  box-shadow: 0 4px 20px rgba(42, 37, 34, 0.01);
+}
+
+.track-empty-icon-wrapper {
+  margin-bottom: 24px;
+  color: #c97b63;
+  opacity: 0.85;
+}
+
+.track-empty-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 2rem;
+  color: #2a2522;
+  margin: 0 0 12px 0;
+  font-weight: 500;
+}
+
+.track-empty-text {
+  font-family: "DM Sans", sans-serif;
+  font-size: 1.125rem;
+  color: #8c857e;
+  max-width: 520px;
+  line-height: 1.6;
+  margin: 0;
+}
+

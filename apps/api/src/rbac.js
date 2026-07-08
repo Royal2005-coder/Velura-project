@@ -33,18 +33,26 @@ export async function buildAuthContext(req) {
   const accountSelect = [
     "user_id", "auth_user_id", "email", "phone", "full_name", "avatar",
     "role", "admin_role", "is_active", "is_verified", "created_at",
-    "last_login_at", "version", "updated_at"
+    "last_login_at", "version", "updated_at", "saved_addresses"
   ].join(",");
   const dbOptions = { useAnonKey: true }; // Use anon key fallback for token validation too
 
-  // 1. Try local custom JWT verification (used by front-end customer accounts)
-  const decoded = verifyJwt(token);
-  if (decoded) {
+  // Try Supabase Auth first
+  let authUser = null;
+  try {
+    authUser = await getAuthUser(token);
+  } catch (err) {
+    // Ignore error and fall back to local custom JWT
+  }
+
+  const localJwt = authUser?.id ? null : verifyJwt(token);
+
+  if (localJwt) {
     let profile = null;
     try {
       profile = await selectOne("users", {
         select: accountSelect,
-        user_id: `eq.${decoded.user_id}`
+        user_id: `eq.${localJwt.user_id}`
       }, dbOptions);
     } catch {
       profile = null;
@@ -54,7 +62,7 @@ export async function buildAuthContext(req) {
 
     const roleCode = profile.role === "admin" ? profile.admin_role : profile.role || "member";
     return {
-      authUser: { id: profile.user_id, email: profile.email },
+      authUser: { id: localJwt.user_id, email: profile.email },
       profile,
       roleCode,
       roleName: roleNames[roleCode] || "Member",
@@ -64,8 +72,6 @@ export async function buildAuthContext(req) {
     };
   }
 
-  // 2. Fallback to Supabase Auth token validation (used by Admin Dashboard)
-  const authUser = await getAuthUser(token);
   if (!authUser?.id) return buildGuestContext();
 
   let profile = null;

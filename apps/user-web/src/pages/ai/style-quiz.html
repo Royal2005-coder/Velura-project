@@ -32,17 +32,17 @@
               Style Quiz
             </span>
             <h1 class="quiz-title">Khám phá phong cách của bạn</h1>
-            <p class="quiz-subtitle">Trả lời 7 câu hỏi để Velura gợi ý đồ phù hợp nhất</p>
+            <p class="quiz-subtitle">Trả lời 8 câu hỏi để Velura gợi ý đồ phù hợp nhất</p>
           </div>
 
           <!-- Quiz Progress -->
           <div class="quiz-progress">
             <div class="quiz-progress__header">
-              <span class="quiz-progress__step">Bước <span id="current-step-num">1</span> / 7</span>
+              <span class="quiz-progress__step">Bước <span id="current-step-num">1</span> / 8</span>
               <a href="/index.html" class="quiz-progress__skip">Bỏ qua</a>
             </div>
             <div class="quiz-progress__track">
-              <div class="quiz-progress__bar" style="width: 14.28%;"></div>
+              <div class="quiz-progress__bar" style="width: 12.5%;"></div>
             </div>
           </div>
 
@@ -64,11 +64,14 @@
 
               <!-- Context Selection group -->
               <div class="quiz-step-subheader">Bối cảnh mặc chính</div>
-              <div class="quiz-option-group quiz-option-group--quarters" data-group="context">
-                <button type="button" class="quiz-btn-select js-quiz-option is-selected" data-value="Công sở">Công sở</button>
-                <button type="button" class="quiz-btn-select js-quiz-option" data-value="Dạo phố">Dạo phố</button>
-                <button type="button" class="quiz-btn-select js-quiz-option" data-value="Dự tiệc">Dự tiệc</button>
-                <button type="button" class="quiz-btn-select js-quiz-option" data-value="Ở nhà">Ở nhà</button>
+              <div class="quiz-option-group quiz-option-group--flex-wrap" data-group="context">
+                <button type="button" class="quiz-btn-select js-quiz-option is-selected" data-value="Office">Công sở</button>
+                <button type="button" class="quiz-btn-select js-quiz-option" data-value="Casual">Thường ngày</button>
+                <button type="button" class="quiz-btn-select js-quiz-option" data-value="Party">Dự tiệc</button>
+                <button type="button" class="quiz-btn-select js-quiz-option" data-value="School">Đi học</button>
+                <button type="button" class="quiz-btn-select js-quiz-option" data-value="Sport">Thể thao</button>
+                <button type="button" class="quiz-btn-select js-quiz-option" data-value="Travel">Du lịch</button>
+                <button type="button" class="quiz-btn-select js-quiz-option" data-value="Home">Ở nhà</button>
               </div>
 
               <div class="quiz-step-divider"></div>
@@ -220,8 +223,51 @@
               </div>
             </div>
 
-            <!-- Step 5: Primary Style -->
+            <!-- Step 5: Skin Tone / Color Tone -->
             <div class="quiz-step-content" data-quiz-step="5">
+              <div class="quiz-step-header">
+                <h2 class="quiz-step-title">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 2a7 7 0 0 0-7 7c0 3.86 3.14 7 7 7s7-3.14 7-7a7 7 0 0 0-7-7z" />
+                  </svg>
+                  Sắc tố da (Color Tone)
+                </h2>
+                <p class="quiz-step-desc">Velura gợi ý tông màu trang phục giúp tôn lên sắc tố da tự nhiên của bạn.</p>
+              </div>
+
+              <div class="quiz-budget-list" data-group="skin-tone">
+                <!-- Warm -->
+                <button type="button" class="quiz-budget-card" data-value="Warm">
+                  <span class="quiz-budget-card__radio"></span>
+                  <div class="quiz-budget-card__content">
+                    <span class="quiz-budget-card__title">Warm (Tông ấm)</span>
+                    <span class="quiz-budget-card__desc">Da thiên vàng/ấm, hợp trang sức vàng, tĩnh mạch cổ tay có màu xanh lá.</span>
+                  </div>
+                </button>
+
+                <!-- Cool -->
+                <button type="button" class="quiz-budget-card" data-value="Cool">
+                  <span class="quiz-budget-card__radio"></span>
+                  <div class="quiz-budget-card__content">
+                    <span class="quiz-budget-card__title">Cool (Tông lạnh)</span>
+                    <span class="quiz-budget-card__desc">Da thiên hồng/đỏ, hợp trang sức bạc, tĩnh mạch cổ tay có màu xanh dương/tím.</span>
+                  </div>
+                </button>
+
+                <!-- Neutral -->
+                <button type="button" class="quiz-budget-card is-selected" data-value="Neutral">
+                  <span class="quiz-budget-card__radio"></span>
+                  <div class="quiz-budget-card__content">
+                    <span class="quiz-budget-card__title">Neutral (Trung tính)</span>
+                    <span class="quiz-budget-card__desc">Sự pha trộn hài hòa giữa ấm và lạnh, phù hợp với hầu hết trang sức và màu sắc.</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 6: Primary Style -->
+            <div class="quiz-step-content" data-quiz-step="6">
               <div class="quiz-step-header">
                 <h2 class="quiz-step-title">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -235,12 +281,11 @@
 
               <div class="quiz-style-list" data-group="main-style" data-multi="true">
                 <!-- Minimalist -->
-                <button type="button" class="quiz-style-item js-quiz-option is-selected" data-value="Minimalism">
+                <button type="button" class="quiz-style-item js-quiz-option is-selected" data-value="Minimalist">
                   <div class="quiz-style-item__bullet"></div>
                   <div class="quiz-style-item__info">
-                    <h3 class="quiz-style-item__name">Minimalism (Tối giản)</h3>
-                    <p class="quiz-style-item__desc">Thiết kế đơn giản, màu sắc trung tính, phom dáng tinh tế tôn dáng.
-                    </p>
+                    <h3 class="quiz-style-item__name">Minimalist (Tối giản)</h3>
+                    <p class="quiz-style-item__desc">Thiết kế đơn giản, màu sắc trung tính, phom dáng tinh tế tôn dáng.</p>
                   </div>
                 </button>
 
@@ -249,27 +294,43 @@
                   <div class="quiz-style-item__bullet"></div>
                   <div class="quiz-style-item__info">
                     <h3 class="quiz-style-item__name">Classic (Cổ điển)</h3>
-                    <p class="quiz-style-item__desc">Họa tiết hoài cổ thời thượng, chất liệu cao cấp, phom dáng thanh
-                      lịch.</p>
+                    <p class="quiz-style-item__desc">Họa tiết hoài cổ thời thượng, chất liệu cao cấp, phom dáng thanh lịch.</p>
                   </div>
                 </button>
 
-                <!-- Modern -->
-                <button type="button" class="quiz-style-item js-quiz-option" data-value="Modern">
+                <!-- Romantic -->
+                <button type="button" class="quiz-style-item js-quiz-option" data-value="Romantic">
                   <div class="quiz-style-item__bullet"></div>
                   <div class="quiz-style-item__info">
-                    <h3 class="quiz-style-item__name">Modern (Hiện đại)</h3>
-                    <p class="quiz-style-item__desc">Bắt kịp xu hướng đường phố năng động, phom dáng độc lạ phá cách.
-                    </p>
-                  </div>
-                </button>
-
-                <!-- Feminine -->
-                <button type="button" class="quiz-style-item js-quiz-option" data-value="Feminine">
-                  <div class="quiz-style-item__bullet"></div>
-                  <div class="quiz-style-item__info">
-                    <h3 class="quiz-style-item__name">Feminine (Nữ tính)</h3>
+                    <h3 class="quiz-style-item__name">Romantic (Lãng mạn)</h3>
                     <p class="quiz-style-item__desc">Đầm ren/voan bồng bềnh, bèo nhún thướt tha mềm mại ngọt ngào.</p>
+                  </div>
+                </button>
+
+                <!-- Elegant -->
+                <button type="button" class="quiz-style-item js-quiz-option" data-value="Elegant">
+                  <div class="quiz-style-item__bullet"></div>
+                  <div class="quiz-style-item__info">
+                    <h3 class="quiz-style-item__name">Elegant (Thanh lịch)</h3>
+                    <p class="quiz-style-item__desc">Đường cắt tinh xảo chuẩn mực, phom dáng sang trọng, quý phái.</p>
+                  </div>
+                </button>
+
+                <!-- Boho -->
+                <button type="button" class="quiz-style-item js-quiz-option" data-value="Boho">
+                  <div class="quiz-style-item__bullet"></div>
+                  <div class="quiz-style-item__info">
+                    <h3 class="quiz-style-item__name">Boho (Phóng khoáng)</h3>
+                    <p class="quiz-style-item__desc">Họa tiết độc đáo, phom dáng thoải mái phóng khoáng bay bổng tự do.</p>
+                  </div>
+                </button>
+
+                <!-- Street -->
+                <button type="button" class="quiz-style-item js-quiz-option" data-value="Street">
+                  <div class="quiz-style-item__bullet"></div>
+                  <div class="quiz-style-item__info">
+                    <h3 class="quiz-style-item__name">Street (Đường phố)</h3>
+                    <p class="quiz-style-item__desc">Bắt kịp xu hướng đường phố năng động, độc lạ, bụi bặm và phá cách.</p>
                   </div>
                 </button>
 
@@ -278,15 +339,23 @@
                   <div class="quiz-style-item__bullet"></div>
                   <div class="quiz-style-item__info">
                     <h3 class="quiz-style-item__name">Sporty (Thể thao)</h3>
-                    <p class="quiz-style-item__desc">Trang phục thun co giãn thoải mái, kiểu dáng khỏe khoắn cá tính.
-                    </p>
+                    <p class="quiz-style-item__desc">Trang phục thun co giãn thoải mái, kiểu dáng khỏe khoắn, năng động.</p>
+                  </div>
+                </button>
+
+                <!-- Smart Casual -->
+                <button type="button" class="quiz-style-item js-quiz-option" data-value="Smart Casual">
+                  <div class="quiz-style-item__bullet"></div>
+                  <div class="quiz-style-item__info">
+                    <h3 class="quiz-style-item__name">Smart Casual (Lịch sự năng động)</h3>
+                    <p class="quiz-style-item__desc">Sự kết hợp hoàn hảo giữa lịch sự công sở và thoải mái thường ngày.</p>
                   </div>
                 </button>
               </div>
             </div>
 
-            <!-- Step 6: Colors -->
-            <div class="quiz-step-content" data-quiz-step="6">
+            <!-- Step 7: Colors -->
+            <div class="quiz-step-content" data-quiz-step="7">
               <div class="quiz-step-header">
                 <h2 class="quiz-step-title">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -376,8 +445,8 @@
               </div>
             </div>
 
-            <!-- Step 7: Budget per item -->
-            <div class="quiz-step-content" data-quiz-step="7">
+            <!-- Step 8: Budget per item -->
+            <div class="quiz-step-content" data-quiz-step="8">
               <div class="quiz-step-header">
                 <h2 class="quiz-step-title">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -458,6 +527,10 @@
                     <tr>
                       <th>Dáng người</th>
                       <td id="summary-body-shape">-</td>
+                    </tr>
+                    <tr>
+                      <th>Sắc tố da</th>
+                      <td id="summary-skin-tone">-</td>
                     </tr>
                     <tr>
                       <th>Phong cách chủ đạo</th>

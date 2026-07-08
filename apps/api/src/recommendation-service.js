@@ -2,6 +2,7 @@ import { config } from "./config.js";
 import { generateGeminiEmbedding, generateGeminiJson, isGeminiConfigured, vectorLiteral } from "./gemini-client.js";
 import { HttpError } from "./http.js";
 import { callRpc, selectOne, selectRows } from "./supabase.js";
+import { guestStyleProfiles } from "./user/quiz.js";
 
 const PRODUCT_SELECT = [
   "product_id",
@@ -112,7 +113,17 @@ async function getStyleProfile(context, req) {
 
   const guestSessionId = req.headers["x-guest-session-id"] || "";
   if (!guestSessionId) return null;
-  return selectOne("style_profile", { guest_session_id: `eq.${guestSessionId}` }, { useAnonKey: true });
+
+  // Retrieve from in-memory guest store if available
+  const inMemory = guestStyleProfiles.get(guestSessionId);
+  if (inMemory) return inMemory;
+
+  // Fallback to selectOne and handle cases where database column doesn't exist
+  try {
+    return await selectOne("style_profile", { guest_session_id: `eq.${guestSessionId}` }, { useAnonKey: true });
+  } catch (err) {
+    return null;
+  }
 }
 
 async function matchProductsByVector(queryEmbedding, quiz) {
@@ -140,10 +151,30 @@ async function buildRuleBasedRecommendations(quiz) {
   ]);
 
   const products = hydrateProducts(productsResult.rows, categoriesResult.rows, comboItemsResult.rows, variantsResult.rows);
+
+  // Populate component products and images list for combos
+  for (const product of products) {
+    if (product.is_combo) {
+      const componentProductIds = (comboItemsResult.rows || [])
+        .filter((item) => item.combo_product_id === product.product_id)
+        .map((item) => item.component_product_id)
+        .filter(Boolean);
+      
+      const uniqueIds = [...new Set(componentProductIds)];
+      product.products = uniqueIds
+        .map((id) => products.find((p) => p.product_id === id))
+        .filter(Boolean);
+      
+      if ((!product.images || product.images.length === 0) && product.products.length > 0) {
+        product.images = product.products.flatMap((p) => Array.isArray(p.images) ? p.images.slice(0, 1) : []).slice(0, 4);
+      }
+    }
+  }
+
   const combos = products
     .filter((product) => product.is_combo)
     .map((product) => attachRecommendationScore(product, quiz))
-    .filter((product) => product.recommendation_score > 0)
+    .filter((product) => product.recommendation_score >= 3.0)
     .sort(compareRecommendedProducts)
     .slice(0, 5);
   const fallbackCombos = combos.length ? combos : products
@@ -155,7 +186,7 @@ async function buildRuleBasedRecommendations(quiz) {
   const singles = products
     .filter((product) => !product.is_combo)
     .map((product) => attachRecommendationScore(product, quiz))
-    .filter((product) => product.recommendation_score > 0)
+    .filter((product) => product.recommendation_score >= 3.0)
     .sort(compareRecommendedProducts);
   const fallbackSingles = singles.length ? singles : products
     .filter((product) => !product.is_combo)
@@ -242,7 +273,7 @@ function groupProductsByCategory(products) {
       });
     }
     const group = groups.get(categoryId);
-    if (group.products.length < 6) group.products.push(product);
+    group.products.push(product);
   }
   return [...groups.values()].filter((group) => group.products.length);
 }
@@ -251,12 +282,13 @@ function hydrateProducts(products, categories, comboItems, variants) {
   return products.map((product) => {
     let productVariants = [];
     if (product.is_combo) {
-      const itemVariantIds = comboItems
+      const componentProductIds = comboItems
         .filter((item) => item.combo_product_id === product.product_id)
-        .map((item) => item.component_variant_id);
+        .map((item) => item.component_product_id)
+        .filter(Boolean);
       productVariants = variants
-        .filter((variant) => itemVariantIds.includes(variant.variant_id))
-        .map((variant) => ({ ...variant, product_id: product.product_id }));
+        .filter((variant) => componentProductIds.includes(variant.product_id))
+        .map((variant) => ({ ...variant, combo_product_id: product.product_id }));
     } else {
       productVariants = variants.filter((variant) => variant.product_id === product.product_id);
     }
@@ -330,7 +362,7 @@ function hasStyleSignal(quiz) {
 
 function rankProductsForStyleProfile(products, quiz, options = {}) {
   const ranked = products.map((product) => attachRecommendationScore(product, quiz));
-  const strictMatches = ranked.filter((product) => product.recommendation_score > 0);
+  const strictMatches = ranked.filter((product) => product.recommendation_score >= 3.0);
   if (strictMatches.length || !options.keepSemanticFallback) {
     return strictMatches.sort(compareRecommendedProducts);
   }

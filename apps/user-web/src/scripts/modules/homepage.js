@@ -1,6 +1,6 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
-import { addToCart } from "./cart.js";
+import { addToCart, getVariantImage } from "./cart.js";
 import { updateWishlistBadge } from "./wishlist.js";
 
 /**
@@ -249,10 +249,11 @@ export function initHomepage() {
 
           <div class="product-card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              Mua hàng
+              <svg class="icon" style="width: 16px; height: 16px;"><use href="#icon-bag"></use></svg>
+              Mua ngay
             </a>
             <button class="product-card__btn-cart js-add-cart-home" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              Thêm vào giỏ hàng
+              <svg class="icon" style="width: 18px; height: 18px;"><use href="#icon-cart"></use></svg>
             </button>
           </div>
         </article>
@@ -335,7 +336,7 @@ export function initHomepage() {
             variant_id: matchedVariant.variant_id,
             product_id: prod.product_id,
             product_name: prod.name,
-            product_image: prod.images?.[0] || "",
+            product_image: getVariantImage(prod, matchedVariant.color || "Mặc định"),
             quantity: 1,
             unit_price: prod.sale_price || prod.base_price,
             color: matchedVariant.color || "Mặc định",
@@ -411,10 +412,11 @@ export function initHomepage() {
 
           <div class="product-card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              Mua hàng
+              <svg class="icon" style="width: 16px; height: 16px;"><use href="#icon-bag"></use></svg>
+              Mua ngay
             </a>
             <button class="product-card__btn-cart js-add-cart-personalized" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              Thêm vào giỏ hàng
+              <svg class="icon" style="width: 18px; height: 18px;"><use href="#icon-cart"></use></svg>
             </button>
           </div>
         </article>
@@ -493,7 +495,7 @@ export function initHomepage() {
             variant_id: matchedVariant.variant_id,
             product_id: prod.product_id,
             product_name: prod.name,
-            product_image: prod.images?.[0] || "",
+            product_image: getVariantImage(prod, matchedVariant.color || "Mặc định"),
             quantity: 1,
             unit_price: prod.sale_price || prod.base_price,
             color: matchedVariant.color || "Mặc định",
@@ -525,47 +527,43 @@ export function initHomepage() {
     const COLLECTION_META = {
       'Soft Ceremony': {
         id: 'soft-ceremony',
-        vnName: 'Nghi lễ Dịu dàng',
+        vnName: 'Soft Ceremony',
         badge: 'ELEGANT',
-        story: 'Những thiết kế mang phom dáng bất đối xứng tôn eo, gam màu thanh nhã mang đến vẻ ngoài sang trọng.',
-        banner: '/src/assets/images/collection-1.png'
+        story: 'Những thiết kế mềm mại, tinh tế cho những dịp tiệc nhẹ, hẹn hò và các buổi gặp gỡ đặc biệt — sang trọng, hiện đại, dễ ứng dụng.',
+        banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Soft-Ceremony_cover.png'
       },
       'The Urban Rhythm': {
         id: 'the-urban-rhythm',
-        vnName: 'Nhịp điệu Đô thị',
+        vnName: 'The Urban Rhythm',
         badge: 'CASUAL',
-        story: 'Tập trung vào sự linh hoạt giữa phong cách công sở và dạo phố hiện đại. Chất liệu linen tự nhiên kết hợp lụa mềm mại.',
-        banner: '/src/assets/images/collection-2.png'
-      },
-      'Modern Academia': {
-        id: 'modern-academia',
-        vnName: 'Học viện Hiện đại',
-        badge: 'PREPPY',
-        story: 'Cảm hứng từ phong cách Preppy học đường pha chút phá cách hiện đại, sử dụng các gam màu ấm và họa tiết kẻ thanh lịch.',
-        banner: '/src/assets/images/image-4.png'
+        story: 'Phom dáng hiện đại, đường cắt sắc sảo — bảng màu beige, charcoal, olive dễ mix-and-match cho cả ngày làm việc bận rộn lẫn buổi dạo phố cuối tuần.',
+        banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/Velura_urban-rythm_cover.png'
       },
       'Weekend Escape': {
         id: 'weekend-escape',
-        vnName: 'Trốn chạy Cuối tuần',
+        vnName: 'Weekend Escape',
         badge: 'TRAVEL',
-        story: 'Bộ sưu tập của những chuyến đi ngẫu hứng đầy nắng và gió. Các chất liệu Linen mộc mạc và Silk mát mẻ.',
-        banner: '/src/assets/images/about_01.jpg'
+        story: 'Phom dáng nhẹ nhàng, chất liệu thoáng mát — dạo phố, cà phê hay du lịch đều thoải mái, thanh lịch trong mọi hành trình.',
+        banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Weekend-Escape_cover.png'
       },
       'Midnight Mirage': {
         id: 'midnight-mirage',
-        vnName: 'Ảo ảnh Nửa đêm',
-        badge: 'PARTY',
-        story: 'Sự đan xen quyến rũ của các đường khoét vai tinh tế, chất liệu len dệt kim móc (crochet) cá tính.',
-        banner: '/src/assets/images/image-5.png'
+        vnName: 'Midnight Mirage',
+        badge: 'STREET',
+        story: 'Street style Hàn Quốc — Grunge, Campus Girl, Y2K Minimal. Bảng màu trung tính pha pastel, trẻ trung và dễ phối đồ mọi ngày.',
+        banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Midnight-Mirage_cover.png'
       },
       'The Afterglow': {
         id: 'the-afterglow',
-        vnName: 'Rực rỡ Hoàng hôn',
+        vnName: 'The Afterglow',
         badge: 'COUTURE',
-        story: 'Dòng sản phẩm dạ hội cao cấp nhất của Velura. Phom dáng đầm xòe phồng, đầm đuôi cá kết hợp kỹ thuật xếp nếp.',
-        banner: '/src/assets/images/about_03.jpg'
+        story: 'Dư âm vương giả — lụa satin, corset tinh tế và sắc hồng tulle cùng xanh Sapphire tôn vinh vẻ đẹp kiêu sa, lộng lẫy như một tiểu thư vương giả.',
+        banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_The-Afterglow_cover.png'
       }
     };
+
+    // Fixed display order — only show the 5 official collections, in this exact sequence
+    const DISPLAY_ORDER = ['Soft Ceremony', 'The Urban Rhythm', 'Weekend Escape', 'Midnight Mirage', 'The Afterglow'];
 
     const getMeta = (name) => {
       return COLLECTION_META[name] || {
@@ -582,7 +580,10 @@ export function initHomepage() {
       return;
     }
 
-    collectionsGrid.innerHTML = uniqueColNames.map(colName => {
+    // Render in fixed order — only collections that exist in DB AND are in DISPLAY_ORDER
+    const orderedColNames = DISPLAY_ORDER.filter(name => uniqueColNames.includes(name));
+
+    collectionsGrid.innerHTML = orderedColNames.map(colName => {
       const meta = getMeta(colName);
       return `
         <a href="/src/pages/collections.html?id=${meta.id}" class="collection-card" data-bind="collection.detail_url">

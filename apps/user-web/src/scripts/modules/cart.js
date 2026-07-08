@@ -55,6 +55,47 @@ export function showToast(message) {
   }, 3000);
 }
 
+export function getVariantImage(product, color) {
+  const images = product.images || [];
+  if (images.length <= 1 || !color) {
+    return images[0] || "";
+  }
+  
+  const colorSlug = color.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const tokens = colorSlug.split("-").filter(t => t.length >= 3);
+  
+  let bestIdx = -1;
+  let maxScore = 0;
+  
+  images.forEach((img, idx) => {
+    const urlLower = img.toLowerCase();
+    let score = 0;
+    
+    // Exact slug match (highest priority)
+    if (urlLower.includes(colorSlug) || urlLower.includes(colorSlug.replace("-", ""))) {
+      score += 10;
+    }
+    
+    // Partial token match
+    tokens.forEach(tok => {
+      if (urlLower.includes(tok)) {
+        score += 5;
+      }
+    });
+    
+    if (score > maxScore) {
+      maxScore = score;
+      bestIdx = idx;
+    }
+  });
+  
+  if (bestIdx > -1 && maxScore > 0) {
+    return images[bestIdx];
+  }
+  
+  return images[0] || "";
+}
+
 // ----------------------------------------------------
 // Cart core operations (localStorage based)
 // ----------------------------------------------------
@@ -66,6 +107,85 @@ export function getCart() {
     console.error("Failed to parse cart:", e);
     return [];
   }
+}
+
+export function groupCartItems(cart) {
+  const grouped = [];
+  const comboMap = new Map();
+  
+  for (const item of cart) {
+    if (item.combo_id) {
+      if (!comboMap.has(item.combo_id)) {
+        comboMap.set(item.combo_id, {
+          is_combo: true,
+          variant_id: item.combo_id,
+          product_id: item.combo_id,
+          product_name: item.combo_name || "Set đồ phối sẵn",
+          product_image: item.combo_image || item.product_image || "",
+          quantity: item.quantity,
+          unit_price: 0,
+          items: []
+        });
+      }
+      const comboGroup = comboMap.get(item.combo_id);
+      comboGroup.items.push(item);
+    } else {
+      grouped.push(item);
+    }
+  }
+  
+  for (const comboGroup of comboMap.values()) {
+    const baseQty = comboGroup.items[0]?.quantity || 1;
+    comboGroup.quantity = baseQty;
+    
+    const totalUnitPrice = comboGroup.items.reduce((sum, item) => sum + (item.unit_price || 0), 0);
+    comboGroup.unit_price = totalUnitPrice;
+    
+    grouped.push(comboGroup);
+  }
+  
+  return grouped;
+}
+
+function expandCheckoutItemsForBackend(items) {
+  const expanded = [];
+  for (const item of items) {
+    if (item.is_combo && item.items) {
+      for (const subItem of item.items) {
+        expanded.push({
+          variant_id: subItem.variant_id,
+          product_name: subItem.product_name,
+          product_image: subItem.product_image,
+          quantity: subItem.quantity * item.quantity,
+          unit_price: subItem.unit_price
+        });
+      }
+    } else {
+      expanded.push({
+        variant_id: item.variant_id,
+        product_name: item.product_name,
+        product_image: item.product_image,
+        quantity: item.quantity,
+        unit_price: item.unit_price
+      });
+    }
+  }
+  return expanded;
+}
+
+function getRemainingCartAfterCheckout(mainCart, checkedOutItems) {
+  const checkedOutComboIds = checkedOutItems.filter(x => x.is_combo).map(x => x.variant_id);
+  const checkedOutVariantIds = checkedOutItems.filter(x => !x.is_combo).map(x => x.variant_id);
+  
+  return mainCart.filter(item => {
+    if (item.combo_id && checkedOutComboIds.includes(item.combo_id)) {
+      return false;
+    }
+    if (checkedOutVariantIds.includes(item.variant_id)) {
+      return false;
+    }
+    return true;
+  });
 }
 
 export async function syncCartWithDb(cart) {
@@ -171,11 +291,20 @@ export async function addToCart(item) {
 
 export function removeFromCart(variantId) {
   let cart = getCart();
-  const item = cart.find(x => x.variant_id === variantId);
-  cart = cart.filter(x => x.variant_id !== variantId);
-  saveCart(cart);
-  if (item) {
-    showToast(`Đã xóa ${item.product_name} khỏi giỏ hàng.`);
+  const isCombo = variantId.startsWith("combo-");
+  if (isCombo) {
+    const comboItems = cart.filter(x => x.combo_id === variantId);
+    const comboName = comboItems[0]?.combo_name || "Set đồ";
+    cart = cart.filter(x => x.combo_id !== variantId);
+    saveCart(cart);
+    showToast(`Đã xóa ${comboName} khỏi giỏ hàng.`);
+  } else {
+    const item = cart.find(x => x.variant_id === variantId);
+    cart = cart.filter(x => x.variant_id !== variantId);
+    saveCart(cart);
+    if (item) {
+      showToast(`Đã xóa ${item.product_name} khỏi giỏ hàng.`);
+    }
   }
 }
 
@@ -185,10 +314,20 @@ export function updateQty(variantId, newQty) {
     return;
   }
   const cart = getCart();
-  const item = cart.find(x => x.variant_id === variantId);
-  if (item) {
-    item.quantity = newQty;
+  const isCombo = variantId.startsWith("combo-");
+  if (isCombo) {
+    cart.forEach(item => {
+      if (item.combo_id === variantId) {
+        item.quantity = newQty;
+      }
+    });
     saveCart(cart);
+  } else {
+    const item = cart.find(x => x.variant_id === variantId);
+    if (item) {
+      item.quantity = newQty;
+      saveCart(cart);
+    }
   }
 }
 
@@ -199,7 +338,7 @@ export function clearCart() {
 }
 
 export function updateBadge() {
-  const cart = getCart();
+  const cart = groupCartItems(getCart());
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const badges = document.querySelectorAll(".cart-badge");
   badges.forEach(badge => {
@@ -231,7 +370,7 @@ function getCheckoutItems() {
       return JSON.parse(raw);
     } catch(e) {}
   }
-  return getCart();
+  return groupCartItems(getCart());
 }
 
 export async function mergeLocalCartWithDb() {
@@ -370,7 +509,8 @@ function renderCartPage() {
 
   if (!cartContainer) return;
 
-  const cart = getCart();
+  const rawCart = getCart();
+  const cart = groupCartItems(rawCart);
   
   if (cartCountEl) {
     const totalQty = cart.reduce((sum, x) => sum + x.quantity, 0);
@@ -425,8 +565,13 @@ function renderCartPage() {
             </button>
           </div>
           <div class="cart-item__tags">
-            <span class="cart-item__tag">Size: ${item.size || "M"}</span>
-            <span class="cart-item__tag">Màu: ${item.color || "Mặc định"}</span>
+            ${item.is_combo ? `
+              <span class="cart-item__tag" style="background: #f4e4dc; color: var(--terracotta); font-weight: 500;">Set phối đồ gợi ý</span>
+              <span class="cart-item__tag" style="white-space: normal; line-height: 1.4;">Gồm: ${item.items.map(sub => sub.product_name).join(" + ")}</span>
+            ` : `
+              <span class="cart-item__tag">Size: ${item.size || "M"}</span>
+              <span class="cart-item__tag">Màu: ${item.color || "Mặc định"}</span>
+            `}
           </div>
           <div class="cart-item__footer-row">
             <div class="qty-selector">
@@ -614,6 +759,10 @@ function renderOrderSummarySidebar(shippingFee = 0) {
   }
 }
 
+let paymentUserListenersBound = false;
+let checkoutAddresses = [];
+let checkoutUserObj = {};
+
 async function initPaymentUserPage() {
   const token = localStorage.getItem("velura_token");
   const rawUser = localStorage.getItem("velura_user");
@@ -652,6 +801,9 @@ async function initPaymentUserPage() {
     user = JSON.parse(localStorage.getItem("velura_user") || "{}");
     addresses = user.saved_addresses || [];
   }
+
+  checkoutAddresses = addresses;
+  checkoutUserObj = user;
 
   if (addresses.length > 0) {
     addressListContainer.innerHTML = addresses.map((addr, idx) => `
@@ -740,26 +892,26 @@ async function initPaymentUserPage() {
     }
   };
 
+  // If listeners are already bound, do not bind them again
+  if (paymentUserListenersBound) {
+    return;
+  }
+  paymentUserListenersBound = true;
+
   if (modal) {
     const btnCloseList = modal.querySelectorAll(".js-btn-close-modal");
     btnCloseList.forEach(btn => {
-      const newBtn = btn.cloneNode(true);
-      btn.parentNode.replaceChild(newBtn, btn);
-      newBtn.addEventListener("click", closeModal);
+      btn.addEventListener("click", closeModal);
     });
 
     const backdrop = modal.querySelector(".modal__backdrop");
     if (backdrop) {
-      const newBackdrop = backdrop.cloneNode(true);
-      backdrop.parentNode.replaceChild(newBackdrop, backdrop);
-      newBackdrop.addEventListener("click", closeModal);
+      backdrop.addEventListener("click", closeModal);
     }
   }
 
   if (provinceSelect) {
-    const newProvinceSelect = provinceSelect.cloneNode(true);
-    provinceSelect.parentNode.replaceChild(newProvinceSelect, provinceSelect);
-    newProvinceSelect.addEventListener("change", (e) => {
+    provinceSelect.addEventListener("change", (e) => {
       const provinceKey = e.target.value;
       const updatedDistrictSelect = document.getElementById("address-district");
       const updatedWardSelect = document.getElementById("address-ward");
@@ -784,9 +936,7 @@ async function initPaymentUserPage() {
 
   const activeDistrictSelect = document.getElementById("address-district");
   if (activeDistrictSelect) {
-    const newDistrictSelect = activeDistrictSelect.cloneNode(true);
-    activeDistrictSelect.parentNode.replaceChild(newDistrictSelect, activeDistrictSelect);
-    newDistrictSelect.addEventListener("change", (e) => {
+    activeDistrictSelect.addEventListener("change", (e) => {
       const activeProvSelect = document.getElementById("address-province");
       const updatedWardSelect = document.getElementById("address-ward");
       const provinceKey = activeProvSelect.value;
@@ -809,19 +959,16 @@ async function initPaymentUserPage() {
   // Add Address Handler
   const btnAdd = document.querySelector(".btn-add-address");
   if (btnAdd && modal) {
-    const newBtnAdd = btnAdd.cloneNode(true);
-    btnAdd.parentNode.replaceChild(newBtnAdd, btnAdd);
-    newBtnAdd.style.cursor = "pointer";
-    
-    newBtnAdd.addEventListener("click", () => {
+    btnAdd.style.cursor = "pointer";
+    btnAdd.addEventListener("click", () => {
       if (form) {
         form.reset();
         
         // Auto-fill logged in user info (Họ tên & Số điện thoại)
         const addressFullnameInput = document.getElementById("address-fullname");
         const addressPhoneInput = document.getElementById("address-phone");
-        if (addressFullnameInput) addressFullnameInput.value = user.full_name || "";
-        if (addressPhoneInput) addressPhoneInput.value = user.phone || "";
+        if (addressFullnameInput) addressFullnameInput.value = checkoutUserObj.full_name || "";
+        if (addressPhoneInput) addressPhoneInput.value = checkoutUserObj.phone || "";
         
         const currentDistrict = document.getElementById("address-district");
         const currentWard = document.getElementById("address-ward");
@@ -842,9 +989,7 @@ async function initPaymentUserPage() {
 
   // Submit address modal handler
   if (form) {
-    const newForm = form.cloneNode(true);
-    form.parentNode.replaceChild(newForm, form);
-    newForm.addEventListener("submit", async (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       
       const fullname = document.getElementById("address-fullname");
@@ -891,10 +1036,10 @@ async function initPaymentUserPage() {
         name: fullname.value.trim(),
         phone: phone.value.trim(),
         detail: fullDetailString,
-        is_default: isDefault || addresses.length === 0
+        is_default: isDefault || checkoutAddresses.length === 0
       };
 
-      let updatedAddresses = [...addresses];
+      let updatedAddresses = [...checkoutAddresses];
       if (newAddress.is_default) {
         updatedAddresses = updatedAddresses.map(addr => ({ ...addr, is_default: false }));
       }
@@ -906,8 +1051,8 @@ async function initPaymentUserPage() {
           body: JSON.stringify({ addresses: updatedAddresses })
         });
         if (res && res.success) {
-          user.saved_addresses = updatedAddresses;
-          localStorage.setItem("velura_user", JSON.stringify(user));
+          checkoutUserObj.saved_addresses = updatedAddresses;
+          localStorage.setItem("velura_user", JSON.stringify(checkoutUserObj));
           showToast("Đã thêm địa chỉ mới thành công!");
           closeModal();
           await initPaymentUserPage(); // Re-render address list
@@ -923,10 +1068,7 @@ async function initPaymentUserPage() {
 
   const continueBtn = document.querySelector(".checkout-actions .btn--primary");
   if (continueBtn) {
-    const newContinueBtn = continueBtn.cloneNode(true);
-    continueBtn.parentNode.replaceChild(newContinueBtn, continueBtn);
-
-    newContinueBtn.addEventListener("click", (e) => {
+    continueBtn.addEventListener("click", (e) => {
       e.preventDefault();
       
       const selectedRadio = document.querySelector("input[name='address']:checked");
@@ -936,7 +1078,7 @@ async function initPaymentUserPage() {
       }
 
       const idx = parseInt(selectedRadio.value, 10);
-      const addrObj = addresses[idx];
+      const addrObj = checkoutAddresses[idx];
 
       if (!addrObj) {
         showToast("Địa chỉ đã chọn không hợp lệ!");
@@ -944,9 +1086,9 @@ async function initPaymentUserPage() {
       }
 
       const shippingInfo = {
-        name: addrObj.name || addrObj.recipient_name || user.full_name || "",
-        phone: addrObj.phone || addrObj.recipient_phone || user.phone || "",
-        email: user.email || "",
+        name: addrObj.name || addrObj.recipient_name || checkoutUserObj.full_name || "",
+        phone: addrObj.phone || addrObj.recipient_phone || checkoutUserObj.phone || "",
+        email: checkoutUserObj.email || "",
         address: addrObj.detail || addrObj.address || addrObj.address_line || "",
         note: document.getElementById("note")?.value || ""
       };
@@ -1154,7 +1296,14 @@ function initOrderConfirmPage() {
         </div>
         <div style="display:flex;flex-direction:column;flex:1">
           <h4 class="product-item__name">${item.product_name}</h4>
-          <p class="product-item__variant">${item.color || "Mặc định"} / Size ${item.size || "M"}</p>
+          <p class="product-item__variant">
+            ${item.is_combo ? `
+              <span style="background: #f4e4dc; color: var(--terracotta); font-weight: 500; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Set phối đồ gợi ý</span><br/>
+              Gồm: ${item.items.map(sub => sub.product_name).join(" + ")}
+            ` : `
+              ${item.color || "Mặc định"} / Size ${item.size || "M"}
+            `}
+          </p>
           <p class="product-item__qty">Số lượng: ${item.quantity}</p>
           <p class="product-item__price">${(item.unit_price * item.quantity).toLocaleString("vi-VN")} VND</p>
         </div>
@@ -1292,13 +1441,7 @@ function initOrderConfirmPage() {
               total_amount: guestPayload.total_amount,
               payment_method: guestPayload.payment_method,
               shipping_email: guestPayload.email || "",
-              items: guestPayload.items.map(item => ({
-                variant_id: item.variant_id,
-                product_name: item.product_name,
-                product_image: item.product_image,
-                quantity: item.quantity,
-                unit_price: item.unit_price
-              }))
+              items: expandCheckoutItemsForBackend(guestPayload.items)
             }
           };
 
@@ -1324,8 +1467,7 @@ function initOrderConfirmPage() {
             }));
 
             const mainCart = getCart();
-            const checkedOutIds = guestPayload.items.map(x => x.variant_id);
-            const remainingCart = mainCart.filter(x => !checkedOutIds.includes(x.variant_id));
+            const remainingCart = getRemainingCartAfterCheckout(mainCart, guestPayload.items);
             localStorage.setItem("velura_cart", JSON.stringify(remainingCart));
             await syncCartWithDb(remainingCart);
 
@@ -1376,13 +1518,7 @@ function initOrderConfirmPage() {
 
         if (isMemberCheckout) {
           // Member Checkout
-          const orderItems = cart.map(item => ({
-            variant_id: item.variant_id,
-            product_name: item.product_name,
-            product_image: item.product_image,
-            quantity: item.quantity,
-            unit_price: item.unit_price
-          }));
+          const orderItems = expandCheckoutItemsForBackend(cart);
 
           const payload = {
             shipping_name: shipping.name,
@@ -1414,8 +1550,7 @@ function initOrderConfirmPage() {
 
             // Remove only checked out items
             const mainCart = getCart();
-            const checkedOutIds = cart.map(x => x.variant_id);
-            const remainingCart = mainCart.filter(x => !checkedOutIds.includes(x.variant_id));
+            const remainingCart = getRemainingCartAfterCheckout(mainCart, cart);
             localStorage.setItem("velura_cart", JSON.stringify(remainingCart));
             syncCartWithDb(remainingCart);
 

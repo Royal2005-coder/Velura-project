@@ -25,6 +25,7 @@ import { initCart } from "./modules/cart.js";
 import { initContentPages } from "./modules/content.js";
 import { hasRealAuthSession } from "./modules/auth-session.js";
 import { initAiSuggestions } from "./modules/ai-suggestions.js";
+import { initNotifications } from "./modules/notifications.js";
 
 (function () {
   "use strict";
@@ -79,6 +80,7 @@ import { initAiSuggestions } from "./modules/ai-suggestions.js";
   initCart();
   initContentPages();
   initAiSuggestions();
+  initNotifications();
 
   /* Mobile navigation */
   var menuToggle = document.querySelector(".menu-toggle");

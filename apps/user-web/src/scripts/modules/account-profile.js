@@ -2,7 +2,7 @@
  * Velura — Consolidated Account & Profile Logic
  */
 import { apiRequest } from "./api.js";
-import { addToCart } from "./cart.js";
+import { addToCart, getVariantImage } from "./cart.js";
 import { getCurrentRole, hasRealAuthSession } from "./auth-session.js";
 
 // Mock data for location dropdowns
@@ -49,6 +49,8 @@ const locationData = {
 };
 
 export function initProfileForm() {
+  if (!document.querySelector(".profile-page")) return;
+
   // 1. Tab Switching System
   initAccountTabs();
 
@@ -199,6 +201,7 @@ function loadProfileData(form) {
       const phoneInput = form.querySelector('input[name="phone"]');
       const emailInput = form.querySelector('input[name="email"]');
       const dobInput = form.querySelector('input[name="dob"]');
+      const avatarInput = form.querySelector('input[name="avatar"]');
       
       if (nameInput) nameInput.value = profile.full_name || "";
       if (phoneInput) {
@@ -214,6 +217,9 @@ function loadProfileData(form) {
         if (parts.length === 3) {
           dobInput.value = `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
+      }
+      if (avatarInput) {
+        avatarInput.value = profile.avatar || "";
       }
 
       if (profile.gender) {
@@ -231,6 +237,9 @@ function loadProfileData(form) {
       if (largeName && profile.full_name) {
         largeName.textContent = profile.full_name;
       }
+
+      // Render user avatar (initials fallback or custom URL)
+      renderUserAvatar(profile.avatar, profile.full_name);
     })
     .catch(err => {
       console.error("Failed to load profile:", err);
@@ -246,6 +255,7 @@ function loadProfileData(form) {
             const nameInput = form.querySelector('input[name="fullname"]');
             const phoneInput = form.querySelector('input[name="phone"]');
             const emailInput = form.querySelector('input[name="email"]');
+            const avatarInput = form.querySelector('input[name="avatar"]');
             
             if (nameInput) nameInput.value = profile.full_name || "";
             if (phoneInput) {
@@ -256,6 +266,10 @@ function loadProfileData(form) {
               emailInput.value = profile.email || "";
               emailInput.readOnly = true;
             }
+            if (avatarInput) {
+              avatarInput.value = profile.avatar || "";
+            }
+
             // Update names on UI
             const sidebarName = document.querySelector(".account-sidebar__name");
             if (sidebarName && profile.full_name) {
@@ -266,6 +280,9 @@ function loadProfileData(form) {
             if (largeName && profile.full_name) {
               largeName.textContent = profile.full_name;
             }
+
+            // Render user avatar (initials fallback or custom URL)
+            renderUserAvatar(profile.avatar, profile.full_name);
           } catch (e) {
             console.error("Failed to parse fallback user profile:", e);
           }
@@ -276,12 +293,105 @@ function loadProfileData(form) {
     });
 }
 
+/**
+ * Avatar Initials Fallback and Image Rendering Helpers
+ */
+function getInitials(name) {
+  if (!name) return "U";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function renderUserAvatar(avatarUrl, fullName) {
+  const sidebarAvatar = document.querySelector(".account-sidebar__avatar");
+  const profileAvatar = document.querySelector(".profile-avatar-img");
+  const avatarWrapper = document.querySelector(".profile-avatar-wrapper");
+  const sidebarWrapper = document.querySelector(".account-sidebar__avatar-wrapper");
+
+  const initials = getInitials(fullName);
+
+  if (avatarUrl && avatarUrl.trim() !== "") {
+    if (sidebarAvatar) {
+      sidebarAvatar.src = avatarUrl;
+      sidebarAvatar.style.display = "block";
+    }
+    if (profileAvatar) {
+      profileAvatar.src = avatarUrl;
+      profileAvatar.style.display = "block";
+    }
+    
+    // Clean up initials placeholders if they exist
+    const existingSidebarPlaceholder = sidebarWrapper?.querySelector(".avatar-placeholder");
+    if (existingSidebarPlaceholder) existingSidebarPlaceholder.remove();
+    
+    const existingProfilePlaceholder = avatarWrapper?.querySelector(".avatar-placeholder");
+    if (existingProfilePlaceholder) existingProfilePlaceholder.remove();
+  } else {
+    if (sidebarAvatar) sidebarAvatar.style.display = "none";
+    if (profileAvatar) profileAvatar.style.display = "none";
+
+    // Draw initials placeholder in sidebar
+    if (sidebarWrapper) {
+      let sidebarPlaceholder = sidebarWrapper.querySelector(".avatar-placeholder");
+      if (!sidebarPlaceholder) {
+        sidebarPlaceholder = document.createElement("div");
+        sidebarPlaceholder.className = "avatar-placeholder sidebar-avatar-placeholder";
+        sidebarWrapper.insertBefore(sidebarPlaceholder, sidebarAvatar);
+      }
+      sidebarPlaceholder.textContent = initials;
+    }
+
+    // Draw initials placeholder in profile top
+    if (avatarWrapper) {
+      let profilePlaceholder = avatarWrapper.querySelector(".avatar-placeholder");
+      if (!profilePlaceholder) {
+        profilePlaceholder = document.createElement("div");
+        profilePlaceholder.className = "avatar-placeholder profile-avatar-placeholder";
+        avatarWrapper.insertBefore(profilePlaceholder, profileAvatar);
+      }
+      profilePlaceholder.textContent = initials;
+    }
+  }
+}
+
+function setupAvatarUploadBtn(form) {
+  const uploadBtn = document.querySelector(".profile-avatar-upload-btn");
+  if (!uploadBtn) return;
+
+  // Prevent multiple bindings
+  if (uploadBtn.dataset.bound === "true") return;
+  uploadBtn.dataset.bound = "true";
+
+  uploadBtn.addEventListener("click", function(e) {
+    e.preventDefault();
+    const avatarInput = form.querySelector('input[name="avatar"]');
+    const nameInput = form.querySelector('input[name="fullname"]');
+    const currentVal = avatarInput ? avatarInput.value.trim() : "";
+    const fullName = nameInput ? nameInput.value.trim() : "User";
+
+    const newUrl = prompt("Nhập đường dẫn ảnh đại diện mới (URL):", currentVal);
+    if (newUrl !== null) {
+      const trimmed = newUrl.trim();
+      if (avatarInput) {
+        avatarInput.value = trimmed;
+      }
+      // Update preview immediately
+      renderUserAvatar(trimmed, fullName);
+      showToast("Đã cập nhật ảnh xem trước. Nhấn 'Cập nhật' ở dưới để lưu thay đổi.");
+    }
+  });
+}
+
 function initProfileFormValidation() {
   const form = document.querySelector(".profile-form");
   if (!form) return;
 
   // Load live data from backend
   loadProfileData(form);
+
+  // Hook up camera upload button to prompt for URL
+  setupAvatarUploadBtn(form);
 
   const cancelBtn = form.querySelector(".js-btn-cancel");
   if (cancelBtn) {
@@ -357,12 +467,16 @@ function initProfileFormValidation() {
       const genderInput = form.querySelector('input[name="gender"]:checked');
       const gender = genderInput ? genderInput.value : null;
 
+      const avatarInput = form.querySelector('input[name="avatar"]');
+      const avatar = avatarInput ? avatarInput.value.trim() : "";
+
       apiRequest("/api/user/profile", {
         method: "PATCH",
         body: JSON.stringify({
           full_name: fullname,
           date_of_birth,
-          gender
+          gender,
+          avatar
         })
       })
       .then(updated => {
@@ -373,6 +487,7 @@ function initProfileFormValidation() {
         if (localUser) {
           const parsed = JSON.parse(localUser);
           parsed.full_name = updated.full_name;
+          parsed.avatar = updated.avatar; // Sync avatar to local storage
           localStorage.setItem("velura_user", JSON.stringify(parsed));
         }
 
@@ -395,6 +510,9 @@ function initProfileFormValidation() {
         if (largeName) {
           largeName.textContent = updatedName;
         }
+
+        // Update avatar on UI dynamically
+        renderUserAvatar(updated.avatar, updated.full_name);
       })
       .catch(err => {
         showToast(`Cập nhật thất bại: ${err.message}`);
@@ -1049,7 +1167,7 @@ function initWishlistActions() {
             variant_id: matchedVariant.variant_id,
             product_id: product.product_id,
             product_name: product.name,
-            product_image: product.images?.[0] || "",
+            product_image: getVariantImage(product, matchedVariant.color || "Mặc định"),
             quantity: 1,
             unit_price: product.sale_price || product.base_price,
             color: matchedVariant.color || "Mặc định",

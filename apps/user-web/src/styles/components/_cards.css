@@ -538,52 +538,67 @@
 
 /* === Actions Row: Mua hàng + Thêm vào giỏ hàng === */
 .card--product .card__actions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  padding: 12px 0 0;
-  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 14px;
 }
 
-.card--product .card__actions .btn-buy,
-.card--product .card__btn-cart {
-  width: 100%;
-  min-height: 42px;
+.card--product .card__actions .btn-buy {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  background: #F4E4DC;
+  color: var(--terracotta, #C97B63);
+  padding: 11px 16px;
   border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
   border: none;
   cursor: pointer;
-  line-height: 1.2;
-  text-align: center;
-  white-space: normal;
   transition: background 0.2s ease, color 0.2s ease;
-}
-
-.card--product .card__actions .btn-buy {
-  background: #F4E4DC;
-  color: var(--terracotta, #C97B63);
-  padding: 11px 16px;
 }
 
 .card--product .card__actions .btn-buy:hover {
   background: #e8c9be;
   color: var(--terracotta-h, #b36a53);
 }
-.card--product .card__actions .btn-buy svg { display: block; flex-shrink: 0; }
+
+.card--product .card__actions .btn-buy svg {
+  display: block;
+  flex-shrink: 0;
+}
 
 .card--product .card__btn-cart {
-  background: var(--terracotta, #C97B63);
-  color: #ffffff;
-  padding: 11px 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #F4E4DC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--terracotta, #C97B63);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease;
 }
-.card--product .card__btn-cart svg { display: block; fill: none; stroke: currentColor; stroke-width: 2; }
-.card--product .card__btn-cart:hover { background: var(--terracotta-h, #b36a53); color: #ffffff; }
+
+.card--product .card__btn-cart svg {
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.card--product .card__btn-cart:hover {
+  background: var(--terracotta);
+  color: #ffffff;
+}
 
 .card--product.card--list-view .card__actions {
   width: 180px;
@@ -621,8 +636,7 @@
   min-height: 28px;
 }
 
-.card--product .card__actions .btn-buy,
-.card--product .card__btn-cart {
+.card--product .card__actions .btn-buy {
   min-height: 40px;
   border-radius: 8px;
   font-size: 0.76rem;
@@ -633,13 +647,8 @@
   background: #f2ded5;
 }
 
-.card--product .card__btn-cart {
-  background: var(--terracotta);
-}
-
 @media (max-width: 420px) {
-  .card--product .card__actions .btn-buy,
-  .card--product .card__btn-cart {
+  .card--product .card__actions .btn-buy {
     white-space: normal;
   }
 }

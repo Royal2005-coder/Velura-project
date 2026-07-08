@@ -153,7 +153,17 @@ async function openDetail(id) {
   try {
     const row = await reviewApi.get(id);
     state.selected = row;
-    overlay.innerHTML = `<div class="admin-drawer-backdrop" data-review-close></div><aside class="admin-drawer admin-drawer--wide"><header class="admin-drawer__header"><div><p class="admin-product-code">${escapeReviewHtml(row.review_id)}</p><h2 class="admin-section__title">${escapeReviewHtml(row.product?.name || "Đánh giá")}</h2><div class="admin-status-group">${stars(row.rating)}${statusBadge(row.status)}</div></div><button class="admin-icon-button" data-review-close>×</button></header><div class="admin-drawer__body"><h3 class="admin-drawer__section">Nội dung</h3><p class="admin-review-original">${escapeReviewHtml(row.comment || "—")}</p>${row.admin_reply ? `<div class="admin-review-response"><strong>Phản hồi Velura</strong><br>${escapeReviewHtml(row.admin_reply)}</div>` : ""}<dl class="admin-data-list"><div><dt>Đơn hàng</dt><dd>${escapeReviewHtml(row.order_id)}</dd></div><div><dt>Khách hàng</dt><dd>${escapeReviewHtml(row.user_id)}</dd></div><div><dt>Ngày gửi</dt><dd>${escapeReviewHtml(formatDate(row.submitted_at))}</dd></div></dl></div></aside>`;
+    
+    const imagesHtml = (row.images && row.images.length) ? `
+      <h3 class="admin-drawer__section">Hình ảnh đính kèm</h3>
+      <div class="admin-review-gallery" style="display: flex; gap: 8px; margin-top: 8px; margin-bottom: 24px; flex-wrap: wrap;">
+        ${row.images.map(img => `
+          <img src="${escapeReviewHtml(img)}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); cursor: pointer;" onclick="window.open('${escapeReviewHtml(img)}', '_blank')" />
+        `).join('')}
+      </div>
+    ` : '';
+
+    overlay.innerHTML = `<div class="admin-drawer-backdrop" data-review-close></div><aside class="admin-drawer admin-drawer--wide"><header class="admin-drawer__header"><div><p class="admin-product-code">${escapeReviewHtml(row.review_id)}</p><h2 class="admin-section__title">${escapeReviewHtml(row.product?.name || "Đánh giá")}</h2><div class="admin-status-group">${stars(row.rating)}${statusBadge(row.status)}</div></div><button class="admin-icon-button" data-review-close>×</button></header><div class="admin-drawer__body"><h3 class="admin-drawer__section">Nội dung</h3><p class="admin-review-original">${escapeReviewHtml(row.comment || "—")}</p>${imagesHtml}${row.admin_reply ? `<div class="admin-review-response"><strong>Phản hồi Velura</strong><br>${escapeReviewHtml(row.admin_reply)}</div>` : ""}<dl class="admin-data-list"><div><dt>Đơn hàng</dt><dd>${escapeReviewHtml(row.order_id)}</dd></div><div><dt>Khách hàng</dt><dd>${escapeReviewHtml(row.user_id)}</dd></div><div><dt>Ngày gửi</dt><dd>${escapeReviewHtml(formatDate(row.submitted_at))}</dd></div></dl></div></aside>`;
   } catch (error) { overlay.innerHTML = ""; toast(error.message, true); }
 }
 

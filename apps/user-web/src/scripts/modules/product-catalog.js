@@ -1,6 +1,6 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
-import { addToCart } from "./cart.js";
+import { addToCart, getVariantImage } from "./cart.js";
 import { getCurrentRole } from "./auth-session.js";
 import { updateWishlistBadge } from "./wishlist.js";
 
@@ -36,7 +36,7 @@ export function initProductCatalog() {
   const itemsPerPage = 12;
   let hasStyleProfile = false;
   let userBodyShape = "";
-  let isSuggestionsEnabled = localStorage.getItem("velura_suggestions_enabled") !== "false";
+  let isSuggestionsEnabled = localStorage.getItem("velura_suggestions_enabled") === "true";
   let quizData = null;
   const isMember = () => getCurrentRole() === "member";
 
@@ -374,6 +374,11 @@ export function initProductCatalog() {
         return !nameLower.includes("test") && !nameLower.includes("validation") && !nameLower.includes("commit");
       });
 
+      // Dynamically calculate max price filter based on database product prices early
+      if (allProducts.length > 0) {
+        maxProductPrice = Math.max(...allProducts.map(p => p.sale_price || p.base_price), 5000000);
+      }
+
       // Fetch style profile
       try {
         const profileRes = await apiRequest("/api/user/style-quiz");
@@ -423,6 +428,11 @@ export function initProductCatalog() {
           specialCheckboxes.forEach(cb => cb.checked = false);
           shapeCheckboxes.forEach(cb => cb.checked = false);
 
+          // Disable AI suggestions when user manually clears filters
+          isSuggestionsEnabled = false;
+          localStorage.setItem("velura_suggestions_enabled", "false");
+          updateFitHelperUI();
+
           applyFiltersAndSort();
           showToast("Đã xóa toàn bộ bộ lọc");
         });
@@ -464,12 +474,11 @@ export function initProductCatalog() {
         }
       }
 
-      // Dynamically calculate and set max price filter based on database product prices
-      if (allProducts.length > 0) {
-        maxProductPrice = Math.max(...allProducts.map(p => p.sale_price || p.base_price), 5000000);
-        // Do not overwrite max value if already set by budget_range
-        if (priceInputs[1] && !hasStyleProfile) {
-          priceInputs[1].value = maxProductPrice;
+      // Set max price limit input value if suggestions are not active
+      if (priceInputs[1] && !isSuggestionsEnabled) {
+        priceInputs[1].value = maxProductPrice;
+        if (priceRangeText) {
+          priceRangeText.textContent = `0₫ – ${maxProductPrice.toLocaleString('vi-VN')}₫`;
         }
       }
 
@@ -855,10 +864,11 @@ export function initProductCatalog() {
           </div>
           <div class="card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              Mua hàng
+              <svg class="icon" style="width: 16px; height: 16px;"><use href="#icon-bag"></use></svg>
+              Mua ngay
             </a>
             <button class="card__btn-cart js-add-cart-catalog" type="button" aria-label="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              Thêm vào giỏ hàng
+              <svg class="icon" style="width: 18px; height: 18px;"><use href="#icon-cart"></use></svg>
             </button>
           </div>
         </article>
@@ -894,6 +904,11 @@ export function initProductCatalog() {
     searchInputs.forEach(input => {
       input.value = "";
     });
+
+    // Disable AI suggestions when resetting
+    isSuggestionsEnabled = false;
+    localStorage.setItem("velura_suggestions_enabled", "false");
+    updateFitHelperUI();
 
     applyFiltersAndSort();
   }
@@ -972,12 +987,12 @@ export function initProductCatalog() {
         const productId = btn.getAttribute("data-id");
         const prod = productsList.find(x => x.product_id === productId);
         if (prod && prod.variants && prod.variants.length > 0) {
-          const matchedVariant = prod.variants[0]; // Pick first variant
+          const matchedVariant = prod.variants[0];
           addToCart({
             variant_id: matchedVariant.variant_id,
             product_id: prod.product_id,
             product_name: prod.name,
-            product_image: prod.images?.[0] || "",
+            product_image: getVariantImage(prod, matchedVariant.color || "Mặc định"),
             quantity: 1,
             unit_price: prod.sale_price || prod.base_price,
             color: matchedVariant.color || "Mặc định",

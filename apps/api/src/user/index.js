@@ -8,10 +8,19 @@ import { handleReviewsRoute } from "./reviews.js";
 import { handleQuizRoute } from "./quiz.js";
 import { handleWishlistRoute } from "./wishlist.js";
 import { handleCartRoute } from "./cart.js";
+import { handleNotificationsRoute } from "./notifications.js";
+import { handleUploadRoute } from "./upload.js";
 
 export async function handleUserRoute(req, res, parts, corsHeaders, context) {
   const subRoute = parts[2]; // e.g. "auth", "profile", "addresses", "style-quiz", "wishlist", "orders", "reviews", "returns", "cart", "categories", "vouchers"
   const action = parts[3];   // e.g. "signup", "signin", or order ID, etc.
+
+  if (subRoute !== "auth") {
+    const authHeader = req.headers.authorization || "";
+    if (authHeader && /^Bearer\s+(.+)$/i.test(authHeader) && (!context.authUser || !context.profile)) {
+      throw new HttpError(401, "UNAUTHORIZED", "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.");
+    }
+  }
 
   switch (subRoute) {
     case "auth":
@@ -43,6 +52,12 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
       
     case "cart":
       return await handleCartRoute(req, res, corsHeaders, context);
+      
+    case "notifications":
+      return await handleNotificationsRoute(req, res, action, parts, corsHeaders, context);
+      
+    case "upload":
+      return await handleUploadRoute(req, res, corsHeaders);
       
     default:
       throw new HttpError(404, "NOT_FOUND", "API endpoint not found");

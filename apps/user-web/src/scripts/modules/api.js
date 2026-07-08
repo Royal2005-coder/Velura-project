@@ -1,3 +1,5 @@
+import { clearAuthSession, isTokenExpired } from "./auth-session.js";
+
 // Velura Frontend API Client Module
 
 const API_URL = "http://localhost:8787";
@@ -9,7 +11,13 @@ const API_URL = "http://localhost:8787";
  */
 export function isSessionValid() {
   const token = localStorage.getItem("velura_token");
-  if (token) return true;
+  if (token) {
+    if (isTokenExpired(token)) {
+      clearAuthSession();
+      return false;
+    }
+    return true;
+  }
   const rawUser = localStorage.getItem("velura_user");
   if (rawUser) {
     try {
@@ -57,7 +65,7 @@ export async function apiRequest(path, options = {}) {
     if (!response.ok) {
       if (response.status === 401) {
         // Clear local token session
-        localStorage.removeItem("velura_token");
+        clearAuthSession();
         const currentPath = window.location.pathname;
         if (
           currentPath.includes("/pages/account/") &&

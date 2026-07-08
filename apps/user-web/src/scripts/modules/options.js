@@ -1,5 +1,5 @@
 import { apiRequest } from "./api.js";
-import { showToast, addToCart } from "./cart.js";
+import { showToast, addToCart, getVariantImage } from "./cart.js";
 import { updateWishlistBadge } from "./wishlist.js";
 
 /**
@@ -442,7 +442,7 @@ export async function initOptions() {
             variant_id: matchedVariant.variant_id,
             product_id: product.product_id,
             product_name: product.name,
-            product_image: product.images?.[0] || "",
+            product_image: getVariantImage(product, color),
             quantity: qty,
             unit_price: product.sale_price || product.base_price,
             color: color,
@@ -480,7 +480,7 @@ export async function initOptions() {
             variant_id: matchedVariant.variant_id,
             product_id: product.product_id,
             product_name: product.name,
-            product_image: product.images?.[0] || "",
+            product_image: getVariantImage(product, color),
             quantity: qty,
             unit_price: product.sale_price || product.base_price,
             color: color,
@@ -692,7 +692,7 @@ async function loadRelatedProducts(product) {
                 variant_id: matchedVariant.variant_id,
                 product_id: rp.product_id,
                 product_name: rp.name,
-                product_image: rp.images?.[0] || "",
+                product_image: getVariantImage(rp, matchedVariant.color || "Mặc định"),
                 quantity: 1,
                 unit_price: rp.sale_price || rp.base_price,
                 color: matchedVariant.color || "Mặc định",
@@ -833,9 +833,15 @@ function renderReviews(reviews) {
          </div>`
       : "";
 
-    const imagesHtml = r.images && r.images.length > 0
+    const validImages = Array.isArray(r.images)
+      ? r.images.filter(img => typeof img === "string" && img.startsWith("http"))
+      : [];
+    const imagesHtml = validImages.length > 0
       ? `<div class="review-item__gallery" style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
-          ${r.images.map(img => `<img src="${img}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #e5dfd8; cursor: pointer;" onclick="window.open('${img}', '_blank')" />`).join("")}
+          ${validImages.map(img => {
+            const safeUrl = encodeURI(img);
+            return `<img src="${safeUrl}" alt="Ảnh đánh giá" loading="lazy" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #e5dfd8; cursor: pointer;" onclick="window.open('${safeUrl}', '_blank')" onerror="this.style.display='none'" />`;
+          }).join("")}
          </div>`
       : "";
 

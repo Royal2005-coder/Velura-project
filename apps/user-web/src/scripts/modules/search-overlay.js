@@ -96,13 +96,13 @@ export function initSearchOverlay() {
     try {
       const categories = await apiRequest("/api/user/categories");
       const categoryImageMap = {
-        "ao": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/ao/ao_ao-blouse-lua-co-do-anh-champagne_white_01.jpg",
-        "quan": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/quan/quan_quan-short-linen-cap-cao-day-trang_ivory-white_1.jpg",
-        "dam-vay": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/dam-vay/dam-vay_dam-tweed-hai-day-that-no_emerald_01.png",
-        "ao-khoac": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/ao-khoac/ao-khoac_trench-coat-dang-dai_warm-beige_01.png",
-        "set-do": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-nau-cocoa-thanh-lich-du-tiec_01.png",
-        "phu-kien": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/main/categories/phu-kien/phu-kien_ly-giu-nhiet-matte-black_onyx_01.png",
-        "giay-dep": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/giay-dep/giay-dep_giay-sandals-quai-ngang-de-thap_matte-black_01.png"
+        "ao": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/ao/ao_ao-blouse-lua-co-do-anh-champagne_white_01.jpg",
+        "quan": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/quan/quan_quan-short-linen-cap-cao-day-trang_ivory-white_1.jpg",
+        "dam-vay": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/dam-vay/dam-vay_dam-tweed-hai-day-that-no_emerald_01.png",
+        "ao-khoac": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/ao-khoac/ao-khoac_trench-coat-dang-dai_warm-beige_01.png",
+        "set-do": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/set-do_set-nau-cocoa-thanh-lich-du-tiec_01.png",
+        "phu-kien": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/phu-kien/phu-kien_ly-giu-nhiet-matte-black_onyx_01.png",
+        "giay-dep": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/giay-dep/giay-dep_giay-sandals-quai-ngang-de-thap_matte-black_01.png"
       };
 
       const displayedCats = categories.slice(0, 4);

@@ -9,7 +9,7 @@ export function initStyleQuiz() {
   if (!container) return;
 
   let currentStep = 1;
-  const maxSteps = 7;
+  const maxSteps = 8;
   let isSummaryScreen = false;
 
   const steps = container.querySelectorAll(".quiz-step-content");
@@ -59,6 +59,34 @@ export function initStyleQuiz() {
 
   // Load any previously cached data from sessionStorage
   prefillQuizData();
+
+  if (isEditMode) {
+    import("./api.js").then(({ apiRequest }) => {
+      apiRequest("/api/user/style-quiz")
+        .then(res => {
+          if (res.success && res.quiz) {
+            const q = res.quiz;
+            if (q.height_cm) sessionStorage.setItem("quiz-height", q.height_cm);
+            if (q.weight_kg) sessionStorage.setItem("quiz-weight", q.weight_kg);
+            if (q.chest_cm) sessionStorage.setItem("quiz-vong1", q.chest_cm);
+            if (q.waist_cm) sessionStorage.setItem("quiz-vong2", q.waist_cm);
+            if (q.hip_cm) sessionStorage.setItem("quiz-vong3", q.hip_cm);
+            if (q.body_shape) sessionStorage.setItem("quiz-body-shape", q.body_shape);
+            if (q.style_tags) sessionStorage.setItem("quiz-main-style", JSON.stringify(q.style_tags));
+            if (q.preferred_occasions && q.preferred_occasions.length) {
+              sessionStorage.setItem("quiz-context", q.preferred_occasions[0]);
+            }
+            if (q.skin_tone) sessionStorage.setItem("quiz-skin-tone", q.skin_tone);
+            if (q.budget_range) sessionStorage.setItem("quiz-budget", q.budget_range);
+            
+            // Re-run prefill
+            prefillQuizData();
+            updateQuizUI();
+          }
+        })
+        .catch(err => console.error("Failed to load existing profile for editing:", err));
+    });
+  }
 
   // Selection logic for choices
   container.addEventListener("click", (e) => {
@@ -295,6 +323,14 @@ export function initStyleQuiz() {
         return true;
 
       case 5:
+        const toneSelected = container.querySelector('[data-group="skin-tone"] .is-selected');
+        if (!toneSelected) {
+          showToast("Vui lòng chọn sắc tố da của bạn.");
+          return false;
+        }
+        return true;
+
+      case 6:
         const styleSelected = container.querySelector('[data-group="main-style"] .is-selected');
         if (!styleSelected) {
           showToast("Vui lòng chọn phong cách chủ đạo.");
@@ -302,7 +338,7 @@ export function initStyleQuiz() {
         }
         return true;
 
-      case 6:
+      case 7:
         const colorsSelected = container.querySelectorAll('.js-quiz-color-option.is-selected');
         if (colorsSelected.length === 0) {
           showToast("Vui lòng chọn ít nhất 1 màu sắc yêu thích.");
@@ -310,7 +346,7 @@ export function initStyleQuiz() {
         }
         return true;
 
-      case 7:
+      case 8:
         const budgetSelected = container.querySelector('.quiz-budget-card.is-selected');
         if (!budgetSelected) {
           showToast("Vui lòng chọn mức ngân sách mong muốn.");
@@ -343,6 +379,9 @@ export function initStyleQuiz() {
 
       const shape = container.querySelector('[data-group="body-shape"] .is-selected')?.getAttribute("data-value");
       if (shape) sessionStorage.setItem("quiz-body-shape", shape);
+
+      const skinTone = container.querySelector('[data-group="skin-tone"] .is-selected')?.getAttribute("data-value");
+      if (skinTone) sessionStorage.setItem("quiz-skin-tone", skinTone);
 
       const selectedStyles = container.querySelectorAll('[data-group="main-style"] .is-selected');
       const styles = Array.from(selectedStyles).map(btn => btn.getAttribute("data-value"));
@@ -414,6 +453,17 @@ export function initStyleQuiz() {
         btns.forEach(btn => {
           const val = btn.getAttribute("data-quiz-value") || btn.getAttribute("data-value");
           btn.classList.toggle("is-selected", val === shape);
+        });
+      }
+
+      // 5.5. Skin Tone
+      const skinTone = sessionStorage.getItem("quiz-skin-tone");
+      if (skinTone) {
+        const cards = container.querySelectorAll('[data-group="skin-tone"] .quiz-budget-card');
+        cards.forEach(card => card.classList.remove("is-selected"));
+        cards.forEach(card => {
+          const val = card.getAttribute("data-quiz-value") || card.getAttribute("data-value");
+          card.classList.toggle("is-selected", val === skinTone);
         });
       }
 
@@ -504,6 +554,14 @@ export function initStyleQuiz() {
     const bodyShapeDisplay = document.getElementById("summary-body-shape");
     if (bodyShapeDisplay) {
       bodyShapeDisplay.textContent = bodyShapeName;
+    }
+
+    // 4.5. Skin tone
+    const skinToneCard = container.querySelector('[data-group="skin-tone"] .is-selected');
+    const skinToneName = skinToneCard ? skinToneCard.querySelector(".quiz-budget-card__title")?.textContent.trim() || skinToneCard.getAttribute("data-value") : "-";
+    const skinToneDisplay = document.getElementById("summary-skin-tone");
+    if (skinToneDisplay) {
+      skinToneDisplay.textContent = skinToneName;
     }
 
     // 5. Main style
@@ -610,7 +668,7 @@ export function initStyleQuiz() {
           waist_cm,
           hip_cm,
           body_shape,
-          skin_tone: "Neutral",
+          skin_tone: sessionStorage.getItem("quiz-skin-tone") || "Neutral",
           style_tags,
           preferred_occasions: occasions,
           favorite_brands: ["Velura"],
@@ -618,7 +676,8 @@ export function initStyleQuiz() {
         })
       })
       .then(() => {
-        console.log("Style Profile saved successfully to database!");
+        console.log("Style Profile saved successfully!");
+        localStorage.setItem("velura_guest_quiz_completed", "true");
       })
       .catch(err => {
         console.error("Failed to save style profile:", err);

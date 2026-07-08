@@ -35,8 +35,7 @@
             <!-- User summary card -->
             <div class="account-sidebar__user-card card">
               <div class="account-sidebar__avatar-wrapper">
-                <img class="account-sidebar__avatar" src="../../assets/images/user-avatar.png"
-                  alt="Avatar Nguyễn Thanh Hà" />
+                <img class="account-sidebar__avatar" src="" alt="Avatar" style="display: none;" />
                 <span class="account-sidebar__verify-badge">✓</span>
               </div>
               <div class="account-sidebar__user-info">
@@ -113,8 +112,7 @@
               <!-- Profile Avatar and Meta Row -->
               <div class="profile-avatar-row">
                 <div class="profile-avatar-wrapper">
-                  <img class="profile-avatar-img" src="../../assets/images/user-avatar.png"
-                    alt="Avatar Nguyễn Thanh Hà" />
+                  <img class="profile-avatar-img" src="" alt="Avatar" style="display: none;" />
                   <button type="button" class="profile-avatar-upload-btn" aria-label="Tải lên ảnh mới">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
                       stroke-linecap="round" stroke-linejoin="round">
@@ -188,6 +186,22 @@
                       </svg>
                       <input class="profile-form__input" type="text" id="profile-dob" name="dob" value="15/04/2000"
                         placeholder="dd/mm/yyyy" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="profile-form__row-grid">
+                  <!-- Avatar URL input group -->
+                  <div class="profile-form__group" style="grid-column: span 2;">
+                    <label for="profile-avatar">Ảnh đại diện (URL)</label>
+                    <div class="profile-form__input-wrapper">
+                      <svg class="profile-form__field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                      <input class="profile-form__input" type="url" id="profile-avatar" name="avatar"
+                        placeholder="Nhập đường dẫn ảnh đại diện (URL) để thay đổi hoặc để trống để dùng ảnh mặc định" />
                     </div>
                   </div>
                 </div>

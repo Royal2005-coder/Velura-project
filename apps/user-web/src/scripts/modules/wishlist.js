@@ -1,6 +1,6 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
-import { addToCart } from "./cart.js";
+import { addToCart, getVariantImage } from "./cart.js";
 
 // Helper to update all wishlist badges in the UI
 export function updateWishlistBadge() {
@@ -254,7 +254,7 @@ function bindWishlistEvents(grid, subtitle) {
             variant_id: matchedVariant.variant_id,
             product_id: product.product_id,
             product_name: product.name,
-            product_image: product.images?.[0] || "",
+            product_image: getVariantImage(product, matchedVariant.color || "Mặc định"),
             quantity: 1,
             unit_price: product.sale_price || product.base_price,
             color: matchedVariant.color || "Mặc định",
