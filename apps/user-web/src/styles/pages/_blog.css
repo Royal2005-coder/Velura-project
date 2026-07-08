@@ -5,7 +5,7 @@
 
 .page-blog,
 .page-blog-detail {
-  background: #fbfaf7;
+  background: #fbf7f2;
 }
 
 .blog-page {
@@ -286,13 +286,17 @@
   font-size: 0.82rem;
   font-weight: 700;
   white-space: nowrap;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: background 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, color 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .category-tab:hover {
   border-color: rgba(201, 123, 99, 0.5);
   color: var(--terracotta, #c97b63);
   transform: translateY(-1px);
+}
+
+.category-tab:active {
+  transform: scale(0.96);
 }
 
 .category-tab.is-active {
@@ -343,6 +347,58 @@
 
 .articles-grid.is-bento .article-card:nth-child(5n + 2) .article-card__image {
   aspect-ratio: 16 / 10;
+}
+
+/* Bento Background Diversity - Card 5n + 3 is solid dark ink background */
+.articles-grid.is-bento .article-card:nth-child(5n + 3) {
+  background: var(--ink, #2a2522);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #fbf7f2;
+}
+
+.articles-grid.is-bento .article-card:nth-child(5n + 3) .article-card__title {
+  color: #ffffff;
+}
+
+.articles-grid.is-bento .article-card:nth-child(5n + 3) .article-card__title a {
+  color: #ffffff;
+}
+
+.articles-grid.is-bento .article-card:nth-child(5n + 3) .article-card__title a:hover {
+  color: var(--terracotta, #c97b63);
+}
+
+.articles-grid.is-bento .article-card:nth-child(5n + 3) .article-card__excerpt,
+.articles-grid.is-bento .article-card:nth-child(5n + 3) .post-meta {
+  color: #9c948d;
+}
+
+.articles-grid.is-bento .article-card:nth-child(5n + 3) .post-meta__author {
+  color: #fbf7f2;
+}
+
+.articles-grid.is-bento .article-card:nth-child(5n + 3) .post-meta__dot {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.articles-grid.is-bento .article-card:nth-child(5n + 3) .article-card__content .post-meta {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+.articles-grid.is-bento .article-card:nth-child(5n + 3) .blog-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fbf7f2;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Bento Background Diversity - Card 5n + 4 is warm terracotta tint */
+.articles-grid.is-bento .article-card:nth-child(5n + 4) {
+  background: #fdf6f2;
+  border-color: rgba(201, 123, 99, 0.2);
+}
+
+.articles-grid.is-bento .article-card:nth-child(5n + 4):hover {
+  border-color: rgba(201, 123, 99, 0.44);
 }
 
 .article-card:hover {
@@ -455,19 +511,19 @@
 .newsletter-box {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
-  gap: 30px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 36px;
   align-items: center;
   max-width: 980px;
   margin: 0 auto;
-  padding: clamp(28px, 5vw, 54px);
+  padding: clamp(32px, 5vw, 54px);
   overflow: hidden;
-  border: 1px solid rgba(201, 123, 99, 0.22);
+  border: 1px solid rgba(201, 123, 99, 0.2);
   border-radius: var(--radius-md, 8px);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(246, 239, 232, 0.74)),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(251, 247, 242, 0.82)),
     url("https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=1200&auto=format&fit=crop") center/cover;
-  box-shadow: 0 24px 70px rgba(42, 37, 34, 0.08);
+  box-shadow: 0 24px 70px rgba(42, 37, 34, 0.05);
   text-align: left;
 }
 
@@ -494,7 +550,7 @@
 
 .newsletter-box__desc {
   max-width: 520px;
-  margin: 0 0 28px;
+  margin: 0;
   color: var(--muted, #6b635d);
   font-family: "DM Sans", sans-serif;
   font-size: 0.96rem;
@@ -520,6 +576,7 @@
   font-family: "DM Sans", sans-serif;
   font-size: 0.92rem;
   outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .newsletter-box__form input:focus {
@@ -539,11 +596,15 @@
   font-size: 0.9rem;
   font-weight: 700;
   white-space: nowrap;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, transform 0.1s ease;
 }
 
 .newsletter-box__form button:hover {
   background: var(--terracotta-h, #b36a53);
+}
+
+.newsletter-box__form button:active {
+  transform: scale(0.97);
 }
 
 /* ============================================================
