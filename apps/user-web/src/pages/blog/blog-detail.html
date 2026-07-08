@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog Detail - Velura Journal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="../../styles/main.css" />
+</head>
+
+<body class="page-blog-detail">
+  <div class="page-shell">
+    <load src="/src/components/header.html" />
+
+    <main class="blog-detail">
+      <div class="container">
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb" aria-label="Điều hướng">
+          <a href="/src/pages/blog/blog.html" class="breadcrumb__link">Blog</a>
+          <span class="breadcrumb__sep">/</span>
+          <span class="breadcrumb__current" id="breadcrumbCategory">Xu hướng</span>
+        </nav>
+
+        <!-- Article Header -->
+        <header class="article-header" id="articleHeader">
+          <span class="blog-badge" id="articleBadge">Xu hướng</span>
+          <h1 class="article-header__title" id="articleTitle">Loading...</h1>
+          <div class="post-meta" id="articleMeta">
+            <span class="post-meta__author" id="articleAuthor">-</span>
+            <span class="post-meta__dot">&middot;</span>
+            <span class="post-meta__date" id="articleDate">-</span>
+            <span class="post-meta__dot">&middot;</span>
+            <span class="post-meta__read-time">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="8" cy="8" r="6" />
+                <path d="M8 4v4l2.5 1.5" />
+              </svg>
+              <span id="articleReadTime">5 phút đọc</span>
+            </span>
+          </div>
+        </header>
+
+        <!-- Hero Image -->
+        <figure class="article-hero" id="articleHero">
+          <img src="" alt="" id="articleHeroImage" />
+        </figure>
+
+        <!-- Article Content -->
+        <div class="article-layout">
+          <article class="article-content" id="articleContent">
+            <!-- Intro -->
+            <p class="article-intro" id="articleIntro"></p>
+
+            <!-- Takeaways -->
+            <div class="article-takeaways" id="articleTakeaways">
+              <h3 class="takeaways__title">Điểm chính</h3>
+              <ul class="takeaways__list" id="takeawaysList"></ul>
+            </div>
+
+            <!-- Sections -->
+            <div class="article-sections" id="articleSections"></div>
+          </article>
+
+          <!-- Sidebar: Product Recommendations -->
+          <aside class="article-sidebar reveal" id="sidebarSection">
+            <div class="sidebar-products">
+              <h3 class="sidebar-products__title">Sản phẩm trong bài</h3>
+              <div class="sidebar-products__list" id="sidebarProducts">
+                <!-- Products will be injected here -->
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- Product Grid (Full Width) -->
+        <section class="article-products-section reveal" id="productsSection">
+          <h2 class="section-title">Sản phẩm đề xuất</h2>
+          <div class="products-grid" id="productsGrid">
+            <!-- Products will be injected here -->
+          </div>
+        </section>
+
+        <!-- Related Posts -->
+        <section class="related-posts reveal" id="relatedSection">
+          <h2 class="section-title">Bài viết liên quan</h2>
+          <div class="related-posts__grid" id="relatedPosts">
+            <!-- Related posts will be injected here -->
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <load src="/src/components/footer.html" />
+  </div>
+
+  <script type="module" src="../../scripts/main.js"></script>
+  <script type="module">
+    import { FALLBACK_BLOG_POSTS, FALLBACK_BLOG_CATEGORIES, getFallbackBlogPost } from '../../scripts/modules/blog-posts.js';
+    import { addToCart, updateBadge, showToast } from '../../scripts/modules/cart.js';
+
+    // Product data (mock - in real app, fetch from API)
+    const PRODUCTS = {
+      "VLR-SD-004": {
+        name: "Set Sage Pleated Dịu Nhẹ Cuối Tuần",
+        slug: "set-sage-pleated-diu-nhe-cuoi-tuan",
+        price: 3250000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-sage-pleated-diu-nhe-cuoi-tuan_01.png",
+        color: "Sage"
+      },
+      "VLR-SD-005": {
+        name: "Set Gilet Cocoa Ánh Vàng Sang Tối",
+        slug: "set-gilet-cocoa-anh-vang-sang-toi",
+        price: 4250000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-gilet-cocoa-anh-vang-sang-toi_01.png",
+        color: "Cocoa"
+      },
+      "VLR-SD-018": {
+        name: "Set White Resort Hẹn Hò Mùa Hè",
+        slug: "set-white-resort-hen-ho-mua-he",
+        price: 1799000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-white-resort-hen-ho-mua-he_1.png",
+        color: "White"
+      },
+      "VLR-SD-019": {
+        name: "Set Boho Linen Hồng Kem Dạo Biển",
+        slug: "set-boho-linen-hong-kem-dao-bien",
+        price: 1359000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-boho-linen-hong-kem-dao-bien_1.png",
+        color: "Hồng kem"
+      },
+      "VLR-SD-016": {
+        name: "Set Dạo Biển Linen Đen Kem",
+        slug: "set-dao-bien-linen-den-kem",
+        price: 1299000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-dao-bien-linen-den-kem_1.png",
+        color: "Đen kem"
+      },
+      "VLR-SD-002": {
+        name: "Set Ivory Draped Thanh Nhã",
+        slug: "set-ivory-draped-thanh-nha",
+        price: 3050000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-ivory-draped-thanh-nha_01.png",
+        color: "Ivory"
+      },
+      "VLR-SD-003": {
+        name: "Set Midnight Blue Chạm Eo Hiện Đại",
+        slug: "set-midnight-blue-cham-eo-hien-dai",
+        price: 2390000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-midnight-blue-cham-eo-hien-dai_01.png",
+        color: "Midnight Blue"
+      },
+      "VLR-SD-009": {
+        name: "Set Smart Casual Cá Tính",
+        slug: "set-smart-casual-ca-tinh",
+        price: 2200000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-smart-casual-ca-tinh_01.png",
+        color: "Neutral"
+      },
+      "VLR-SD-010": {
+        name: "Set Soft Ceremony Nữ Tính",
+        slug: "set-soft-ceremony-nu-tinh",
+        price: 2200000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-soft-ceremony-nu-tinh_01.png",
+        color: "Neutral"
+      },
+      "VLR-SD-025": {
+        name: "Set Đầm Dạ Hội Công Chúa Tulle",
+        slug: "set-dam-da-hoi-cong-chua-tulle-xep-tang-the-afterglow-cinderella",
+        price: 32990000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_cong-chua-tulle-the-afterglow_hong-pastel_01.png",
+        color: "Hồng pastel"
+      },
+      "VLR-AO-001": {
+        name: "Áo Blouse Lụa Cổ Đổ Ánh Champagne",
+        slug: "ao-blouse-lua-co-do-anh-champagne",
+        price: 890000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/ao/ao_ao-blouse-lua-co-do-anh-champagne_white_01.jpg",
+        color: "Champagne"
+      },
+      "VLR-AO-002": {
+        name: "Áo Sơ Mi Lụa Tay Dài Ivory",
+        slug: "ao-so-mi-lua-tay-dai-ivory-thanh-lich",
+        price: 890000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/ao/ao_ao-so-mi-lua-tay-dai-ivory-thanh-lich_beige_01.jpg",
+        color: "Ivory"
+      },
+      "VLR-AO-003": {
+        name: "Áo Peplum Cổ Vuông Sage Dịu Nhẹ",
+        slug: "ao-peplum-co-vuong-sage-diu-nhe",
+        price: 950000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/ao/ao_ao-peplum-co-vuong-sage-diu-nhe_sage_01.jpg",
+        color: "Sage"
+      },
+      "VLR-SD-006": {
+        name: "Set Urban Rhythm Năng Động",
+        slug: "set-urban-rhythm-nang-dong",
+        price: 2200000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-urban-rhythm-nang-dong_01%20(2).png",
+        color: "Neutral"
+      },
+      "VLR-SD-007": {
+        name: "Set Modern Academia Trẻ Trung",
+        slug: "set-modern-academia-tre-trung",
+        price: 2200000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-modern-academia-tre-trung_01.png",
+        color: "Neutral"
+      },
+      "VLR-SD-011": {
+        name: "Set Áo Len Crochet Lệch Vai Quần Cargo Baggy",
+        slug: "set-ao-len-crochet-lech-vai-quan-cargo-baggy-cream-mirage",
+        price: 1650000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-ao-len-crochet-lech-vai-quan-cargo-baggy-cream-mirage_01.png",
+        color: "Warm"
+      },
+      "VLR-SD-012": {
+        name: "Set Áo Croptop 2in1 Váy Xếp Ly Preppy",
+        slug: "set-ao-croptop-2in1-vay-xep-ly-preppy-cream-mocha",
+        price: 1750000,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-ao-len-cropped-soc-vay-xep-ly-preppy-campus-cream_01.png",
+        color: "Warm"
+      },
+      "VLR-SD-013": {
+        name: "Set Áo Crop Cyber Váy Lace-Up Midi",
+        slug: "set-ao-crop-cyber-vay-lace-up-midi-dark-mirage",
+        price: 1844500,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-ao-crop-cyber-vay-lace-up-midi-dark-mirage_01.png",
+        color: "Cool"
+      },
+      "VLR-SD-014": {
+        name: "Set Áo Sát Nách Logo Váy Xám Túi Hộp",
+        slug: "set-ao-sat-nach-logo-vay-xam-tui-hop-grunge-mirage",
+        price: 1708500,
+        image: "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-ao-sat-nach-graphic-vay-cargo-mini-grunge-street_01.png",
+        color: "Cool"
+      }
+    };
+
+    // Map SKU -> real product_id from database (for correct detail links & cart)
+    const PRODUCT_IDS = {
+      "VLR-SD-004": "3d4198b4-7242-4cb4-8679-c6f9f138627f",
+      "VLR-SD-005": "08aeb529-cb68-4954-99e1-a0ba55da2bb3",
+      "VLR-SD-018": "8ac364ea-dcc7-4347-bb5c-7c28c7cbe434",
+      "VLR-SD-019": "152728ac-7413-4877-93b1-aec7c03e1c10",
+      "VLR-SD-016": "29253fd7-d6bc-4837-8280-581ed0286cf1",
+      "VLR-SD-002": "3de99b72-5d8f-4e61-a399-413b0a77a3ab",
+      "VLR-SD-003": "9416bb3f-7440-4d71-a030-06a50d9398b6",
+      "VLR-SD-009": "ebc880b6-b694-4f0a-9399-5649395de6eb",
+      "VLR-SD-010": "1987b56c-dd09-4750-a8e8-fafc6a87b67c",
+      "VLR-SD-025": "144500a5-c0a8-429a-873f-dd338b72dbb2",
+      "VLR-AO-001": "cfbd0818-3d69-4540-833e-33876f9d057d",
+      "VLR-AO-002": "f3e417ef-eb43-4910-998b-31f630457209",
+      "VLR-AO-003": "1a5c27ed-b257-4501-87a0-8341847dc2c4",
+      "VLR-AO-004": "36790cd9-8c82-4130-8eab-3700b74b213d",
+      "VLR-SD-006": "03eccd1c-4c4c-4a4a-abc3-3307ab157db4",
+      "VLR-SD-007": "45464d42-bebd-4a3a-9ee3-ae4644c3073c",
+      "VLR-SD-011": "507019ef-b53c-4951-ad8c-1e09c7fcd634",
+      "VLR-SD-012": "decdb615-8328-44a4-b962-da4f9925e844",
+      "VLR-SD-013": "49a65556-5d5b-401d-ad0f-aaa144e61cb9",
+      "VLR-SD-014": "43177754-70e1-4a2b-a51c-0e9af1e10c13"
+    };
+
+    function productDetailUrl(sku) {
+      const id = PRODUCT_IDS[sku];
+      return id ? `/src/pages/products/detail.html?id=${id}` : "/src/pages/products/list.html";
+    }
+
+    // Format price
+    function formatPrice(price) {
+      return new Intl.NumberFormat('vi-VN').format(price) + 'đ';
+    }
+
+    // Get URL params
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('slug');
+
+    // Get blog post (fall back to the latest post if slug missing/invalid)
+    let post = getFallbackBlogPost(slug);
+    if (!post && FALLBACK_BLOG_POSTS.length) {
+      post = FALLBACK_BLOG_POSTS[0];
+      try {
+        const normalized = `/src/pages/blog/blog-detail.html?slug=${encodeURIComponent(post.slug)}`;
+        window.history.replaceState({}, '', normalized);
+      } catch (e) {
+        /* ignore (e.g. file:// context) */
+      }
+    }
+
+    if (post) {
+      // Get category name
+      const category = FALLBACK_BLOG_CATEGORIES.find(c => c.slug === post.category_slug);
+
+      // Update page
+      document.title = `${post.title} - Velura Journal`;
+      document.getElementById('breadcrumbCategory').textContent = category?.name || post.category_slug;
+      document.getElementById('articleBadge').textContent = category?.name || post.category_slug;
+      document.getElementById('articleTitle').textContent = post.title;
+      document.getElementById('articleAuthor').textContent = post.author;
+      document.getElementById('articleDate').textContent = new Date(post.published_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      document.getElementById('articleReadTime').textContent = `${post.read_minutes} phút đọc`;
+      const heroImg = document.getElementById('articleHeroImage');
+      heroImg.src = post.image_url;
+      heroImg.alt = post.title;
+      heroImg.onerror = () => { heroImg.src = '/src/assets/images/image-8.png'; };
+      document.getElementById('articleIntro').textContent = post.content.intro;
+
+      // Render takeaways
+      const takeawaysList = document.getElementById('takeawaysList');
+      post.content.takeaways.forEach(takeaway => {
+        const li = document.createElement('li');
+        li.className = 'takeaway-item';
+        li.textContent = takeaway;
+        takeawaysList.appendChild(li);
+      });
+
+      // Render sections
+      const sectionsContainer = document.getElementById('articleSections');
+      post.content.sections.forEach(section => {
+        const sectionEl = document.createElement('div');
+        sectionEl.className = 'article-section reveal';
+
+        const heading = document.createElement('h2');
+        heading.className = 'article-section__heading';
+        heading.textContent = section.heading;
+        sectionEl.appendChild(heading);
+
+        section.body.forEach(paragraph => {
+          const p = document.createElement('p');
+          p.className = 'article-section__body';
+          p.textContent = paragraph;
+          sectionEl.appendChild(p);
+        });
+
+        // Add product cards inline
+        if (section.productSkus && section.productSkus.length > 0) {
+          const productRow = document.createElement('div');
+          productRow.className = 'inline-products';
+
+          section.productSkus.forEach(sku => {
+            const product = PRODUCTS[sku];
+            if (product) {
+              const card = createProductCard(product, sku);
+              productRow.appendChild(card);
+            }
+          });
+
+          sectionEl.appendChild(productRow);
+        }
+
+        sectionsContainer.appendChild(sectionEl);
+      });
+
+      // Render sidebar products
+      const sidebarContainer = document.getElementById('sidebarProducts');
+      post.content.products.forEach(item => {
+        const product = PRODUCTS[item.sku];
+        if (product) {
+          const card = createSidebarProductCard(product, item.note, item.sku);
+          sidebarContainer.appendChild(card);
+        }
+      });
+
+      // Render products grid
+      const gridContainer = document.getElementById('productsGrid');
+      const allSkus = [...new Set(post.content.sections.flatMap(s => s.productSkus || []))];
+      allSkus.forEach(sku => {
+        const product = PRODUCTS[sku];
+        if (product) {
+          const card = createProductGridCard(product, sku);
+          gridContainer.appendChild(card);
+        }
+      });
+
+       // Render related posts (same category first, then fill with others)
+      const relatedContainer = document.getElementById('relatedPosts');
+      const sameCategory = FALLBACK_BLOG_POSTS
+        .filter(p => p.slug !== post.slug && p.category_slug === post.category_slug);
+      const otherPosts = FALLBACK_BLOG_POSTS
+        .filter(p => p.slug !== post.slug && p.category_slug !== post.category_slug);
+      const relatedPosts = [...sameCategory, ...otherPosts].slice(0, 3);
+
+      if (relatedPosts.length) {
+        relatedPosts.forEach(related => {
+          const card = createRelatedPostCard(related);
+          relatedContainer.appendChild(card);
+        });
+      } else {
+        const section = relatedContainer.closest('.related-posts');
+        if (section) section.hidden = true;
+      }
+    } else {
+      // No matching post (e.g. opened without ?slug=) — show a clean not-found state
+      const titleEl = document.getElementById('articleTitle');
+      if (titleEl) titleEl.textContent = 'Không tìm thấy bài viết';
+      const content = document.getElementById('articleContent');
+      if (content) {
+        content.innerHTML = '<p class="article-intro">Bài viết bạn đang tìm không tồn tại hoặc đã bị xóa.' +
+          ' <a href="/src/pages/blog/blog.html" style="color:var(--terracotta,#c97b63);font-weight:600;">Quay lại trang Blog</a>.</p>';
+      }
+      ['articleHero', 'sidebarSection', 'productsSection', 'relatedSection'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = true;
+      });
+    }
+
+    // Create product card (inline)
+    function createProductCard(product, sku) {
+      const card = document.createElement('article');
+      card.className = 'card card--product';
+      card.innerHTML = `
+        <div class="card__image-container product-card__image-wrapper">
+          <a href="${productDetailUrl(sku)}" class="product-card__img-link">
+            <img class="card__img" src="${product.image}" alt="${product.name}" loading="lazy" onerror="this.src='/src/assets/images/placeholder.jpg'" />
+          </a>
+        </div>
+        <div class="card__info">
+          <a href="${productDetailUrl(sku)}" class="card__title">${product.name}</a>
+          <div class="card__price-group">
+            <span class="card__price">${formatPrice(product.price)}</span>
+          </div>
+        </div>
+        <div class="card__actions">
+          <button class="btn-buy js-buy-now-blog" data-sku="${sku}" type="button">Mua ngay</button>
+          <button class="card__btn-cart js-add-cart-blog" data-sku="${sku}" type="button">Thêm vào giỏ</button>
+        </div>
+      `;
+      return card;
+    }
+
+    // Create sidebar product card
+    function createSidebarProductCard(product, note, sku) {
+      const card = document.createElement('div');
+      card.className = 'sidebar-product';
+      card.innerHTML = `
+        <a href="${productDetailUrl(sku)}" class="sidebar-product__link">
+          <div class="sidebar-product__image">
+            <img src="${product.image}" alt="${product.name}" loading="lazy" onerror="this.src='/src/assets/images/placeholder.jpg'" />
+          </div>
+          <div class="sidebar-product__info">
+            <h4 class="sidebar-product__name">${product.name}</h4>
+            <p class="sidebar-product__note">${note}</p>
+            <span class="sidebar-product__price">${formatPrice(product.price)}</span>
+          </div>
+        </a>
+        <button class="sidebar-product__cart js-add-cart-blog" data-sku="${sku}" type="button">Thêm vào giỏ</button>
+      `;
+      return card;
+    }
+
+    // Create product grid card
+    function createProductGridCard(product, sku) {
+      const card = document.createElement('article');
+      card.className = 'card card--product';
+      card.innerHTML = `
+        <div class="card__image-container product-card__image-wrapper">
+          <a href="${productDetailUrl(sku)}" class="product-card__img-link">
+            <img class="card__img" src="${product.image}" alt="${product.name}" loading="lazy" onerror="this.src='/src/assets/images/placeholder.jpg'" />
+          </a>
+        </div>
+        <div class="card__info">
+          <a href="${productDetailUrl(sku)}" class="card__title">${product.name}</a>
+          <div class="card__price-group">
+            <span class="card__price">${formatPrice(product.price)}</span>
+          </div>
+        </div>
+        <div class="card__actions">
+          <button class="btn-buy js-buy-now-blog" data-sku="${sku}" type="button">Mua ngay</button>
+          <button class="card__btn-cart js-add-cart-blog" data-sku="${sku}" type="button">Thêm vào giỏ</button>
+        </div>
+      `;
+      return card;
+    }
+
+    // Create related post card
+    function createRelatedPostCard(post) {
+      const category = FALLBACK_BLOG_CATEGORIES.find(c => c.slug === post.category_slug);
+      const card = document.createElement('a');
+      card.className = "article-card";
+      card.href = `/src/pages/blog/blog-detail.html?slug=${post.slug}`;
+      card.dataset.category = post.category_slug;
+      card.innerHTML = `
+        <div class="article-card__image">
+          <img src="${post.image_url}" alt="${post.title}" loading="lazy" onerror="this.src='/src/assets/images/placeholder.jpg'" />
+        </div>
+        <div class="article-card__content">
+          <span class="blog-badge">${category?.name || post.category_slug}</span>
+          <h3 class="article-card__title">${post.title}</h3>
+          <p class="article-card__excerpt">${post.excerpt}</p>
+          <div class="post-meta">
+            <span class="post-meta__author">${post.author}</span>
+            <span class="post-meta__dot">&middot;</span>
+            <span class="post-meta__date">${new Date(post.published_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+            <span class="post-meta__dot">&middot;</span>
+            <span class="post-meta__read-time">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="8" cy="8" r="6" />
+                <path d="M8 4v4l2.5 1.5" />
+              </svg>
+              ${post.read_minutes} phút
+            </span>
+          </div>
+        </div>
+      `;
+      return card;
+    }
+
+    // Wire add-to-cart buttons to the system cart module
+    function bindBlogCartButtons() {
+      const buttons = document.querySelectorAll('.js-add-cart-blog');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const sku = btn.getAttribute('data-sku');
+          const product = PRODUCTS[sku];
+          const productId = PRODUCT_IDS[sku];
+          if (!product || !productId) return;
+
+          addToCart({
+            variant_id: `var-${productId}`,
+            product_id: productId,
+            product_name: product.name,
+            product_image: product.image,
+            quantity: 1,
+            unit_price: product.price,
+            color: product.color || 'Mặc định',
+            size: 'M'
+          });
+          updateBadge();
+
+          const original = btn.innerHTML;
+          btn.innerHTML = 'Đã thêm ✓';
+          btn.classList.add('is-added');
+          setTimeout(() => {
+            btn.innerHTML = original;
+            btn.classList.remove('is-added');
+          }, 1500);
+        });
+      });
+    }
+
+    // Reveal-on-scroll for detail page sections (Motion 4, respects reduced-motion)
+    function setupDetailReveal() {
+      const targets = document.querySelectorAll('.reveal:not(.is-visible)');
+      if (!targets.length) return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        targets.forEach((el) => el.classList.add('is-visible'));
+        return;
+      }
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+      targets.forEach((el, index) => {
+        el.style.transitionDelay = `${Math.min(index, 5) * 70}ms`;
+        io.observe(el);
+      });
+    }
+
+    // Wire "Mua ngay" (Buy Now) buttons: add to cart, then go to checkout
+    function bindBlogBuyNow() {
+      const buttons = document.querySelectorAll('.js-buy-now-blog');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const sku = btn.getAttribute('data-sku');
+          const product = PRODUCTS[sku];
+          const productId = PRODUCT_IDS[sku];
+          if (!product || !productId) {
+            showToast('Sản phẩm này hiện không khả dụng!');
+            return;
+          }
+
+          addToCart({
+            variant_id: `var-${productId}`,
+            product_id: productId,
+            product_name: product.name,
+            product_image: product.image,
+            quantity: 1,
+            unit_price: product.price,
+            color: product.color || 'Mặc định',
+            size: 'M'
+          });
+          updateBadge();
+
+          const original = btn.innerHTML;
+          btn.innerHTML = 'Đang chuyển…';
+          btn.disabled = true;
+          window.location.href = '/src/pages/checkout/shipping-payment.html';
+          setTimeout(() => {
+            btn.innerHTML = original;
+            btn.disabled = false;
+          }, 1200);
+        });
+      });
+    }
+
+    // Bind after all cards are rendered
+    bindBlogCartButtons();
+    bindBlogBuyNow();
+    setupDetailReveal();
+  </script>
+</body>
+
+</html>

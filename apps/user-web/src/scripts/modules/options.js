@@ -439,7 +439,7 @@ export async function initOptions() {
             size: size
           });
 
-          window.location.href = "/src/pages/cart/cart.html";
+          window.location.href = "/src/pages/checkout/shipping-payment.html";
         });
       }
 

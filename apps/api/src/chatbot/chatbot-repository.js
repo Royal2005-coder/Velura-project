@@ -1,7 +1,36 @@
 import { randomUUID } from "node:crypto";
 import { HttpError } from "../http.js";
-import { insertRow, selectOne, selectRows, updateRows } from "../supabase.js";
+import { insertRow, selectOne, selectRows, updateRows, callRpc } from "../supabase.js";
+import { config } from "../config.js";
 import { CHAT_MESSAGE_SELECT, CHAT_PRODUCT_SELECT, CHAT_SESSION_SELECT } from "./chatbot-constants.js";
+
+async function getEmbedding(text) {
+  const apiKey = config.geminiApiKey;
+  if (!apiKey) return null;
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "models/gemini-embedding-001",
+        content: {
+          parts: [{ text }]
+        }
+      })
+    });
+    if (!res.ok) {
+      console.error("[EMBEDDING_ERROR]", res.status, await res.text());
+      return null;
+    }
+    const data = await res.json();
+    return data.embedding?.values || null;
+  } catch (err) {
+    console.error("[EMBEDDING_ERROR]", err);
+    return null;
+  }
+}
+
 
 export function createChatbotRepository() {
   return {
@@ -106,6 +135,23 @@ export function createChatbotRepository() {
         }));
       }
 
+      try {
+        const embedding = await getEmbedding(rawValue);
+        if (embedding) {
+          console.log("[RAG-VECTOR] Searching products by embedding similarity...");
+          const matchRows = await callRpc("match_products", {
+            query_embedding: embedding,
+            match_threshold: 0.15,
+            match_count: limit
+          });
+          if (matchRows && matchRows.length > 0) {
+            return { rows: matchRows };
+          }
+        }
+      } catch (err) {
+        console.warn("[RAG-VECTOR] Product embedding search failed, falling back to text search:", err.message);
+      }
+
       const value = sanitizeSearch(rawValue);
       const request = {
         select: CHAT_PRODUCT_SELECT,
@@ -191,7 +237,37 @@ export function createChatbotRepository() {
         product_id: `eq.${productId}`,
         limit: 1
       }));
-      return result.rows?.[0] || null;
+      const product = result.rows?.[0] || null;
+      if (product && product.is_combo) {
+        try {
+          const { rows: comboItems } = await selectRows("combo_item", {
+            select: "combo_item_id,combo_product_id,component_product_id,component_variant_id,quantity",
+            combo_product_id: `eq.${productId}`
+          });
+          if (comboItems && comboItems.length > 0) {
+            const compIds = comboItems.map(ci => ci.component_product_id).filter(Boolean);
+            if (compIds.length > 0) {
+              const compProducts = await selectRows("product", {
+                select: "product_id,name,sku,base_price,sale_price",
+                product_id: `in.(${compIds.join(",")})`
+              });
+              const compMap = new Map((compProducts.rows || []).map(p => [p.product_id, p]));
+              product.combo_components = comboItems.map(ci => ({
+                ...ci,
+                product: compMap.get(ci.component_product_id) || null
+              }));
+            } else {
+              product.combo_components = [];
+            }
+          } else {
+            product.combo_components = [];
+          }
+        } catch (err) {
+          console.warn("[COMBO-DETAILS] Failed to fetch combo components:", err.message);
+          product.combo_components = [];
+        }
+      }
+      return product;
     },
 
     async searchOrders(filter) {
@@ -252,6 +328,17 @@ export function createChatbotRepository() {
       }));
     },
 
+    async updateSupportTicket(ticketId, patch) {
+      if (!ticketId) return null;
+      const rows = await withChatError(() => updateRows("support_ticket", {
+        ticket_id: `eq.${ticketId}`
+      }, {
+        ...patch,
+        updated_at: new Date().toISOString()
+      }));
+      return rows[0] || null;
+    },
+
     async queueEmail(input) {
       if (!input.recipient) return null;
       return withChatError(() => insertRow("email_outbox", {
@@ -261,6 +348,87 @@ export function createChatbotRepository() {
         body: input.body,
         related_user_id: input.relatedUserId || null,
         metadata: input.metadata || {}
+      }));
+    },
+
+    async searchPolicies(query) {
+      const rawValue = String(query || "").trim();
+      if (!rawValue) {
+        return withChatError(() => selectRows("policy", {
+          select: "policy_id,slug,title,summary,content",
+          limit: 6
+        }));
+      }
+
+      try {
+        const embedding = await getEmbedding(rawValue);
+        if (embedding) {
+          console.log("[RAG-VECTOR] Searching policies by embedding similarity...");
+          const matchRows = await callRpc("match_policies", {
+            query_embedding: embedding,
+            match_threshold: 0.15,
+            match_count: 5
+          });
+          if (matchRows && matchRows.length > 0) {
+            return { rows: matchRows };
+          }
+        }
+      } catch (err) {
+        console.warn("[RAG-VECTOR] Policy embedding search failed, falling back to text search:", err.message);
+      }
+
+      const value = sanitizeSearch(rawValue);
+      return withChatError(() => selectRows("policy", {
+        select: "policy_id,slug,title,summary,content",
+        or: `(title.ilike.*${value}*,summary.ilike.*${value}*)`,
+        limit: 5
+      }));
+    },
+
+    async searchBlogs(query) {
+      const rawValue = String(query || "").trim();
+      if (!rawValue) {
+        return withChatError(() => selectRows("blog", {
+          select: "blog_id,slug,title,excerpt,content,image_url,author,read_minutes",
+          status: "eq.published",
+          limit: 6
+        }));
+      }
+
+      try {
+        const embedding = await getEmbedding(rawValue);
+        if (embedding) {
+          console.log("[RAG-VECTOR] Searching blogs by embedding similarity...");
+          const matchRows = await callRpc("match_blogs", {
+            query_embedding: embedding,
+            match_threshold: 0.15,
+            match_count: 5
+          });
+          if (matchRows && matchRows.length > 0) {
+            return { rows: matchRows };
+          }
+        }
+      } catch (err) {
+        console.warn("[RAG-VECTOR] Blog embedding search failed, falling back to text search:", err.message);
+      }
+
+      const value = sanitizeSearch(rawValue);
+      return withChatError(() => selectRows("blog", {
+        select: "blog_id,slug,title,excerpt,content,image_url,author,read_minutes",
+        status: "eq.published",
+        or: `(title.ilike.*${value}*,excerpt.ilike.*${value}*,content.ilike.*${value}*)`,
+        limit: 5
+      }));
+    },
+
+    async listBlogsByIds(blogIds) {
+      const ids = uniqueUuidList(blogIds);
+      if (!ids.length) return { rows: [], count: 0 };
+      return withChatError(() => selectRows("blog", {
+        select: "blog_id,slug,title,excerpt,content,image_url,author,read_minutes",
+        blog_id: `in.(${ids.join(",")})`,
+        status: "eq.published",
+        limit: Math.min(ids.length, 12)
       }));
     }
   };

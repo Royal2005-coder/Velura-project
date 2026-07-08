@@ -26,7 +26,7 @@ export const config = {
   geminiApiKey: process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || "",
   geminiModel: process.env.GEMINI_MODEL || process.env.OPENAI_MODEL || "gemini-3.5-flash",
   mistralApiKey: process.env.MISTRAL_API_KEY || "",
-  mistralModel: process.env.MISTRAL_MODEL || "mistral-large-latest"
+  mistralModel: process.env.MISTRAL_MODEL || "mistral-small-latest"
 };
 
 export function assertRuntimeConfig() {

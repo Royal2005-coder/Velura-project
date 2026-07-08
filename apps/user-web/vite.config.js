@@ -31,6 +31,7 @@ export default defineConfig({
         aiSuggestions: resolve(__dirname, "src/pages/ai/suggestions.html"),
         returnRequest: resolve(__dirname, "src/pages/account/return-request.html"),
         blog: resolve(__dirname, "src/pages/blog/blog.html"),
+        blogDetail: resolve(__dirname, "src/pages/blog/blog-detail.html"),
         about: resolve(__dirname, "src/pages/about/about.html"),
         cart: resolve(__dirname, "src/pages/cart/cart.html"),
         trackOrder: resolve(__dirname, "src/pages/account/track-order.html"),

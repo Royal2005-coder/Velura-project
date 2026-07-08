@@ -1,6 +1,16 @@
 import { apiRequest } from "./api.js";
+import {
+  FALLBACK_BLOG_POSTS,
+  FALLBACK_BLOG_CATEGORIES
+} from "./blog-posts.js";
 
 let blogCategoryLabels = new Map();
+const blogState = {
+  posts: [],
+  activeCategory: "all",
+  visible: 0,
+  perPage: 10
+};
 
 export function initContentPages() {
   initBlogPage();
@@ -12,27 +22,43 @@ async function initBlogPage() {
   const page = document.querySelector(".page-blog");
   const grid = document.querySelector("#articlesGrid");
   if (!page || !grid) return;
-  applyBlogImageFallbacks();
 
+  let posts = [];
+  let categories = [];
   try {
     const [categoriesResult, blogsResult] = await Promise.all([
       apiRequest("/api/content/categories?type=blog"),
       apiRequest("/api/content/blogs?limit=50")
     ]);
-    const categories = categoriesResult.rows || [];
-    const blogs = blogsResult.rows || [];
-    if (!blogs.length) return;
-
-    blogCategoryLabels = new Map(categories.map((category) => [category.slug, category.name]));
-    renderBlogTabs(categories);
-    renderFeaturedPost(blogs.find((post) => post.is_featured) || blogs[0]);
-    renderBlogGrid(blogs);
-    applyBlogImageFallbacks();
-    bindBlogTabs();
-    hideStaticPagination();
+    categories = categoriesResult.rows || [];
+    posts = blogsResult.rows || [];
   } catch (error) {
-    console.warn("Blog content API unavailable, keeping static content.", error);
+    console.warn("Blog content API unavailable, using fallback data.", error);
+    posts = FALLBACK_BLOG_POSTS;
+    categories = FALLBACK_BLOG_CATEGORIES;
   }
+
+  blogCategoryLabels = new Map(
+    (categories.length ? categories : FALLBACK_BLOG_CATEGORIES).map((category) => [category.slug, category.name])
+  );
+
+  if (!posts.length) {
+    renderBlogEmpty();
+    return;
+  }
+
+  blogState.posts = posts;
+  blogState.activeCategory = "all";
+  blogState.visible = blogState.perPage;
+
+  renderBlogTabs(categories.length ? categories : FALLBACK_BLOG_CATEGORIES);
+  renderFeaturedPost(posts.find((post) => post.is_featured) || posts[0]);
+  renderBlogGrid();
+  bindBlogTabs();
+  setupLoadMore();
+  bindNewsletter();
+  applyBlogImageFallbacks();
+  setupReveal();
 }
 
 function applyBlogImageFallbacks() {
@@ -119,40 +145,52 @@ function renderBlogTabs(categories) {
 function renderFeaturedPost(post) {
   const section = document.querySelector(".featured-post");
   if (!section || !post) return;
+  const href = `blog-detail.html?slug=${encodeURIComponent(post.slug || "")}`;
   section.innerHTML = `
-    <div class="featured-post__image">
+    <a class="featured-post__image" href="${escapeHtml(href)}" aria-label="${escapeHtml(post.title)}">
       <img src="${escapeHtml(post.image_url || "/src/assets/images/image-8.png")}" alt="${escapeHtml(post.title)}" loading="eager" decoding="async" onerror="this.src='/src/assets/images/image-8.png';" />
-    </div>
+    </a>
     <div class="featured-post__content">
       <span class="blog-badge">${escapeHtml(categoryLabel(post.category_slug))}</span>
-      <h2 class="featured-post__title">${escapeHtml(post.title)}</h2>
-      <p class="featured-post__excerpt">${escapeHtml(post.excerpt)}</p>
+      <h2 class="featured-post__title"><a href="${escapeHtml(href)}">${escapeHtml(post.title)}</a></h2>
+      <p class="featured-post__excerpt">${escapeHtml(post.excerpt || "")}</p>
       <div class="post-meta">
-        <span class="post-meta__author">${escapeHtml(post.author)}</span>
+        <span class="post-meta__author">${escapeHtml(post.author || "")}</span>
         <span class="post-meta__dot">&middot;</span>
         <span class="post-meta__date">${escapeHtml(formatDate(post.published_at))}</span>
         <span class="post-meta__dot">&middot;</span>
         <span class="post-meta__read-time">${escapeHtml(post.read_minutes)} phút đọc</span>
       </div>
-      <a href="#" class="btn-read-more">Đọc tiếp</a>
+      <a href="${escapeHtml(href)}" class="btn-read-more">
+        Đọc tiếp
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
     </div>
   `;
 }
 
-function renderBlogGrid(blogs) {
-  const grid = document.querySelector("#articlesGrid");
-  if (!grid) return;
-  grid.innerHTML = blogs.map((post) => `
-    <article class="article-card" data-category="${escapeHtml(post.category_slug)}">
-      <div class="article-card__image">
+function filteredPosts() {
+  return blogState.activeCategory === "all"
+    ? blogState.posts
+    : blogState.posts.filter((post) => post.category_slug === blogState.activeCategory);
+}
+
+function articleCardHtml(post) {
+  const href = `blog-detail.html?slug=${encodeURIComponent(post.slug || "")}`;
+  return `
+    <article class="article-card reveal" data-category="${escapeHtml(post.category_slug)}">
+      <a class="article-card__image" href="${escapeHtml(href)}" aria-label="${escapeHtml(post.title)}">
         <img src="${escapeHtml(post.image_url || "/src/assets/images/image-8.png")}" alt="${escapeHtml(post.title)}" loading="lazy" decoding="async" onerror="this.src='/src/assets/images/image-8.png';" />
-      </div>
+      </a>
       <div class="article-card__content">
         <span class="blog-badge">${escapeHtml(categoryLabel(post.category_slug))}</span>
-        <h3 class="article-card__title"><a href="#">${escapeHtml(post.title)}</a></h3>
-        <p class="article-card__excerpt">${escapeHtml(post.excerpt || post.content)}</p>
+        <h3 class="article-card__title"><a href="${escapeHtml(href)}">${escapeHtml(post.title)}</a></h3>
+        <p class="article-card__excerpt">${escapeHtml(post.excerpt || post.content || "")}</p>
         <div class="post-meta">
-          <span class="post-meta__author">${escapeHtml(post.author)}</span>
+          <span class="post-meta__author">${escapeHtml(post.author || "")}</span>
           <span class="post-meta__dot">&middot;</span>
           <span class="post-meta__date">${escapeHtml(formatDate(post.published_at))}</span>
           <span class="post-meta__dot">&middot;</span>
@@ -160,22 +198,91 @@ function renderBlogGrid(blogs) {
         </div>
       </div>
     </article>
-  `).join("");
+  `;
+}
+
+function renderBlogGrid() {
+  const grid = document.querySelector("#articlesGrid");
+  if (!grid) return;
+
+  const list = filteredPosts().slice(0, blogState.visible);
+  const isBento = blogState.activeCategory === "all";
+  grid.classList.toggle("is-bento", isBento);
+
+  if (!list.length) {
+    renderBlogEmpty();
+    return;
+  }
+
+  grid.innerHTML = list.map((post) => articleCardHtml(post)).join("");
+  updateLoadMore();
+}
+
+function renderBlogEmpty() {
+  const grid = document.querySelector("#articlesGrid");
+  const loadMoreWrap = document.querySelector("#loadMoreWrap");
+  if (loadMoreWrap) loadMoreWrap.hidden = true;
+  if (!grid) return;
+  grid.classList.remove("is-bento");
+  grid.innerHTML = `
+    <div class="blog-empty" role="status">
+      <p class="blog-empty__title">Chưa có bài viết nào trong mục này</p>
+      <p class="blog-empty__desc">Hãy khám phá các chuyên mục khác hoặc quay lại sau nhé.</p>
+      <button type="button" class="blog-empty__reset" id="blogEmptyReset">Xem tất cả bài viết</button>
+    </div>
+  `;
+  const reset = grid.querySelector("#blogEmptyReset");
+  if (reset) {
+    reset.addEventListener("click", () => {
+      const allTab = document.querySelector('.category-tab[data-category="all"]');
+      if (allTab) allTab.click();
+    });
+  }
 }
 
 function bindBlogTabs() {
   const tabs = document.querySelectorAll(".category-tab");
-  const articles = document.querySelectorAll(".article-card");
   tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
-      tabs.forEach((item) => item.classList.remove("is-active"));
-      tab.classList.add("is-active");
-      const category = tab.dataset.category;
-      articles.forEach((article) => {
-        article.style.display = category === "all" || article.dataset.category === category ? "flex" : "none";
+      if (tab.classList.contains("is-active")) return;
+      tabs.forEach((item) => {
+        item.classList.remove("is-active");
+        item.setAttribute("aria-selected", "false");
       });
+      tab.classList.add("is-active");
+      tab.setAttribute("aria-selected", "true");
+      blogState.activeCategory = tab.dataset.category || "all";
+      blogState.visible = blogState.perPage;
+      renderBlogGrid();
+      setupReveal();
     });
   });
+}
+
+function setupLoadMore() {
+  const button = document.querySelector("#loadMoreBtn");
+  if (!button) return;
+  button.addEventListener("click", () => {
+    const remaining = filteredPosts().slice(blogState.visible);
+    if (!remaining.length) {
+      button.hidden = true;
+      return;
+    }
+    const grid = document.querySelector("#articlesGrid");
+    const next = remaining.slice(0, blogState.perPage);
+    if (grid) grid.insertAdjacentHTML("beforeend", next.map((post) => articleCardHtml(post)).join(""));
+    blogState.visible += next.length;
+    applyBlogImageFallbacks();
+    updateLoadMore();
+    setupReveal();
+  });
+}
+
+function updateLoadMore() {
+  const wrap = document.querySelector("#loadMoreWrap");
+  if (!wrap) return;
+  const hasMore = filteredPosts().length > blogState.visible;
+  wrap.hidden = !hasMore;
 }
 
 function renderPolicyTab(category, active) {
@@ -213,9 +320,62 @@ function categoryLabel(slug) {
   return labels[slug] || slug || "Velura";
 }
 
-function hideStaticPagination() {
-  const pagination = document.querySelector(".page-blog .pagination");
-  if (pagination) pagination.style.display = "none";
+function bindNewsletter() {
+  const form = document.querySelector("#newsletterForm");
+  if (!form) return;
+  const input = form.querySelector('input[type="email"]');
+  const success = document.querySelector("#newsletterSuccess");
+  const error = document.querySelector("#newsletterError");
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (error) error.hidden = true;
+    if (!input.checkValidity()) {
+      if (error) {
+        error.textContent = "Vui lòng nhập địa chỉ email hợp lệ.";
+        error.hidden = false;
+      }
+      input.focus();
+      return;
+    }
+    form.reset();
+    if (success) {
+      success.hidden = false;
+      success.textContent = "Cảm ơn bạn đã đăng ký. Tạp chí Velura sẽ gửi đến hòm thư của bạn mỗi tuần.";
+    }
+  });
+}
+
+function setupReveal() {
+  const extra = [
+    document.querySelector(".featured-post"),
+    document.querySelector(".newsletter-box")
+  ].filter(Boolean);
+  extra.forEach((el) => {
+    if (!el.classList.contains("reveal")) el.classList.add("reveal");
+  });
+
+  const targets = document.querySelectorAll(".reveal:not(.is-visible)");
+  if (!targets.length) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    targets.forEach((el) => el.classList.add("is-visible"));
+    return;
+  }
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        }
+      });
+    },
+    { rootMargin: "0px 0px -10% 0px", threshold: 0.1 }
+  );
+  targets.forEach((el, index) => {
+    el.style.transitionDelay = `${Math.min(index, 6) * 60}ms`;
+    observer.observe(el);
+  });
 }
 
 function formatDate(value) {

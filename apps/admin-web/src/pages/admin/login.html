@@ -7,42 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../../styles/main.css" />
-  <style>
-    body { display:grid; place-items:center; min-height:100vh; background:var(--checkout-bg); font-family:"DM Sans",sans-serif; }
-    .auth-card { width:min(440px,100%); padding:40px 36px; background:#fff; border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow-card); }
-    .auth-card__brand { text-align:center; margin-bottom:28px; }
-    .auth-card__brand img { width:90px; height:auto; }
-    .auth-card__brand h1 { margin:12px 0 4px; color:var(--text-dark); font-family:"Playfair Display",Georgia,serif; font-size:1.5rem; font-weight:600; }
-    .auth-card__brand p { color:var(--muted); font-size:.875rem; line-height:1.5; }
-    .auth-error { display:none; padding:10px 14px; margin-bottom:16px; border-left:3px solid var(--error); border-radius:var(--radius-sm); background:#f9e4e8; color:var(--error); font-size:.8125rem; line-height:1.5; }
-    .auth-error.is-visible { display:block; }
-    .auth-success { display:none; padding:10px 14px; margin-bottom:16px; border-left:3px solid #16a34a; border-radius:var(--radius-sm); background:#e7f1e5; color:#4c7048; font-size:.8125rem; line-height:1.5; }
-    .auth-success.is-visible { display:block; }
-    .auth-divider { display:flex; align-items:center; gap:12px; margin:20px 0; color:var(--soft); font-size:.75rem; }
-    .auth-divider::before,.auth-divider::after { content:""; flex:1; height:1px; background:var(--line); }
-    .auth-field { margin-bottom:16px; }
-    .auth-field label { display:block; margin-bottom:6px; color:var(--text-body); font-size:.8125rem; font-weight:500; }
-    .auth-field input { width:100%; height:44px; padding:0 14px; border:1px solid var(--line); border-radius:var(--radius-sm); font-size:.9375rem; transition:border-color .2s,box-shadow .2s; }
-    .auth-field input:focus { outline:0; border-color:var(--terracotta); box-shadow:0 0 0 3px rgba(201,123,99,.12); }
-    .auth-btn { width:100%; min-height:48px; border:none; border-radius:var(--radius-md); font-size:1rem; font-weight:600; cursor:pointer; transition:background .2s,opacity .2s; }
-    .auth-btn:disabled { opacity:.6; cursor:not-allowed; }
-    .auth-btn--primary { background:var(--terracotta); color:#fff; }
-    .auth-btn--primary:hover:not(:disabled) { background:var(--terracotta-h); }
-    .auth-links { display:flex; justify-content:space-between; margin-top:16px; font-size:.8125rem; }
-    .auth-links a { color:var(--terracotta); text-decoration:none; }
-    .auth-links a:hover { text-decoration:underline; }
-    .auth-footer { text-align:center; margin-top:20px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:.8125rem; }
-    .auth-footer a { color:var(--terracotta); text-decoration:none; font-weight:500; }
-    .auth-footer a:hover { text-decoration:underline; }
-    .google-btn-wrap { display:flex; justify-content:center; }
-    .auth-btn--google { display:flex; align-items:center; justify-content:center; gap:10px; background:#fff; border:1px solid #dadce0; color:#3c4043; font-size:.875rem; font-weight:500; transition:background .2s,box-shadow .2s; }
-    .auth-btn--google:hover { background:#f7f8f8; box-shadow:0 1px 3px rgba(0,0,0,.1); }
-    .auth-btn--google svg { width:20px; height:20px; flex:0 0 20px; }
-    .auth-google-note { text-align:center; margin-top:12px; font-size:.75rem; color:var(--soft); }
-  </style>
+  <link rel="stylesheet" href="../../styles/auth.css" />
 </head>
-<body>
+<body class="page-auth">
   <main class="auth-card" role="main" aria-label="Đăng nhập Velura">
     <div class="auth-card__brand">
       <img src="../../assets/images/logo.png" alt="Velura" />
@@ -72,7 +39,7 @@
         <label for="login-password">Mật khẩu</label>
         <input type="password" id="login-password" placeholder="Nhập mật khẩu" required autocomplete="current-password" />
       </div>
-      <button class="auth-btn auth-btn--primary" type="submit" style="margin-top:8px">Đăng nhập</button>
+      <button class="auth-btn auth-btn--primary auth-btn--spaced" type="submit">Đăng nhập</button>
     </form>
 
     <div class="auth-links">
