@@ -64,13 +64,17 @@ export async function apiRequest(path, options = {}) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 401) {
-        // Clear local token session
-        clearAuthSession();
         const currentPath = window.location.pathname;
+        const isSafeAccountPage =
+          currentPath.includes("profile.html") ||
+          currentPath.includes("track-order.html");
+
+        // Never clear the persisted login session from this generic API helper.
+        // A 401 can happen while optional widgets load (wishlist, cart, AI, etc.).
+        // Only explicit logout should remove velura_token/velura_user.
         if (
           currentPath.includes("/pages/account/") &&
-          !currentPath.includes("profile.html") &&
-          !currentPath.includes("track-order.html")
+          !isSafeAccountPage
         ) {
           window.location.href = "/src/pages/auth/signin.html";
         }

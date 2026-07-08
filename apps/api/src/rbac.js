@@ -45,14 +45,14 @@ export async function buildAuthContext(req) {
     // Ignore error and fall back to local custom JWT
   }
 
-  const localJwt = authUser?.id ? null : verifyJwt(token);
+  const decoded = verifyJwt(token);
 
-  if (localJwt) {
+  if (decoded && !authUser?.id) {
     let profile = null;
     try {
       profile = await selectOne("users", {
         select: accountSelect,
-        user_id: `eq.${localJwt.user_id}`
+        user_id: `eq.${decoded.user_id}`
       }, dbOptions);
     } catch {
       profile = null;
@@ -62,7 +62,7 @@ export async function buildAuthContext(req) {
 
     const roleCode = profile.role === "admin" ? profile.admin_role : profile.role || "member";
     return {
-      authUser: { id: localJwt.user_id, email: profile.email },
+      authUser: { id: profile.user_id, email: profile.email },
       profile,
       roleCode,
       roleName: roleNames[roleCode] || "Member",

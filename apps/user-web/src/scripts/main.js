@@ -25,6 +25,7 @@ import { initCart } from "./modules/cart.js";
 import { initContentPages } from "./modules/content.js";
 import { hasRealAuthSession } from "./modules/auth-session.js";
 import { initAiSuggestions } from "./modules/ai-suggestions.js";
+import { initHotBannerSlider } from "./modules/hot-banner-slider.js";
 import { initNotifications } from "./modules/notifications.js";
 
 (function () {
@@ -77,6 +78,7 @@ import { initNotifications } from "./modules/notifications.js";
   initOrderDetail();
   initTrackOrder();
   initHomepage();
+  initHotBannerSlider();
   initCart();
   initContentPages();
   initAiSuggestions();

@@ -158,14 +158,15 @@ function renderWishlistItems(items, grid, subtitle) {
           <span class="wishlist-card__price">${priceFormatted}</span>
           ${oldPriceVal ? `<span class="wishlist-card__old-price" style="text-decoration: line-through; color: #8c857e; font-size: 1.0625rem;">${oldPriceFormatted}</span>` : ""}
         </div>
-        <button class="wishlist-card__action-btn js-add-cart-fast" type="button">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <path d="M16 10a4 4 0 0 1-8 0" />
-          </svg>
-          Thêm vào giỏ
-        </button>
+        <div class="wishlist-card__actions">
+          <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
+            <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+            <span>Mua ngay</span>
+          </a>
+          <button class="wishlist-card__action-btn js-add-cart-fast" type="button" title="Thêm vào giỏ hàng">
+            <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
+          </button>
+        </div>
       </div>
     `;
     grid.appendChild(card);

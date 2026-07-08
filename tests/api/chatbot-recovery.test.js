@@ -57,3 +57,31 @@ test("chatbot frontend renders greeting before session history resolves", async 
   assert.match(repository, /CHAT_DB_OPTIONS\s*=\s*Object\.freeze\(\{\s*useAnonKey:\s*false\s*\}\)/);
   assert.match(repository, /CHAT_SERVICE_UNAVAILABLE/);
 });
+
+test("policy content is database-backed for frontend and chatbot knowledge", async () => {
+  const [migration, contentClient, homepageClient, repository, llm, service] = await Promise.all([
+    source("database/migrations/015_policy_knowledge_content.sql"),
+    source("apps/user-web/src/scripts/modules/content.js"),
+    source("apps/user-web/src/scripts/modules/homepage.js"),
+    source("apps/api/src/chatbot/chatbot-repository.js"),
+    source("apps/api/src/chatbot/llm-service.js"),
+    source("apps/api/src/chatbot/chatbot-service.js")
+  ]);
+
+  assert.match(migration, /insert into public\.policy/);
+  assert.match(migration, /48 gi/);
+  assert.match(migration, /30\.000 VN/);
+  assert.match(migration, /500\.000 VN/);
+  assert.match(migration, /20 tin/);
+  assert.match(contentClient, /apiRequest\("\/api\/content\/policies"\)/);
+  assert.match(contentClient, /Không thể tải chính sách/);
+  assert.match(homepageClient, /apiRequest\("\/api\/content\/policies"\)/);
+  assert.match(repository, /async listPolicies\(\)/);
+  assert.match(repository, /selectRows\("policy"/);
+  assert.match(llm, /name:\s*"get_policies"/);
+  assert.match(llm, /Database là nguồn đúng duy nhất/);
+  assert.doesNotMatch(llm, /Chính sách đổi trả:\s*7 ngày/);
+  assert.match(service, /policyKnowledge/);
+  assert.match(service, /createPolicyKnowledgeReply/);
+  assert.doesNotMatch(service, /Trong vòng 7 ngày/);
+});

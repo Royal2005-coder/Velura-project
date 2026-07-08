@@ -536,12 +536,13 @@
   pointer-events: none;
 }
 
-/* === Actions Row: Mua hàng + Thêm vào giỏ hàng === */
+/* === Actions Row: Mua ngay + Cart icon (luôn hiển thị) === */
 .card--product .card__actions {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 16px 14px;
+  padding: 12px 0 0;
+  margin-top: 12px;
 }
 
 .card--product .card__actions .btn-buy {
@@ -559,7 +560,10 @@
   text-decoration: none;
   border: none;
   cursor: pointer;
+  line-height: 1.2;
+  text-align: center;
   transition: background 0.2s ease, color 0.2s ease;
+  min-height: 40px;
 }
 
 .card--product .card__actions .btn-buy:hover {
@@ -586,6 +590,7 @@
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.2s ease, color 0.2s ease;
+  padding: 0;
 }
 
 .card--product .card__btn-cart svg {
@@ -601,10 +606,22 @@
 }
 
 .card--product.card--list-view .card__actions {
+  display: flex;
+  flex-direction: column;
   width: 180px;
   padding: 0;
   margin-top: 0;
   flex-shrink: 0;
+  gap: 8px;
+}
+
+.card--product.card--list-view .card__actions .btn-buy {
+  width: 100%;
+}
+
+.card--product.card--list-view .card__btn-cart {
+  width: 100%;
+  border-radius: var(--radius-sm);
 }
 
 /* Final product card alignment for catalog cards */
@@ -636,16 +653,6 @@
   min-height: 28px;
 }
 
-.card--product .card__actions .btn-buy {
-  min-height: 40px;
-  border-radius: 8px;
-  font-size: 0.76rem;
-  white-space: nowrap;
-}
-
-.card--product .card__actions .btn-buy {
-  background: #f2ded5;
-}
 
 @media (max-width: 420px) {
   .card--product .card__actions .btn-buy {

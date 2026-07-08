@@ -1,5 +1,9 @@
-import { HttpError, readJson, sendJson, sendNoContent } from "./http.js";
-import { selectRows, selectOne, insertRow, deleteRows } from "./supabase.js";
+import { HttpError, readJson, sendJson } from "./http.js";
+import {
+  addWishlistProductForUser,
+  readWishlistProductsForUser,
+  removeWishlistProductForUser
+} from "./user/wishlist.js";
 
 function requireUserAuth(context) {
   if (!context || !context.profile || !context.profile.user_id) {
@@ -9,95 +13,50 @@ function requireUserAuth(context) {
 }
 
 export async function handleWishlistRoute(req, res, parts, corsHeaders, context) {
-  const method = req.method;
+  const profile = requireUserAuth(context);
 
-  try {
-    const profile = requireUserAuth(context);
-
-    // GET /api/v1/wishlists
-    if (method === "GET") {
-      // Query the Wishlists table joining with product table
-      const result = await selectRows("Wishlists", {
-        select: "*,product:product(*)",
-        user_id: `eq.${profile.user_id}`
-      });
-
-      // Map Supabase rows to match Frontend / HTML data-bind contract
-      const mappedData = result.rows.map(item => {
-        const p = item.product || {};
-        return {
-          id: item.id,
-          product: {
-            id: p.product_id,
-            name: p.name,
-            image_url: p.images?.[0] || "",
-            price: p.sale_price || p.base_price,
-            old_price: (p.sale_price && p.base_price > p.sale_price) ? p.base_price : null,
-            badge: p.is_featured ? "HOT" : "NEW"
-          },
-          added_at: item.created_at
-        };
-      });
-
-      return sendJson(res, 200, {
-        status: "success",
-        data: mappedData
-      }, corsHeaders);
-    }
-
-    // POST /api/v1/wishlists
-    if (method === "POST") {
-      const body = await readJson(req);
-      const { product_id } = body;
-
-      if (!product_id) {
-        throw new HttpError(400, "BAD_REQUEST", "product_id là bắt buộc");
-      }
-
-      // Check if product exists in user's wishlist
-      const existing = await selectOne("Wishlists", {
-        user_id: `eq.${profile.user_id}`,
-        product_id: `eq.${product_id}`
-      });
-
-      if (existing) {
-        throw new HttpError(409, "CONFLICT", "Sản phẩm đã tồn tại trong danh sách yêu thích");
-      }
-
-      // Insert new wishlist item
-      const newRow = await insertRow("Wishlists", {
-        user_id: profile.user_id,
-        product_id
-      });
-
-      return sendJson(res, 201, {
-        status: "success",
-        message: "Đã thêm vào danh sách yêu thích thành công",
-        data: newRow
-      }, corsHeaders);
-    }
-
-    // DELETE /api/v1/wishlists/:product_id
-    if (method === "DELETE") {
-      const product_id = parts[3];
-      if (!product_id) {
-        throw new HttpError(400, "BAD_REQUEST", "product_id là bắt buộc trên URL path");
-      }
-
-      await deleteRows("Wishlists", {
-        user_id: `eq.${profile.user_id}`,
-        product_id: `eq.${product_id}`
-      });
-
-      return sendJson(res, 200, {
-        status: "success",
-        message: "Đã xóa khỏi danh sách yêu thích thành công"
-      }, corsHeaders);
-    }
-
-    throw new HttpError(405, "METHOD_NOT_ALLOWED", "Phương thức không được hỗ trợ");
-  } catch (error) {
-    if (error instanceof HttpError) throw error;
-    throw new HttpError(500, "INTERNAL_SERVER_ERROR", error.message);
+  if (req.method === "GET") {
+    const { items } = await readWishlistProductsForUser(profile.user_id);
+    return sendJson(res, 200, {
+      status: "success",
+      data: items.map(mapProductForLegacyWishlist)
+    }, corsHeaders);
   }
+
+  if (req.method === "POST") {
+    const body = await readJson(req);
+    const wishlist = await addWishlistProductForUser(profile.user_id, body.product_id);
+    return sendJson(res, 201, {
+      status: "success",
+      message: "Đã thêm vào danh sách yêu thích thành công",
+      wishlist
+    }, corsHeaders);
+  }
+
+  if (req.method === "DELETE") {
+    const productId = parts[3];
+    const wishlist = await removeWishlistProductForUser(profile.user_id, productId);
+    return sendJson(res, 200, {
+      status: "success",
+      message: "Đã xóa khỏi danh sách yêu thích thành công",
+      wishlist
+    }, corsHeaders);
+  }
+
+  throw new HttpError(405, "METHOD_NOT_ALLOWED", "Phương thức không được hỗ trợ");
+}
+
+function mapProductForLegacyWishlist(product) {
+  return {
+    id: product.product_id,
+    product: {
+      id: product.product_id,
+      name: product.name,
+      image_url: product.images?.[0] || "",
+      price: product.sale_price || product.base_price,
+      old_price: product.sale_price && product.base_price > product.sale_price ? product.base_price : null,
+      badge: product.is_featured ? "HOT" : "NEW"
+    },
+    added_at: null
+  };
 }

@@ -64,6 +64,53 @@
         </button>
       </section>
 
+      <!-- HOT OFFER NEWS TICKER -->
+      <section class="hot-offer-ticker" aria-label="Tin ưu đãi Velura">
+        <div class="container hot-offer-ticker__inner">
+          <span class="hot-offer-ticker__label">Ưu đãi hot</span>
+          <div class="hot-offer-ticker__viewport">
+            <div class="hot-offer-ticker__track js-hot-offer-ticker-track"></div>
+          </div>
+          <a class="hot-offer-ticker__link" href="/src/pages/offers.html">Xem chi tiết</a>
+        </div>
+      </section>
+
+      <!-- HOT BANNER SLIDER SECTION -->
+      <section class="hot-banner-section hot-banner-section--home-legacy container" aria-labelledby="hot-banner-title">
+        <div class="hot-banner-section__header">
+          <div>
+            <span class="hot-banner-section__eyebrow">Hot deals</span>
+            <h2 class="hot-banner-section__title" id="hot-banner-title">Ưu đãi tháng này</h2>
+          </div>
+          <a class="hot-banner-section__link" href="/src/pages/products/list.html">
+            <span>Xem tất cả ưu đãi</span>
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+
+        <div class="hot-banner-slider js-hot-banner-slider" aria-label="Ưu đãi nổi bật của Velura">
+          <div class="hot-banner-slider__viewport">
+            <div class="hot-banner-slider__track js-hot-banner-track" aria-live="polite"></div>
+          </div>
+
+          <button class="hot-banner-slider__nav hot-banner-slider__nav--prev js-hot-banner-prev" type="button"
+            aria-label="Xem ưu đãi trước">
+            <span aria-hidden="true">‹</span>
+          </button>
+          <button class="hot-banner-slider__nav hot-banner-slider__nav--next js-hot-banner-next" type="button"
+            aria-label="Xem ưu đãi tiếp theo">
+            <span aria-hidden="true">›</span>
+          </button>
+
+          <div class="hot-banner-slider__footer">
+            <div class="hot-banner-slider__dots js-hot-banner-dots" aria-label="Chọn banner ưu đãi"></div>
+            <div class="hot-banner-slider__progress" aria-hidden="true">
+              <span class="hot-banner-slider__progress-bar js-hot-banner-progress"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- OUTSTANDING CATEGORIES SECTION -->
       <section class="categories-section container">
         <div class="categories-section__header">
@@ -242,8 +289,8 @@
               </svg>
             </div>
             <div class="policy-card__info">
-              <h3 class="policy-card__title">Đổi trả dễ dàng</h3>
-              <p class="policy-card__desc">Trong vòng 7 ngày</p>
+              <h3 class="policy-card__title">Đổi trả minh bạch</h3>
+              <p class="policy-card__desc">Gửi yêu cầu trong 48 giờ</p>
             </div>
           </div>
 
@@ -257,8 +304,8 @@
               </svg>
             </div>
             <div class="policy-card__info">
-              <h3 class="policy-card__title">Chất lượng cao cấp</h3>
-              <p class="policy-card__desc">Cam kết 100% chính hãng</p>
+              <h3 class="policy-card__title">Bảo mật Style Quiz</h3>
+              <p class="policy-card__desc">Dữ liệu dùng khép kín cho AI Stylist</p>
             </div>
           </div>
         </div>
@@ -310,6 +357,22 @@
       </div>
     </div>
   </div>
+
+  <!-- HOT OFFER FLOATING WIDGET -->
+  <aside class="hot-offer-widget js-hot-offer-widget" aria-label="Ưu đãi Velura">
+    <button class="hot-offer-widget__button" type="button" aria-label="Mở ưu đãi Velura">
+      <span class="hot-offer-widget__spark" aria-hidden="true">%</span>
+      <span class="hot-offer-widget__label">Ưu đãi</span>
+    </button>
+    <div class="hot-offer-widget__panel">
+      <div class="hot-offer-widget__header">
+        <span>Ưu đãi tháng này</span>
+        <small class="js-hot-offer-widget-count">6 tin</small>
+      </div>
+      <div class="hot-offer-widget__list js-hot-offer-widget-list"></div>
+      <a class="hot-offer-widget__cta" href="/src/pages/offers.html">Xem chi tiết ưu đãi →</a>
+    </div>
+  </aside>
 
   <!-- CHATBOT WIDGET ĐÃ CẬP NHẬT -->
   <div class="chatbot-widget">

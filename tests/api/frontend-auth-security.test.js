@@ -225,8 +225,10 @@ test("customer member and guest flows require real auth sessions", async () => {
   assert.match(session, /localStorage\.setItem\(STORAGE_KEYS\.role,\s*normalizedUser\.role\)/);
   assert.match(session, /localStorage\.setItem\(STORAGE_KEYS\.userId,\s*String\(normalizedUser\.user_id\)\)/);
 
-  assert.match(api, /clearAuthSession\(\)/);
-  assert.match(api, /!currentPath\.includes\("profile\.html"\)/);
+  assert.match(api, /const isSafeAccountPage/);
+  assert.match(api, /currentPath\.includes\("profile\.html"\)/);
+  assert.match(api, /currentPath\.includes\("track-order\.html"\)/);
+  assert.doesNotMatch(api, /localStorage\.removeItem\("velura_token"\)/);
   assert.match(cart, /body:\s*JSON\.stringify\(\{\s*phone,\s*password\s*\}\)/);
   assert.match(cart, /storeAuthSession\(authRes\)/);
   assert.doesNotMatch(cart, /login_id:\s*phone/);
@@ -242,6 +244,23 @@ test("customer member and guest flows require real auth sessions", async () => {
   assert.match(product, /\/src\/pages\/auth\/signup\.html/);
 
   assert.match(rbac, /import \{ verifyJwt \} from "\.\/auth-helper\.js"/);
-  assert.match(rbac, /const localJwt = authUser\?\.id \? null : verifyJwt\(token\)/);
-  assert.match(rbac, /id: localJwt\.user_id/);
+  assert.match(rbac, /const decoded = verifyJwt\(token\)/);
+  assert.match(rbac, /authUser:\s*\{\s*id:\s*profile\.user_id/);
+});
+
+test("customer wishlist uses users.wishlist JSON and not a dedicated wishlist table", async () => {
+  const [wishlistRoute, legacyWishlistRoute, schema] = await Promise.all([
+    source("apps/api/src/user/wishlist.js"),
+    source("apps/api/src/v1-wishlist-routes.js"),
+    source("database/database_user/schema.sql")
+  ]);
+
+  const combinedRoutes = `${wishlistRoute}\n${legacyWishlistRoute}`;
+  assert.match(wishlistRoute, /selectOne\("users"/);
+  assert.match(wishlistRoute, /updateRows\("users"/);
+  assert.match(wishlistRoute, /wishlist:\s*normalizeWishlist/);
+  assert.doesNotMatch(combinedRoutes, /["']Wishlists["']/);
+  assert.doesNotMatch(combinedRoutes, /insertRow\(|deleteRows\(/);
+  assert.match(schema, /wishlist\s+JSONB\s+NOT NULL DEFAULT '\[\]'/i);
+  assert.doesNotMatch(schema, /CREATE TABLE\s+Wishlists/i);
 });

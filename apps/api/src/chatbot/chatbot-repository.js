@@ -208,6 +208,30 @@ export function createChatbotRepository() {
       }));
     },
 
+    async listPolicies() {
+      return withChatError(async () => {
+        const result = await selectRows("policy", {
+          select: "policy_id,slug,title,summary,content,display_order,status,updated_at",
+          status: "eq.published",
+          order: "display_order.asc,title.asc",
+          limit: 20
+        });
+
+        return {
+          rows: (result.rows || []).map((row) => ({
+            policy_id: row.policy_id,
+            slug: row.slug,
+            title: row.title,
+            summary: row.summary || "",
+            content: normalizePolicyContent(row.content),
+            display_order: row.display_order,
+            updated_at: row.updated_at
+          })),
+          count: result.count
+        };
+      });
+    },
+
     async getProductById(productId) {
       const result = await withChatError(() => selectRows("product", {
         select: CHAT_PRODUCT_SELECT,
@@ -311,6 +335,20 @@ function uniqueUuidList(values) {
 
 function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function normalizePolicyContent(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
 
 async function withChatError(operation) {
