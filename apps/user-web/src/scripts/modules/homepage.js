@@ -19,6 +19,8 @@ export function initHomepage() {
 
   // Load Homepage Data
   async function loadData() {
+    loadPolicyHighlights();
+
     // Fetch user wishlist first to set up active classes
     const token = localStorage.getItem("velura_token");
     if (token) {
@@ -122,6 +124,45 @@ export function initHomepage() {
     }
   }
 
+  async function loadPolicyHighlights() {
+    const cards = Array.from(document.querySelectorAll(".policies-section .policy-card"));
+    if (!cards.length) return;
+
+    try {
+      const result = await apiRequest("/api/content/policies");
+      const policies = result.rows || [];
+      const bySlug = new Map(policies.map((policy) => [policy.slug, policy]));
+      const highlights = [
+        {
+          policy: bySlug.get("shipping"),
+          title: "Miễn phí vận chuyển",
+          description: "Cho đơn hàng từ 500.000đ"
+        },
+        {
+          policy: bySlug.get("returns"),
+          title: "Đổi trả minh bạch",
+          description: "Gửi yêu cầu trong 48 giờ"
+        },
+        {
+          policy: bySlug.get("privacy"),
+          title: "Bảo mật Style Quiz",
+          description: "Dữ liệu dùng khép kín cho AI Stylist"
+        }
+      ];
+
+      highlights.forEach((item, index) => {
+        const card = cards[index];
+        if (!card) return;
+        const title = card.querySelector(".policy-card__title");
+        const desc = card.querySelector(".policy-card__desc");
+        if (title) title.textContent = item.title;
+        if (desc) desc.textContent = item.description || item.policy?.summary || "";
+      });
+    } catch (error) {
+      console.warn("Homepage policy highlights unavailable.", error);
+    }
+  }
+
   // Render categories with custom icons
   function renderCategories(categories) {
     if (!categoriesGrid) return;
@@ -182,6 +223,11 @@ export function initHomepage() {
         </a>
       `;
     }).join("");
+
+    setupHomepageCarousel(categoriesGrid, {
+      label: "Danh mục nổi bật",
+      scrollRatio: 0.75
+    });
   }
 
   // Render featured products
@@ -249,10 +295,11 @@ export function initHomepage() {
 
           <div class="product-card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              Mua hàng
+              <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+              <span>Mua ngay</span>
             </a>
             <button class="product-card__btn-cart js-add-cart-home" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              Thêm vào giỏ hàng
+              <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
             </button>
           </div>
         </article>
@@ -260,6 +307,10 @@ export function initHomepage() {
     }).join("");
 
     bindHomeEvents(products);
+    setupHomepageCarousel(productsGrid, {
+      label: "Sản phẩm nổi bật",
+      scrollRatio: 0.95
+    });
   }
 
   // Bind cart/wishlist click events
@@ -411,10 +462,11 @@ export function initHomepage() {
 
           <div class="product-card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              Mua hàng
+              <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+              <span>Mua ngay</span>
             </a>
             <button class="product-card__btn-cart js-add-cart-personalized" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              Thêm vào giỏ hàng
+              <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
             </button>
           </div>
         </article>
@@ -597,6 +649,77 @@ export function initHomepage() {
         </a>
       `;
     }).join("");
+
+    setupHomepageCarousel(collectionsGrid, {
+      label: "Bộ sưu tập đặc biệt",
+      scrollRatio: 0.9
+    });
+  }
+
+  function setupHomepageCarousel(track, options = {}) {
+    if (!track) return;
+
+    const section = track.closest("section");
+    if (!section) return;
+
+    section.classList.add("home-carousel");
+    track.classList.add("home-carousel__track");
+    track.setAttribute("tabindex", "0");
+
+    section.querySelectorAll(".home-carousel__arrow, .home-carousel__progress").forEach((el) => el.remove());
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "home-carousel__arrow home-carousel__arrow--prev";
+    prevBtn.setAttribute("aria-label", `Trượt ${options.label || "nội dung"} sang trái`);
+    prevBtn.innerHTML = `<span aria-hidden="true">‹</span>`;
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "home-carousel__arrow home-carousel__arrow--next";
+    nextBtn.setAttribute("aria-label", `Trượt ${options.label || "nội dung"} sang phải`);
+    nextBtn.innerHTML = `<span aria-hidden="true">›</span>`;
+
+    const progress = document.createElement("div");
+    progress.className = "home-carousel__progress";
+    progress.setAttribute("aria-hidden", "true");
+    progress.innerHTML = `<span class="home-carousel__progress-bar"></span>`;
+
+    section.append(prevBtn, nextBtn, progress);
+
+    const getScrollStep = () => Math.max(track.clientWidth * (options.scrollRatio || 0.85), 240);
+
+    const updateState = () => {
+      const maxScroll = Math.max(track.scrollWidth - track.clientWidth, 0);
+      const current = Math.min(Math.max(track.scrollLeft, 0), maxScroll);
+      const hasOverflow = maxScroll > 8;
+      const progressBar = progress.querySelector(".home-carousel__progress-bar");
+      const viewportRatio = hasOverflow ? Math.max(track.clientWidth / track.scrollWidth, 0.18) : 1;
+      const travelRatio = hasOverflow ? current / maxScroll : 0;
+      const maxTranslate = Math.max((1 / viewportRatio - 1) * 100, 0);
+
+      section.classList.toggle("home-carousel--static", !hasOverflow);
+      prevBtn.disabled = !hasOverflow || current <= 4;
+      nextBtn.disabled = !hasOverflow || current >= maxScroll - 4;
+
+      if (progressBar) {
+        progressBar.style.width = `${viewportRatio * 100}%`;
+        progressBar.style.transform = `translateX(${travelRatio * maxTranslate}%)`;
+      }
+    };
+
+    prevBtn.addEventListener("click", () => {
+      track.scrollBy({ left: -getScrollStep(), behavior: "smooth" });
+    });
+
+    nextBtn.addEventListener("click", () => {
+      track.scrollBy({ left: getScrollStep(), behavior: "smooth" });
+    });
+
+    track.addEventListener("scroll", updateState, { passive: true });
+    window.addEventListener("resize", updateState, { passive: true });
+    requestAnimationFrame(updateState);
+    setTimeout(updateState, 250);
   }
 
   loadData();

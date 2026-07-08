@@ -1,6 +1,6 @@
 -- ============================================================
---  VELURA DATABASE SCHEMA — PostgreSQL
---  Dựa trên thiết kế ERD (Phát triển web.pdf)
+--  VELURA DATABASE SCHEMA â€” PostgreSQL
+--  Dá»±a trÃªn thiáº¿t káº¿ ERD (PhÃ¡t triá»ƒn web.pdf)
 --  Generated: 2026-06-18
 -- ============================================================
 
@@ -81,7 +81,7 @@ CREATE TYPE audit_action AS ENUM ('create', 'update', 'delete', 'approve', 'reje
 
 -- ============================================================
 -- 1. USERS & STYLE PROFILE
--- (không phụ thuộc bảng nào khác)
+-- (khÃ´ng phá»¥ thuá»™c báº£ng nÃ o khÃ¡c)
 -- ============================================================
 
 CREATE TABLE users (
@@ -96,14 +96,16 @@ CREATE TABLE users (
   role              user_role    NOT NULL DEFAULT 'member',
   admin_role        admin_role_type,
   is_active         BOOLEAN      NOT NULL DEFAULT true,
-  -- Bảo mật
+  -- Báº£o máº­t
   otp_code          VARCHAR(10),
   otp_expires_at    TIMESTAMP,
   login_fail_count  SMALLINT     NOT NULL DEFAULT 0,
   locked_until      TIMESTAMP,
-  -- Địa chỉ lưu dạng JSON array
+  -- Äá»‹a chá»‰ lÆ°u dáº¡ng JSON array
   saved_addresses   JSONB        NOT NULL DEFAULT '[]',
-  -- Thành viên
+  -- Wishlist lÆ°u trá»±c tiáº¿p trÃªn users, khÃ´ng táº¡o báº£ng wishlist riÃªng
+  wishlist          JSONB        NOT NULL DEFAULT '[]',
+  -- ThÃ nh viÃªn
   tier              VARCHAR(20)  NOT NULL DEFAULT 'Standard',
   loyalty_points    INT          NOT NULL DEFAULT 0,
   created_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -114,7 +116,7 @@ CREATE TABLE users (
 
 CREATE TABLE guest_session (
   session_id        VARCHAR(100) PRIMARY KEY,
-  -- Khi Guest đăng ký thành tài khoản, lưu lại user_id để hợp nhất dữ liệu
+  -- Khi Guest Ä‘Äƒng kÃ½ thÃ nh tÃ i khoáº£n, lÆ°u láº¡i user_id Ä‘á»ƒ há»£p nháº¥t dá»¯ liá»‡u
   converted_user_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
   created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   expires_at        TIMESTAMP NOT NULL
@@ -141,7 +143,7 @@ CREATE TABLE style_profile (
 
 -- ============================================================
 -- 2. CATEGORY & PRODUCT
--- (category không phụ thuộc ai; product phụ thuộc category)
+-- (category khÃ´ng phá»¥ thuá»™c ai; product phá»¥ thuá»™c category)
 -- ============================================================
 
 CREATE TABLE category (
@@ -201,9 +203,9 @@ CREATE TABLE combo_item (
 
 
 -- ============================================================
--- 3. KHUYẾN MÃI & VOUCHER
--- (promotion → users; voucher → promotion, users)
--- Phải tạo TRƯỚC orders vì orders FK → voucher
+-- 3. KHUYáº¾N MÃƒI & VOUCHER
+-- (promotion â†’ users; voucher â†’ promotion, users)
+-- Pháº£i táº¡o TRÆ¯á»šC orders vÃ¬ orders FK â†’ voucher
 -- ============================================================
 
 CREATE TABLE promotion (
@@ -263,8 +265,8 @@ CREATE TABLE price_history (
 
 
 -- ============================================================
--- 4. ĐƠN HÀNG
--- (orders → users, voucher — cả 2 đã tồn tại)
+-- 4. ÄÆ N HÃ€NG
+-- (orders â†’ users, voucher â€” cáº£ 2 Ä‘Ã£ tá»“n táº¡i)
 -- ============================================================
 
 CREATE TABLE orders (
@@ -315,8 +317,8 @@ CREATE TABLE order_status_history (
 
 
 -- ============================================================
--- 5. THANH TOÁN
--- (payment → orders)
+-- 5. THANH TOÃN
+-- (payment â†’ orders)
 -- ============================================================
 
 CREATE TABLE payment (
@@ -339,8 +341,8 @@ CREATE TABLE payment (
 
 
 -- ============================================================
--- 6. GIỎ HÀNG
--- (cart → users, guest_session)
+-- 6. GIá»Ž HÃ€NG
+-- (cart â†’ users, guest_session)
 -- ============================================================
 
 CREATE TABLE cart (
@@ -358,8 +360,8 @@ CREATE TABLE cart (
 
 
 -- ============================================================
--- 7. ĐÁNH GIÁ SẢN PHẨM
--- (review → product, users, orders)
+-- 7. ÄÃNH GIÃ Sáº¢N PHáº¨M
+-- (review â†’ product, users, orders)
 -- ============================================================
 
 CREATE TABLE review (
@@ -382,9 +384,9 @@ CREATE TABLE review (
 
 
 -- ============================================================
--- 8. ĐỔI TRẢ & CSKH
--- (return_exchange → orders, users)
--- (return_item → return_exchange, order_item)
+-- 8. Äá»”I TRáº¢ & CSKH
+-- (return_exchange â†’ orders, users)
+-- (return_item â†’ return_exchange, order_item)
 -- ============================================================
 
 CREATE TABLE return_exchange (
@@ -415,8 +417,8 @@ CREATE TABLE return_item (
 
 -- ============================================================
 -- 9. AI LOG
--- (ai_log → users, guest_session)
--- Phải tạo TRƯỚC support_ticket vì support_ticket FK → ai_log
+-- (ai_log â†’ users, guest_session)
+-- Pháº£i táº¡o TRÆ¯á»šC support_ticket vÃ¬ support_ticket FK â†’ ai_log
 -- ============================================================
 
 CREATE TABLE ai_log (
@@ -438,7 +440,7 @@ CREATE TABLE ai_log (
 
 -- ============================================================
 -- 10. SUPPORT TICKET
--- (support_ticket → users, ai_log — cả 2 đã tồn tại)
+-- (support_ticket â†’ users, ai_log â€” cáº£ 2 Ä‘Ã£ tá»“n táº¡i)
 -- ============================================================
 
 CREATE TABLE support_ticket (
@@ -460,8 +462,8 @@ CREATE TABLE support_ticket (
 
 -- ============================================================
 -- 11. APPROVAL_ADMIN_REQUEST
--- (yêu cầu nâng quyền admin → users x3)
--- Phải tạo sau users
+-- (yÃªu cáº§u nÃ¢ng quyá»n admin â†’ users x3)
+-- Pháº£i táº¡o sau users
 -- ============================================================
 
 CREATE TYPE approval_status AS ENUM ('pending', 'approved', 'rejected', 'expired');
@@ -471,7 +473,7 @@ CREATE TABLE approval_admin_request (
   requester_id UUID            NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
   target_user_id UUID          NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
   approver_id  UUID            REFERENCES users(user_id) ON DELETE RESTRICT,
-  -- Quyền được đề xuất nâng lên
+  -- Quyá»n Ä‘Æ°á»£c Ä‘á» xuáº¥t nÃ¢ng lÃªn
   requested_role admin_role_type NOT NULL,
   status       approval_status NOT NULL DEFAULT 'pending',
   reason       TEXT,
@@ -484,7 +486,7 @@ CREATE TABLE approval_admin_request (
 
 -- ============================================================
 -- 12. AUDIT LOG
--- (audit_log → users)
+-- (audit_log â†’ users)
 -- ============================================================
 
 CREATE TABLE audit_log (
@@ -532,22 +534,10 @@ CREATE INDEX idx_ai_log_type         ON ai_log(log_type);
 -- ============================================================
 
 INSERT INTO category (name, parent_id, slug, display_order) VALUES
-  ('Áo',        NULL, 'ao',       1),
-  ('Quần',      NULL, 'quan',     2),
-  ('Đầm & Váy', NULL, 'dam-vay', 3),
-  ('Áo khoác',  NULL, 'ao-khoac', 4),
-  ('Set đồ',    NULL, 'set-do',  5),
-  ('Phụ kiện',  NULL, 'phu-kien', 6),
-  ('Giày dép',  NULL, 'giay-dep', 7);
-
--- ============================================================
--- WISHLISTS
--- ============================================================
-CREATE TABLE Wishlists (
-  id           UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id      UUID      NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  product_id   UUID      NOT NULL REFERENCES product(product_id) ON DELETE CASCADE,
-  created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-  CONSTRAINT unique_user_product UNIQUE (user_id, product_id)
-);
+  ('Ão',        NULL, 'ao',       1),
+  ('Quáº§n',      NULL, 'quan',     2),
+  ('Äáº§m & VÃ¡y', NULL, 'dam-vay', 3),
+  ('Ão khoÃ¡c',  NULL, 'ao-khoac', 4),
+  ('Set Ä‘á»“',    NULL, 'set-do',  5),
+  ('Phá»¥ kiá»‡n',  NULL, 'phu-kien', 6),
+  ('GiÃ y dÃ©p',  NULL, 'giay-dep', 7);

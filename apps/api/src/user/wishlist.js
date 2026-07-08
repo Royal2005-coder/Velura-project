@@ -1,73 +1,146 @@
 import { HttpError, readJson, sendJson } from "../http.js";
-import { selectOne, selectRows, insertRow, deleteRows } from "../supabase.js";
+import { selectOne, selectRows, updateRows } from "../supabase.js";
 import { requireUserAuth } from "./auth.js";
 
 export async function handleWishlistRoute(req, res, corsHeaders, context) {
   const profile = requireUserAuth(context);
 
-  // GET /api/user/wishlist
   if (req.method === "GET") {
-    const result = await selectRows("Wishlists", {
-      select: "*,product:product(*)",
-      user_id: `eq.${profile.user_id}`
-    });
-
-    const products = result.rows.map(item => item.product).filter(Boolean);
-    return sendJson(res, 200, { success: true, items: products }, corsHeaders);
+    const wishlist = await getWishlistProductIds(profile.user_id);
+    const items = await hydrateWishlistProducts(wishlist);
+    return sendJson(res, 200, { success: true, wishlist, items }, corsHeaders);
   }
 
-  // POST /api/user/wishlist
   if (req.method === "POST") {
     const body = await readJson(req);
-    const { product_id } = body;
-    if (!product_id) {
+    const productId = normalizeProductId(body.product_id);
+    if (!productId) {
       throw new HttpError(400, "BAD_REQUEST", "product_id là bắt buộc");
     }
 
-    const existing = await selectOne("Wishlists", {
-      user_id: `eq.${profile.user_id}`,
-      product_id: `eq.${product_id}`
-    });
+    await ensureProductExists(productId);
+    const wishlist = await getWishlistProductIds(profile.user_id);
+    const nextWishlist = wishlist.includes(productId) ? wishlist : [...wishlist, productId];
+    await saveWishlistProductIds(profile.user_id, nextWishlist);
 
-    if (!existing) {
-      await insertRow("Wishlists", {
-        user_id: profile.user_id,
-        product_id
-      });
-    }
-
-    const allWishlisted = await selectRows("Wishlists", {
-      user_id: `eq.${profile.user_id}`
-    });
-    const wishlist = allWishlisted.rows.map(item => item.product_id);
-
-    return sendJson(res, 200, { success: true, wishlist }, corsHeaders);
+    return sendJson(res, 200, { success: true, wishlist: nextWishlist }, corsHeaders);
   }
 
-  // DELETE /api/user/wishlist
   if (req.method === "DELETE") {
-    const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-    let product_id = url.searchParams.get("product_id");
-    if (!product_id) {
-      const body = await readJson(req).catch(() => ({}));
-      product_id = body.product_id;
-    }
-    if (!product_id) {
+    const productId = await getProductIdFromDeleteRequest(req);
+    if (!productId) {
       throw new HttpError(400, "BAD_REQUEST", "product_id là bắt buộc");
     }
 
-    await deleteRows("Wishlists", {
-      user_id: `eq.${profile.user_id}`,
-      product_id: `eq.${product_id}`
-    });
+    const wishlist = await getWishlistProductIds(profile.user_id);
+    const nextWishlist = wishlist.filter((id) => id !== productId);
+    await saveWishlistProductIds(profile.user_id, nextWishlist);
 
-    const allWishlisted = await selectRows("Wishlists", {
-      user_id: `eq.${profile.user_id}`
-    });
-    const wishlist = allWishlisted.rows.map(item => item.product_id);
-
-    return sendJson(res, 200, { success: true, wishlist }, corsHeaders);
+    return sendJson(res, 200, { success: true, wishlist: nextWishlist }, corsHeaders);
   }
 
-  throw new HttpError(404, "NOT_FOUND", "Route wishlist not found");
+  throw new HttpError(405, "METHOD_NOT_ALLOWED", "Phương thức wishlist không được hỗ trợ");
+}
+
+export async function readWishlistProductsForUser(userId) {
+  const wishlist = await getWishlistProductIds(userId);
+  const items = await hydrateWishlistProducts(wishlist);
+  return { wishlist, items };
+}
+
+export async function addWishlistProductForUser(userId, productId) {
+  const normalizedProductId = normalizeProductId(productId);
+  if (!normalizedProductId) {
+    throw new HttpError(400, "BAD_REQUEST", "product_id là bắt buộc");
+  }
+  await ensureProductExists(normalizedProductId);
+  const wishlist = await getWishlistProductIds(userId);
+  const nextWishlist = wishlist.includes(normalizedProductId) ? wishlist : [...wishlist, normalizedProductId];
+  await saveWishlistProductIds(userId, nextWishlist);
+  return nextWishlist;
+}
+
+export async function removeWishlistProductForUser(userId, productId) {
+  const normalizedProductId = normalizeProductId(productId);
+  if (!normalizedProductId) {
+    throw new HttpError(400, "BAD_REQUEST", "product_id là bắt buộc");
+  }
+  const wishlist = await getWishlistProductIds(userId);
+  const nextWishlist = wishlist.filter((id) => id !== normalizedProductId);
+  await saveWishlistProductIds(userId, nextWishlist);
+  return nextWishlist;
+}
+
+async function getWishlistProductIds(userId) {
+  const user = await selectOne("users", {
+    select: "user_id,wishlist",
+    user_id: `eq.${userId}`
+  }, { useAnonKey: false });
+
+  return normalizeWishlist(user?.wishlist);
+}
+
+async function saveWishlistProductIds(userId, wishlist) {
+  await updateRows("users", { user_id: `eq.${userId}` }, {
+    wishlist: normalizeWishlist(wishlist),
+    updated_at: new Date().toISOString()
+  }, { useAnonKey: false });
+}
+
+async function hydrateWishlistProducts(wishlist) {
+  const ids = normalizeWishlist(wishlist);
+  if (!ids.length) return [];
+
+  const { rows } = await selectRows("product", {
+    product_id: `in.(${ids.join(",")})`,
+    status: "eq.on_sale"
+  }, { useAnonKey: true });
+
+  const order = new Map(ids.map((id, index) => [id, index]));
+  return rows.sort((a, b) => (order.get(a.product_id) ?? 0) - (order.get(b.product_id) ?? 0));
+}
+
+async function ensureProductExists(productId) {
+  const product = await selectOne("product", {
+    select: "product_id",
+    product_id: `eq.${productId}`,
+    status: "eq.on_sale"
+  }, { useAnonKey: true });
+
+  if (!product) {
+    throw new HttpError(404, "NOT_FOUND", "Không tìm thấy sản phẩm");
+  }
+}
+
+async function getProductIdFromDeleteRequest(req) {
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const queryProductId = normalizeProductId(url.searchParams.get("product_id"));
+  if (queryProductId) return queryProductId;
+
+  const body = await readJson(req).catch(() => ({}));
+  return normalizeProductId(body.product_id);
+}
+
+function normalizeWishlist(value) {
+  const rawItems = Array.isArray(value) ? value : [];
+  const seen = new Set();
+  const ids = [];
+
+  for (const item of rawItems) {
+    const id = normalizeProductId(typeof item === "object" && item !== null ? item.product_id : item);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    ids.push(id);
+  }
+
+  return ids;
+}
+
+function normalizeProductId(value) {
+  const id = String(value || "").trim();
+  return isUuid(id) ? id : "";
+}
+
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }

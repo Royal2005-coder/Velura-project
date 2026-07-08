@@ -51,23 +51,49 @@ async function initPolicyPage() {
   const content = document.querySelector(".policy-content");
   if (!page || !tabs || !content) return;
 
+  tabs.innerHTML = '<button class="policy-tabs__item is-active" type="button" disabled><span>Đang tải chính sách...</span></button>';
+  content.innerHTML = `
+    <section class="policy-panel js-policy-panel is-active">
+      <h2 class="policy-panel__title">Đang tải chính sách</h2>
+      <p class="policy-panel__intro">Velura đang lấy nội dung chính sách mới nhất từ database.</p>
+    </section>
+  `;
+
   try {
-    const [categoriesResult, policiesResult] = await Promise.all([
-      apiRequest("/api/content/categories?type=policy"),
-      apiRequest("/api/content/policies")
-    ]);
+    const policiesResult = await apiRequest("/api/content/policies");
+    const categoriesResult = await apiRequest("/api/content/categories?type=policy").catch((error) => {
+      console.warn("Policy categories unavailable; deriving tabs from policies.", error);
+      return { rows: [] };
+    });
     const categories = categoriesResult.rows || [];
     const policies = policiesResult.rows || [];
-    if (!policies.length) return;
+    if (!policies.length) {
+      throw new Error("No published policies found");
+    }
 
-    tabs.innerHTML = categories
+    const categorySource = categories.length
+      ? categories
+      : policies.map((policy) => ({
+        slug: policy.slug,
+        name: policy.title,
+        display_order: policy.display_order || 0
+      }));
+
+    tabs.innerHTML = categorySource
       .filter((category) => policies.some((policy) => policy.slug === category.slug))
       .map((category, index) => renderPolicyTab(category, index === 0))
       .join("");
     content.innerHTML = policies.map((policy, index) => renderPolicyPanel(policy, index === 0)).join("");
     bindPolicyTabs();
   } catch (error) {
-    console.warn("Policy content API unavailable, keeping static content.", error);
+    console.warn("Policy content API unavailable.", error);
+    tabs.innerHTML = "";
+    content.innerHTML = `
+      <section class="policy-panel js-policy-panel is-active">
+        <h2 class="policy-panel__title">Không thể tải chính sách</h2>
+        <p class="policy-panel__intro">Hiện chưa lấy được dữ liệu chính sách từ database. Vui lòng kiểm tra API /api/content/policies hoặc thử lại sau.</p>
+      </section>
+    `;
   }
 }
 

@@ -174,6 +174,9 @@ export function createChatbotService({ repository }) {
         if (actor.profileUserId) {
           styleProfile = await repository.getStyleProfile(actor.profileUserId);
         }
+        const policyKnowledge = isPolicyKnowledgeQuery(input.message)
+          ? await safeListPolicies(repository)
+          : [];
         const previousInteractionId = session.metadata?.previous_interaction_id || null;
 
         const chatResult = await llm.chat(
@@ -183,7 +186,7 @@ export function createChatbotService({ repository }) {
           styleProfile,
           actor.profileUserId
         );
-        responseText = chatResult.text || createFallbackReply(input.message, candidateProducts);
+        responseText = chatResult.text || createFallbackReply(input.message, candidateProducts, policyKnowledge);
         selectedProducts = await selectResponseProducts(repository, chatResult.productIds, candidateProducts);
         productIds = selectedProducts.map((product) => product.product_id);
         llmResult = {
@@ -631,8 +634,13 @@ export function detectHandoffIntent(message) {
   ].some((keyword) => text.includes(keyword));
 }
 
-export function createFallbackReply(message, products = []) {
+export function createFallbackReply(message, products = [], policies = []) {
   const text = String(message || "").toLowerCase();
+
+  if (isPolicyKnowledgeQuery(message)) {
+    const policyReply = createPolicyKnowledgeReply(message, policies);
+    if (policyReply) return policyReply;
+  }
 
   if (detectHandoffIntent(message)) {
     return HANDOFF_REPLY;
@@ -645,12 +653,12 @@ export function createFallbackReply(message, products = []) {
 
   const isPolicyQuery = /(đổi trả|return|bảo hành|chính sách|policy|quy định|điều khoản)/i.test(text);
   if (isPolicyQuery) {
-    return "Chính sách đổi trả của Velura: Trong vòng 7 ngày kể từ khi nhận hàng, bạn có thể đổi trả sản phẩm chưa qua sử dụng, còn nguyên tem nhãn. Vui lòng liên hệ hotline hoặc CSKH để được hỗ trợ chi tiết.";
+    return "Mình chưa tải được dữ liệu chính sách mới nhất từ database. Bạn vui lòng thử lại sau hoặc xem trực tiếp trang Chính sách của Velura để tránh nhận thông tin không còn chính xác.";
   }
 
   const isShippingQuery = /(phí ship|phí vận chuyển|miễn phí|free ship|giao mất bao lâu|thời gian giao)/i.test(text);
   if (isShippingQuery) {
-    return "Velura miễn phí vận chuyển cho đơn từ 500.000đ. Đơn dưới 500.000đ phí ship cố định 30.000đ. Thời gian giao hàng từ 2-5 ngày tùy khu vực.";
+    return "Mình chưa tải được dữ liệu vận chuyển mới nhất từ database. Bạn vui lòng thử lại sau hoặc xem trực tiếp trang Chính sách của Velura để tránh nhận thông tin không còn chính xác.";
   }
 
   const isSizeQuery = /(size|kích cỡ|số đo|vừa người|đo size|bảng size)/i.test(text);
@@ -669,6 +677,51 @@ export function createFallbackReply(message, products = []) {
   }
 
   return "Mình đã nhận được câu hỏi của bạn. Bạn có thể nói thêm về dịp mặc, màu sắc yêu thích, dáng người hoặc khoảng giá để mình tư vấn sát hơn nhé.";
+}
+
+function isPolicyKnowledgeQuery(message) {
+  const text = String(message || "").toLowerCase();
+  return /(đổi trả|doi tra|return|hoàn tiền|refund|bảo mật|bao mat|chính sách|chinh sach|policy|quy định|quy dinh|điều khoản|dieu khoan|phí ship|phi ship|vận chuyển|van chuyen|giao hàng|giao hang|free ship|miễn phí|mien phi|thành viên|thanh vien|faq|câu hỏi|cau hoi)/i.test(text);
+}
+
+async function safeListPolicies(repository) {
+  try {
+    const result = await repository.listPolicies?.();
+    return result?.rows || [];
+  } catch (error) {
+    console.warn("Policy knowledge unavailable for chatbot fallback.", error);
+    return [];
+  }
+}
+
+function createPolicyKnowledgeReply(message, policies = []) {
+  if (!Array.isArray(policies) || !policies.length) return "";
+  const selected = selectPolicyForMessage(String(message || "").toLowerCase(), policies);
+  if (!selected) return "";
+
+  const details = (selected.content || [])
+    .map((section) => {
+      const heading = section.heading ? `\n- ${section.heading}: ` : "\n- ";
+      const body = section.text || (Array.isArray(section.items) ? section.items.join(" ") : "");
+      return body ? `${heading}${body}` : "";
+    })
+    .filter(Boolean)
+    .join("");
+
+  return `${selected.title}: ${selected.summary}${details}\n\nBạn có thể xem đầy đủ trong trang Chính sách của Velura.`;
+}
+
+function selectPolicyForMessage(text, policies) {
+  const rules = [
+    { slug: "returns", pattern: /(đổi trả|doi tra|return|hoàn tiền|refund|đổi hàng|doi hang)/i },
+    { slug: "shipping", pattern: /(phí ship|phi ship|vận chuyển|van chuyen|giao hàng|giao hang|free ship|miễn phí|mien phi)/i },
+    { slug: "privacy", pattern: /(bảo mật|bao mat|dữ liệu|du lieu|style quiz|hình ảnh|hinh anh|guest session)/i },
+    { slug: "terms", pattern: /(điều khoản|dieu khoan|quy định|quy dinh|chatbot|đánh giá|danh gia|rate limit)/i },
+    { slug: "member", pattern: /(thành viên|thanh vien|member|for you|tích điểm|tich diem|sinh nhật|sinh nhat)/i },
+    { slug: "faq", pattern: /(faq|câu hỏi|cau hoi|thắc mắc|thac mac)/i }
+  ];
+  const matched = rules.find((rule) => rule.pattern.test(text));
+  return policies.find((policy) => policy.slug === matched?.slug) || policies[0];
 }
 
 function formatProductForWorkflow(product) {

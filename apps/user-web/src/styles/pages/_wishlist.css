@@ -204,30 +204,71 @@
 }
 
 /* Buttons */
-.wishlist-card__action-btn {
+.wishlist-card__actions {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 6px;
-  background-color: #c97b63;
-  color: #ffffff;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.wishlist-card__actions .btn-buy {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #F4E4DC;
+  color: var(--terracotta, #C97B63);
+  padding: 11px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
   border: none;
-  width: 100%;
-  padding: 10px 16px; /* padding chuẩn nút nhỏ */
-  border-radius: 4px;
-  font-size: 0.8125rem; /* cỡ chữ 13px */
-  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  line-height: 1.2;
+  text-align: center;
+  transition: background 0.2s ease, color 0.2s ease;
+  min-height: 40px;
+}
+
+.wishlist-card__actions .btn-buy:hover {
+  background: #e8c9be;
+  color: var(--terracotta-h, #b36a53);
+}
+
+.wishlist-card__actions .btn-buy svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.wishlist-card__action-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #F4E4DC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--terracotta, #C97B63);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease;
+  padding: 0;
 }
 
 .wishlist-card__action-btn:hover {
-  background-color: #b36a53;
-  transform: translateY(-1px);
+  background: var(--terracotta);
+  color: #ffffff;
 }
 
 .wishlist-card__action-btn svg {
-  flex-shrink: 0;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
 }
 
 /* Notify Me button (out of stock status) */

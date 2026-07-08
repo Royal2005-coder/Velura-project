@@ -10,8 +10,7 @@ NGUYÊN TẮC:
 - Khi khách hỏi về danh mục, dùng tool get_categories
 - Khi khách hỏi kiểm tra đơn hàng (hoặc hỏi về đơn hàng), hãy hỏi mã đơn hàng hoặc số điện thoại, sau đó dùng tool get_order_status để kiểm tra
 - Bảng size: S(eo 62-66cm, ngực 80-84cm), M(eo 66-70cm, ngực 84-88cm), L(eo 70-74cm, ngực 88-92cm), XL(eo 74-78cm, ngực 92-96cm)
-- Miễn phí vận chuyển đơn từ 500.000đ. Đơn dưới 500.000đ phí ship 30.000đ
-- Chính sách đổi trả: 7 ngày, sản phẩm chưa sử dụng, còn tem nhãn
+- Thông tin phí vận chuyển, đổi trả, hoàn tiền, bảo mật, điều khoản và thành viên phải lấy từ tool get_policies vì database là nguồn đúng duy nhất
 - KHÔNG bịa đặt thông tin sản phẩm. Luôn dùng tool để lấy dữ liệu thật
 - Khi khách hàng muốn khiếu nại, phản ánh hoặc tạo ticket hỗ trợ (phiếu hỗ trợ), hãy sử dụng tool create_support_ticket để tạo phiếu hỗ trợ và báo lại mã ticket chi tiết cho khách hàng theo dõi.
 - Khi khách hàng chia sẻ thông tin số đo (chiều cao, cân nặng, ngực, eo, mông), dáng người hoặc tông da, hãy đề xuất cập nhật và sử dụng tool update_style_profile để lưu lại các thông tin này vào hồ sơ phong cách của họ.
@@ -41,6 +40,15 @@ const GEMINI_TOOLS = [
     type: "function",
     name: "get_categories",
     description: "Lấy danh sách tất cả danh mục sản phẩm",
+    parameters: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    type: "function",
+    name: "get_policies",
+    description: "Lấy toàn bộ chính sách công khai của Velura từ database: đổi trả, bảo mật, vận chuyển, điều khoản sử dụng, FAQ và thành viên.",
     parameters: {
       type: "object",
       properties: {}
@@ -138,7 +146,12 @@ async function callMistralChat(messages, repository, contextProducts = [], style
     ? `\n\nSản phẩm có sẵn trong database:\n${contextProducts.map(p => `- ID: ${p.product_id}, Tên: ${p.name}, Giá: ${(p.sale_price || p.base_price).toLocaleString('vi-VN')}đ, SKU: ${p.sku}`).join('\n')}`
     : "";
 
-  const systemContent = SYSTEM_PROMPT + styleContext + productContext;
+  const policyInstruction = `\n\nNGUỒN CHÍNH SÁCH:
+- Khi khách hỏi về chính sách, đổi trả, hoàn tiền, vận chuyển, phí ship, bảo mật, thành viên, FAQ hoặc điều khoản sử dụng, PHẢI dùng tool get_policies để lấy dữ liệu mới nhất từ database.
+- Database là nguồn đúng duy nhất cho nội dung chính sách. Không trả lời theo thông tin hardcode nếu dữ liệu database khác prompt.
+- Khi trả lời chính sách, hãy tóm tắt ngắn gọn, đúng mốc thời gian và số tiền trong database.`;
+
+  const systemContent = SYSTEM_PROMPT + policyInstruction + styleContext + productContext;
 
   const apiMessages = [
     { role: "system", content: systemContent }
@@ -287,6 +300,16 @@ async function executeToolCall(name, args, repository, userId = null) {
       const result = await repository.listCategories?.() || { rows: [] };
       return { categories: result.rows || [], summary: (result.rows || []).map(c => c.name).join(', ') };
     }
+    case "get_policies": {
+      const result = await repository.listPolicies?.() || { rows: [] };
+      const policies = result.rows || [];
+      return {
+        policies,
+        summary: policies.length
+          ? policies.map(formatPolicyForTool).join("\n\n")
+          : "Chưa có dữ liệu chính sách được công bố trong database."
+      };
+    }
     case "get_product_detail": {
       const result = await repository.getProductById?.(args.product_id) || null;
       return {
@@ -360,11 +383,23 @@ async function executeToolCall(name, args, repository, userId = null) {
   }
 }
 
+function formatPolicyForTool(policy) {
+  const sections = Array.isArray(policy.content) ? policy.content : [];
+  const details = sections.map((section) => {
+    const heading = section.heading ? `${section.heading}: ` : "";
+    const items = Array.isArray(section.items) ? section.items.join(" ") : "";
+    return `${heading}${section.text || items}`.trim();
+  }).filter(Boolean).join(" ");
+
+  return `${policy.title}: ${policy.summary || ""} ${details}`.trim();
+}
+
 function detectIntent(tools, messages) {
   const last = messages[messages.length - 1]?.text?.toLowerCase() || "";
   if (tools.includes("get_order_status")) return "order_query";
   if (tools.includes("search_products")) return "product_search";
   if (tools.includes("get_categories")) return "category_browse";
+  if (tools.includes("get_policies")) return "policy_query";
   if (tools.includes("get_product_detail")) return "product_detail";
   if (tools.includes("update_style_profile")) return "style_update";
   if (tools.includes("create_support_ticket")) return "ticket_creation";

@@ -96,7 +96,8 @@
 
 .collection-detail__banner {
   position: relative;
-  height: 380px;
+  width: 100%;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
 }
 
@@ -118,7 +119,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 380px;
 }
 
 .collection-detail__banner-overlay {
@@ -273,14 +273,10 @@
 
 /* Responsive */
 @media (max-width: 992px) {
-  .collection-detail__banner {
-    height: 280px;
-  }
-  
   .collection-detail__banner-overlay {
     padding: 24px 32px;
   }
-
+  
   .collection-detail__content {
     grid-template-columns: 1fr;
     gap: 32px;
@@ -298,10 +294,6 @@
 @media (max-width: 576px) {
   .collections-title {
     font-size: 1.75rem;
-  }
-  
-  .collection-detail__banner {
-    height: 200px;
   }
 
   .collection-detail__banner-overlay {

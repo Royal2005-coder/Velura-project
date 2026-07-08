@@ -855,10 +855,11 @@ export function initProductCatalog() {
           </div>
           <div class="card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              Mua hàng
+              <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+              <span>Mua ngay</span>
             </a>
-            <button class="card__btn-cart js-add-cart-catalog" type="button" aria-label="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              Thêm vào giỏ hàng
+            <button class="card__btn-cart js-add-cart-catalog" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
+              <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
             </button>
           </div>
         </article>
