@@ -12,48 +12,49 @@ export const FALLBACK_BLOG_POSTS = [
     category_slug: "trend",
     title: "Xu hướng màu sắc hè 2026: Bảng màu cho tủ đồ mới",
     excerpt: "Sage, cocoa, ivory và hồng phấn - những gam màu đang chiếm lĩnh mùa hè năm nay. Khám phá cách phối chúng trong tủ đồ Velura.",
-    image_url: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1400&q=80",
+    image_url: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&h=800&q=80",
     author: "Nguyễn Thu Hà",
     read_minutes: 8,
     is_featured: true,
     published_at: "2026-07-05T09:00:00+07:00",
     content: {
-      intro: "Mùa hè 2026 đánh dấu sự trở lại của các gam màu tự nhiên, lấy cảm hứng từ thiên nhiên và lối sống tối giản. Bảng màu năm nay không quá ồn ào nhưng đủ sức tạo điểm nhấn cho tủ đồ mùa nóng.",
+      intro: "Mùa hè 2026 đánh dấu bước chuyển mình mạnh mẽ của thời trang ứng dụng từ những sắc thái neon chói chang sang bảng màu dịu mát, gần gũi với thiên nhiên. Trọng tâm của mùa này là sự cân bằng cảm xúc của người mặc, tôn vinh lối sống tối giản qua các gam màu mang lại cảm giác bình yên nhưng vẫn đầy tính bản sắc.",
       takeaways: [
-        "Chọn một màu chủ đạo, sau đó dùng trắng ngà hoặc sand để làm dịu tổng thể.",
-        "Sage, olive và xanh nhạt hợp với linen, lụa mờ và các bề mặt có độ rũ.",
-        "Hồng phấn đẹp nhất khi đi cùng phom tối giản, ít chi tiết và phụ kiện nhỏ."
+        "Sage (Xanh xô thơm) đóng vai trò làm dịu cái nắng gắt, mang lại cảm giác tươi mát tự nhiên.",
+        "Cocoa (Nâu cacao) là gam màu nền thanh lịch lý tưởng để tạo chiều sâu và độ ấm áp cho tổng thể.",
+        "Ivory (Trắng ngà) thay thế sắc trắng tinh thông thường để hướng tới sự thô mộc, sang trọng kín đáo.",
+        "Hồng phấn pastel tạo nên điểm chấm phá lãng mạn, lôi cuốn khi kết hợp với các đường cắt tối giản sắc sảo."
       ],
       sections: [
         {
-          heading: "Sage và ivory cho ngày nhiều nắng",
+          heading: "Sage & Ivory: Bản hòa tấu của nắng vàng và bóng râm dịu mát",
           body: [
-            "Sage không còn là gam màu phụ. Khi đặt cạnh ivory, sắc xanh dịu này tạo nên vẻ ngoài thanh lịch mà vẫn có cảm giác nghỉ dưỡng.",
-            "Hãy để chất liệu giữ vai trò chính: linen có độ nhăn tự nhiên, lụa mờ có độ rũ nhẹ, còn phụ kiện chỉ nên xuất hiện như một điểm sáng nhỏ."
+            "Màu xanh xô thơm (Sage Green) không đơn thuần là một màu sắc, nó đại diện cho một trạng thái tĩnh lặng của tâm hồn. Khác với các gam xanh lá đậm hay xanh ngọc chói, Sage có sắc độ trầm lắng pha chút xám mộc mạc, tạo cảm giác vô cùng mát mẻ dưới ánh nắng gay gắt của mùa hè nhiệt đới.",
+            "Khi kết hợp Sage cùng Trắng ngà (Ivory), ta có một tổ hợp màu sắc kinh điển đại diện cho phong cách nghỉ dưỡng cao cấp (Resort Wear). Bản phối này tôn da tự nhiên nhờ sắc ngà ấm áp làm trung hòa độ lạnh của Sage. Để tối ưu hóa hiệu ứng thị giác này, hãy lựa chọn các chất liệu thô mộc tự nhiên như linen cao cấp có độ nhăn tự nhiên hoặc vải lụa tơ tằm dập ly mềm mại để ánh sáng mặt trời có thể len lỏi qua từng thớ vải."
           ],
           productSkus: ["VLR-SD-004", "VLR-AO-003", "VLR-SD-018"]
         },
         {
-          heading: "Cocoa và vàng ánh cho tối sang trọng",
+          heading: "Cocoa & Ánh Vàng: Đêm hè sang trọng thắp sáng bằng nến ấm",
           body: [
-            "Cocoa là gam màu ấm áp giúp trang phục tối giản có chiều sâu hơn. Khi kết hợp với ánh vàng nhẹ, tổng thể trở nên sang trọng mà không cần chi tiết cầu kỳ.",
-            "Set gilet cocoa ánh vàng là lựa chọn lý tưởng cho bữa tối ven biển hoặc sự kiện nhẹ mùa hè."
+            "Nếu màu đen tạo cảm giác quá nặng nề cho mùa hè, thì màu nâu Cocoa chính là sự thay thế hoàn hảo để tôn lên nét quyến rũ trưởng thành của phái đẹp. Sắc Cocoa trầm ấm mang tính thổ, tạo cảm giác vững chãi, tin cậy và vô cùng cuốn hút dưới ánh đèn vàng lấp lánh của các bữa tiệc tối.",
+            "Bí quyết phối màu Cocoa nằm ở sự xen kẽ độ bóng sáng của phụ kiện. Một chiếc đầm lụa hay set gilet dệt sợi ánh kim nhẹ màu Cocoa khi đi kèm hoa tai mạ vàng thô sẽ ngay lập tức biến bạn thành tâm điểm của sự thanh lịch. Sự kết hợp này mang đậm tinh thần 'Quiet Luxury' - sang trọng trong sự im lặng, không ồn ào nhưng thu hút mọi ánh nhìn."
           ],
           productSkus: ["VLR-SD-005", "VLR-AO-001", "VLR-SD-002"]
         },
         {
-          heading: "Hồng kem dịu dàng",
+          heading: "Hồng Phấn: Nét nữ tính sắc sảo của người phụ nữ hiện đại",
           body: [
-            "Hồng phấn mùa này không còn quá ngọt. Khi đi cùng đường cắt gọn và phom dáng đứng vừa phải, màu hồng trở nên mềm nhưng không yếu.",
-            "Set boho linen hồng kem là lựa chọn hoàn hảo cho những ngày dạo biển hoặc brunch cuối tuần."
+            "Nhiều người e ngại sắc hồng phấn sẽ dễ tạo cảm giác ngây ngô hay quá điệu đà. Tuy nhiên, xu hướng hè 2026 đã giải bài toán này bằng cách đưa sắc hồng pastel vào những phom dáng đứng phom, tối giản và góc cạnh như blazer linen, quần tây suông ống rộng hay set áo sát nách phom hộp.",
+            "Sự tương phản giữa màu sắc mềm mại và đường cắt dứt khoát tạo nên một vẻ đẹp đầy cuốn hút: vừa dịu dàng, vừa độc lập. Hãy phối hồng phấn cùng các màu trung tính đậm như nâu đất hay xám tro để hạ bớt độ ngọt của tông pastel, mang lại một tổng thể vô cùng hài hòa và hiện đại."
           ],
           productSkus: ["VLR-SD-019", "VLR-AO-004", "VLR-SD-010"]
         }
       ],
       products: [
-        { sku: "VLR-SD-004", note: "Set sage dịu để thử bảng màu xanh mùa hè theo cách thanh lịch." },
-        { sku: "VLR-SD-005", note: "Set gilet cocoa ánh vàng cho bữa tối sang trọng." },
-        { sku: "VLR-SD-019", note: "Set boho linen hồng kem dịu dàng cho mùa hè." }
+        { sku: "VLR-SD-004", note: "Set sage dịu mát để thử nghiệm xu hướng xanh mùa hè thanh lịch." },
+        { sku: "VLR-SD-005", note: "Set gilet cocoa ánh vàng tôn da cho các bữa tiệc tối sang trọng." },
+        { sku: "VLR-SD-019", note: "Set boho linen hồng kem mang phong vị tự do, lãng mạn dạo biển." }
       ]
     }
   },
@@ -62,40 +63,41 @@ export const FALLBACK_BLOG_POSTS = [
     category_slug: "style",
     title: "Công thức phối đồ resort hè 2026: Từ sân bay đến bữa tối",
     excerpt: "Vali 3 ngày với 5 món đồ linh hoạt. Cách phối set linen, đầm maxi và phụ kiện cho chuyến đi biển.",
-    image_url: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1400&q=80",
+    image_url: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&h=800&q=80",
     author: "Lê Minh Châu",
     read_minutes: 7,
     is_featured: false,
     published_at: "2026-07-03T09:00:00+07:00",
     content: {
-      intro: "Một tủ đồ nghỉ dưỡng tốt không cần nhiều món. Điều quan trọng là mỗi món phải đủ nhẹ, đủ thoáng và đủ chỉn chu để đi từ sân bay đến bữa tối ven biển.",
+      intro: "Nghệ thuật xếp vali đi nghỉ dưỡng không nằm ở việc bạn mang theo bao nhiêu món đồ, mà ở khả năng biến hóa linh hoạt của từng thiết kế. Xu hướng thời trang resort hè 2026 tập trung tối giản hóa số lượng trang phục bằng cách ưu tiên các phom dáng thông minh, dễ phối layer và thích ứng nhanh với sự thay đổi của hoàn cảnh.",
       takeaways: [
-        "Linen đen kem là nền an toàn cho những ngày di chuyển nhiều.",
-        "Mũ cói, kính râm và túi nhỏ giúp outfit có điểm nhấn mà không nặng mắt.",
-        "Ưu tiên phom rộng vừa phải, không chọn đồ quá ôm khi lịch trình có nhiều hoạt động ngoài trời."
+        "Công thức xếp đồ 5-4-3-2-1 giúp bạn sở hữu vali gọn nhẹ nhưng đa năng tối đa.",
+        "Chọn tông màu trung tính làm chủ đạo (đen, kem, trắng ngà) để dễ phối chéo các mảnh ghép.",
+        "Phụ kiện chất liệu cói, gỗ hay canvas thô tạo điểm nhấn đậm chất coastal phóng khoáng.",
+        "Một chiếc đầm maxi hoặc set linen mềm mại là món đồ bắt buộc để chuyển đổi từ dạo biển sang ăn tối."
       ],
       sections: [
         {
-          heading: "Set linen cho resort casual",
+          heading: "Từ sân bay đến sảnh chờ khách sạn: Thoải mái mà vẫn chỉn chu",
           body: [
-            "Đen và kem là bộ đôi ít rủi ro nhất trong vali mùa hè. Tỉ lệ đẹp là một món tối màu ở thân trên, một món sáng màu ở thân dưới và phụ kiện có bề mặt tự nhiên.",
-            "Set dạo biển linen đen kem giữ được độ thanh lịch khi bạn cần bước vào nhà hàng, nhưng vẫn đủ thoải mái cho một buổi dạo biển."
+            "Trang phục di chuyển đòi hỏi sự co giãn tốt, thoáng khí nhưng không được quá xuề xòa. Lựa chọn tối ưu là một chiếc quần suông rộng chất liệu linen pha cotton kết hợp cùng áo dệt kim nhẹ hoặc thun cao cấp dáng ôm vừa vặn.",
+            "Hãy hoàn thiện set đồ bằng một chiếc sơ mi khoác ngoài dáng dài hoặc blazer không cấu trúc vai. Thiết kế này giúp bảo vệ bạn khỏi luồng gió điều hòa lạnh tại phòng chờ sân bay, đồng thời giữ nguyên diện mạo lịch sự, tươm tất khi bạn đặt chân tới sảnh resort để làm thủ tục nhận phòng."
           ],
           productSkus: ["VLR-SD-016", "VLR-SD-018", "VLR-SD-011"]
         },
         {
-          heading: "Phụ kiện thay đổi cả bức ảnh",
+          heading: "Hẹn hò ven biển: Phép màu thay đổi từ phụ kiện",
           body: [
-            "Phụ kiện nghỉ dưỡng nên có công năng thật. Mũ cói che nắng, kính râm cân bằng gương mặt, khăn lụa có thể buộc tóc hoặc thắt trên quai túi.",
-            "Khi trang phục đã tối giản, chất liệu phụ kiện là nơi thể hiện cá tính: cói, lụa, acetate và canvas tạo cảm giác tự nhiên hơn kim loại bóng."
+            "Bí quyết biến một bộ cánh casual dạo phố ban ngày thành trang phục ăn tối lãng mạn nằm ở phụ kiện. Khi ánh hoàng hôn buông xuống, hãy cởi bỏ chiếc mũ cói che nắng và kính râm to bản. Thay vào đó, hãy thắt một dải khăn lụa mảnh quanh cổ hoặc buộc hờ trên tóc.",
+            "Kết hợp cùng một chiếc túi cầm tay đan cói viền da tinh xảo và đôi sandal quai mảnh da thật sẽ lập tức mang đến diện mạo sang trọng, sẵn sàng cho một bữa tiệc tối dưới ánh nến lấp lánh bên bờ biển rì rào."
           ],
           productSkus: ["VLR-SD-012", "VLR-SD-013", "VLR-SD-014"]
         }
       ],
       products: [
-        { sku: "VLR-SD-016", note: "Set linen đen kem cho những ngày cần mặc nhanh nhưng vẫn đẹp." },
-        { sku: "VLR-SD-018", note: "Set white resort cho hẹn hò mùa hè." },
-        { sku: "VLR-SD-011", note: "Set áo len crochet lệch vai năng động." }
+        { sku: "VLR-SD-016", note: "Set dạo biển linen phối màu đen kem thoáng mát, linh hoạt di chuyển." },
+        { sku: "VLR-SD-018", note: "Set đầm trắng resort rũ bay tinh khiết tôn dáng nữ thần." },
+        { sku: "VLR-SD-011", note: "Set áo len crochet lệch vai cá tính tạo điểm nhấn độc đáo." }
       ]
     }
   },
@@ -104,40 +106,41 @@ export const FALLBACK_BLOG_POSTS = [
     category_slug: "interview",
     title: "Phỏng vấn stylist Mai Anh: Tối giản là biết đủ",
     excerpt: "Một cuộc trò chuyện về chiếc áo mặc lại nhiều lần, màu sắc khiến phụ nữ tự tin và cách mua ít hơn mà vẫn đẹp.",
-    image_url: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=1400&q=80",
+    image_url: "https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?auto=format&fit=crop&w=1200&h=800&q=80",
     author: "Trần Bảo Ngọc",
     read_minutes: 9,
     is_featured: false,
     published_at: "2026-07-01T09:00:00+07:00",
     content: {
-      intro: "Phong cách cá nhân không xuất hiện sau một lần mua sắm. Nó được tạo nên từ những món đồ được mặc lại, được chăm sóc và được gắn với một nhịp sống thật.",
+      intro: "Mai Anh - một stylist tên tuổi gắn liền với những bộ hình đậm chất thơ và lối phối đồ tối giản, tinh tế. Trong một buổi chiều nắng nhạt tại góc xưởng may Velura, chúng tôi đã có cơ hội lắng nghe cô chia sẻ về định nghĩa mới của sự sang trọng tinh giản và cách xây dựng phong cách riêng không chạy theo xu hướng.",
       takeaways: [
-        "Một món đồ tốt phải đi cùng ít nhất ba hoàn cảnh khác nhau.",
-        "Sự tự tin thường đến từ độ vừa vặn, không phải từ chi tiết cầu kỳ.",
-        "Màu trung tính đẹp hơn khi có một điểm nhấn nhỏ ở cổ, eo hoặc phụ kiện."
+        "Sự thanh lịch thực sự đến từ sự thấu hiểu cơ thể và lựa chọn chất liệu phù hợp nhất.",
+        "Một tủ đồ tối giản cần những món đồ nền móng (Core Basics) chất lượng vượt trội.",
+        "Mặc lặp lại một món đồ là cách thể hiện gu thẩm mỹ sáng tạo đầy văn minh.",
+        "Tiết chế chi tiết giúp thần thái và vẻ đẹp nội tâm của người phụ nữ tỏa sáng."
       ],
       sections: [
         {
-          heading: "Món đồ được mặc lại nhiều nhất",
+          heading: "Chiếc áo sơ mi trắng ngà đi qua mọi thăng trầm phong cách",
           body: [
-            "Mai Anh chọn áo sơ mi ivory vì nó cho phép cô thay đổi vai trò trong ngày: nghiêm túc khi đi họp, nhẹ hơn khi mở cúc cổ và phối với khăn lụa.",
-            "Theo cô, người mặc nên để ý tới cảm giác trên da. Một chiếc áo đẹp nhưng khiến vai bị kéo hoặc cổ tay khó cử động sẽ ít có cơ hội quay lại tủ đồ."
+            "Khi được hỏi về món đồ yêu thích nhất trong tủ quần áo cá nhân, Mai Anh không ngần ngại chỉ vào chiếc sơ mi lụa màu trắng ngà dáng rộng. Cô chia sẻ: 'Chiếc sơ mi này đã đồng hành cùng tôi suốt 5 năm. Nó có thể biến hóa từ một chiếc áo công sở nghiêm túc khi sơ vin đóng cúc chỉnh tề, đến một chiếc áo khoác hờ đầy phóng khoáng bên ngoài bikini dạo biển.'",
+            "Mấu chốt nằm ở chất vải. Khi bạn đầu tư vào lụa tốt hoặc cotton pha sợi tự nhiên cao cấp, nếp vải rũ tự nhiên sẽ giữ cho phom dáng luôn có độ bay sang trọng, ngay cả khi bạn đã mặc nó hàng trăm lần. Đó chính là sự bền vững thực sự trong thời trang."
           ],
           productSkus: ["VLR-AO-002", "VLR-AO-001", "VLR-SD-009"]
         },
         {
-          heading: "Khi cần nổi bật mà vẫn là mình",
+          heading: "Làm thế nào để nổi bật mà không cần phô trương?",
           body: [
-            "Thay vì chọn trang phục quá phức tạp, cô ưu tiên một đường cắt có chủ ý: cổ yếm, eo wrap hoặc lớp cape mềm.",
-            "Những chi tiết này tạo điểm nhìn vừa đủ. Chúng giúp outfit có câu chuyện, nhưng không khiến người mặc cảm giác bị trang phục lấn át."
+            "Nhiều phụ nữ lo lắng rằng phong cách tối giản sẽ dễ bị lu mờ trước đám đông. Stylist Mai Anh cười và chia sẻ bí quyết: 'Sự nổi bật tinh tế đến từ các chi tiết cắt ráp lệch trục (asymmetric), phần cổ yếm khoe bờ vai thon gọn, hay cách nhấn nhẹ ở phần eo bằng kỹ thuật drape xếp nếp tinh xảo.'",
+            "Những điểm nhấn này thu hút mắt nhìn một cách tự nhiên và thông minh. Nó chứng tỏ người mặc có gu chọn đồ khéo léo, không cần dùng những họa tiết rối rắm hay logo to bản để gây chú ý."
           ],
           productSkus: ["VLR-SD-003", "VLR-SD-006", "VLR-SD-007"]
         }
       ],
       products: [
-        { sku: "VLR-AO-002", note: "Sơ mi lụa ivory là món nền dễ xoay chuyển giữa công sở và cuối tuần." },
-        { sku: "VLR-SD-003", note: "Set midnight blue chạm eo hiện đại cho buổi tối." },
-        { sku: "VLR-SD-009", note: "Set smart casual cá tính cho ngày thường." }
+        { sku: "VLR-AO-002", note: "Áo sơ mi lụa tơ tằm mềm mại - món đồ nền móng của phong cách tối giản." },
+        { sku: "VLR-SD-003", note: "Set đầm Midnight Blue chạm eo tinh tế tôn nét quyến rũ tự nhiên." },
+        { sku: "VLR-SD-009", note: "Set Smart Casual cá tính, năng động cho ngày làm việc bận rộn." }
       ]
     }
   },
@@ -146,40 +149,41 @@ export const FALLBACK_BLOG_POSTS = [
     category_slug: "sustainable",
     title: "Chất liệu tự nhiên mùa hè: Linen, lụa và cotton pha",
     excerpt: "Bền vững trong thời trang bắt đầu từ câu hỏi: Món đồ này có được mặc lại không, có dễ chăm sóc không và có còn đẹp sau nhiều lần sử dụng không.",
-    image_url: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1400&q=80",
+    image_url: "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1200&h=800&q=80",
     author: "Phạm Hoàng Linh",
     read_minutes: 10,
     is_featured: false,
     published_at: "2026-06-29T09:00:00+07:00",
     content: {
-      intro: "Bền vững trong thời trang không chỉ nằm ở nhãn chất liệu. Nó bắt đầu từ câu hỏi rất thực tế: món đồ này có được mặc lại không, có dễ chăm sóc không và có còn đẹp sau nhiều lần sử dụng không.",
+      intro: "Sự sang trọng mộc mạc (Rustic Elegance) đang là xu hướng được ưa chuộng hàng đầu. Không còn chuộng các bề mặt vải polyester trơn bóng dễ gây hầm nóng, phụ nữ hiện đại tìm kiếm sự thoáng mát dễ chịu tối đa đến từ thớ vải Linen thô ráp cá tính, vải lụa tơ tằm bóng nhẹ hay cotton hữu cơ mịn màng trên da.",
       takeaways: [
-        "Độ bền của phom dáng quan trọng không kém nguồn gốc chất liệu.",
-        "Màu trung tính giúp món đồ có nhiều lần xuất hiện hơn trong tủ.",
-        "Chăm sóc đúng cách kéo dài tuổi thọ sản phẩm và giảm nhu cầu mua thay thế."
+        "Vải Linen dệt thô mộc mang hơi thở thiên nhiên phóng khoáng, thấm hút mồ hôi tối ưu.",
+        "Lụa tơ tằm tự nhiên (Mulberry Silk) có khả năng điều hòa thân nhiệt cực tốt vào mùa nóng.",
+        "Cotton pha sợi tre mềm mát, chống tia UV tự nhiên là lựa chọn thân thiện cho da nhạy cảm.",
+        "Vết nhăn trên trang phục linen là minh chứng cho tinh thần yêu thích sự mộc mạc nguyên bản."
       ],
       sections: [
         {
-          heading: "Linen nên được phép có nếp nhăn",
+          heading: "Nếp nhăn kiêu kỳ của vải Linen cao cấp",
           body: [
-            "Vẻ đẹp của linen nằm ở độ sống của bề mặt. Nếp nhăn nhẹ giúp trang phục bớt cứng, đặc biệt khi được cắt trên phom sơ mi hoặc quần ống rộng.",
-            "Thay vì cố giữ linen thật phẳng, hãy chọn phom có khoảng thở. Khi mặc đúng cách, nếp vải trở thành một phần của phong thái tự nhiên."
+            "Nhiều người có thói quen ủi linen thật phẳng lỳ trước khi mặc. Nhưng thực tế, vẻ đẹp quyến rũ nhất của chất vải này lại nằm ở những nếp gấp nhăn tự nhiên được tạo ra trong quá trình cử động. Nó tạo ra phong thái phóng khoáng, tự do như thể bạn vừa bước ra từ một kỳ nghỉ dài bên bờ Địa Trung Hải.",
+            "Tại Velura, chúng tôi tuyển chọn sợi lanh hữu cơ từ vùng Normandy (Pháp) - nơi cho ra thớ sợi dai và bền nhất thế giới. Sau mỗi lần giặt, sợi vải sẽ càng trở nên mềm mại và êm ái hơn với làn da của người mặc."
           ],
           productSkus: ["VLR-SD-016", "VLR-AO-003", "VLR-SD-019"]
         },
         {
-          heading: "Mua ít hơn bằng bảng màu ổn định",
+          heading: "Kéo dài vòng đời trang phục bằng quy trình giặt chậm",
           body: [
-            "Một bảng màu ổn định giúp bạn phối lại nhiều hơn. Ivory, sand, cocoa, sage và olive tạo được nhiều tổ hợp mà không cần mua thêm quá nhiều món mới.",
-            "Nếu muốn thêm cảm xúc, hãy thêm phụ kiện nhỏ. Khăn, túi hoặc kính có thể làm mới set đồ quen mà không phá vỡ tinh thần tối giản."
+            "Để những thiết kế tự nhiên đồng hành cùng bạn qua nhiều mùa, việc bảo quản trang phục đóng vai trò tiên quyết. Tránh giặt máy bằng nước nóng và hạn chế sử dụng chất tẩy mạnh.",
+            "Hãy phơi khô trang phục ở nơi thoáng mát tránh ánh nắng gắt trực tiếp, dùng móc treo gỗ bản rộng để giữ phom vai áo luôn đứng dáng. Chăm sóc trang phục bằng sự kiên nhẫn cũng chính là cách ta thực hành lối sống xanh ý nghĩa."
           ],
           productSkus: ["VLR-SD-002", "VLR-SD-004", "VLR-SD-018"]
         }
       ],
       products: [
-        { sku: "VLR-SD-016", note: "Set linen đen kem bền vững cho nhiều hoàn cảnh." },
-        { sku: "VLR-AO-003", note: "Áo peplum cổ vuông sage dịu nhẹ từ chất liệu tự nhiên." },
-        { sku: "VLR-SD-002", note: "Set ivory draped thanh nhã với lụa mềm." }
+        { sku: "VLR-SD-016", note: "Set dạo biển linen thô mộc cao cấp, siêu nhẹ và thông thoáng khí." },
+        { sku: "VLR-AO-003", note: "Áo peplum cổ vuông xanh sage dịu mát từ chất vải tự nhiên tinh khiết." },
+        { sku: "VLR-SD-002", note: "Set đầm Ivory draped lụa rủ mềm mại ôm ấp làn da thanh thoát." }
       ]
     }
   },
@@ -188,40 +192,40 @@ export const FALLBACK_BLOG_POSTS = [
     category_slug: "event",
     title: "Velura Summer Salon 2026: Buổi thử đồ riêng tư",
     excerpt: "Sự kiện giới thiệu các set resort, dạ tiệc nhẹ và phụ kiện cho mùa du lịch mới. Stylist Velura gợi ý set theo vóc dáng và hoàn cảnh.",
-    image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1400&q=80",
+    image_url: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&h=800&q=80",
     author: "Minh Anh",
     read_minutes: 6,
     is_featured: false,
     published_at: "2026-06-27T09:00:00+07:00",
     content: {
-      intro: "Velura Summer Salon 2026 được thiết kế như một buổi thử đồ chậm: khách mời chạm vào chất liệu, thử nhiều tỉ lệ phom dáng và nhận gợi ý phối theo lịch trình cá nhân.",
+      intro: "Không ồn ào và phô trương như các sàn diễn thời trang thông thường, Velura Summer Salon 2026 được định vị là một không gian trải nghiệm thời trang chậm (Slow Fashion) ấm cúng. Nơi khách mời VIP được trực tiếp chạm vào chất vải, lắng nghe câu chuyện thiết kế sau mỗi nếp gấp và nhận sự tư vấn phong cách chuyên sâu từ các chuyên gia hàng đầu.",
       takeaways: [
-        "Không gian sự kiện tập trung vào resort wear, dạ tiệc nhẹ và phụ kiện du lịch.",
-        "Stylist Velura gợi ý set theo vóc dáng, tông da và hoàn cảnh sử dụng.",
-        "Các product card trong bài dẫn thẳng tới trang chi tiết để khách xem thêm sau sự kiện."
+        "Không gian lấy cảm hứng từ những căn biệt thự ven biển ngập tràn ánh sáng tự nhiên.",
+        "Trải nghiệm trực quan quy trình may thêu đính kết tay thủ công tinh xảo.",
+        "Stylist hỗ trợ phối đồ tùy chỉnh dựa theo tông da, số đo hình thể và lịch trình chuyến đi của khách.",
+        "Dòng sản phẩm giới hạn giới thiệu các thiết kế từ lụa tơ tằm thêu hoa nổi độc bản."
       ],
       sections: [
         {
-          heading: "Khu resort wear",
+          heading: "Góc trưng bày Resort Wear: Hơi thở của những chuyến đi xa",
           body: [
-            "Khu đầu tiên dành cho những chuyến đi. Các set linen, áo cổ yếm và chân váy ivory được treo theo bảng màu để khách dễ hình dung vali 3 ngày.",
-            "Đội stylist ưu tiên những công thức mặc được nhiều lần: một set trắng, một set sage, một chiếc sơ mi linen và phụ kiện gọn."
+            "Thu hút nhiều sự quan tâm nhất tại buổi Salon là khu vực trưng bày các thiết kế nghỉ dưỡng cao cấp. Các set đầm maxi trắng tinh khôi, quần ống rộng linen phối hai màu đen kem dạo biển được sắp xếp theo từng dải màu dịu mát để khách mời dễ dàng hình dung và lựa chọn cho vali của mình.",
+            "Stylist Velura luôn hướng khách hàng tới những bản phối đa năng: 'Một chiếc chân váy lụa rũ màu kem có thể đi cùng áo peplum xanh sage ban ngày, và kết hợp cùng sơ mi lụa cổ đổ lấp lánh ban đêm. Sự luân chuyển đó giúp vali của bạn gọn gàng mà luôn tươi mới.'"
           ],
           productSkus: ["VLR-SD-018", "VLR-SD-004", "VLR-SD-016"]
         },
         {
-          heading: "Khu dạ tiệc nhẹ",
+          heading: "Khu vực may đo riêng tư: Sự hòa quyện của phom dáng và xúc cảm",
           body: [
-            "Ở khu evening, Velura đặt cạnh nhau các dáng đầm cúp ngực, cổ yếm và đuôi cá để khách so sánh độ rơi của chất liệu.",
-            "Điểm đáng chú ý không phải là độ lộng lẫy tối đa, mà là cảm giác vừa vặn khi người mặc ngồi xuống, bước đi và xoay người."
+            "Tại căn phòng may đo khép kín, khách mời có thể chiêm ngưỡng cận cảnh đầm dạ hội công chúa Tulle dập ly xếp tầng thủ công bồng bềnh hay đầm tiệc lụa óng ả. Sự hài lòng cao nhất của khách hàng không chỉ là phom dáng tôn lên đường cong tự nhiên, mà còn là sự êm nhẹ, chuyển động uyển chuyển theo từng nhịp bước chân."
           ],
           productSkus: ["VLR-SD-010", "VLR-SD-025", "VLR-SD-005"]
         }
       ],
       products: [
-        { sku: "VLR-SD-018", note: "Set white resort cho hẹn hò mùa hè." },
-        { sku: "VLR-SD-010", note: "Set soft ceremony nữ tính cho dạ tiệc nhẹ." },
-        { sku: "VLR-SD-025", note: "Set đầm dạ hội công Chúa tulle xếp tầng." }
+        { sku: "VLR-SD-018", note: "Set white resort linen bay bổng - lựa chọn hàng đầu cho các bộ ảnh nghỉ dưỡng." },
+        { sku: "VLR-SD-010", note: "Set soft ceremony sắc kem trang nhã phù hợp tiệc cưới ngoài trời." },
+        { sku: "VLR-SD-025", note: "Thiết kế dạ hội đầm công chúa Tulle bồng bềnh như mây, đính kết thủ công." }
       ]
     }
   },
@@ -230,7 +234,7 @@ export const FALLBACK_BLOG_POSTS = [
     category_slug: "trend",
     title: "Phong cách Best Fit Wins và sự bùng nổ của Song Hye Kyo 2026",
     excerpt: "Song Hye Kyo dẫn đầu xu hướng thời trang ứng dụng 2026 với phom dáng sắc sảo, tối giản nhưng vô cùng sang trọng.",
-    image_url: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1400&q=80",
+    image_url: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1200&h=800&q=80",
     author: "Trần Thảo Linh",
     read_minutes: 6,
     is_featured: false,
@@ -263,7 +267,7 @@ export const FALLBACK_BLOG_POSTS = [
     category_slug: "style",
     title: "Bảng màu hè 2026: Sự hòa quyện giữa sắc nâu Cognac và hồng phấn",
     excerpt: "Khám phá cách phối hai tông màu nóng và lạnh hài hòa, tạo điểm nhấn nổi bật giữa những ngày hè đầy nắng.",
-    image_url: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1400&q=80",
+    image_url: "https://images.unsplash.com/photo-1509319117193-57bab727e09d?auto=format&fit=crop&w=1200&h=800&q=80",
     author: "Lê Minh Châu",
     read_minutes: 7,
     is_featured: false,
@@ -296,7 +300,7 @@ export const FALLBACK_BLOG_POSTS = [
     category_slug: "interview",
     title: "Trò chuyện cùng Giám đốc Sáng tạo: Định nghĩa lại thời trang tinh gọn",
     excerpt: "Một cuộc phỏng vấn sâu sắc về xu hướng thời trang ứng dụng bền vững, chất liệu linen cao cấp và cảm xúc của người mặc.",
-    image_url: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=1400&q=80",
+    image_url: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=1200&h=800&q=80",
     author: "Trần Bảo Ngọc",
     read_minutes: 8,
     is_featured: false,
@@ -329,7 +333,7 @@ export const FALLBACK_BLOG_POSTS = [
     category_slug: "sustainable",
     title: "Nguyên lý thời trang bền vững: Chọn Linen tự nhiên cho tủ đồ hè",
     excerpt: "Linen không chỉ là chất liệu giải nhiệt mùa hè, nó là biểu tượng của phong cách sống chậm và thân thiện với thiên nhiên.",
-    image_url: "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1400&q=80",
+    image_url: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1200&h=800&q=80",
     author: "Phạm Hoàng Linh",
     read_minutes: 9,
     is_featured: false,
@@ -362,7 +366,7 @@ export const FALLBACK_BLOG_POSTS = [
     category_slug: "event",
     title: "Velura Fashion Salon 2026: Đêm tiệc kết nối cảm xúc thời trang",
     excerpt: "Không gian trưng bày ấm cúng, tinh tế giới thiệu dòng sản phẩm resort và dạ hội cao cấp mới nhất của Velura.",
-    image_url: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1400&q=80",
+    image_url: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&h=800&q=80",
     author: "Minh Anh",
     read_minutes: 5,
     is_featured: false,
