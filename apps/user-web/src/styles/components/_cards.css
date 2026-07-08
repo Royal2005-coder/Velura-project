@@ -149,7 +149,8 @@
   font-size: 0.875rem;
   font-weight: 600;
   color: #7C5454;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 /* ---------- Reusable Product Card Component ---------- */
@@ -159,6 +160,8 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0;
+  cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -169,11 +172,13 @@
 
 .card__image-container {
   position: relative;
-  padding-top: 125%; /* 4:5 aspect ratio */
+  aspect-ratio: 4 / 5;
+  padding-top: 0;
   background: var(--success-bg);
   overflow: hidden;
   border-radius: var(--radius-sm);
   margin-bottom: 14px;
+  flex-shrink: 0;
 }
 
 .card__img {
@@ -182,7 +187,9 @@
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 8px;
+  background: #ffffff;
   display: block;
   transition: transform 0.4s ease;
 }
@@ -215,6 +222,7 @@
   flex-direction: column;
   gap: 6px;
   flex: 1;
+  min-height: 0;
 }
 
 .card__rating {
@@ -223,6 +231,7 @@
   gap: 4px;
   font-size: 0.75rem;
   color: var(--text-secondary);
+  min-height: 18px;
 }
 
 .card__rating-star {
@@ -278,7 +287,8 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: auto;
+  min-height: 24px;
 }
 
 /* 2. KHỐI GIÁ TIỀN - HIỆN ĐẠI, DỄ NHÌN */
@@ -412,12 +422,14 @@
   background: #ffffff;
 }
 
-.card__wishlist-btn.is-active {
+.card__wishlist-btn.is-active,
+.card__wishlist-btn.active {
   background: var(--terracotta);
   color: #ffffff;
 }
 
-.card__wishlist-btn.is-active svg {
+.card__wishlist-btn.is-active svg,
+.card__wishlist-btn.active svg {
   fill: currentColor;
 }
 
@@ -425,8 +437,10 @@
 .card__colors {
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
   margin-top: 4px;
   margin-bottom: 4px;
+  min-height: 16px;
 }
 
 .card__color-dot {
@@ -447,9 +461,8 @@
 }
 
 /* ============================================================
-   Product Card Overlay — card--product (list.html)
-   Thiết kế mới: tim luôn hiện, Xem chi tiết ở giữa ảnh khi hover,
-   Mua ngay + Cart icon luôn hiển thị ở dưới card.
+   Product Card Overlay - card--product (list.html)
+   Tim luôn hiện, card click mở chi tiết, nút mua và giỏ hàng luôn thẳng hàng.
    ============================================================ */
 
 /* Đảm bảo wrapper là stacking context */
@@ -523,31 +536,41 @@
   pointer-events: none;
 }
 
-/* === 🛍️  Actions Row: Mua ngay + Cart icon (luôn hiển thị) === */
+/* === Actions Row: Mua hàng + Thêm vào giỏ hàng === */
 .card--product .card__actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px 14px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 12px 0 0;
+  margin-top: 12px;
 }
 
-.card--product .card__actions .btn-buy {
-  flex: 1;
+.card--product .card__actions .btn-buy,
+.card--product .card__btn-cart {
+  width: 100%;
+  min-height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #F4E4DC;
-  color: var(--terracotta, #C97B63);
-  padding: 11px 16px;
   border-radius: var(--radius-sm);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   text-decoration: none;
   border: none;
   cursor: pointer;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
   transition: background 0.2s ease, color 0.2s ease;
 }
+
+.card--product .card__actions .btn-buy {
+  background: #F4E4DC;
+  color: var(--terracotta, #C97B63);
+  padding: 11px 16px;
+}
+
 .card--product .card__actions .btn-buy:hover {
   background: #e8c9be;
   color: var(--terracotta-h, #b36a53);
@@ -555,20 +578,68 @@
 .card--product .card__actions .btn-buy svg { display: block; flex-shrink: 0; }
 
 .card--product .card__btn-cart {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #F4E4DC;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--terracotta, #C97B63);
-  text-decoration: none;
-  border: none;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.2s ease, color 0.2s ease;
+  background: var(--terracotta, #C97B63);
+  color: #ffffff;
+  padding: 11px 14px;
 }
 .card--product .card__btn-cart svg { display: block; fill: none; stroke: currentColor; stroke-width: 2; }
-.card--product .card__btn-cart:hover { background: var(--terracotta); color: #ffffff; }
+.card--product .card__btn-cart:hover { background: var(--terracotta-h, #b36a53); color: #ffffff; }
 
+.card--product.card--list-view .card__actions {
+  width: 180px;
+  padding: 0;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+/* Final product card alignment for catalog cards */
+
+.card--product {
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(42, 37, 34, 0.04);
+}
+
+.card--product .card__image-container {
+  border-radius: 8px;
+  background: #f7f4f0;
+}
+
+.card--product .card__img {
+  object-fit: contain;
+  padding: 10px;
+}
+
+.card--product .card__title {
+  min-height: 2.8em;
+  height: auto;
+  color: #1f1d1b;
+  font-size: 1.02rem !important;
+}
+
+.card--product .card__price-group {
+  align-items: baseline;
+  min-height: 28px;
+}
+
+.card--product .card__actions .btn-buy,
+.card--product .card__btn-cart {
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.card--product .card__actions .btn-buy {
+  background: #f2ded5;
+}
+
+.card--product .card__btn-cart {
+  background: var(--terracotta);
+}
+
+@media (max-width: 420px) {
+  .card--product .card__actions .btn-buy,
+  .card--product .card__btn-cart {
+    white-space: normal;
+  }
+}

@@ -1,6 +1,7 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
 import { addToCart } from "./cart.js";
+import { updateWishlistBadge } from "./wishlist.js";
 
 /**
  * ES6 Module: Homepage Controller
@@ -13,8 +14,33 @@ export function initHomepage() {
   const categoriesGrid = document.querySelector(".categories-section__grid");
   const productsGrid = document.querySelector(".products-section__grid");
 
+  // State
+  let wishlistedProductIds = new Set();
+
   // Load Homepage Data
   async function loadData() {
+    // Fetch user wishlist first to set up active classes
+    const token = localStorage.getItem("velura_token");
+    if (token) {
+      try {
+        const wishlistData = await apiRequest("/api/user/wishlist");
+        const items = wishlistData.items || [];
+        wishlistedProductIds = new Set(items.map(item => item.product_id));
+        localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+        updateWishlistBadge();
+      } catch (wishlistErr) {
+        console.error("Failed to load wishlist for homepage:", wishlistErr);
+      }
+    } else {
+      try {
+        const guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+        wishlistedProductIds = new Set(guestIds);
+        updateWishlistBadge();
+      } catch (guestErr) {
+        wishlistedProductIds = new Set();
+      }
+    }
+
     try {
       // 1. Fetch categories
       if (categoriesGrid) {
@@ -35,14 +61,18 @@ export function initHomepage() {
         console.error("Failed to fetch products for homepage:", prodErr);
       }
 
-      // 2. Fetch featured products
-      if (productsGrid && products.length > 0) {
-        // Limit to 8 products for the homepage section
-        const featuredProducts = products.filter(p => p.is_featured).slice(0, 8);
-        // If not enough featured, just take the first 8 products
-        const productsToRender = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 8);
+        // Get featured products that have sales, sorted by sold_count DESC
+        const activeFeatured = products
+          .filter(p => p.is_featured && (p.sold_count || 0) > 0)
+          .sort((a, b) => (b.sold_count || 0) - (a.sold_count || 0));
+        
+        // Get featured products that do not have sales yet
+        const quietFeatured = products
+          .filter(p => p.is_featured && (p.sold_count || 0) === 0);
+
+        // Combine both lists and take the top 8 (best-selling will always appear first)
+        const productsToRender = [...activeFeatured, ...quietFeatured].slice(0, 8);
         renderProducts(productsToRender);
-      }
 
       // 3. Fetch personalized products based on Style Profile body shape
       const personalizedSection = document.querySelector("#personalized-recommendations");
@@ -167,25 +197,35 @@ export function initHomepage() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
-      const badgeHtml = discountPercent > 0
-        ? `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`
-        : (product.is_featured ? `<span class="product-card__badge product-card__badge--best">HOT</span>` : "");
+      let badgeHtml = "";
+      if (discountPercent > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`;
+      } else if (product.is_combo) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
+      } else if ((product.sold_count || 0) > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--best">BÁN CHẠY</span>`;
+      } else if (product.is_featured) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--hot">NỔI BẬT</span>`;
+      }
+
+      const isWishlisted = wishlistedProductIds.has(product.product_id);
+      const wishlistClass = isWishlisted ? "active" : "";
 
       return `
-        <article class="product-card">
+        <article class="product-card" data-detail-url="/src/pages/products/detail.html?id=${product.product_id}">
           <div class="product-card__img-wrapper">
             ${badgeHtml}
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
               <img src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" class="product-card__img" />
             </a>
-            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-home" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
+            <div class="product-card__img-hover">
+              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
+            </div>
+            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-home ${wishlistClass}" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
-            <div class="product-card__img-hover">
-              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
-            </div>
           </div>
 
           <div class="product-card__info">
@@ -209,11 +249,10 @@ export function initHomepage() {
 
           <div class="product-card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              <svg class="icon" style="width: 16px; height: 16px;"><use href="#icon-bag"></use></svg>
-              Mua ngay
+              Mua hàng
             </a>
             <button class="product-card__btn-cart js-add-cart-home" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              <svg class="icon" style="width: 18px; height: 18px;"><use href="#icon-cart"></use></svg>
+              Thêm vào giỏ hàng
             </button>
           </div>
         </article>
@@ -225,24 +264,60 @@ export function initHomepage() {
 
   // Bind cart/wishlist click events
   function bindHomeEvents(products) {
+    bindProductCardNavigation(productsGrid);
+
     const wishlistBtns = productsGrid.querySelectorAll(".js-add-wishlist-home");
     wishlistBtns.forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const productId = btn.getAttribute("data-id");
+        const isActive = btn.classList.contains("active");
+        const token = localStorage.getItem("velura_token");
+
         try {
-          await apiRequest("/api/user/wishlist", {
-            method: "POST",
-            body: { product_id: productId }
-          });
-          btn.classList.add("active");
-          showToast("Đã thêm vào danh sách yêu thích!");
-        } catch (err) {
-          if (err.status === 401) {
-            showToast("Vui lòng đăng nhập để lưu sản phẩm!");
+          if (token) {
+            if (isActive) {
+              await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              await apiRequest("/api/user/wishlist", {
+                method: "POST",
+                body: { product_id: productId }
+              });
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
           } else {
-            showToast(err.message || "Không thể lưu sản phẩm");
+            let guestIds = [];
+            try {
+              guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+            } catch {
+              guestIds = [];
+            }
+
+            if (isActive) {
+              guestIds = guestIds.filter(id => id !== productId);
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              if (!guestIds.includes(productId)) {
+                guestIds.push(productId);
+              }
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_guest_wishlist", JSON.stringify(guestIds));
           }
+          updateWishlistBadge();
+        } catch (err) {
+          showToast(err.message || "Không thể lưu sản phẩm");
         }
       });
     });
@@ -251,6 +326,7 @@ export function initHomepage() {
     cartBtns.forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const productId = btn.getAttribute("data-id");
         const prod = products.find(x => x.product_id === productId);
         if (prod && prod.variants && prod.variants.length > 0) {
@@ -283,25 +359,35 @@ export function initHomepage() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
-      const badgeHtml = discountPercent > 0
-        ? `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`
-        : (product.is_featured ? `<span class="product-card__badge product-card__badge--best">HOT</span>` : "");
+      let badgeHtml = "";
+      if (discountPercent > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`;
+      } else if (product.is_combo) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
+      } else if ((product.sold_count || 0) > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--best">BÁN CHẠY</span>`;
+      } else if (product.is_featured) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--hot">NỔI BẬT</span>`;
+      }
+
+      const isWishlisted = wishlistedProductIds.has(product.product_id);
+      const wishlistClass = isWishlisted ? "active" : "";
 
       return `
-        <article class="product-card">
+        <article class="product-card" data-detail-url="/src/pages/products/detail.html?id=${product.product_id}">
           <div class="product-card__img-wrapper">
             ${badgeHtml}
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
               <img src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" class="product-card__img" />
             </a>
-            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-personalized" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
+            <div class="product-card__img-hover">
+              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
+            </div>
+            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-personalized ${wishlistClass}" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
-            <div class="product-card__img-hover">
-              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
-            </div>
           </div>
 
           <div class="product-card__info">
@@ -325,11 +411,10 @@ export function initHomepage() {
 
           <div class="product-card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              <svg class="icon" style="width: 16px; height: 16px;"><use href="#icon-bag"></use></svg>
-              Mua ngay
+              Mua hàng
             </a>
             <button class="product-card__btn-cart js-add-cart-personalized" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              <svg class="icon" style="width: 18px; height: 18px;"><use href="#icon-cart"></use></svg>
+              Thêm vào giỏ hàng
             </button>
           </div>
         </article>
@@ -337,24 +422,60 @@ export function initHomepage() {
     }).join("");
 
     // Bind events
+    bindProductCardNavigation(gridEl);
+
     const wishlistBtns = gridEl.querySelectorAll(".js-add-wishlist-personalized");
     wishlistBtns.forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const productId = btn.getAttribute("data-id");
+        const isActive = btn.classList.contains("active");
+        const token = localStorage.getItem("velura_token");
+
         try {
-          await apiRequest("/api/user/wishlist", {
-            method: "POST",
-            body: { product_id: productId }
-          });
-          btn.classList.add("active");
-          showToast("Đã thêm vào danh sách yêu thích!");
-        } catch (err) {
-          if (err.status === 401) {
-            showToast("Vui lòng đăng nhập để lưu sản phẩm!");
+          if (token) {
+            if (isActive) {
+              await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              await apiRequest("/api/user/wishlist", {
+                method: "POST",
+                body: { product_id: productId }
+              });
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
           } else {
-            showToast(err.message || "Không thể lưu sản phẩm");
+            let guestIds = [];
+            try {
+              guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+            } catch {
+              guestIds = [];
+            }
+
+            if (isActive) {
+              guestIds = guestIds.filter(id => id !== productId);
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              if (!guestIds.includes(productId)) {
+                guestIds.push(productId);
+              }
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_guest_wishlist", JSON.stringify(guestIds));
           }
+          updateWishlistBadge();
+        } catch (err) {
+          showToast(err.message || "Không thể lưu sản phẩm");
         }
       });
     });
@@ -363,6 +484,7 @@ export function initHomepage() {
     cartBtns.forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const productId = btn.getAttribute("data-id");
         const prod = products.find(x => x.product_id === productId);
         if (prod && prod.variants && prod.variants.length > 0) {
@@ -380,6 +502,17 @@ export function initHomepage() {
         } else {
           showToast("Sản phẩm không có biến thể sẵn có.");
         }
+      });
+    });
+  }
+
+  function bindProductCardNavigation(root) {
+    if (!root) return;
+    const cards = root.querySelectorAll(".product-card[data-detail-url]");
+    cards.forEach(card => {
+      card.addEventListener("click", (e) => {
+        if (e.target.closest("a, button, input, select, textarea, label")) return;
+        window.location.href = card.dataset.detailUrl;
       });
     });
   }

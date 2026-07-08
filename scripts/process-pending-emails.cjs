@@ -12,7 +12,7 @@ envContent.split('\n').forEach(line => {
   if (match) env[match[1].trim()] = match[2].trim();
 });
 
-const pool = new Pool({ connectionString: env.SUPABASE_DIRECT_URL || 'postgresql://postgres:UelVelura@123@db.drvkrpoojyncodfytftn.supabase.co:5432/postgres' });
+const pool = new Pool({ connectionString: env.SUPABASE_DIRECT_URL || (process.env.SUPABASE_DIRECT_URL || process.env.SUPABASE_DB_URL) });
 
 async function processPending() {
   const { rows } = await pool.query(`

@@ -25,6 +25,9 @@ export function sendNoContent(res, extraHeaders = {}) {
 
 export function sendError(res, error, extraHeaders = {}, requestId = "") {
   const status = error.status || 500;
+  if (status >= 500) {
+    console.error("Internal Server Error:", error);
+  }
   const payload = {
     error: {
       code: error.code || "INTERNAL_ERROR",
@@ -73,7 +76,7 @@ export function applyCors(req, res, corsOrigin) {
   const allowOrigin = wildcard ? requestOrigin || "*" : configured.includes(requestOrigin) ? requestOrigin : "";
   const headers = {
     "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
-    "access-control-allow-headers": "authorization,content-type,x-request-id",
+    "access-control-allow-headers": "authorization,content-type,x-request-id,x-guest-session-id",
     "access-control-max-age": "86400",
     vary: "origin"
   };

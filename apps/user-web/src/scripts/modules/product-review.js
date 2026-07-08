@@ -204,23 +204,32 @@ export function initProductReview() {
         .filter(btn => btn.classList.contains("is-active"))
         .map(btn => btn.getAttribute("data-text"));
 
+      // Pass selected files names to simulate images checking in backend
+      const fileNames = selectedFiles.map(f => f.name);
+
       const payload = {
         product_id: currentProduct.product_id,
         order_id: orderId,
         rating: ratingValue,
         comment: textarea.value.trim(),
-        images: [], // Images would normally be uploaded to storage first.
+        images: fileNames,
         review_tags: activeTags
       };
 
       apiRequest("/api/user/reviews", { method: "POST", body: payload })
-        .then(() => {
-          sessionStorage.setItem(`order_status_${orderId}`, "reviewed");
-          sessionStorage.setItem(`order_reviewed_${orderId}`, "true");
-          createToast("Cảm ơn bạn đã gửi đánh giá sản phẩm!");
-          setTimeout(() => {
-            window.location.href = "/src/pages/account/my-orders.html";
-          }, 1500);
+        .then((res) => {
+          if (res && res.review && res.review.status === "rejected") {
+            createToast(`⚠️ Kiểm duyệt: Đánh giá bị từ chối do ${res.review.rejection_reason.toLowerCase()}. Vui lòng sửa lại nội dung!`, 5000);
+            submitBtn.disabled = false;
+            submitBtn.textContent = "GỬI LẠI ĐÁNH GIÁ";
+          } else {
+            sessionStorage.setItem(`order_status_${orderId}`, "reviewed");
+            sessionStorage.setItem(`order_reviewed_${orderId}`, "true");
+            createToast("Cảm ơn bạn đã gửi đánh giá sản phẩm! Đánh giá đã được phê duyệt tự động.");
+            setTimeout(() => {
+              window.location.href = "/src/pages/account/my-orders.html";
+            }, 2000);
+          }
         })
         .catch(err => {
           createToast(`Lỗi: ${err.message}`);
@@ -231,7 +240,7 @@ export function initProductReview() {
   }
 
   // Toast alert system
-  function createToast(message) {
+  function createToast(message, duration = 3000) {
     const existing = document.querySelector(".velura-toast");
     if (existing) existing.remove();
 
@@ -252,6 +261,7 @@ export function initProductReview() {
       opacity: 0;
       transform: translateY(10px);
       transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      max-width: 400px;
     `;
     toast.textContent = message;
     document.body.appendChild(toast);
@@ -265,7 +275,7 @@ export function initProductReview() {
       toast.style.opacity = "0";
       toast.style.transform = "translateY(-10px)";
       setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, duration);
   }
 
   // Run initial loading

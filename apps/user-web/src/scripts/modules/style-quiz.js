@@ -135,6 +135,30 @@ export function initStyleQuiz() {
     });
   }
 
+  // Handle leaving page warning for guest users
+  const skipBtn = container.querySelector(".quiz-progress__skip");
+  if (skipBtn) {
+    skipBtn.addEventListener("click", (e) => {
+      const hasToken = localStorage.getItem("velura_token");
+      if (!hasToken) {
+        e.preventDefault();
+        showGuestLeavingWarningModal(skipBtn.getAttribute("href"));
+      }
+    });
+  }
+
+  // Bind beforeunload warning for Guests when quiz inputs exist
+  window.addEventListener("beforeunload", (e) => {
+    const hasToken = localStorage.getItem("velura_token");
+    const hasQuizState = sessionStorage.getItem("quiz-context") || sessionStorage.getItem("quiz-height");
+    if (!hasToken && hasQuizState && !window.quizSubmittedRedirect) {
+      // Standard browser prompt (custom message text might be ignored by modern browsers, but it triggers confirmation modal)
+      e.preventDefault();
+      e.returnValue = "Nếu bạn thoát mà không đăng nhập, các thông tin Style Quiz và Wishlist tạm thời sẽ bị mất sau khi phiên làm việc kết thúc.";
+      return e.returnValue;
+    }
+  });
+
   // Initial UI sync
   updateQuizUI();
 
@@ -575,6 +599,7 @@ export function initStyleQuiz() {
       else budget_range = "700k_1.5m";
     }
 
+    window.quizSubmittedRedirect = true;
     import("./api.js").then(({ apiRequest }) => {
       apiRequest("/api/user/style-quiz", {
         method: "POST",
@@ -612,4 +637,34 @@ export function initStyleQuiz() {
       window.location.href = "/src/pages/ai/suggestions.html?isNewQuiz=true";
     }, 2400);
   }
+}
+
+function showGuestLeavingWarningModal(targetHref) {
+  if (document.querySelector(".account-login-required-modal")) return;
+
+  const modal = document.createElement("div");
+  modal.className = "account-login-required-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.innerHTML = `
+    <div class="account-login-required-modal__card" style="max-width: 480px; padding: 32px; border-radius: 16px; background: white; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.12);">
+      <div style="font-size: 44px; margin-bottom: 16px;">⚠️</div>
+      <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: #1a1a1a; margin-bottom: 12px; font-weight: 600;">LƯU Ý QUAN TRỌNG CHO BẠN</h2>
+      <p style="font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: #555; line-height: 1.6; margin-bottom: 24px;">
+        Bạn đang tham gia với tư cách <strong>Khách (Guest)</strong>. Nếu bạn rời khỏi trang, các dữ liệu tạm thời như kết quả Style Quiz và sản phẩm yêu thích (Wishlist) sẽ <strong>không được lưu lại vĩnh viễn</strong>.
+      </p>
+      <div class="account-login-required-modal__actions" style="display: flex; gap: 12px; justify-content: center;">
+        <a class="btn btn--primary" href="/src/pages/auth/signin.html" style="padding: 12px 24px; text-decoration: none; font-size: 0.9rem;">Đăng nhập để lưu</a>
+        <button class="btn btn--outline js-modal-exit-anyway-btn" type="button" style="padding: 12px 24px; font-size: 0.9rem;">Thoát &amp; Chấp nhận xóa</button>
+      </div>
+    </div>
+  `;
+
+  modal.querySelector(".js-modal-exit-anyway-btn").addEventListener("click", () => {
+    // Prevent beforeunload warning triggers
+    window.quizSubmittedRedirect = true;
+    window.location.href = targetHref || "/index.html";
+  });
+
+  document.body.appendChild(modal);
 }

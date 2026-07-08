@@ -49,6 +49,7 @@ export async function supabaseRequest(path, options = {}) {
     const data = text ? parseJson(text) : null;
 
     if (!response.ok) {
+      console.error(`[SUPABASE ERROR] Status: ${response.status} URL: ${url} Response:`, data);
       throw new HttpError(response.status, "SUPABASE_ERROR", "Supabase request failed", data);
     }
 

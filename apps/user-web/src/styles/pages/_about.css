@@ -21,29 +21,30 @@
 /* Badge (Shared element) */
 .about-badge {
   color: #c97b63;
-  font-size: 1rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   display: inline-block;
 }
 
 /* Titles and Descs */
 .about-title {
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: 3rem;
-  font-weight: 500;
+  font-family: "Outfit", sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 600;
   color: #2a2522;
-  line-height: 1.3;
+  line-height: 1.2;
   margin: 0 0 24px;
+  letter-spacing: -0.02em;
 }
 
 .about-desc {
-  font-size: 1.5rem;
+  font-size: 1.0625rem;
   color: #8c857e;
-  line-height: 1.65;
-  margin: 0 0 16px;
+  line-height: 1.7;
+  margin: 0 0 20px;
 }
 
 .about-desc:last-child {
@@ -55,9 +56,18 @@
    ============================================================ */
 .about-hero {
   width: 100%;
-  height: 800px;
+  height: 600px;
   overflow: hidden;
-  margin-bottom: 80px;
+  margin-bottom: 96px;
+  position: relative;
+}
+
+.about-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 30%, rgba(42, 37, 34, 0.25) 100%);
+  pointer-events: none;
 }
 
 .about-hero__img {
@@ -65,20 +75,21 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  filter: contrast(102%) brightness(95%);
 }
 
 /* ============================================================
    Section 2 & 4: Alternate Sections (Story / Atelier)
    ============================================================ */
 .about-section {
-  margin-bottom: 80px;
+  margin-bottom: 96px;
 }
 
 .about-story__grid,
 .about-atelier__grid {
   display: flex;
   align-items: center;
-  gap: 64px;
+  gap: 80px;
 }
 
 .about-story__image,
@@ -92,56 +103,102 @@
 .about-atelier__image img {
   width: 100%;
   height: auto;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(42, 37, 34, 0.03);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px -10px rgba(42, 37, 34, 0.05);
   display: block;
+  filter: grayscale(10%) contrast(102%);
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s ease;
+}
+
+.about-story__image:hover img,
+.about-atelier__image:hover img {
+  transform: scale(1.02);
+  filter: grayscale(0%) contrast(105%);
 }
 
 /* ============================================================
-   Section 3: Triết lý thương hiệu (Core Values)
+   Section 3: Triết lý thương hiệu (Core Values - Bento Grid)
    ============================================================ */
 .about-values {
   background: #ffffff;
-  padding: 80px 0;
-  margin-bottom: 80px;
-  border-top: 1px solid #eee2d6;
-  border-bottom: 1px solid #eee2d6;
+  padding: 96px 0;
+  margin-bottom: 96px;
+  border-top: 1px solid rgba(238, 226, 214, 0.5);
+  border-bottom: 1px solid rgba(238, 226, 214, 0.5);
 }
 
 .about-values__header {
   text-align: center;
-  margin-bottom: 56px;
+  margin-bottom: 64px;
 }
 
 .about-values__grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
+  gap: 24px;
+  grid-auto-flow: dense;
 }
 
 .value-card {
   background: #fbf7f2;
-  padding: 40px 32px;
-  border-radius: 12px;
+  padding: 48px 40px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   text-align: center;
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s ease;
+  border: 1px solid rgba(238, 226, 214, 0.3);
+}
+
+/* Bento Grid math layout */
+.value-card:nth-child(1) {
+  grid-column: 1 / 2;
+  grid-row: 1 / 3;
+  min-height: 480px;
+}
+
+.value-card:nth-child(2) {
+  grid-column: 2 / 4;
+  grid-row: 1 / 2;
+  flex-direction: row;
+  text-align: left;
+  align-items: center;
+  gap: 40px;
+}
+
+.value-card:nth-child(3) {
+  grid-column: 2 / 4;
+  grid-row: 2 / 3;
+  flex-direction: row;
+  text-align: left;
+  align-items: center;
+  gap: 40px;
 }
 
 .value-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(201, 123, 99, 0.06);
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px -10px rgba(201, 123, 99, 0.1);
+  border-color: rgba(201, 123, 99, 0.3);
 }
 
 .value-card__icon-wrapper {
   display: flex;
   justify-content: center;
   margin-bottom: 24px;
+  flex-shrink: 0;
+}
+
+.value-card:nth-child(2) .value-card__icon-wrapper,
+.value-card:nth-child(3) .value-card__icon-wrapper {
+  margin-bottom: 0;
 }
 
 .value-card__icon {
   width: 64px;
   height: 64px;
-  background: #f4e4dc;
+  background: rgba(201, 123, 99, 0.1);
   color: #c97b63;
   border-radius: 50%;
   display: flex;
@@ -150,51 +207,61 @@
 }
 
 .value-card__title {
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: 2rem;
-  font-weight: 500;
+  font-family: "Outfit", sans-serif;
+  font-size: 1.6rem;
+  font-weight: 600;
   color: #2a2522;
   margin: 0 0 16px;
+  letter-spacing: -0.01em;
+}
+
+.value-card:nth-child(2) .value-card__title,
+.value-card:nth-child(3) .value-card__title {
+  margin-bottom: 8px;
 }
 
 .value-card__desc {
-  font-size: 1.25rem;
+  font-size: 1rem;
   color: #8c857e;
   line-height: 1.6;
   margin: 0;
 }
 
+
 /* ============================================================
    Section 5: Đội ngũ sáng tạo (Creative Team)
    ============================================================ */
 .about-team {
-  padding: 80px 0;
-  margin-bottom: 80px;
-  border-top: 1px solid #eee2d6;
+  padding: 96px 0;
+  margin-bottom: 96px;
+  border-top: 1px solid rgba(238, 226, 214, 0.5);
   background: #ffffff;
 }
 
 .about-team__header {
   text-align: center;
-  margin-bottom: 56px;
+  margin-bottom: 64px;
 }
 
 .about-team__grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  gap: 32px;
 }
 
 .team-card {
   background: #fbf7f2;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(42, 37, 34, 0.02);
-  transition: transform 0.3s;
+  box-shadow: 0 4px 20px -10px rgba(42, 37, 34, 0.02);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s ease;
+  border: 1px solid rgba(238, 226, 214, 0.3);
 }
 
 .team-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 35px -15px rgba(201, 123, 99, 0.08);
+  border-color: rgba(201, 123, 99, 0.2);
 }
 
 .team-card__image {
@@ -207,12 +274,14 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.6s ease;
+  filter: grayscale(15%) contrast(102%) brightness(95%);
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s ease;
   display: block;
 }
 
 .team-card:hover .team-card__image img {
-  transform: scale(1.04);
+  transform: scale(1.05);
+  filter: grayscale(0%) contrast(105%) brightness(100%);
 }
 
 .team-card__info {
@@ -220,11 +289,12 @@
 }
 
 .team-card__name {
-  font-family: "Playfair Display", Georgia, serif;
+  font-family: "Outfit", sans-serif;
   font-size: 1.25rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #2a2522;
   margin: 0 0 6px;
+  letter-spacing: -0.01em;
 }
 
 .team-card__role {
@@ -232,7 +302,7 @@
   color: #c97b63;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   margin-bottom: 12px;
   display: inline-block;
 }
@@ -240,7 +310,7 @@
 .team-card__bio {
   font-size: 0.8125rem;
   color: #8c857e;
-  line-height: 1.5;
+  line-height: 1.6;
   margin: 0;
 }
 
@@ -249,58 +319,61 @@
    ============================================================ */
 .about-stats {
   background: #f4e4dc;
-  padding: 80px 0;
-  margin-bottom: 80px;
+  padding: 96px 0;
+  margin-bottom: 96px;
 }
 
 .about-stats__header {
   text-align: center;
-  margin-bottom: 56px;
+  margin-bottom: 64px;
 }
 
 .about-stats__subtitle {
-  font-size: 1rem;
+  font-size: 1.0625rem;
   color: #8c857e;
-  margin: 0;
+  margin: 8px 0 0;
 }
 
 .about-stats__grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  gap: 32px;
 }
 
 .stat-card {
   background: #ffffff;
-  padding: 40px 24px;
-  border-radius: 12px;
+  padding: 48px 24px;
+  border-radius: 16px;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(42, 37, 34, 0.02);
-  transition: transform 0.3s;
+  box-shadow: 0 4px 20px -10px rgba(42, 37, 34, 0.02);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s ease;
+  border: 1px solid rgba(238, 226, 214, 0.3);
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 35px -15px rgba(201, 123, 99, 0.08);
 }
 
 .stat-card__icon {
   color: #c97b63;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   display: flex;
   justify-content: center;
 }
 
 .stat-card__number {
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: 2.75rem;
-  font-weight: 500;
+  font-family: "Outfit", sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
   color: #2a2522;
   display: block;
   margin-bottom: 8px;
+  letter-spacing: -0.02em;
 }
 
 .stat-card__label {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: #8c857e;
   font-weight: 500;
 }
@@ -309,42 +382,45 @@
    Section 7: Truyền thông & Giải thưởng (Press)
    ============================================================ */
 .about-press {
-  padding: 80px 0;
-  margin-bottom: 80px;
+  padding: 96px 0;
+  margin-bottom: 96px;
   background: #ffffff;
-  border-top: 1px solid #eee2d6;
-  border-bottom: 1px solid #eee2d6;
+  border-top: 1px solid rgba(238, 226, 214, 0.5);
+  border-bottom: 1px solid rgba(238, 226, 214, 0.5);
 }
 
 .about-press__header {
   text-align: center;
-  margin-bottom: 56px;
+  margin-bottom: 64px;
 }
 
 .about-press__grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
+  gap: 24px;
 }
 
 .press-logo {
   background: #fbf7f2;
   height: 112px;
-  border-radius: 8px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #6b635d;
+  font-family: "Outfit", sans-serif;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #8c857e;
   letter-spacing: 0.15em;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(238, 226, 214, 0.2);
 }
 
 .press-logo:hover {
   background: #f4e4dc;
   color: #c97b63;
+  border-color: rgba(201, 123, 99, 0.3);
+  transform: scale(1.03);
 }
 
 /* ============================================================
@@ -352,7 +428,7 @@
    ============================================================ */
 .about-cta {
   background: #fbf7f2;
-  padding: 96px 0;
+  padding: 112px 0;
   text-align: center;
 }
 
@@ -362,37 +438,41 @@
 }
 
 .about-cta__title {
-  font-family: "Playfair Display", Georgia, serif;
+  font-family: "Outfit", sans-serif;
   font-size: 2.75rem;
-  font-weight: 500;
+  font-weight: 600;
   color: #2a2522;
   margin: 0 0 16px;
-  line-height: 1.3;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
 }
 
 .about-cta__desc {
   font-size: 1.0625rem;
   color: #8c857e;
-  line-height: 1.6;
-  margin: 0 0 32px;
+  line-height: 1.7;
+  margin: 0 0 36px;
 }
 
 .about-cta__btn {
   background: #c97b63;
   color: #ffffff;
-  padding: 16px 36px;
-  border-radius: 8px;
+  padding: 18px 40px;
+  border-radius: 10px;
   font-weight: 600;
   text-decoration: none;
   font-size: 0.9375rem;
   display: inline-block;
-  transition: background-color 0.2s, transform 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(201, 123, 99, 0.2);
 }
 
 .about-cta__btn:hover {
   background: #b36a53;
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(201, 123, 99, 0.3);
 }
+
 
 /* ============================================================
    Responsive Overrides
@@ -476,5 +556,223 @@
 
   .about-hero {
     height: 200px;
+  }
+}
+
+/* Production polish pass - editorial brand page */
+.about-hero {
+  min-height: min(680px, 78dvh);
+  height: auto;
+  display: grid;
+  align-items: end;
+  margin-bottom: 88px;
+  background: #242321;
+  isolation: isolate;
+}
+
+.about-hero::after {
+  background:
+    linear-gradient(90deg, rgba(36, 35, 33, 0.72), rgba(36, 35, 33, 0.2) 58%, rgba(36, 35, 33, 0.05)),
+    linear-gradient(0deg, rgba(36, 35, 33, 0.54), rgba(36, 35, 33, 0));
+}
+
+.about-hero__img {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  filter: saturate(0.94) contrast(1.04) brightness(0.84);
+}
+
+.about-hero__content {
+  position: relative;
+  z-index: 1;
+  width: min(680px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: clamp(34px, 7vw, 78px) 0;
+  color: #ffffff;
+}
+
+.about-hero__content .about-badge {
+  color: #f5d2c5;
+}
+
+.about-hero__content h1 {
+  max-width: 620px;
+  margin: 0 0 16px;
+  color: #ffffff;
+  font-family: "Outfit", "DM Sans", sans-serif;
+  font-size: clamp(2.7rem, 6vw, 5.2rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.about-hero__content p {
+  max-width: 520px;
+  margin: 0 0 28px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 1.02rem;
+  line-height: 1.72;
+}
+
+.about-hero__content a {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 22px;
+  border: 1px solid rgba(255, 255, 255, 0.54);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #2a2522;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.about-hero__content a:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+}
+
+.about-story__grid,
+.about-atelier__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: clamp(34px, 6vw, 84px);
+}
+
+.about-atelier__grid {
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.92fr);
+}
+
+.about-story__image img,
+.about-atelier__image img {
+  aspect-ratio: 4 / 5;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 24px 70px rgba(42, 37, 34, 0.1);
+}
+
+.about-story__content,
+.about-atelier__content {
+  align-self: center;
+}
+
+.about-title,
+.about-cta__title {
+  font-family: "Outfit", "DM Sans", sans-serif;
+  letter-spacing: 0;
+}
+
+.about-desc {
+  max-width: 68ch;
+  color: #6f6861;
+}
+
+.about-values {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 247, 243, 0.98));
+}
+
+.about-values__grid {
+  gap: 18px;
+}
+
+.value-card,
+.team-card,
+.stat-card {
+  border-radius: 8px;
+}
+
+.value-card {
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(42, 37, 34, 0.04);
+}
+
+.value-card__title,
+.team-card__name {
+  font-family: "Outfit", "DM Sans", sans-serif;
+}
+
+.about-stats {
+  background: #f0eee9;
+}
+
+.about-press {
+  background: #fbfaf7;
+}
+
+.press-logo {
+  border-radius: 8px;
+  background: #ffffff;
+  color: #6f6861;
+}
+
+.about-cta {
+  margin-top: -24px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(246, 239, 232, 0.82)),
+    url("https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=1400&auto=format&fit=crop") center/cover;
+}
+
+.about-cta__btn {
+  border-radius: 8px;
+}
+
+@media (max-width: 1024px) {
+  .about-hero {
+    min-height: 520px;
+  }
+}
+
+@media (max-width: 768px) {
+  .about-hero {
+    min-height: 440px;
+    margin-bottom: 52px;
+  }
+
+  .about-hero__content {
+    width: calc(100% - 32px);
+    padding: 34px 0;
+  }
+
+  .about-story__grid,
+  .about-atelier__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .about-atelier__grid {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .about-story__image img,
+  .about-atelier__image img {
+    aspect-ratio: 16 / 11;
+  }
+}
+
+@media (max-width: 480px) {
+  .about-hero {
+    min-height: 420px;
+    height: auto;
+  }
+
+  .about-hero__content h1 {
+    font-size: 2.45rem;
+  }
+
+  .value-card:nth-child(1),
+  .value-card:nth-child(2),
+  .value-card:nth-child(3) {
+    grid-column: auto;
+    grid-row: auto;
+    min-height: auto;
+    flex-direction: column;
+    text-align: center;
   }
 }

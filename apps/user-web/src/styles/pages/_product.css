@@ -6,6 +6,22 @@
   padding: 40px 0 80px;
 }
 
+.member-lock-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(201, 123, 99, 0.28);
+  border-radius: 999px;
+  background: #fff7f3;
+  color: #9f4f3d;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+  box-shadow: 0 10px 26px rgba(45, 39, 34, 0.08);
+}
+
 .product-list-header {
   margin-bottom: 40px;
 }

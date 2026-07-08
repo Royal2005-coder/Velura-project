@@ -3,9 +3,9 @@ import { showToast } from "./account-profile.js";
 import { mergeCartOnLogin } from "./cart.js";
 import {
   clearAuthSession,
-  createDevMemberSession,
   storeAuthSession
 } from "./auth-session.js";
+import { syncFavoriteOutfitsOnLogin } from "./chatbot.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -104,7 +104,7 @@ async function checkDuplicate(type, value, errorId, iconId) {
 
 // ─── OTP Modal ──────────────────────────────────────────────────────────────
 
-function showOtpModal(identity, onSuccess, onResend) {
+function showOtpModal(identity, onSuccess, onResend, purpose = "") {
   const existing = document.querySelector(".otp-modal-container");
   if (existing) existing.remove();
 
@@ -206,7 +206,7 @@ function showOtpModal(identity, onSuccess, onResend) {
     verifyBtn.textContent = "Đang xác minh..."; verifyBtn.disabled = true;
     try {
       const data = await apiRequest("/api/user/auth/otp-verify", {
-        method: "POST", body: JSON.stringify({ identity, otp_code: otp })
+        method: "POST", body: JSON.stringify({ identity, otp_code: otp, purpose })
       });
       clearInterval(timerInterval); clearInterval(resendInterval);
       modal.remove();
@@ -248,38 +248,6 @@ function bindSignin() {
   const form = document.getElementById("js-signin-form");
   if (!form) return;
 
-  /* DEV MODE ONLY - REMOVE BEFORE PRODUCTION */
-  if (import.meta.env.DEV) {
-    const signupPara = document.querySelector(".signup");
-    if (signupPara && !document.querySelector(".dev-quick-login")) {
-      const devContainer = document.createElement("div");
-      devContainer.className = "dev-quick-login";
-      devContainer.style.cssText = "margin-top: 16px; display: flex; justify-content: center; gap: 10px;";
-      devContainer.innerHTML = `
-        <button type="button" id="js-dev-login-phone" style="background: rgba(107, 99, 93, 0.1); border: 1px dashed #6B635D; padding: 4px 8px; font-size: 11px; border-radius: 4px; color: #6B635D; cursor: pointer; transition: all 0.2s;">Test Phone</button>
-        <button type="button" id="js-dev-login-email" style="background: rgba(107, 99, 93, 0.1); border: 1px dashed #6B635D; padding: 4px 8px; font-size: 11px; border-radius: 4px; color: #6B635D; cursor: pointer; transition: all 0.2s;">Test Email</button>
-      `;
-      signupPara.after(devContainer);
-
-      document.getElementById("js-dev-login-phone").addEventListener("click", () => {
-        completeAuthentication(createDevMemberSession("phone"), {
-          mergeCart: false,
-          message: "Đã vào luồng Member Test (số điện thoại).",
-          redirectDelay: 300
-        });
-      });
-
-      document.getElementById("js-dev-login-email").addEventListener("click", () => {
-        completeAuthentication(createDevMemberSession("email"), {
-          mergeCart: false,
-          message: "Đã vào luồng Member Test (email).",
-          redirectDelay: 300
-        });
-      });
-    }
-  }
-  /* END DEV MODE ONLY */
-
   // Store original button label
   const btn = document.getElementById("btn-signin");
   if (btn) btn.dataset.label = btn.textContent;
@@ -318,6 +286,7 @@ function bindSignin() {
         showOtpModal(identity, (d) => {
           storeAuthSession(d);
           mergeCartOnLogin();
+          syncFavoriteOutfitsOnLogin().catch(console.error);
           showToast("Đăng nhập thành công!");
           setTimeout(() => { window.location.href = "/index.html"; }, 1200);
         }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }));
@@ -326,6 +295,7 @@ function bindSignin() {
 
       storeAuthSession(data);
       mergeCartOnLogin();
+      syncFavoriteOutfitsOnLogin().catch(console.error);
       showToast("Đăng nhập thành công!");
       setTimeout(() => { window.location.href = "/index.html"; }, 1200);
     } catch (err) {
@@ -447,6 +417,7 @@ function bindSignup() {
         showOtpModal(identity, (d) => {
           storeAuthSession(d);
           mergeCartOnLogin();
+          syncFavoriteOutfitsOnLogin().catch(console.error);
           showToast("Đăng ký tài khoản thành công! Chào mừng bạn đến với Velura 🎉");
           setTimeout(() => { window.location.href = "/index.html"; }, 1500);
         }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }));
@@ -487,7 +458,7 @@ function bindForgotPassword() {
         sessionStorage.setItem("velura_reset_otp", d._otp_used || "");
         showToast("Xác minh thành công! Tạo mật khẩu mới ngay.");
         setTimeout(() => { window.location.href = "/src/pages/auth/reset-password.html"; }, 1200);
-      }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }));
+      }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }), "reset-password");
     } catch (err) {
       setLoading(btn, false);
       setError("error-identity", err.message || "Không tìm thấy tài khoản.");
@@ -561,34 +532,99 @@ function bindResetPassword() {
 
 // ─── Header Auth UI ───────────────────────────────────────────────────────────
 
-function updateHeaderAuthUI() {
+function applyHeaderAuthUI() {
+  const token = localStorage.getItem("velura_token");
   const raw = localStorage.getItem("velura_user");
-  if (!raw) return;
-  try {
-    const user = JSON.parse(raw);
-    // Update all signin links to profile
-    document.querySelectorAll("a[href*='signin.html']").forEach(link => {
-      link.href = "/src/pages/account/profile.html";
-      const name = (user.full_name || "").split(" ").pop() || "Tài khoản";
-      link.innerHTML = `<span style="font-weight:500;font-size:0.875rem;">${name}</span>`;
-    });
 
-    // Add logout button to header if nav exists
-    const nav = document.querySelector(".site-header__nav-actions, .site-header__actions");
-    if (nav && !nav.querySelector(".js-logout-btn")) {
-      const logoutBtn = document.createElement("button");
-      logoutBtn.className = "js-logout-btn";
-      logoutBtn.setAttribute("title", "Đăng xuất");
-      logoutBtn.style.cssText = "background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:4px 8px;";
-      logoutBtn.textContent = "Đăng xuất";
-      logoutBtn.addEventListener("click", () => {
-        clearAuthSession();
-        showToast("Đã đăng xuất thành công.");
-        setTimeout(() => { window.location.reload(); }, 1000);
-      });
-      nav.appendChild(logoutBtn);
+  const signinBtns = document.querySelectorAll(".js-menu-signin-btn");
+  const signupBtns = document.querySelectorAll(".js-menu-signup-btn");
+  const profileBtns = document.querySelectorAll(".js-menu-profile-btn");
+  const logoutBtns = document.querySelectorAll(".js-menu-logout-btn");
+
+  // If header hasn't been injected yet, return false so caller can retry
+  if (signinBtns.length === 0 && profileBtns.length === 0) {
+    return false;
+  }
+
+  const isLoggedIn = raw && (() => {
+    try {
+      const user = JSON.parse(raw);
+      return !!(token || user.is_dev_mock);
+    } catch {
+      return false;
     }
-  } catch { /* silent */ }
+  })();
+
+  if (isLoggedIn) {
+    try {
+      const user = JSON.parse(raw);
+
+      // Update dropdown visibility
+      signinBtns.forEach(btn => btn.style.display = "none");
+      signupBtns.forEach(btn => btn.style.display = "none");
+      profileBtns.forEach(btn => btn.style.display = "block");
+      logoutBtns.forEach(btn => btn.style.display = "block");
+
+      // Fallback: Update legacy signin links if any exist outside dropdown
+      document.querySelectorAll("a[href*='signin.html']").forEach(link => {
+        if (!link.classList.contains("user-dropdown-item")) {
+          link.href = "/src/pages/account/profile.html";
+          const name = (user.full_name || "").split(" ").pop() || "Tài khoản";
+          link.innerHTML = `<span style="font-weight:500;font-size:0.875rem;">${name}</span>`;
+        }
+      });
+    } catch (e) {
+      console.error("Lỗi parse thông tin user:", e);
+    }
+  } else {
+    // Not logged in
+    signinBtns.forEach(btn => btn.style.display = "block");
+    signupBtns.forEach(btn => btn.style.display = "block");
+    profileBtns.forEach(btn => btn.style.display = "none");
+    logoutBtns.forEach(btn => btn.style.display = "none");
+  }
+
+  // Bind logout listener
+  logoutBtns.forEach(btn => {
+    if (btn.dataset.listenerBound === "true") return;
+    btn.dataset.listenerBound = "true";
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      clearAuthSession();
+      showToast("Đã đăng xuất thành công.");
+      setTimeout(() => {
+        window.location.href = "/index.html";
+      }, 1000);
+    });
+  });
+
+  return true;
+}
+
+/**
+ * Update header auth UI. If header is not yet in the DOM (happens when the
+ * vite-plugin-html-inject hasn't finished), retry with a MutationObserver.
+ * Exported so other modules (e.g. after a successful login) can call it.
+ */
+export function updateHeaderAuthUI() {
+  // Try immediately
+  if (applyHeaderAuthUI()) return;
+
+  // Header not ready yet — observe DOM and retry when it appears
+  const observer = new MutationObserver(() => {
+    if (applyHeaderAuthUI()) {
+      observer.disconnect();
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Safety timeout — give up after 3 seconds to avoid memory leaks
+  setTimeout(() => {
+    observer.disconnect();
+    applyHeaderAuthUI(); // One final attempt
+  }, 3000);
 }
 
 // ─── Main entry ──────────────────────────────────────────────────────────────
@@ -599,4 +635,39 @@ export function initAuthClient() {
   bindForgotPassword();
   bindResetPassword();
   updateHeaderAuthUI();
+
+  // Bind Account Dropdown Item Listeners
+  const logoutBtn = document.querySelector(".js-dropdown-logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      clearAuthSession();
+      showToast("Đăng xuất thành công!");
+      setTimeout(() => {
+        window.location.href = "/src/pages/auth/signin.html";
+      }, 1000);
+    });
+  }
+
+  const dropdownTrigger = document.querySelector(".header-account-dropdown .btn-icon-wrapper");
+  if (dropdownTrigger) {
+    dropdownTrigger.addEventListener("click", (e) => {
+      // Toggle dropdown behavior on mobile devices / fallback
+      const hasSession = localStorage.getItem("velura_token");
+      if (!hasSession) {
+        window.location.href = "/src/pages/auth/signin.html";
+      } else if (window.innerWidth <= 768) {
+        // Toggle active class on mobile for click events
+        const menu = document.querySelector(".account-dropdown-menu");
+        if (menu) {
+          const isVisible = menu.style.visibility === "visible";
+          menu.style.opacity = isVisible ? "0" : "1";
+          menu.style.visibility = isVisible ? "hidden" : "visible";
+          menu.style.pointerEvents = isVisible ? "none" : "auto";
+        }
+      } else {
+        window.location.href = "/src/pages/account/profile.html";
+      }
+    });
+  }
 }

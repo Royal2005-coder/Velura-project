@@ -1,8 +1,18 @@
 import { accountApi } from "./account-api.js";
 
-const state = { accounts: [], requests: [], logs: [], tab: "all", filtered: [], currentPage: 1, itemsPerPage: 10 };
+const state = {
+  accounts: [],
+  requests: [],
+  logs: [],
+  tab: "all",
+  filtered: [],
+  currentPage: 1,
+  itemsPerPage: 10
+};
+
 const panel = document.querySelector("#panel");
 const overlay = document.querySelector("#overlay");
+
 const roles = [
   "admin_viewer",
   "admin_operator_sanpham",
@@ -12,6 +22,16 @@ const roles = [
   "admin_operator_danhgia_review",
   "super_admin"
 ];
+
+const roleLabels = {
+  admin_viewer: "Admin xem dữ liệu",
+  admin_operator_sanpham: "Admin sản phẩm",
+  admin_operator_donhang: "Admin đơn hàng",
+  admin_operator_cskh_dt: "Admin CSKH đổi trả",
+  admin_operator_gia_km: "Admin giá và khuyến mãi",
+  admin_operator_danhgia_review: "Admin đánh giá",
+  super_admin: "Super admin"
+};
 
 export function countWords(value) {
   const text = String(value || "").trim();
@@ -32,29 +52,8 @@ function icon(name) {
   return `<svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#${escapeHtml(name)}"></use></svg>`;
 }
 
-function renderPagination(totalItems) {
-  const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
-  if (totalPages <= 1) return "";
-  
-  let buttons = "";
-  buttons += `<button type="button" data-account-page="${state.currentPage - 1}" ${state.currentPage === 1 ? "disabled" : ""}>←</button>`;
-  
-  for (let i = 1; i <= totalPages; i++) {
-    if (totalPages > 6) {
-      if (i !== 1 && i !== totalPages && Math.abs(state.currentPage - i) > 1) {
-        if (i === 2 && state.currentPage > 3) {
-          buttons += `<span class="pagination-ellipsis" style="padding: 0 4px; color: var(--muted);">...</span>`;
-        } else if (i === totalPages - 1 && state.currentPage < totalPages - 2) {
-          buttons += `<span class="pagination-ellipsis" style="padding: 0 4px; color: var(--muted);">...</span>`;
-        }
-        continue;
-      }
-    }
-    buttons += `<button type="button" class="${state.currentPage === i ? "is-active" : ""}" data-account-page="${i}">${i}</button>`;
-  }
-  
-  buttons += `<button type="button" data-account-page="${state.currentPage + 1}" ${state.currentPage === totalPages ? "disabled" : ""}>→</button>`;
-  return `<nav class="admin-pagination">${buttons}</nav>`;
+function initials(row) {
+  return String(row.full_name || row.email || row.phone || "KH").trim().slice(0, 2).toUpperCase();
 }
 
 function date(value) {
@@ -64,8 +63,15 @@ function date(value) {
     : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(parsed);
 }
 
+function isRecent(value, days = 30) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return false;
+  return Date.now() - parsed.getTime() <= days * 24 * 60 * 60 * 1000;
+}
+
 function status(row) {
-  return row.is_active ? "active" : row.lock_type === "permanent" ? "locked_perm" : "locked_temp";
+  if (row.is_active) return "active";
+  return row.lock_type === "permanent" ? "locked_perm" : "locked_temp";
 }
 
 function badge(value) {
@@ -76,28 +82,87 @@ function badge(value) {
     pending: "Chờ duyệt",
     approved: "Đã duyệt",
     rejected: "Từ chối",
-    expired: "Hết hạn"
+    expired: "Hết hạn",
+    verified: "Đã xác thực",
+    unverified: "Chưa xác thực",
+    member: "Thành viên",
+    admin: "Quản trị"
   }[value] || value;
-  return `<span class="admin-badge admin-badge--${
-    value === "active" || value === "approved" ? "success" : value === "pending" ? "pending" : "danger"
-  }">${escapeHtml(text)}</span>`;
+  const tone = {
+    active: "success",
+    approved: "success",
+    verified: "success",
+    member: "success",
+    pending: "pending",
+    unverified: "pending",
+    admin: "neutral",
+    locked_temp: "danger",
+    locked_perm: "danger",
+    rejected: "danger",
+    expired: "danger"
+  }[value] || "neutral";
+  return `<span class="admin-badge admin-badge--${tone}">${escapeHtml(text)}</span>`;
+}
+
+function accountGroup(row) {
+  return row.role === "admin" ? "admins" : "members";
+}
+
+function accountRoleText(row) {
+  if (row.role !== "admin") return "Member";
+  return roleLabels[row.admin_role] || row.admin_role || "Admin";
+}
+
+function getTabRows() {
+  let rows = [...state.filtered];
+  if (state.tab === "members") rows = rows.filter((row) => accountGroup(row) === "members");
+  if (state.tab === "admins") rows = rows.filter((row) => accountGroup(row) === "admins");
+  if (state.tab === "locked") rows = rows.filter((row) => !row.is_active);
+  return rows;
+}
+
+function renderPagination(totalItems) {
+  const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
+  if (totalPages <= 1) return "";
+
+  let buttons = "";
+  buttons += `<button type="button" data-account-page="${state.currentPage - 1}" ${state.currentPage === 1 ? "disabled" : ""} aria-label="Trang trước">&lt;</button>`;
+
+  for (let page = 1; page <= totalPages; page += 1) {
+    if (totalPages > 6 && page !== 1 && page !== totalPages && Math.abs(state.currentPage - page) > 1) {
+      if (page === 2 && state.currentPage > 3) buttons += `<span class="pagination-ellipsis">...</span>`;
+      if (page === totalPages - 1 && state.currentPage < totalPages - 2) buttons += `<span class="pagination-ellipsis">...</span>`;
+      continue;
+    }
+    buttons += `<button type="button" class="${state.currentPage === page ? "is-active" : ""}" data-account-page="${page}">${page}</button>`;
+  }
+
+  buttons += `<button type="button" data-account-page="${state.currentPage + 1}" ${state.currentPage === totalPages ? "disabled" : ""} aria-label="Trang sau">&gt;</button>`;
+  return `<nav class="admin-pagination">${buttons}</nav>`;
 }
 
 function updateKpis() {
-  const values = [
-    state.accounts.length,
-    state.accounts.filter((row) => row.is_active).length,
-    state.accounts.filter((row) => !row.is_active).length,
-    state.requests.filter((row) => row.status === "pending").length
-  ];
+  const memberCount = state.accounts.filter((row) => accountGroup(row) === "members").length;
+  const activeCount = state.accounts.filter((row) => row.is_active).length;
+  const lockedCount = state.accounts.filter((row) => !row.is_active).length;
+  const pendingCount = state.requests.filter((row) => row.status === "pending").length;
+  const values = [state.accounts.length, memberCount, activeCount, lockedCount, pendingCount];
+
   document.querySelectorAll(".admin-kpi-grid--accounts .admin-kpi-card__value").forEach((node, index) => {
     node.textContent = String(values[index] || 0);
   });
+
   document.querySelectorAll("[data-tab] span").forEach((node) => {
     const tab = node.parentElement.dataset.tab;
-    node.textContent = String(
-      tab === "all" ? values[0] : tab === "locked" ? values[2] : tab === "promotions" ? values[3] : state.logs.length
-    );
+    const count = {
+      all: state.accounts.length,
+      members: memberCount,
+      admins: state.accounts.filter((row) => accountGroup(row) === "admins").length,
+      locked: lockedCount,
+      promotions: pendingCount,
+      logs: state.logs.length
+    }[tab] || 0;
+    node.textContent = String(count);
   });
 }
 
@@ -108,10 +173,20 @@ function filterBar() {
         ${icon("search")}
         <input class="admin-form-control" name="q" placeholder="Tìm tên, email hoặc số điện thoại">
       </label>
-      <select class="admin-form-control" name="role">
+      <select class="admin-form-control" name="role" aria-label="Lọc loại tài khoản">
         <option value="">Tất cả loại tài khoản</option>
         <option value="member">Thành viên</option>
         <option value="admin">Quản trị viên</option>
+      </select>
+      <select class="admin-form-control" name="status" aria-label="Lọc trạng thái">
+        <option value="">Tất cả trạng thái</option>
+        <option value="active">Đang hoạt động</option>
+        <option value="locked">Bị khóa</option>
+      </select>
+      <select class="admin-form-control" name="verified" aria-label="Lọc xác thực">
+        <option value="">Tất cả xác thực</option>
+        <option value="true">Đã xác thực</option>
+        <option value="false">Chưa xác thực</option>
       </select>
       <div class="admin-filter-bar__actions">
         <button class="admin-btn admin-btn--filter admin-btn--sm">Lọc</button>
@@ -121,20 +196,82 @@ function filterBar() {
   `;
 }
 
+function memberSummary() {
+  const rows = state.filtered.filter((row) => accountGroup(row) === "members");
+  const verified = rows.filter((row) => row.is_verified).length;
+  const active = rows.filter((row) => row.is_active).length;
+  const recent = rows.filter((row) => isRecent(row.created_at, 30)).length;
+  return `
+    <section class="admin-member-summary" aria-label="Tổng quan tài khoản member">
+      <article>
+        <span>Tổng member</span>
+        <strong>${rows.length}</strong>
+      </article>
+      <article>
+        <span>Đã xác thực</span>
+        <strong>${verified}</strong>
+      </article>
+      <article>
+        <span>Đang hoạt động</span>
+        <strong>${active}</strong>
+      </article>
+      <article>
+        <span>Mới 30 ngày</span>
+        <strong>${recent}</strong>
+      </article>
+    </section>
+  `;
+}
+
+function memberCommandCenter() {
+  const members = state.accounts.filter((row) => accountGroup(row) === "members");
+  const admins = state.accounts.filter((row) => accountGroup(row) === "admins");
+  const activeMembers = members.filter((row) => row.is_active).length;
+  const verifiedMembers = members.filter((row) => row.is_verified).length;
+  const verifiedRate = members.length ? Math.round((verifiedMembers / members.length) * 100) : 0;
+  const lockedMembers = members.filter((row) => !row.is_active).length;
+  const pendingRequests = state.requests.filter((row) => row.status === "pending").length;
+
+  return `
+    <section class="admin-member-command" aria-label="Trung tâm quản lý thành viên">
+      <div class="admin-member-command__copy">
+        <span class="admin-member-command__eyebrow">Trung tâm member</span>
+        <h2>Quản lý tài khoản member</h2>
+        <p>Theo dõi xác thực, trạng thái khóa và phân quyền từ cùng một màn hình để chăm sóc khách hàng nhanh hơn.</p>
+      </div>
+      <div class="admin-member-command__metrics">
+        <article>
+          <span>Member hoạt động</span>
+          <strong>${activeMembers}</strong>
+          <small>${members.length} tổng member</small>
+        </article>
+        <article>
+          <span>Tỷ lệ xác thực</span>
+          <strong>${verifiedRate}%</strong>
+          <small>${verifiedMembers} tài khoản đã xác thực</small>
+        </article>
+        <article>
+          <span>Cần chú ý</span>
+          <strong>${lockedMembers + pendingRequests}</strong>
+          <small>${lockedMembers} khóa, ${pendingRequests} chờ duyệt</small>
+        </article>
+      </div>
+      <div class="admin-member-command__chips" aria-label="Tổng quan nhóm tài khoản">
+        <span>${members.length} member</span>
+        <span>${admins.length} quản trị viên</span>
+        <span>${pendingRequests} yêu cầu nâng quyền</span>
+      </div>
+    </section>
+  `;
+}
+
 function accountTable() {
-  const rows = state.tab === "locked" ? state.filtered.filter((row) => !row.is_active) : state.filtered;
-  const totalItems = rows.length;
-  const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
-  if (state.currentPage > totalPages) {
-    state.currentPage = totalPages;
-  }
-  if (state.currentPage < 1) {
-    state.currentPage = 1;
-  }
+  const rows = getTabRows();
+  const totalPages = Math.ceil(rows.length / state.itemsPerPage) || 1;
+  state.currentPage = Math.min(Math.max(state.currentPage, 1), totalPages);
 
   const start = (state.currentPage - 1) * state.itemsPerPage;
-  const end = start + state.itemsPerPage;
-  const pagedRows = rows.slice(start, end);
+  const pagedRows = rows.slice(start, start + state.itemsPerPage);
 
   if (!pagedRows.length) {
     return `
@@ -144,14 +281,15 @@ function accountTable() {
       </div>
     `;
   }
+
   return `
     <div class="admin-table-wrap">
-      <table class="admin-table admin-data-table">
+      <table class="admin-table admin-data-table admin-member-table">
         <thead>
           <tr>
             <th>Tài khoản</th>
-            <th>Loại</th>
-            <th>Vai trò</th>
+            <th>Nhóm</th>
+            <th>Xác thực</th>
             <th>Trạng thái</th>
             <th>Đăng nhập gần nhất</th>
             <th>Thao tác</th>
@@ -162,15 +300,18 @@ function accountTable() {
             <tr>
               <td>
                 <div class="admin-person">
-                  <span class="admin-avatar">${escapeHtml((row.full_name || row.email || "U").slice(0, 2).toUpperCase())}</span>
+                  <span class="admin-avatar">${escapeHtml(initials(row))}</span>
                   <span>
                     <strong>${escapeHtml(row.full_name || "Chưa cập nhật")}</strong>
                     <small>${escapeHtml(row.email || row.phone || "-")}</small>
                   </span>
                 </div>
               </td>
-              <td>${escapeHtml(row.role)}</td>
-              <td><span class="admin-role-badge">${escapeHtml(row.admin_role || "member")}</span></td>
+              <td>
+                ${badge(row.role === "admin" ? "admin" : "member")}
+                <small class="admin-member-role">${escapeHtml(accountRoleText(row))}</small>
+              </td>
+              <td>${badge(row.is_verified ? "verified" : "unverified")}</td>
               <td>${badge(status(row))}</td>
               <td>${escapeHtml(date(row.last_login_at))}</td>
               <td>
@@ -267,8 +408,8 @@ function skeletalTable() {
         <thead>
           <tr>
             <th>Tài khoản</th>
-            <th>Loại</th>
-            <th>Vai trò</th>
+            <th>Nhóm</th>
+            <th>Xác thực</th>
             <th>Trạng thái</th>
             <th>Đăng nhập gần nhất</th>
             <th>Thao tác</th>
@@ -287,7 +428,7 @@ function skeletalTable() {
                 </div>
               </td>
               <td><div class="skeleton-line skeleton-line--role skeleton-pulse"></div></td>
-              <td><div class="skeleton-line skeleton-line--role-badge skeleton-pulse"></div></td>
+              <td><div class="skeleton-line skeleton-line--badge skeleton-pulse"></div></td>
               <td><div class="skeleton-line skeleton-line--badge skeleton-pulse"></div></td>
               <td><div class="skeleton-line skeleton-line--date skeleton-pulse"></div></td>
               <td>
@@ -306,14 +447,40 @@ function skeletalTable() {
 }
 
 function render() {
-  const rows = state.tab === "locked" ? state.filtered.filter((row) => !row.is_active) : state.filtered;
+  if (!panel) return;
+  if (state.tab === "promotions") {
+    panel.innerHTML = requestTable();
+    updateKpis();
+    return;
+  }
+  if (state.tab === "logs") {
+    panel.innerHTML = logTable();
+    updateKpis();
+    return;
+  }
+
+  const rows = getTabRows();
   const totalItems = rows.length;
   const start = (state.currentPage - 1) * state.itemsPerPage;
   const end = Math.min(start + state.itemsPerPage, totalItems);
   const showStart = totalItems === 0 ? 0 : start + 1;
+  const shouldShowMemberSummary = state.tab === "all" || state.tab === "members";
 
-  panel.innerHTML = state.tab === "promotions" ? requestTable() : state.tab === "logs" ? logTable() : `${filterBar()}${accountTable()}<div class="admin-card__footer"><p class="admin-table-note">Hiển thị ${showStart} - ${end} / ${totalItems} tài khoản</p>${renderPagination(totalItems)}</div>`;
+  panel.innerHTML = `
+    ${memberCommandCenter()}
+    ${shouldShowMemberSummary ? memberSummary() : ""}
+    ${filterBar()}
+    ${accountTable()}
+    <div class="admin-card__footer">
+      <p class="admin-table-note">Hiển thị ${showStart} - ${end} / ${totalItems} tài khoản</p>
+      ${renderPagination(totalItems)}
+    </div>
+  `;
   updateKpis();
+}
+
+function dataRow(label, value) {
+  return `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value || "-")}</dd></div>`;
 }
 
 function detail(id) {
@@ -321,22 +488,48 @@ function detail(id) {
   if (!row) return;
   overlay.innerHTML = `
     <div class="admin-drawer-backdrop" data-account-close></div>
-    <aside class="admin-drawer admin-drawer--wide">
+    <aside class="admin-drawer admin-drawer--wide admin-member-drawer">
       <header class="admin-drawer__header">
-        <div>
-          <p class="admin-product-code">${escapeHtml(row.user_id)}</p>
-          <h2>${escapeHtml(row.full_name || row.email)}</h2>
+        <div class="admin-member-profile">
+          <span class="admin-avatar admin-avatar--lg">${escapeHtml(initials(row))}</span>
+          <div>
+            <p class="admin-product-code">${escapeHtml(row.user_id)}</p>
+            <h2>${escapeHtml(row.full_name || row.email || "Tài khoản member")}</h2>
+            <div class="admin-status-group">
+              ${badge(row.role === "admin" ? "admin" : "member")}
+              ${badge(row.is_verified ? "verified" : "unverified")}
+              ${badge(status(row))}
+            </div>
+          </div>
         </div>
-        <button class="admin-icon-button" data-account-close>×</button>
+        <button class="admin-icon-button" data-account-close aria-label="Đóng">×</button>
       </header>
       <div class="admin-drawer__body">
+        <section class="admin-member-stats">
+          <article><span>Nhóm</span><strong>${escapeHtml(accountRoleText(row))}</strong></article>
+          <article><span>Tạo lúc</span><strong>${escapeHtml(date(row.created_at))}</strong></article>
+          <article><span>Đăng nhập cuối</span><strong>${escapeHtml(date(row.last_login_at))}</strong></article>
+        </section>
+
+        <h3 class="admin-drawer__section">Thông tin liên hệ</h3>
         <dl class="admin-data-list">
-          ${Object.entries(row).map(([key, value]) => `
-            <div>
-              <dt>${escapeHtml(key)}</dt>
-              <dd>${escapeHtml(value)}</dd>
-            </div>
-          `).join("")}
+          ${dataRow("Họ tên", row.full_name)}
+          ${dataRow("Email", row.email)}
+          ${dataRow("Số điện thoại", row.phone)}
+          ${dataRow("Ngày sinh", row.date_of_birth)}
+          ${dataRow("Giới tính", row.gender)}
+        </dl>
+
+        <h3 class="admin-drawer__section">Bảo mật và trạng thái</h3>
+        <dl class="admin-data-list">
+          ${dataRow("Vai trò tài khoản", row.role)}
+          ${dataRow("Vai trò quản trị", row.admin_role || "member")}
+          ${dataRow("Xác thực", row.is_verified ? "Đã xác thực" : "Chưa xác thực")}
+          ${dataRow("Trạng thái", row.is_active ? "Đang hoạt động" : "Bị khóa")}
+          ${dataRow("Loại khóa", row.lock_type)}
+          ${dataRow("Lý do khóa", row.lock_reason)}
+          ${dataRow("Mở khóa gần nhất", row.unlock_reason)}
+          ${dataRow("Phiên bản dữ liệu", row.version)}
         </dl>
       </div>
     </aside>
@@ -355,11 +548,10 @@ function updateLockTypeFields(form) {
         <span class="admin-form-label">Thời hạn khóa</span>
         <input type="datetime-local" class="admin-form-control" name="lockedUntil" required>
       `;
-      const lockTypeGroup = form.elements.lockType.closest(".admin-form-group");
-      lockTypeGroup.after(group);
+      form.elements.lockType.closest(".admin-form-group").after(group);
     }
-  } else {
-    if (expiryGroup) expiryGroup.remove();
+  } else if (expiryGroup) {
+    expiryGroup.remove();
   }
 }
 
@@ -381,7 +573,7 @@ function accountModal(action, id) {
         <span class="admin-form-label">Vai trò quản trị</span>
         <select class="admin-form-control" name="adminRole">
           <option value="">Không có</option>
-          ${roles.map((role) => `<option value="${role}" ${row.admin_role === role ? "selected" : ""}>${role}</option>`).join("")}
+          ${roles.map((role) => `<option value="${role}" ${row.admin_role === role ? "selected" : ""}>${escapeHtml(roleLabels[role] || role)}</option>`).join("")}
         </select>
       </label>
     `;
@@ -404,8 +596,8 @@ function accountModal(action, id) {
   const reasonField = action !== "role"
     ? `
       <label class="admin-form-group">
-        <span class="admin-form-label">Lý do (yêu cầu chi tiết hơn 10 từ)</span>
-        <textarea class="admin-form-control admin-form-textarea" name="reason" placeholder="Nhập lý do chi tiết để mở khóa hoặc khóa tài khoản..." required></textarea>
+        <span class="admin-form-label">Lý do, tối thiểu 11 từ</span>
+        <textarea class="admin-form-control admin-form-textarea" name="reason" placeholder="Nhập lý do chi tiết để khóa hoặc mở khóa tài khoản..." required></textarea>
         <span class="admin-form-helper" data-word-counter>Số từ: 0 / tối thiểu 11 từ</span>
       </label>
     `
@@ -417,7 +609,7 @@ function accountModal(action, id) {
         <form data-account-form data-action="${action}" data-id="${escapeHtml(id)}">
           <header class="admin-modal__header">
             <h2>${action === "role" ? "Thay đổi vai trò" : action === "lock" ? "Khóa tài khoản" : "Mở khóa tài khoản"}</h2>
-            <button class="admin-icon-button" type="button" data-account-close>×</button>
+            <button class="admin-icon-button" type="button" data-account-close aria-label="Đóng">×</button>
           </header>
           <div class="admin-modal__body">
             ${roleFields}
@@ -438,7 +630,7 @@ function requestModal(decision, id) {
   const row = state.requests.find((item) => item.request_id === id);
   if (!row) return;
 
-  const noteLabel = decision === "reject" ? "Lý do từ chối (yêu cầu chi tiết hơn 10 từ)" : "Ghi chú phê duyệt (tùy chọn)";
+  const noteLabel = decision === "reject" ? "Lý do từ chối, tối thiểu 11 từ" : "Ghi chú phê duyệt";
   const notePlaceholder = decision === "reject" ? "Nhập lý do từ chối cụ thể..." : "Nhập ghi chú hoặc hướng dẫn...";
   const counterText = decision === "reject" ? '<span class="admin-form-helper" data-word-counter>Số từ: 0 / tối thiểu 11 từ</span>' : "";
 
@@ -448,7 +640,7 @@ function requestModal(decision, id) {
         <form data-request-form data-decision="${decision}" data-id="${escapeHtml(id)}">
           <header class="admin-modal__header">
             <h2>${decision === "approve" ? "Duyệt" : "Từ chối"} yêu cầu</h2>
-            <button class="admin-icon-button" type="button" data-account-close>×</button>
+            <button class="admin-icon-button" type="button" data-account-close aria-label="Đóng">×</button>
           </header>
           <div class="admin-modal__body">
             <label class="admin-form-group">
@@ -469,6 +661,7 @@ function requestModal(decision, id) {
 }
 
 async function load() {
+  if (!panel) return;
   panel.innerHTML = skeletalTable();
   try {
     const [accounts, requests, logs] = await Promise.all([
@@ -486,15 +679,17 @@ async function load() {
   }
 }
 
-// Global Event Listeners
 document.addEventListener("click", (event) => {
   const tab = event.target.closest("[data-tab]");
   if (tab) {
     state.tab = tab.dataset.tab;
     state.currentPage = 1;
-    document.querySelectorAll("[data-tab]").forEach((node) => node.classList.toggle("admin-tab--active", node.dataset.tab === state.tab));
+    document.querySelectorAll(".admin-tab").forEach((node) => {
+      node.classList.toggle("admin-tab--active", node.dataset.tab === state.tab);
+    });
     render();
   }
+
   const pageBtn = event.target.closest("[data-account-page]");
   if (pageBtn) {
     const page = Number(pageBtn.dataset.accountPage);
@@ -504,15 +699,21 @@ document.addEventListener("click", (event) => {
     }
     return;
   }
+
   const detailButton = event.target.closest("[data-account-detail]");
   if (detailButton) detail(detailButton.dataset.accountDetail);
+
   const actionButton = event.target.closest("[data-account-action]");
   if (actionButton) accountModal(...actionButton.dataset.accountAction.split(":"));
+
   const requestButton = event.target.closest("[data-request]");
   if (requestButton) requestModal(...requestButton.dataset.request.split(":"));
+
   if (event.target.closest("[data-account-close]")) overlay.innerHTML = "";
+
   if (event.target.closest("[data-export]")) {
-    const blob = new Blob([JSON.stringify(state.filtered, null, 2)], { type: "application/json" });
+    const rows = getTabRows();
+    const blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
     const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "velura-accounts.json" });
     link.click();
     URL.revokeObjectURL(link.href);
@@ -521,25 +722,19 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("change", (event) => {
   if (event.target.matches("[data-account-form] select[name='role']")) {
-    const select = event.target;
-    const form = select.closest("form");
+    const form = event.target.closest("form");
     const adminRoleGroup = form.querySelector("#admin-role-group");
-    if (adminRoleGroup) {
-      adminRoleGroup.hidden = (select.value !== "admin");
-    }
+    if (adminRoleGroup) adminRoleGroup.hidden = event.target.value !== "admin";
   }
   if (event.target.matches("[data-account-form] select[name='lockType']")) {
-    const select = event.target;
-    const form = select.closest("form");
-    updateLockTypeFields(form);
+    updateLockTypeFields(event.target.closest("form"));
   }
 });
 
 document.addEventListener("input", (event) => {
   if (event.target.matches(".admin-form-textarea[name='reason']") || event.target.matches(".admin-form-textarea[name='note']")) {
-    const textarea = event.target;
-    const form = textarea.closest("form");
-    const count = countWords(textarea.value);
+    const form = event.target.closest("form");
+    const count = countWords(event.target.value);
     const counter = form.querySelector("[data-word-counter]");
     if (counter) {
       counter.textContent = `Số từ: ${count} / tối thiểu 11 từ`;
@@ -553,10 +748,15 @@ document.addEventListener("submit", async (event) => {
     event.preventDefault();
     const data = new FormData(event.target);
     const q = String(data.get("q") || "").toLowerCase();
-    const role = data.get("role");
+    const role = String(data.get("role") || "");
+    const filterStatus = String(data.get("status") || "");
+    const verified = String(data.get("verified") || "");
+
     state.filtered = state.accounts.filter((row) =>
       (!role || row.role === role) &&
-      (!q || `${row.full_name} ${row.email} ${row.phone}`.toLowerCase().includes(q))
+      (!filterStatus || (filterStatus === "active" ? row.is_active : !row.is_active)) &&
+      (!verified || String(Boolean(row.is_verified)) === verified) &&
+      (!q || `${row.full_name || ""} ${row.email || ""} ${row.phone || ""}`.toLowerCase().includes(q))
     );
     state.currentPage = 1;
     render();
@@ -573,13 +773,12 @@ document.addEventListener("submit", async (event) => {
       errorNode.textContent = "";
     }
 
-    // Client-side word count validation
     if (form.dataset.action !== "role") {
       const reason = form.elements.reason.value.trim();
       const wordCount = countWords(reason);
       if (wordCount <= 10) {
         if (errorNode) {
-          errorNode.textContent = `Lý do quá ngắn (hiện tại: ${wordCount} từ, yêu cầu tối thiểu 11 từ).`;
+          errorNode.textContent = `Lý do quá ngắn, hiện tại ${wordCount} từ, yêu cầu tối thiểu 11 từ.`;
           errorNode.hidden = false;
         }
         return;
@@ -639,7 +838,7 @@ document.addEventListener("submit", async (event) => {
       const wordCount = countWords(note);
       if (wordCount <= 10) {
         if (errorNode) {
-          errorNode.textContent = `Ghi chú từ chối quá ngắn (hiện tại: ${wordCount} từ, yêu cầu tối thiểu 11 từ).`;
+          errorNode.textContent = `Ghi chú từ chối quá ngắn, hiện tại ${wordCount} từ, yêu cầu tối thiểu 11 từ.`;
           errorNode.hidden = false;
         }
         return;

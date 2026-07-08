@@ -23,12 +23,40 @@
   - Replaced the three separate buttons with just the eye icon (details) and a single pencil icon (`icon("edit")`) for action processing.
   - The pencil icon opens a **Ticket Processing Modal** containing a dropdown ("Chọn tác vụ": "Phản hồi khách hàng" or "Đóng Ticket hỗ trợ") and a single response content / close reason text area.
 
-### 3. Backend status transition & auditing support
-- **Repository & Service**: Added `updateReturnStatus` in [return-repository.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/returns/return-repository.js) and [return-service.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/returns/return-service.js) to support manual return state changes (e.g., to `shipping_back` or `received`) using the service role key, bypassing PostgreSQL user RLS limits.
-- **Audit Logs**: Automatically records audited logs in the `audit_log` database table with old and new values, acting IP address, operator ID, and action names for security auditing.
-- **REST Route**: Exposed `POST /api/v1/admin/returns/:id/update-status` route in [return-router.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/returns/return-router.js).
+# Kết quả Hoàn thành & Đóng gói Workspace lên Git (Branch Gia_dev_2)
 
-### 4. Active Returns Seed Script
+Hệ thống đã triển khai đầy đủ, tối ưu hóa thiết kế theo chuẩn `design-taste-frontend`, kiểm thử thành công toàn bộ 98/98 test cases nghiệp vụ, đóng gói và đẩy code hoàn chỉnh lên nhánh **`Gia_dev_2`** tại repository GitHub [Velura-project](https://github.com/Royal2005-coder/Velura-project.git).
+
+---
+
+## 1. Đóng gói & Đẩy mã nguồn lên Git
+- **Tạo nhánh phát triển**: Khởi tạo và chuyển sang nhánh **`Gia_dev_2`**.
+- **Bảo mật & Dọn dẹp Workspace**:
+  - Sửa lỗi định dạng trong [.gitignore](file:///c:/Users/ADMIN/Downloads/Velura-Images/.gitignore) để bỏ qua hoàn toàn file cấu hình nhạy cảm chứa khóa bí mật ([.env](file:///c:/Users/ADMIN/Downloads/Velura-Images/.env)).
+  - Bổ sung `.codex/` vào `.gitignore` để loại bỏ các cache và metadata của tool làm nhiễu lịch sử commit.
+- **Commit & Push**:
+  - Đã stage và commit toàn bộ thay đổi hoàn chỉnh (41 files changed, 3235 insertions, 986 deletions).
+  - Khởi chạy lệnh đẩy mã nguồn: `git push origin Gia_dev_2`.
+
+---
+
+## 2. Các hạng mục công việc đã hoàn thành
+
+### 2.1. Chuyển đổi mô hình sang Mistral API & Tool Calling Loop
+- **Cấu hình**: Tích hợp các biến môi trường `MISTRAL_API_KEY` và `MISTRAL_MODEL` vào hệ thống thông qua cấu hình trong [.env](file:///c:/Users/ADMIN/Downloads/Velura-Images/.env) và [config.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/config.js).
+- **Core LLM**: Cập nhật [llm-service.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/chatbot/llm-service.js) sang sử dụng Mistral API. Hệ thống đã triển khai cơ chế **Stateless Tool Calling Loop** hoàn hảo:
+  1. Gửi lịch sử trò chuyện dạng messages chuẩn OpenAI tương thích.
+  2. Bắt các yêu cầu gọi hàm từ Mistral (ví dụ: `search_products`, `create_support_ticket`).
+  3. Thực thi trực tiếp trên Database thông qua `repository`.
+  4. Trả kết quả hàm lại cho Mistral để hoàn tất câu trả lời cuối cùng tự động trong 1 turn duy nhất.
+
+### 2.2. Cơ chế Lưu phối đồ Yêu thích & Phân quyền Guest/Member
+- **Backend status transition & auditing support**:
+  - **Repository & Service**: Added `updateReturnStatus` in [return-repository.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/returns/return-repository.js) and [return-service.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/returns/return-service.js) to support manual return state changes (e.g., to `shipping_back` or `received`) using the service role key, bypassing PostgreSQL user RLS limits.
+  - **Audit Logs**: Automatically records audited logs in the `audit_log` database table with old and new values, acting IP address, operator ID, and action names for security auditing.
+  - **REST Route**: Exposed `POST /api/v1/admin/returns/:id/update-status` route in [return-router.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/returns/return-router.js).
+
+### 2.3. Active Returns Seed Script
 - Created a robust seed script [seed-active-returns.mjs](file:///c:/Users/ADMIN/Downloads/Velura-Images/database/seed/seed-active-returns.mjs) that auto-discovers database orders containing items (or generates a mock user, order, and order item structure if none exist), inserting fresh return requests in multiple statuses (`pending`, `approved`, `received`) and open/processing tickets.
 
 ---
