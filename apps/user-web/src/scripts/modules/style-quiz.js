@@ -658,8 +658,10 @@ export function initStyleQuiz() {
     }
 
     window.quizSubmittedRedirect = true;
-    import("./api.js").then(({ apiRequest }) => {
-      apiRequest("/api/user/style-quiz", {
+    
+    // 1. Submit quiz data to API
+    const apiPromise = import("./api.js").then(({ apiRequest }) => {
+      return apiRequest("/api/user/style-quiz", {
         method: "POST",
         body: JSON.stringify({
           height_cm,
@@ -674,27 +676,33 @@ export function initStyleQuiz() {
           favorite_brands: ["Velura"],
           budget_range
         })
-      })
-      .then(() => {
-        console.log("Style Profile saved successfully!");
-        localStorage.setItem("velura_guest_quiz_completed", "true");
-      })
-      .catch(err => {
-        console.error("Failed to save style profile:", err);
       });
+    }).then((res) => {
+      console.log("Style Profile saved successfully!");
+      localStorage.setItem("velura_guest_quiz_completed", "true");
+      return res;
     });
 
+    // 2. AI loading text simulation (minimum 2.4s)
     simulationSteps.forEach(step => {
       setTimeout(() => {
         loadingMsg.textContent = step.text;
       }, step.delay);
     });
+    const delayPromise = new Promise(resolve => setTimeout(resolve, 2400));
 
-    // Final redirection after 2.4s
-    setTimeout(() => {
-      document.body.style.overflow = "";
-      window.location.href = "/src/pages/ai/suggestions.html?isNewQuiz=true";
-    }, 2400);
+    // 3. Navigate only when both the save operation and loading simulation finish
+    Promise.all([apiPromise, delayPromise])
+      .then(() => {
+        document.body.style.overflow = "";
+        window.location.href = "/src/pages/ai/suggestions.html?isNewQuiz=true";
+      })
+      .catch(err => {
+        console.error("Failed to save style profile:", err);
+        // Fallback: redirect anyway so user isn't stuck, and let frontend auto-sync trigger
+        document.body.style.overflow = "";
+        window.location.href = "/src/pages/ai/suggestions.html?isNewQuiz=true";
+      });
   }
 }
 

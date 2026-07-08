@@ -306,8 +306,56 @@ export function initAiSuggestions() {
           });
         }
       } else {
-        // No quiz completed yet
-        emptyState.style.display = "block";
+        // Check if there is local quiz data in sessionStorage we can auto-submit/sync to the backend
+        const localShape = sessionStorage.getItem("quiz-body-shape");
+        const localStyle = sessionStorage.getItem("quiz-main-style");
+        
+        if (localShape || localStyle) {
+          console.log("[AI Suggestions] Server quiz state was empty but local quiz data exists. Syncing...");
+          
+          let style_tags = [];
+          try {
+            const parsed = JSON.parse(localStyle || "[]");
+            style_tags = Array.isArray(parsed) ? parsed : [parsed];
+          } catch(e) {}
+          
+          const occasions = sessionStorage.getItem("quiz-context") ? [sessionStorage.getItem("quiz-context")] : [];
+          
+          let budget_range = sessionStorage.getItem("quiz-budget") || "300k_700k";
+          if (!['under_300k', '300k_700k', '700k_1.5m', 'above_1.5m'].includes(budget_range)) {
+            if (budget_range.includes("300") && budget_range.includes("700")) budget_range = "300k_700k";
+            else if (budget_range.includes("300")) budget_range = "under_300k";
+            else if (budget_range.includes("1.5")) budget_range = "above_1.5m";
+            else budget_range = "700k_1.5m";
+          }
+          
+          apiRequest("/api/user/style-quiz", {
+            method: "POST",
+            body: {
+              height_cm: parseInt(sessionStorage.getItem("quiz-height"), 10) || null,
+              weight_kg: parseInt(sessionStorage.getItem("quiz-weight"), 10) || null,
+              chest_cm: parseInt(sessionStorage.getItem("quiz-vong1"), 10) || null,
+              waist_cm: parseInt(sessionStorage.getItem("quiz-vong2"), 10) || null,
+              hip_cm: parseInt(sessionStorage.getItem("quiz-vong3"), 10) || null,
+              body_shape: localShape || null,
+              skin_tone: sessionStorage.getItem("quiz-skin-tone") || "Neutral",
+              style_tags,
+              preferred_occasions: occasions,
+              favorite_brands: ["Velura"],
+              budget_range
+            }
+          })
+          .then(() => {
+            console.log("[AI Suggestions] Successfully synced local quiz to server. Re-fetching recommendations...");
+            initAiSuggestions();
+          })
+          .catch(err => {
+            console.error("[AI Suggestions] Failed to auto-sync local quiz:", err);
+            emptyState.style.display = "block";
+          });
+        } else {
+          emptyState.style.display = "block";
+        }
       }
     })
     .catch(err => {
