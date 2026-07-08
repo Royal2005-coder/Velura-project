@@ -232,7 +232,8 @@ const server = createServer(async (req, res) => {
         parts,
         context,
         headers: corsHeaders,
-        service: chatbotService
+        service: chatbotService,
+        limiter: chatLimiter
       });
       if (chatHandled) return;
 
@@ -263,3 +264,4 @@ const server = createServer(async (req, res) => {
 server.listen(config.port, () => {
   console.log(`Velura API listening on http://localhost:${config.port}`);
 });
+// Trigger watch restart.

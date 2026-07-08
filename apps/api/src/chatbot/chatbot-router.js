@@ -4,8 +4,9 @@ import { getRequestIp, readJson, sendJson } from "../http.js";
 export async function handleChatbotRoute({ req, res, url, parts, context, headers, service, limiter }) {
   if (parts[0] !== "api" || parts[1] !== "v1") return false;
 
+  const requestMeta = { ipAddress: getRequestIp(req) };
+
   if (parts[2] === "chat") {
-    const requestMeta = { ipAddress: getRequestIp(req) };
     if (req.method === "GET" && parts[3] === "sessions" && parts.length === 4) {
       sendJson(res, 200, await service.listSessions(context, url.searchParams), headers);
       return true;

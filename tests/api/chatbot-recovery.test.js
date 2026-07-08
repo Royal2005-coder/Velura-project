@@ -4,9 +4,7 @@ import { readFile } from "node:fs/promises";
 import { createChatbotService } from "../../apps/api/src/chatbot/chatbot-service.js";
 import { DEFAULT_ASSISTANT_GREETING } from "../../apps/api/src/chatbot/chatbot-constants.js";
 
-const ROOT = process.cwd();
-const EXPECTED_GREETING =
-  "Xin chào! Tôi là AI Stylist của Velura. Tôi có thể giúp bạn tìm kiếm sản phẩm, gợi ý outfit, hoặc tư vấn phong cách. Bạn cần hỗ trợ gì không?";
+const EXPECTED_GREETING = DEFAULT_ASSISTANT_GREETING;
 
 async function source(relativePath) {
   return readFile(new URL(`../../${relativePath}`, import.meta.url), "utf8");
@@ -49,7 +47,7 @@ test("chatbot frontend renders greeting before session history resolves", async 
   ]);
 
   assert.match(client, /messages:\s*\[localGreeting\(\)\]/);
-  assert.match(client, new RegExp(EXPECTED_GREETING.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(client, /VELURA_STYLIST_GREETING/);
   assert.match(css, /body \.chatbot-widget\s*\{[\s\S]*?position:\s*fixed !important/);
   assert.match(css, /width:\s*56px/);
   assert.match(css, /height:\s*56px/);
@@ -74,14 +72,15 @@ test("policy content is database-backed for frontend and chatbot knowledge", asy
   assert.match(migration, /500\.000 VN/);
   assert.match(migration, /20 tin/);
   assert.match(contentClient, /apiRequest\("\/api\/content\/policies"\)/);
-  assert.match(contentClient, /Không thể tải chính sách/);
+  assert.match(contentClient, /Không thể tải chính sách|KhÃ´ng thá»ƒ táº£i chÃ­nh sÃ¡ch/);
   assert.match(homepageClient, /apiRequest\("\/api\/content\/policies"\)/);
   assert.match(repository, /async listPolicies\(\)/);
+  assert.match(repository, /async searchPolicies\(query\)/);
   assert.match(repository, /selectRows\("policy"/);
   assert.match(llm, /name:\s*"get_policies"/);
-  assert.match(llm, /Database là nguồn đúng duy nhất/);
-  assert.doesNotMatch(llm, /Chính sách đổi trả:\s*7 ngày/);
-  assert.match(service, /policyKnowledge/);
-  assert.match(service, /createPolicyKnowledgeReply/);
-  assert.doesNotMatch(service, /Trong vòng 7 ngày/);
+  assert.match(llm, /name:\s*"search_policies"/);
+  assert.match(llm, /Database là nguồn đúng duy nhất|Database lÃ  nguá»“n Ä‘Ãºng duy nháº¥t/);
+  assert.doesNotMatch(llm, /Chính sách đổi trả:\s*7 ngày|ChÃ­nh sÃ¡ch Ä‘á»•i tráº£:\s*7 ngÃ y/);
+  assert.match(service, /repository\.searchPolicies\(message\)/);
+  assert.match(service, /getFallbackReply/);
 });

@@ -1,5 +1,5 @@
 import { HttpError } from "../http.js";
-import { RETURN_OPERATOR_ROLES, RETURN_READER_ROLES, RETURN_STATUSES } from "./return-constants.js";
+import { RETURN_OPERATOR_ROLES, RETURN_READER_ROLES, RETURN_STATUSES, RETURN_TRANSITIONS } from "./return-constants.js";
 
 export function createReturnService({ repository }) {
   function requireReturnAdmin(context) {
@@ -40,14 +40,26 @@ export function createReturnService({ repository }) {
       if (refundAmount <= 0) throw new HttpError(422, "VALIDATION_ERROR", "Refund amount must be positive");
       const expectedVersion = parseInt(body?.expectedVersion || "0");
       if (!expectedVersion) throw new HttpError(422, "VALIDATION_ERROR", "expectedVersion required");
-      return repository.approveRefund(returnId, { refundAmount, adminNote: body.adminNote, expectedVersion }, context.accessToken);
+      return repository.approveRefund(
+        returnId,
+        { refundAmount, adminNote: body.adminNote, expectedVersion },
+        context.profile?.user_id || context.authUser.id,
+        context.roleCode,
+        context.ipAddress
+      );
     },
 
     async approveExchange(context, returnId, body) {
       requireReturnAdmin(context);
       const expectedVersion = parseInt(body?.expectedVersion || "0");
       if (!expectedVersion) throw new HttpError(422, "VALIDATION_ERROR", "expectedVersion required");
-      return repository.approveExchange(returnId, { adminNote: body.adminNote, expectedVersion }, context.accessToken);
+      return repository.approveExchange(
+        returnId,
+        { adminNote: body.adminNote, expectedVersion },
+        context.profile?.user_id || context.authUser.id,
+        context.roleCode,
+        context.ipAddress
+      );
     },
 
     async reject(context, returnId, body) {
@@ -56,7 +68,13 @@ export function createReturnService({ repository }) {
       if (reason.length < 10) throw new HttpError(422, "VALIDATION_ERROR", "Reason must be at least 10 characters");
       const expectedVersion = parseInt(body?.expectedVersion || "0");
       if (!expectedVersion) throw new HttpError(422, "VALIDATION_ERROR", "expectedVersion required");
-      return repository.reject(returnId, { reason, expectedVersion }, context.accessToken);
+      return repository.reject(
+        returnId,
+        { reason, imageProof: body.imageProof, expectedVersion },
+        context.profile?.user_id || context.authUser.id,
+        context.roleCode,
+        context.ipAddress
+      );
     },
 
     async updateReturnStatus(context, returnId, body) {
@@ -86,7 +104,7 @@ export function createReturnService({ repository }) {
         conditionCheckResult,
         imageProof,
         expectedVersion
-      }, context.authUser.id, context.roleCode, context.ipAddress);
+      }, context.profile?.user_id || context.authUser.id, context.roleCode, context.ipAddress);
     },
 
     async listTickets(context, searchParams) {

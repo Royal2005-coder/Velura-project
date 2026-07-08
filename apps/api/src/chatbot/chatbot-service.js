@@ -46,7 +46,7 @@ export function createChatbotService({ repository }) {
         metadata: { system: true },
         productIds: []
       });
-      return { session, messages: [greeting], products: [] };
+      return { session, messages: [greeting], products: [], blogs: [] };
     },
 
     async getMessages(context, sessionId, searchParams) {
@@ -57,7 +57,8 @@ export function createChatbotService({ repository }) {
       const session = await requireOwnedSession(repository, sessionId, actor);
       const messages = await repository.listMessages(session.session_id, boundedInteger(searchParams.get("limit"), 100, 1, 300));
       const products = await hydrateProductsForMessages(repository, messages.rows || []);
-      return { session, messages: messages.rows || [], products };
+      const blogs = await hydrateBlogsForMessages(repository, messages.rows || []);
+      return { session, messages: messages.rows || [], products, blogs };
     },
 
     async deleteSession(context, sessionId, body = {}) {
@@ -103,15 +104,23 @@ export function createChatbotService({ repository }) {
         productIds: []
       });
 
-      if (detectHandoffIntent(input.message)) {
-        return handleHandoff({
-          repository,
-          actor,
-          input,
-          session,
-          userMessage,
-          createdSession
+      if (session && (session.handoff_status === "assigned" || session.handoff_status === "requested")) {
+        // Admin is actively handling or has been requested — chatbot stays completely silent, return full history
+        const recent = await repository.listMessages(session.session_id, 50);
+        const products = await hydrateProductsForMessages(repository, recent.rows || []);
+        const blogs = await hydrateBlogsForMessages(repository, recent.rows || []);
+        const updatedSession = await repository.updateSession(session.session_id, {
+          last_message_preview: input.message.slice(0, 180),
+          last_message_at: new Date().toISOString()
         });
+        return {
+          session: updatedSession || session,
+          createdSession: false,
+          messages: recent.rows || [],
+          products,
+          blogs,
+          handoff: { ticketId: session.support_ticket_id, status: session.handoff_status }
+        };
       }
 
       const recent = await repository.listMessages(session.session_id, 16);
@@ -138,8 +147,8 @@ export function createChatbotService({ repository }) {
         });
       }
 
-      // Escalation check based on n8n intent
-      if (false) {
+      // Escalation check based on user message handoff intent
+      if (detectHandoffIntent(input.message)) {
         return handleHandoff({
           repository,
           actor,
@@ -152,8 +161,10 @@ export function createChatbotService({ repository }) {
 
       let responseText;
       let selectedProducts = [];
+      let selectedBlogs = [];
       let productIds = [];
-      let llmResult = { used: false, metadata: {}, intent: "" };
+      let blogIds = [];
+      let llmResult = { used: false, metadata: {}, intent: "", blogs: [] };
 
       if (n8nResult.used && n8nResult.text) {
         responseText = n8nResult.text;
@@ -167,16 +178,14 @@ export function createChatbotService({ repository }) {
             ...n8nResult.metadata,
             n8n_used: true
           },
-          intent: n8nResult.intent || "general"
+          intent: n8nResult.intent || "general",
+          blogs: []
         };
       } else {
         let styleProfile = null;
         if (actor.profileUserId) {
           styleProfile = await repository.getStyleProfile(actor.profileUserId);
         }
-        const policyKnowledge = isPolicyKnowledgeQuery(input.message)
-          ? await safeListPolicies(repository)
-          : [];
         const previousInteractionId = session.metadata?.previous_interaction_id || null;
 
         const chatResult = await llm.chat(
@@ -186,18 +195,39 @@ export function createChatbotService({ repository }) {
           styleProfile,
           actor.profileUserId
         );
-        responseText = chatResult.text || createFallbackReply(input.message, candidateProducts, policyKnowledge);
+        responseText = chatResult.text || await getFallbackReply(input.message, candidateProducts, repository);
         selectedProducts = await selectResponseProducts(repository, chatResult.productIds, candidateProducts);
+
+        // Suppress automatic product recommendations for non-product queries (e.g. policies, shipping, order, cskh)
+        const textLower = String(input.message || "").toLowerCase();
+        const isPolicyQuery = /(đổi trả|return|bảo hành|chính sách|policy|quy định|điều khoản|giao hàng|ship|vận chuyển|thanh toán|payment|refund|hoàn tiền)/i.test(textLower);
+        const isHandoffQuery = detectHandoffIntent(input.message);
+        if (isPolicyQuery || isHandoffQuery) {
+          if (!chatResult.productIds || !chatResult.productIds.length) {
+            selectedProducts = [];
+          }
+        }
+
         productIds = selectedProducts.map((product) => product.product_id);
+
+        // Hydrate recommended blogs
+        const rawBlogIds = chatResult.blogIds || [];
+        if (rawBlogIds.length > 0) {
+          const blogRes = await repository.listBlogsByIds(rawBlogIds);
+          selectedBlogs = blogRes.rows || [];
+          blogIds = selectedBlogs.map((b) => b.blog_id);
+        }
+
         llmResult = {
           used: chatResult.used,
           interactionId: chatResult.interactionId,
-          createdTicket: chatResult.createdTicket,
           metadata: {
             ...chatResult.metadata,
+            blog_ids: blogIds,
             n8n_error: n8nResult.metadata?.n8n_error || undefined
           },
-          intent: chatResult.intent || "general"
+          intent: chatResult.intent || "general",
+          blogs: selectedBlogs
         };
       }
 
@@ -207,6 +237,7 @@ export function createChatbotService({ repository }) {
         text: responseText,
         metadata: {
           product_ids: productIds,
+          blog_ids: blogIds,
           llm_used: llmResult.used,
           intent: llmResult.intent || "product_advice",
           ...llmResult.metadata
@@ -218,42 +249,8 @@ export function createChatbotService({ repository }) {
         profileUserId: actor.profileUserId,
         messages: buildAiLogMessages(session.session_id, recent.rows || [], userMessage, assistantMessage),
         recommendedProducts: productIds,
-        escalatedToHuman: Boolean(llmResult.createdTicket)
+        escalatedToHuman: false
       });
-
-      if (llmResult.createdTicket) {
-        const updatedSession = await repository.updateSession(session.session_id, {
-          handoff_status: "requested",
-          support_ticket_id: llmResult.createdTicket.ticket_id,
-          last_message_preview: responseText.slice(0, 180),
-          last_message_at: new Date().toISOString(),
-          metadata: {
-            ...(session.metadata || {}),
-            last_product_ids: productIds,
-            llm_used: llmResult.used,
-            previous_interaction_id: llmResult.interactionId || session.metadata?.previous_interaction_id,
-            support_ticket_id: llmResult.createdTicket.ticket_id,
-            handoff_requested_at: new Date().toISOString()
-          }
-        });
-
-        await queueSupportAlert(repository, {
-          ticket: llmResult.createdTicket,
-          session,
-          message: input.message,
-          actor,
-          guestEmail: input.guestEmail || cleanEmail(session.metadata?.guest_email),
-          guestPhone: input.guestPhone || cleanPhone(session.metadata?.guest_phone)
-        });
-
-        return {
-          session: updatedSession || session,
-          createdSession,
-          messages: [userMessage, assistantMessage],
-          products: selectedProducts.map(formatProductCard),
-          handoff: { ticketId: llmResult.createdTicket.ticket_id, status: "requested" }
-        };
-      }
 
       const updatedSession = await repository.updateSession(session.session_id, {
         last_message_preview: responseText.slice(0, 180),
@@ -271,6 +268,7 @@ export function createChatbotService({ repository }) {
         createdSession,
         messages: [userMessage, assistantMessage],
         products: selectedProducts.map(formatProductCard),
+        blogs: (llmResult.blogs || []).map(formatBlogCard),
         handoff: null
       };
     },
@@ -346,7 +344,8 @@ export function createChatbotService({ repository }) {
       if (!session) throw new HttpError(404, "CHAT_SESSION_NOT_FOUND", "Chat session not found");
       const messages = await repository.listMessages(sessionId, boundedInteger(searchParams.get("limit"), 150, 1, 300));
       const products = await hydrateProductsForMessages(repository, messages.rows || []);
-      return { session, messages: messages.rows || [], products };
+      const blogs = await hydrateBlogsForMessages(repository, messages.rows || []);
+      return { session, messages: messages.rows || [], products, blogs };
     },
 
     async agentReply(context, sessionId, body) {
@@ -354,9 +353,25 @@ export function createChatbotService({ repository }) {
       requireUuid(sessionId, "sessionId");
       const session = await repository.getSession(sessionId);
       if (!session) throw new HttpError(404, "CHAT_SESSION_NOT_FOUND", "Chat session not found");
+      if (session.handoff_status === "closed") {
+        throw new HttpError(409, "CHAT_SESSION_CLOSED", "This chat session is already closed");
+      }
 
       const text = normalizeText(body?.message || body?.text, 1, 2000, "message");
       const agentName = context?.profile?.full_name || "CSKH Velura";
+      const now = new Date().toISOString();
+      const isFirstAgentReply = session.handoff_status !== "assigned";
+
+      // If this is the first agent reply, insert a system message so user knows CSKH joined
+      if (isFirstAgentReply) {
+        await repository.insertMessage({
+          sessionId,
+          sender: "bot",
+          text: `${agentName} đã tham gia trò chuyện. Từ giờ bạn đang được hỗ trợ trực tiếp bởi nhân viên CSKH.`,
+          metadata: { system: true, agent_joined: true, agent_name: agentName },
+          productIds: []
+        });
+      }
 
       const agentMessage = await repository.insertMessage({
         sessionId,
@@ -370,19 +385,27 @@ export function createChatbotService({ repository }) {
         productIds: []
       });
 
-      await repository.updateSession(sessionId, {
+      const updatedSession = await repository.updateSession(sessionId, {
         handoff_status: "assigned",
         assigned_to: context.authUser?.id,
         last_message_preview: text.slice(0, 180),
-        last_message_at: new Date().toISOString(),
+        last_message_at: now,
         metadata: {
           ...(session.metadata || {}),
-          agent_assigned_at: new Date().toISOString(),
+          agent_assigned_at: session.metadata?.agent_assigned_at || now,
+          agent_last_reply_at: now,
           agent_id: context.authUser?.id
         }
       });
 
-      return { session, message: agentMessage };
+      if (session.support_ticket_id) {
+        await repository.updateSupportTicket(session.support_ticket_id, {
+          status: "processing",
+          admin_reply: text
+        });
+      }
+
+      return { session: updatedSession || session, message: agentMessage };
     },
 
     async assignSession(context, sessionId, body) {
@@ -392,15 +415,37 @@ export function createChatbotService({ repository }) {
       if (!session) throw new HttpError(404, "CHAT_SESSION_NOT_FOUND", "Chat session not found");
 
       const status = body?.status === "closed" ? "closed" : "assigned";
+      const now = new Date().toISOString();
+      if (session.handoff_status === "closed" && status !== "closed") {
+        throw new HttpError(409, "CHAT_SESSION_CLOSED", "This chat session is already closed");
+      }
       const updated = await repository.updateSession(sessionId, {
         handoff_status: status,
         assigned_to: context.authUser?.id,
         metadata: {
           ...(session.metadata || {}),
-          assigned_at: new Date().toISOString(),
+          ...(status === "closed" ? { closed_at: now } : { assigned_at: session.metadata?.assigned_at || now }),
           agent_id: context.authUser?.id
         }
       });
+
+      if (status !== "closed") {
+        const agentName = context?.profile?.full_name || "CSKH Velura";
+        await repository.insertMessage({
+          sessionId,
+          sender: "bot",
+          text: `${agentName} đã tham gia trò chuyện. Từ giờ bạn đang được hỗ trợ trực tiếp bởi nhân viên CSKH.`,
+          metadata: { system: true, agent_joined: true, agent_name: agentName },
+          productIds: []
+        });
+      }
+
+      if (session.support_ticket_id) {
+        await repository.updateSupportTicket(session.support_ticket_id, {
+          status: status === "closed" ? "closed" : "processing",
+          ...(status === "closed" ? { resolved_at: now } : {})
+        });
+      }
 
       return { session: updated || session };
     }
@@ -430,11 +475,12 @@ async function handleHandoff({ repository, actor, input, session, userMessage, c
     priority: "high",
     aiLogId: aiLog?.log_id || null
   });
+  const replyText = buildTicketHandoffReply(ticket.ticket_id);
 
   const assistantMessage = await repository.insertMessage({
     sessionId: session.session_id,
     sender: "bot",
-    text: HANDOFF_REPLY,
+    text: replyText,
     metadata: {
       handoff: true,
       ticket_id: ticket.ticket_id
@@ -445,7 +491,7 @@ async function handleHandoff({ repository, actor, input, session, userMessage, c
   await repository.updateSession(session.session_id, {
     handoff_status: "requested",
     support_ticket_id: ticket.ticket_id,
-    last_message_preview: HANDOFF_REPLY.slice(0, 180),
+    last_message_preview: replyText.slice(0, 180),
     last_message_at: new Date().toISOString(),
     metadata: {
       ...existingMetadata,
@@ -472,6 +518,7 @@ async function handleHandoff({ repository, actor, input, session, userMessage, c
     createdSession,
     messages: [userMessage, assistantMessage],
     products: [],
+    blogs: [],
     handoff: { ticketId: ticket.ticket_id, status: "requested" }
   };
 }
@@ -630,17 +677,25 @@ export function detectHandoffIntent(message) {
     "support",
     "hotline",
     "nối máy",
-    "noi may"
+    "noi may",
+    "ticket",
+    "phiếu hỗ trợ",
+    "phieu ho tro",
+    "tạo phiếu",
+    "tao phieu",
+    "tạo yêu cầu",
+    "tao yeu cau",
+    "yêu cầu hỗ trợ",
+    "yeu cau ho tro",
+    "khiếu nại",
+    "khieu nai",
+    "phản ánh",
+    "phan anh"
   ].some((keyword) => text.includes(keyword));
 }
 
-export function createFallbackReply(message, products = [], policies = []) {
+export async function getFallbackReply(message, products = [], repository = null) {
   const text = String(message || "").toLowerCase();
-
-  if (isPolicyKnowledgeQuery(message)) {
-    const policyReply = createPolicyKnowledgeReply(message, policies);
-    if (policyReply) return policyReply;
-  }
 
   if (detectHandoffIntent(message)) {
     return HANDOFF_REPLY;
@@ -653,12 +708,38 @@ export function createFallbackReply(message, products = [], policies = []) {
 
   const isPolicyQuery = /(đổi trả|return|bảo hành|chính sách|policy|quy định|điều khoản)/i.test(text);
   if (isPolicyQuery) {
-    return "Mình chưa tải được dữ liệu chính sách mới nhất từ database. Bạn vui lòng thử lại sau hoặc xem trực tiếp trang Chính sách của Velura để tránh nhận thông tin không còn chính xác.";
+    if (repository) {
+      try {
+        console.log("[FALLBACK-RAG] Querying policies from repository...");
+        const result = await repository.searchPolicies(message);
+        const policies = result.rows || [];
+        if (policies.length > 0) {
+          return policies.map(p => {
+            let contentStr = "";
+            if (Array.isArray(p.content)) {
+              contentStr = p.content.map(section => {
+                const heading = section.heading ? `**${section.heading}**\n` : "";
+                const items = Array.isArray(section.items)
+                  ? section.items.map(item => `- ${item}`).join('\n')
+                  : `  - ${section.text || ""}`;
+                return heading + items;
+              }).join('\n');
+            } else {
+              contentStr = typeof p.content === "string" ? p.content : JSON.stringify(p.content);
+            }
+            return `=== ${p.title} ===\nTóm tắt: ${p.summary}\nChi tiết:\n${contentStr}`;
+          }).join('\n\n');
+        }
+      } catch (err) {
+        console.warn("[FALLBACK-RAG] Failed to search policies:", err.message);
+      }
+    }
+    return "Chính sách đổi trả của Velura: Đổi trả trong vòng 7 ngày đối với sản phẩm nguyên giá; đổi trả trong vòng 3 ngày đối với sản phẩm giảm giá trên 30% kể từ khi nhận hàng. Yêu cầu sản phẩm phải chưa qua sử dụng, còn nguyên tem mác và hóa đơn/mã đơn hàng. Bạn có thể tự thực hiện yêu cầu đổi trả ngay trên website hoặc liên hệ CSKH để được hỗ trợ.";
   }
 
   const isShippingQuery = /(phí ship|phí vận chuyển|miễn phí|free ship|giao mất bao lâu|thời gian giao)/i.test(text);
   if (isShippingQuery) {
-    return "Mình chưa tải được dữ liệu vận chuyển mới nhất từ database. Bạn vui lòng thử lại sau hoặc xem trực tiếp trang Chính sách của Velura để tránh nhận thông tin không còn chính xác.";
+    return "Velura miễn phí vận chuyển cho đơn từ 500.000đ. Đơn dưới 500.000đ phí ship cố định 30.000đ. Thời gian giao hàng từ 2-5 ngày tùy khu vực.";
   }
 
   const isSizeQuery = /(size|kích cỡ|số đo|vừa người|đo size|bảng size)/i.test(text);
@@ -668,7 +749,7 @@ export function createFallbackReply(message, products = [], policies = []) {
 
   const isGreeting = /^(xin chào|chào|hello|hi|hey|alo|chào bạn|good morning|chào buổi)/i.test(text);
   if (isGreeting) {
-    return "Chào bạn! Mình là AI Stylist của Velura. Mình có thể giúp bạn:\n- Tìm outfit theo phong cách hoặc dịp mặc\n- Gợi ý sản phẩm phù hợp\n- Kiểm tra đơn hàng\n- Giải đáp thắc mắc về尺寸, chính sách\n\nBạn cần mình hỗ trợ gì?";
+    return DEFAULT_ASSISTANT_GREETING;
   }
 
   if (products.length) {
@@ -679,49 +760,53 @@ export function createFallbackReply(message, products = [], policies = []) {
   return "Mình đã nhận được câu hỏi của bạn. Bạn có thể nói thêm về dịp mặc, màu sắc yêu thích, dáng người hoặc khoảng giá để mình tư vấn sát hơn nhé.";
 }
 
-function isPolicyKnowledgeQuery(message) {
+export function createFallbackReply(message, products = []) {
   const text = String(message || "").toLowerCase();
-  return /(đổi trả|doi tra|return|hoàn tiền|refund|bảo mật|bao mat|chính sách|chinh sach|policy|quy định|quy dinh|điều khoản|dieu khoan|phí ship|phi ship|vận chuyển|van chuyen|giao hàng|giao hang|free ship|miễn phí|mien phi|thành viên|thanh vien|faq|câu hỏi|cau hoi)/i.test(text);
-}
 
-async function safeListPolicies(repository) {
-  try {
-    const result = await repository.listPolicies?.();
-    return result?.rows || [];
-  } catch (error) {
-    console.warn("Policy knowledge unavailable for chatbot fallback.", error);
-    return [];
+  if (detectHandoffIntent(message)) {
+    return HANDOFF_REPLY;
   }
+
+  const isOrderQuery = /(đơn hàng|order|mã đơn|tracking|vận chuyển|giao hàng|ship|thanh toán|payment|refund|hoàn tiền)/i.test(text);
+  if (isOrderQuery) {
+    return "Để kiểm tra đơn hàng, bạn vui lòng cung cấp mã đơn hàng (VD: ORD-...) hoặc số điện thoại đặt hàng. Mình sẽ tra cứu trạng thái đơn giúp bạn ngay.";
+  }
+
+  const isPolicyQuery = /(đổi trả|return|bảo hành|chính sách|policy|quy định|điều khoản)/i.test(text);
+  if (isPolicyQuery) {
+    return "Chính sách đổi trả của Velura: Đổi trả trong vòng 7 ngày đối với sản phẩm nguyên giá; đổi trả trong vòng 3 ngày đối với sản phẩm giảm giá trên 30% kể từ khi nhận hàng. Yêu cầu sản phẩm phải chưa qua sử dụng, còn nguyên tem mác và hóa đơn/mã đơn hàng. Bạn có thể tự thực hiện yêu cầu đổi trả ngay trên website hoặc liên hệ CSKH để được hỗ trợ.";
+  }
+
+  const isShippingQuery = /(phí ship|phí vận chuyển|miễn phí|free ship|giao mất bao lâu|thời gian giao)/i.test(text);
+  if (isShippingQuery) {
+    return "Velura miễn phí vận chuyển cho đơn từ 500.000đ. Đơn dưới 500.000đ phí ship cố định 30.000đ. Thời gian giao hàng từ 2-5 ngày tùy khu vực.";
+  }
+
+  const isSizeQuery = /(size|kích cỡ|số đo|vừa người|đo size|bảng size)/i.test(text);
+  if (isSizeQuery) {
+    return "Bảng size Velura:\n- S: Vòng eo 62-66cm,Ngực 80-84cm\n- M: Vòng eo 66-70cm, Ngực 84-88cm\n- L: Vòng eo 70-74cm, Ngực 88-92cm\n- XL: Vòng eo 74-78cm, Ngực 92-96cm\n\nBạn có thể cung cấp số đo cụ thể để mình tư vấn size phù hợp nhất.";
+  }
+
+  const isGreeting = /^(xin chào|chào|hello|hi|hey|alo|chào bạn|good morning|chào buổi)/i.test(text);
+  if (isGreeting) {
+    return DEFAULT_ASSISTANT_GREETING;
+  }
+
+  if (products.length) {
+    const names = products.slice(0, 3).map((product) => product.name).join(", ");
+    return `Mình tìm thấy vài gợi ý hợp với yêu cầu của bạn: ${names}. Bạn có thể xem nhanh các mẫu bên dưới, hoặc nói thêm về màu sắc, dịp mặc và khoảng giá để mình lọc sát hơn.`;
+  }
+
+  return "Mình đã nhận được câu hỏi của bạn. Bạn có thể nói thêm về dịp mặc, màu sắc yêu thích, dáng người hoặc khoảng giá để mình tư vấn sát hơn nhé.";
 }
 
-function createPolicyKnowledgeReply(message, policies = []) {
-  if (!Array.isArray(policies) || !policies.length) return "";
-  const selected = selectPolicyForMessage(String(message || "").toLowerCase(), policies);
-  if (!selected) return "";
-
-  const details = (selected.content || [])
-    .map((section) => {
-      const heading = section.heading ? `\n- ${section.heading}: ` : "\n- ";
-      const body = section.text || (Array.isArray(section.items) ? section.items.join(" ") : "");
-      return body ? `${heading}${body}` : "";
-    })
-    .filter(Boolean)
-    .join("");
-
-  return `${selected.title}: ${selected.summary}${details}\n\nBạn có thể xem đầy đủ trong trang Chính sách của Velura.`;
-}
-
-function selectPolicyForMessage(text, policies) {
-  const rules = [
-    { slug: "returns", pattern: /(đổi trả|doi tra|return|hoàn tiền|refund|đổi hàng|doi hang)/i },
-    { slug: "shipping", pattern: /(phí ship|phi ship|vận chuyển|van chuyen|giao hàng|giao hang|free ship|miễn phí|mien phi)/i },
-    { slug: "privacy", pattern: /(bảo mật|bao mat|dữ liệu|du lieu|style quiz|hình ảnh|hinh anh|guest session)/i },
-    { slug: "terms", pattern: /(điều khoản|dieu khoan|quy định|quy dinh|chatbot|đánh giá|danh gia|rate limit)/i },
-    { slug: "member", pattern: /(thành viên|thanh vien|member|for you|tích điểm|tich diem|sinh nhật|sinh nhat)/i },
-    { slug: "faq", pattern: /(faq|câu hỏi|cau hoi|thắc mắc|thac mac)/i }
-  ];
-  const matched = rules.find((rule) => rule.pattern.test(text));
-  return policies.find((policy) => policy.slug === matched?.slug) || policies[0];
+function buildTicketHandoffReply(ticketId) {
+  return [
+    HANDOFF_REPLY,
+    "",
+    `Mã ticket hỗ trợ của bạn: ${ticketId}.`,
+    "Trong lúc chờ CSKH tiếp nhận, bạn có thể nhắn thêm số điện thoại/email hoặc mô tả chi tiết nhu cầu để Velura hỗ trợ nhanh hơn nhé."
+  ].join("\n");
 }
 
 function formatProductForWorkflow(product) {
@@ -760,6 +845,28 @@ function formatProductCard(product) {
       reserved_quantity: Number(variant.reserved_quantity || 0)
     } : null
   };
+}
+
+function formatBlogCard(blog) {
+  return {
+    blog_id: blog.blog_id,
+    slug: blog.slug,
+    title: blog.title,
+    excerpt: blog.excerpt,
+    image_url: blog.image_url || "/src/assets/images/placeholder.jpg",
+    author: blog.author,
+    read_minutes: blog.read_minutes,
+    detail_url: `/src/pages/blog/blog-detail.html?slug=${blog.slug}`
+  };
+}
+
+async function hydrateBlogsForMessages(repository, messages) {
+  const ids = normalizeUuidList(messages.flatMap((message) => [
+    ...((message.metadata || {}).blog_ids || [])
+  ]));
+  if (!ids.length) return [];
+  const result = await repository.listBlogsByIds(ids);
+  return (result.rows || []).map(formatBlogCard);
 }
 
 function firstAvailableVariant(product) {

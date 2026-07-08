@@ -464,7 +464,7 @@ import { productApi } from "./product-api.js";
     const actionsElement = document.querySelector("[data-product-csv-actions]");
     if (!file || file.size > 60 * 1024) {
       resultElement.textContent = "File CSV phải nhỏ hơn hoặc bằng 60 KB.";
-      if (actionsElement) actionsElement.style.display = "none";
+      if (actionsElement) actionsElement.hidden = true;
       return;
     }
     resultElement.textContent = "Đang kiểm tra dữ liệu...";
@@ -472,10 +472,10 @@ import { productApi } from "./product-api.js";
       lastCsvContent = await file.text();
       const result = await productApi.previewCsv(lastCsvContent);
       resultElement.textContent = `Hợp lệ: ${result.validRows}/${result.totalRows} dòng. Đây là bước preview, chưa ghi dữ liệu.`;
-      if (actionsElement) actionsElement.style.display = result.validRows > 0 ? "" : "none";
+      if (actionsElement) actionsElement.hidden = !(result.validRows > 0);
     } catch (error) {
       lastCsvContent = "";
-      if (actionsElement) actionsElement.style.display = "none";
+      if (actionsElement) actionsElement.hidden = true;
       const rowErrors = error.details?.errors;
       resultElement.textContent = Array.isArray(rowErrors)
         ? `CSV có lỗi: ${rowErrors.slice(0, 3).map((item) => `dòng ${item.row} ${item.field}`).join(", ")}.`
@@ -491,7 +491,7 @@ import { productApi } from "./product-api.js";
       return;
     }
     resultElement.textContent = "Đang nhập dữ liệu...";
-    if (actionsElement) actionsElement.style.display = "none";
+    if (actionsElement) actionsElement.hidden = true;
     try {
       const data = await productApi.commitCsv(lastCsvContent);
       let detailText = `Nhập thành công: tạo mới ${data.created || 0}, cập nhật ${data.updated || 0}. Thất bại: ${data.failed || 0}.`;
@@ -503,7 +503,7 @@ import { productApi } from "./product-api.js";
       }
       resultElement.innerText = detailText;
       lastCsvContent = "";
-      if (actionsElement) actionsElement.style.display = "none";
+      if (actionsElement) actionsElement.hidden = true;
       await loadState();
     } catch (error) {
       resultElement.textContent = `Lỗi khi nhập: ${error.message}`;

@@ -57,7 +57,7 @@
         <section class="admin-card" aria-label="Danh sách đổi trả và hỗ trợ">
           <div class="admin-tabs" role="tablist">
             <button class="admin-tab admin-tab--active" type="button" role="tab" aria-selected="true" data-zone="chat">
-              <svg class="admin-line-icon" style="width:14px;height:14px;margin-right:4px;"><use href="../../assets/icons/admin-icons.svg#support"></use></svg>
+              <svg class="admin-line-icon admin-line-icon--tab-inset"><use href="../../assets/icons/admin-icons.svg#support"></use></svg>
               Chat trực tuyến <span class="admin-badge admin-badge--pending" id="chat-count-badge">0</span>
             </button>
             <button class="admin-tab" type="button" role="tab" aria-selected="false" data-zone="returns">Đổi/trả hàng <span class="admin-badge admin-badge--pending">8</span></button>
@@ -78,14 +78,15 @@
                 </div>
                 <div class="admin-chat-filter">
                   <select class="admin-form-control" id="chat-filter-status">
-                    <option value="all">Tất cả</option>
-                    <option value="requested" selected>Chờ tiếp nhận</option>
+                    <option value="all" selected>Tất cả</option>
+                    <option value="ai">AI đang trả lời</option>
+                    <option value="requested">Chờ tiếp nhận</option>
                     <option value="assigned">Đang xử lý</option>
                     <option value="closed">Đã đóng</option>
                   </select>
                 </div>
                 <div class="admin-chat-session-list" id="chat-session-list">
-                  <p class="admin-note" style="text-align:center;padding:24px;">Đang tải...</p>
+                  <p class="admin-note admin-note--centered-padded">Đang tải...</p>
                 </div>
               </div>
 
@@ -96,7 +97,7 @@
                   <p>Chọn một phiên chat để bắt đầu hỗ trợ khách hàng</p>
                 </div>
 
-                <div class="admin-chat-active" id="admin-chat-active" style="display:none;">
+                <div class="admin-chat-active" id="admin-chat-active" style="display: none;">
                   <!-- Chat Header -->
                   <div class="admin-chat-header" id="admin-chat-header">
                     <div class="admin-chat-header__info">

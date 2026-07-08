@@ -31,7 +31,7 @@ export const config = {
   openaiModel: process.env.OPENAI_MODEL || "gpt-4o",
   geminiModel: process.env.GEMINI_MODEL || process.env.OPENAI_MODEL || "gemini-3.5-flash",
   mistralApiKey: process.env.MISTRAL_API_KEY || "",
-  mistralModel: process.env.MISTRAL_MODEL || "mistral-large-latest"
+  mistralModel: process.env.MISTRAL_MODEL || "mistral-small-latest"
 };
 
 export function assertRuntimeConfig() {

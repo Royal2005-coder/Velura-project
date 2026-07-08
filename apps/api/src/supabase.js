@@ -27,7 +27,6 @@ export async function supabaseRequest(path, options = {}) {
   if (options.accessToken) {
     headers.authorization = `Bearer ${options.accessToken}`;
   } else if (key.startsWith("eyJ")) {
-    // Legacy service_role keys are JWTs. New sb_secret_* keys belong only in apikey.
     headers.authorization = `Bearer ${key}`;
   }
 
@@ -50,7 +49,7 @@ export async function supabaseRequest(path, options = {}) {
 
     if (!response.ok) {
       if (!options.silentError) {
-        console.error(`[SUPABASE ERROR] Status: ${response.status} URL: ${url} Response:`, data);
+        console.error("[SUPABASE_ERROR_LOG]", response.status, url.toString(), "Response data:", data);
       }
       throw new HttpError(response.status, "SUPABASE_ERROR", "Supabase request failed", data);
     }

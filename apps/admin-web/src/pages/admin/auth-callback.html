@@ -4,25 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Velura - Đang xác thực</title>
-  <style>
-    body { display:grid; place-items:center; min-height:100vh; background:#f5f0eb; font-family:"DM Sans",sans-serif; }
-    .card { width:min(440px,calc(100% - 32px)); box-sizing:border-box; padding:40px 36px; background:#fff; border:1px solid #e5e1db; border-radius:8px; text-align:center; }
-    .card h1 { font-size:1.25rem; color:#2c2520; margin-bottom:12px; }
-    .spinner { width:36px; height:36px; border:3px solid #e5e1db; border-top-color:#c97b63; border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 16px; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    .sub { color:#8a817a; font-size:.875rem; }
-    .err { display:none; padding:12px; margin-top:16px; border:1px solid #dc2626; border-radius:8px; background:#fef2f2; color:#dc2626; font-size:.875rem; line-height:1.5; }
-    .err.is-visible { display:block; }
-    .btn { display:inline-block; margin-top:16px; padding:8px 20px; background:#c97b63; color:#fff; border:none; border-radius:6px; font-size:.875rem; text-decoration:none; }
-  </style>
+  <link rel="stylesheet" href="../../styles/auth.css" />
 </head>
-<body>
-  <main class="card">
-    <div class="spinner" id="spinner"></div>
+<body class="page-auth">
+  <main class="auth-card verification-card">
+    <div class="verification-spinner" id="spinner"></div>
     <h1 id="message">Đang xác thực với Supabase...</h1>
-    <p class="sub" id="detail">Hệ thống đang kiểm tra danh tính và quyền truy cập.</p>
-    <div class="err" id="error" role="alert"></div>
-    <a class="btn" id="back" href="./login.html" hidden>Quay lại đăng nhập</a>
+    <p class="verification-sub" id="detail">Hệ thống đang kiểm tra danh tính và quyền truy cập.</p>
+    <div class="verification-error" id="error" role="alert"></div>
+    <a class="verification-btn" id="back" href="./login.html" hidden>Quay lại đăng nhập</a>
   </main>
 
   <script type="module">

@@ -56,7 +56,7 @@ export const CHAT_SUPPORT_ROLES = [
 ];
 
 export const DEFAULT_ASSISTANT_GREETING =
-  "Xin chào! Tôi là AI Stylist của Velura. Tôi có thể giúp bạn tìm kiếm sản phẩm, gợi ý outfit, hoặc tư vấn phong cách. Bạn cần hỗ trợ gì không?";
+  "Xin chào, mình là **Velura Stylist** - trợ lý thời trang AI của cửa hàng Velura.\n\nMình ở đây để giúp bạn mua sắm dễ hơn, chọn đồ có gu hơn và được chăm sóc đúng lúc hơn.\n\n**Mình có thể hỗ trợ bạn:**\n- Gợi ý outfit theo dịp mặc: đi làm, đi chơi, dự tiệc, du lịch hoặc hẹn hò\n- Tìm sản phẩm Velura theo phong cách, màu sắc, ngân sách và chất liệu bạn thích\n- Tư vấn size theo chiều cao, cân nặng, số đo và dáng người\n- Gợi ý cách phối đồ, phụ kiện và bảng màu để tổng thể thanh lịch hơn\n- Hỗ trợ tra cứu đơn hàng, chính sách giao hàng, đổi trả và thanh toán\n- Tạo ticket hoặc kết nối nhân viên CSKH khi bạn cần hỗ trợ trực tiếp\n\n**Bạn có thể bắt đầu bằng:**\n- \"Gợi ý outfit công sở thanh lịch\"\n- \"Tìm váy dự tiệc dưới 800.000đ\"\n- \"Tư vấn size cho mình: cao 1m60, nặng 50kg\"\n- \"Mình muốn gặp CSKH\"";
 
 export const HANDOFF_REPLY =
-  "Mình đã ghi nhận yêu cầu gặp nhân viên chăm sóc khách hàng. Velura sẽ nối bạn với tư vấn viên ngay, bạn vui lòng chờ trong giây lát nhé.";
+  "Mình đã ghi nhận yêu cầu hỗ trợ trực tiếp của bạn. Velura sẽ chuyển cuộc trò chuyện này đến nhân viên CSKH để tiếp tục chăm sóc bạn trong thời gian sớm nhất.";

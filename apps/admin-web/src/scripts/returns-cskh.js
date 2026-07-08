@@ -42,6 +42,41 @@ function formatDate(value) {
 function badge(value) { return `<span class="admin-badge admin-badge--${["completed", "resolved", "closed"].includes(value) ? "success" : value === "rejected" ? "danger" : "pending"}">${escapeServiceHtml(labels[value] || value || "-")}</span>`; }
 function empty(message) { return `<tr><td colspan="8"><div class="admin-order-empty"><strong>${escapeServiceHtml(message)}</strong></div></td></tr>`; }
 
+const chatStatusMeta = {
+  requested: { label: "Chờ tiếp nhận", shortLabel: "Chờ", badgeClass: "admin-badge--pending", tone: "pending" },
+  assigned: { label: "Đang xử lý", shortLabel: "Đang xử lý", badgeClass: "admin-badge--success", tone: "assigned" },
+  closed: { label: "Đã đóng", shortLabel: "Đã đóng", badgeClass: "admin-badge--neutral", tone: "closed" },
+  ai: { label: "AI tự động", shortLabel: "AI", badgeClass: "admin-badge--neutral", tone: "ai" }
+};
+
+function getChatStatusMeta(status) {
+  return chatStatusMeta[status] || chatStatusMeta.ai;
+}
+
+function showToast(message, tone = "info") {
+  const toast = document.querySelector("#service-toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.dataset.tone = tone;
+  toast.hidden = false;
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => {
+    toast.hidden = true;
+  }, 3200);
+}
+
+function setButtonBusy(button, isBusy, busyText) {
+  if (!button) return;
+  if (isBusy) {
+    button.dataset.originalText = button.dataset.originalText || button.textContent;
+    button.textContent = busyText || "Đang xử lý...";
+    button.disabled = true;
+    return;
+  }
+  button.textContent = button.dataset.originalText || button.textContent;
+  button.disabled = false;
+}
+
 function renderPaginationMarkup(totalItems, currentPage, type) {
   const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
   if (totalPages <= 1) return "";
@@ -228,20 +263,24 @@ function detail(type, id) {
 
       <div>
         <h3 class="admin-drawer__section">Lý do yêu cầu</h3>
-        <p style="background: var(--field-bg); padding: 12px; border-radius: var(--radius-sm); font-style: italic; color: var(--muted); margin: 0; font-size: 0.8125rem; line-height: 1.5;">
+        <p class="admin-drawer__description-block">
           ${escapeServiceHtml(row.description || "Không có mô tả chi tiết.")}
         </p>
       </div>
 
       <div>
         <h3 class="admin-drawer__section">Minh chứng từ khách hàng</h3>
-        <div class="admin-proof-images" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px;">
+        <div class="admin-proof-images admin-proof-images-list">
           ${(row.evidence_images && row.evidence_images.length) ? row.evidence_images.map(img => `
-            <img src="${escapeServiceHtml(img)}" alt="Minh chứng đổi trả" style="max-width: 100%; max-height: 240px; border-radius: var(--radius-md); border: 1px solid var(--line);">
+            <a href="${escapeServiceHtml(img)}" target="_blank" title="Xem ảnh lớn">
+              <img src="${escapeServiceHtml(img)}" alt="Minh chứng đổi trả" class="admin-proof-img" style="cursor: pointer; max-height: 240px; border-radius: var(--radius-md); border: 1px solid var(--line);">
+            </a>
           `).join("") : row.image_proof_url ? `
-            <img src="${escapeServiceHtml(row.image_proof_url)}" alt="Minh chứng đổi trả" style="max-width: 100%; max-height: 240px; border-radius: var(--radius-md); border: 1px solid var(--line);">
+            <a href="${escapeServiceHtml(row.image_proof_url)}" target="_blank" title="Xem ảnh lớn">
+              <img src="${escapeServiceHtml(row.image_proof_url)}" alt="Minh chứng đổi trả" class="admin-proof-img" style="cursor: pointer; max-height: 240px; border-radius: var(--radius-md); border: 1px solid var(--line);">
+            </a>
           ` : `
-            <div style="color: var(--soft); font-size: 0.8125rem; padding: 16px; background: var(--field-bg); border-radius: var(--radius-md); text-align: center; border: 1px dashed var(--line); width: 100%;">
+            <div class="admin-proof-empty">
               Không có hình ảnh minh chứng đính kèm
             </div>
           `}
@@ -301,60 +340,70 @@ function getInfoSection(type, row) {
     }
     return `
       ${timeHtml}
-      <div style="background: var(--field-bg); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--line); margin-bottom: 16px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8125rem;">
-          <span style="color: var(--muted);">Đơn hàng gốc:</span>
+      <div class="admin-details-card">
+        <div class="admin-details-row">
+          <span>Đơn hàng gốc:</span>
           <strong>${escapeServiceHtml(row.order_id)}</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8125rem;">
-          <span style="color: var(--muted);">Loại yêu cầu:</span>
+        <div class="admin-details-row">
+          <span>Loại yêu cầu:</span>
           <strong>${escapeServiceHtml(row.return_type === "refund" ? "Trả hàng hoàn tiền" : "Đổi hàng")}</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8125rem;">
-          <span style="color: var(--muted);">Trạng thái hiện tại:</span>
+        <div class="admin-details-row">
+          <span>Trạng thái hiện tại:</span>
           <strong>${escapeServiceHtml(row.status === "pending" ? "Chờ xử lý" : row.status === "approved" ? "Đã duyệt" : row.status === "shipping_back" ? "Đang vận chuyển ngược" : row.status === "received" ? "Đã nhận hàng hoàn trả" : row.status)}</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8125rem;">
-          <span style="color: var(--muted);">Khách hàng:</span>
+        <div class="admin-details-row">
+          <span>Khách hàng:</span>
           <strong>${escapeServiceHtml(row.user_id)}</strong>
         </div>
-        <div style="margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px;">
-          <span style="display: block; color: var(--muted); font-size: 0.75rem; margin-bottom: 4px;">Lý do yêu cầu:</span>
-          <p style="margin: 0; font-size: 0.8125rem; font-style: italic; color: var(--text-body);">${escapeServiceHtml(row.description || "Không có mô tả.")}</p>
+        <div class="admin-details-block">
+          <span>Lý do yêu cầu:</span>
+          <p>${escapeServiceHtml(row.description || "Không có mô tả.")}</p>
         </div>
-        ${row.evidence_images && row.evidence_images.length ? `
-        <div style="margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px;">
-          <span style="display: block; color: var(--muted); font-size: 0.75rem; margin-bottom: 4px;">Minh chứng:</span>
-          <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;">
+        ${(row.evidence_images && row.evidence_images.length) ? `
+        <div class="admin-details-block">
+          <span>Minh chứng:</span>
+          <div class="admin-details-evidence-list">
             ${row.evidence_images.map(img => `
-              <img src="${escapeServiceHtml(img)}" style="height: 60px; border-radius: var(--radius-sm); border: 1px solid var(--line);">
+              <a href="${escapeServiceHtml(img)}" target="_blank" title="Xem ảnh lớn">
+                <img src="${escapeServiceHtml(img)}" class="admin-proof-img-thumb" style="cursor: pointer; max-height: 80px; width: auto; border-radius: var(--radius-sm); border: 1px solid var(--line);">
+              </a>
             `).join("")}
+          </div>
+        </div>` : row.image_proof_url ? `
+        <div class="admin-details-block">
+          <span>Minh chứng:</span>
+          <div class="admin-details-evidence-list">
+            <a href="${escapeServiceHtml(row.image_proof_url)}" target="_blank" title="Xem ảnh lớn">
+              <img src="${escapeServiceHtml(row.image_proof_url)}" class="admin-proof-img-thumb" style="cursor: pointer; max-height: 80px; width: auto; border-radius: var(--radius-sm); border: 1px solid var(--line);">
+            </a>
           </div>
         </div>` : ""}
       </div>
     `;
   } else {
     return `
-      <div style="background: var(--field-bg); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--line); margin-bottom: 16px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8125rem;">
-          <span style="color: var(--muted);">Tiêu đề:</span>
+      <div class="admin-details-card">
+        <div class="admin-details-row">
+          <span>Tiêu đề:</span>
           <strong>${escapeServiceHtml(row.title)}</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8125rem;">
-          <span style="color: var(--muted);">Khách hàng:</span>
+        <div class="admin-details-row">
+          <span>Khách hàng:</span>
           <strong>${escapeServiceHtml(row.user_id || row.guest_email || row.guest_phone || "Khách")}</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8125rem;">
-          <span style="color: var(--muted);">Độ ưu tiên:</span>
+        <div class="admin-details-row">
+          <span>Độ ưu tiên:</span>
           <span class="admin-badge admin-badge--priority-${row.priority}">${escapeServiceHtml(row.priority === "high" ? "Cao" : row.priority === "normal" ? "Trung bình" : "Thấp")}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.8125rem;">
-          <span style="color: var(--muted);">Trạng thái hiện tại:</span>
+        <div class="admin-details-row">
+          <span>Trạng thái hiện tại:</span>
           <strong>${escapeServiceHtml(row.status === "open" ? "Mở" : row.status === "processing" ? "Đang xử lý" : row.status === "resolved" ? "Đã giải quyết" : row.status)}</strong>
         </div>
-        <div style="margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px;">
-          <span style="display: block; color: var(--muted); font-size: 0.75rem; margin-bottom: 4px;">Nội dung yêu cầu:</span>
-          <p style="margin: 0; font-size: 0.8125rem; font-style: italic; color: var(--text-body);">${escapeServiceHtml(row.description)}</p>
+        <div class="admin-details-block">
+          <span>Nội dung yêu cầu:</span>
+          <p>${escapeServiceHtml(row.description)}</p>
         </div>
       </div>
     `;
@@ -635,9 +684,12 @@ async function loadAll() {
 
 async function loadChatSessions() {
   try {
-    const data = await returnApi.listChatSessions({ limit: 100 });
-    state.chatSessions = data.rows || [];
+    const data = await returnApi.listChatSessions({ limit: 100, handoffOnly: false });
+    state.chatSessions = (data.rows || []).filter((session) => session.is_active !== false);
     renderChatSessionList();
+    if (state.chat.selectedSessionId) {
+      updateChatControls(state.chatSessions.find((s) => s.session_id === state.chat.selectedSessionId));
+    }
     return data;
   } catch (error) {
     console.error("Chat sessions load error:", error);
@@ -652,7 +704,7 @@ function renderChatSessionList() {
   const filter = document.querySelector("#chat-filter-status")?.value || "all";
   let sessions = state.chatSessions;
   if (filter !== "all") {
-    sessions = sessions.filter((s) => s.handoff_status === filter);
+    sessions = sessions.filter((s) => (s.handoff_status || "ai") === filter);
   }
 
   const badge = document.querySelector("#chat-count-badge");
@@ -668,8 +720,7 @@ function renderChatSessionList() {
 
   container.innerHTML = sessions.map((session) => {
     const isActive = session.session_id === state.chat.selectedSessionId;
-    const statusColor = session.handoff_status === "requested" ? "#ff9800" : session.handoff_status === "assigned" ? "#4caf50" : "#9e9e9e";
-    const statusLabel = session.handoff_status === "requested" ? "Chờ" : session.handoff_status === "assigned" ? "Đang xử lý" : "Đã đóng";
+    const statusMeta = getChatStatusMeta(session.handoff_status);
     const customerName = session.metadata?.guest_email || session.guest_id?.slice(0, 8) || "Khách";
     const preview = session.last_message_preview || session.title || "Chat";
 
@@ -677,7 +728,7 @@ function renderChatSessionList() {
       <div class="admin-chat-session-item ${isActive ? "is-active" : ""}" data-session-id="${escapeServiceHtml(session.session_id)}">
         <div class="admin-chat-session-item__header">
           <span class="admin-chat-session-item__name">${escapeServiceHtml(customerName)}</span>
-          <span class="admin-chat-session-item__status" style="color:${statusColor};">${escapeServiceHtml(statusLabel)}</span>
+          <span class="admin-chat-session-item__status admin-chat-session-item__status--${escapeServiceHtml(statusMeta.tone)}">${escapeServiceHtml(statusMeta.shortLabel)}</span>
         </div>
         <p class="admin-chat-session-item__preview">${escapeServiceHtml(preview)}</p>
         <small class="admin-chat-session-item__time">${escapeServiceHtml(formatDate(session.last_message_at || session.created_at))}</small>
@@ -753,13 +804,73 @@ function renderChatMessages() {
   container.scrollTop = container.scrollHeight;
 }
 
+function upsertChatSession(session) {
+  if (!session?.session_id) return;
+  const index = state.chatSessions.findIndex((item) => item.session_id === session.session_id);
+  if (index >= 0) {
+    state.chatSessions[index] = { ...state.chatSessions[index], ...session };
+  } else {
+    state.chatSessions.unshift(session);
+  }
+}
+
+function updateChatControls(session) {
+  const status = session?.handoff_status || "ai";
+  const statusMeta = getChatStatusMeta(status);
+  const statusBadge = document.querySelector("#chat-status-badge");
+  const assignBtn = document.querySelector("#chat-assign-btn");
+  const closeBtn = document.querySelector("#chat-close-btn");
+  const input = document.querySelector("#admin-chat-input");
+  const form = document.querySelector("#admin-chat-form");
+  const sendBtn = form?.querySelector("button[type='submit']");
+  const isAi = status === "ai";
+  const isRequested = status === "requested";
+  const isAssigned = status === "assigned";
+  const isClosed = status === "closed";
+  const canJoin = isAi || isRequested;
+  const canReply = isAssigned;
+
+  if (statusBadge) {
+    statusBadge.textContent = statusMeta.label;
+    statusBadge.className = `admin-badge ${statusMeta.badgeClass}`;
+  }
+
+  if (assignBtn) {
+    assignBtn.style.display = canJoin ? "inline-flex" : "none";
+    assignBtn.disabled = !canJoin;
+    assignBtn.textContent = isAi ? "Tham gia" : "Tiếp nhận";
+  }
+
+  if (closeBtn) {
+    closeBtn.style.display = session ? "inline-flex" : "none";
+    closeBtn.disabled = isClosed || !session;
+    closeBtn.textContent = isClosed ? "Đã đóng" : "Đóng";
+  }
+
+  if (input) {
+    input.disabled = !canReply;
+    input.placeholder = isClosed
+      ? "Phiên chat đã đóng"
+      : canReply
+        ? "Nhập tin nhắn phản hồi..."
+        : isAi
+          ? "Nhấn 'Tham gia' để bắt đầu hỗ trợ khách..."
+          : "Tiếp nhận phiên trước khi phản hồi...";
+  }
+
+  if (sendBtn) sendBtn.disabled = !canReply;
+  if (form) form.classList.toggle("is-disabled", !canReply);
+}
+
 async function sendAgentReply(sessionId, message) {
   if (!sessionId || !message.trim()) return;
   try {
     const data = await returnApi.sendAgentReply(sessionId, message);
-    state.chat.messages.push(data.message);
+    upsertChatSession(data.session);
+    if (data.message) state.chat.messages.push(data.message);
     renderChatMessages();
     await loadChatSessions();
+    updateChatControls(state.chatSessions.find((s) => s.session_id === sessionId));
     return data;
   } catch (error) {
     console.error("Agent reply error:", error);
@@ -768,28 +879,40 @@ async function sendAgentReply(sessionId, message) {
 }
 
 async function assignChatSession(sessionId) {
+  const button = document.querySelector("#chat-assign-btn");
   try {
-    await returnApi.assignChatSession(sessionId, "assigned");
+    setButtonBusy(button, true, "Đang nhận...");
+    const data = await returnApi.assignChatSession(sessionId, "assigned");
+    upsertChatSession(data.session);
     await loadChatSessions();
     selectChatSession(sessionId);
+    showToast("Đã tiếp nhận phiên chat. Bạn có thể phản hồi khách hàng.", "success");
   } catch (error) {
     console.error("Assign session error:", error);
     throw error;
+  } finally {
+    setButtonBusy(button, false);
+    updateChatControls(state.chatSessions.find((s) => s.session_id === sessionId));
   }
 }
 
 async function closeChatSession(sessionId) {
+  const button = document.querySelector("#chat-close-btn");
   try {
-    await returnApi.assignChatSession(sessionId, "closed");
+    setButtonBusy(button, true, "Đang đóng...");
+    const data = await returnApi.assignChatSession(sessionId, "closed");
+    upsertChatSession(data.session);
     await loadChatSessions();
     if (state.chat.selectedSessionId === sessionId) {
-      state.chat.selectedSessionId = null;
-      document.querySelector("#admin-chat-active").style.display = "none";
-      document.querySelector("#admin-chat-empty").style.display = "flex";
+      selectChatSession(sessionId);
     }
+    showToast("Đã đóng phiên chat.", "success");
   } catch (error) {
     console.error("Close session error:", error);
     throw error;
+  } finally {
+    setButtonBusy(button, false);
+    updateChatControls(state.chatSessions.find((s) => s.session_id === sessionId));
   }
 }
 
@@ -798,7 +921,9 @@ function selectChatSession(sessionId) {
   const session = state.chatSessions.find((s) => s.session_id === sessionId);
 
   document.querySelector("#admin-chat-empty").style.display = "none";
-  document.querySelector("#admin-chat-active").style.display = "flex";
+  const activeEl = document.querySelector("#admin-chat-active");
+  activeEl.removeAttribute("hidden");
+  activeEl.style.display = "flex";
 
   if (session) {
     const customerName = session.metadata?.guest_email || session.guest_id?.slice(0, 8) || "Khách hàng";
@@ -806,12 +931,9 @@ function selectChatSession(sessionId) {
     document.querySelector("#chat-customer-id").textContent = `Session: ${sessionId.slice(0, 12)}...`;
     document.querySelector("#chat-avatar").textContent = customerName.charAt(0).toUpperCase();
 
-    const statusBadge = document.querySelector("#chat-status-badge");
-    statusBadge.textContent = session.handoff_status === "requested" ? "Chờ tiếp nhận" : session.handoff_status === "assigned" ? "Đang xử lý" : "Đã đóng";
-    statusBadge.className = `admin-badge ${session.handoff_status === "requested" ? "admin-badge--pending" : session.handoff_status === "assigned" ? "admin-badge--success" : ""}`;
-
-    const assignBtn = document.querySelector("#chat-assign-btn");
-    assignBtn.style.display = session.handoff_status === "requested" ? "inline-flex" : "none";
+    updateChatControls(session);
+  } else {
+    updateChatControls(null);
   }
 
   loadChatMessages(sessionId);
@@ -857,26 +979,46 @@ document.querySelector("#chat-session-list")?.addEventListener("click", (event) 
 
 document.querySelector("#chat-assign-btn")?.addEventListener("click", async () => {
   if (state.chat.selectedSessionId) {
-    await assignChatSession(state.chat.selectedSessionId);
+    try {
+      await assignChatSession(state.chat.selectedSessionId);
+    } catch (error) {
+      showToast(error.message || "Không thể tiếp nhận phiên chat", "error");
+    }
   }
 });
 
 document.querySelector("#chat-close-btn")?.addEventListener("click", async () => {
   if (state.chat.selectedSessionId && confirm("Đóng phiên chat này?")) {
-    await closeChatSession(state.chat.selectedSessionId);
+    try {
+      await closeChatSession(state.chat.selectedSessionId);
+    } catch (error) {
+      showToast(error.message || "Không thể đóng phiên chat", "error");
+    }
   }
 });
 
 document.querySelector("#admin-chat-form")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const input = document.querySelector("#admin-chat-input");
+  const sendBtn = event.currentTarget.querySelector("button[type='submit']");
   const text = input?.value.trim();
   if (!text || !state.chat.selectedSessionId) return;
+  const session = state.chatSessions.find((s) => s.session_id === state.chat.selectedSessionId);
+  if (session?.handoff_status !== "assigned") {
+    showToast("Vui lòng tiếp nhận phiên chat trước khi phản hồi.", "warning");
+    return;
+  }
   input.value = "";
   try {
+    setButtonBusy(sendBtn, true, "Đang gửi...");
     await sendAgentReply(state.chat.selectedSessionId, text);
+    showToast("Đã gửi phản hồi cho khách hàng.", "success");
   } catch (error) {
-    window.alert("Không thể gửi tin nhắn: " + (error.message || "Lỗi không xác định"));
+    input.value = text;
+    showToast("Không thể gửi tin nhắn: " + (error.message || "Lỗi không xác định"), "error");
+  } finally {
+    setButtonBusy(sendBtn, false);
+    updateChatControls(state.chatSessions.find((s) => s.session_id === state.chat.selectedSessionId));
   }
 });
 
@@ -941,8 +1083,17 @@ document.addEventListener("submit", async (event) => {
   event.preventDefault();
   try { 
     await submitAction(event.target); 
-  } catch (error) { 
-    window.alert(error.message || "Không thể xử lý yêu cầu"); 
+  } catch (error) {
+    const msg = error.code === "VERSION_CONFLICT"
+      ? "Dữ liệu đã được cập nhật bởi người khác. Vui lòng tải lại."
+      : error.code === "RETURN_NOT_PENDING"
+        ? "Yêu cầu đổi trả không ở trạng thái chờ xử lý."
+        : error.code === "RETURN_NOT_FOUND"
+          ? "Không tìm thấy yêu cầu đổi trả."
+          : error.code === "RBAC_DENIED"
+            ? "Bạn không có quyền thực hiện thao tác này."
+            : error.message || "Không thể xử lý yêu cầu";
+    showToast(msg, "error");
   }
 });
 
