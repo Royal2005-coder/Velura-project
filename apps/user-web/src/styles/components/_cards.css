@@ -422,12 +422,14 @@
   background: #ffffff;
 }
 
-.card__wishlist-btn.is-active {
+.card__wishlist-btn.is-active,
+.card__wishlist-btn.active {
   background: var(--terracotta);
   color: #ffffff;
 }
 
-.card__wishlist-btn.is-active svg {
+.card__wishlist-btn.is-active svg,
+.card__wishlist-btn.active svg {
   fill: currentColor;
 }
 
@@ -591,9 +593,6 @@
 }
 
 /* Final product card alignment for catalog cards */
-.card--product .product-card__img-hover {
-  display: none !important;
-}
 
 .card--product {
   border-radius: 8px;

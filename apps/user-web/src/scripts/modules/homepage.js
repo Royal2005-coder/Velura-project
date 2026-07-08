@@ -31,6 +31,14 @@ export function initHomepage() {
       } catch (wishlistErr) {
         console.error("Failed to load wishlist for homepage:", wishlistErr);
       }
+    } else {
+      try {
+        const guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+        wishlistedProductIds = new Set(guestIds);
+        updateWishlistBadge();
+      } catch (guestErr) {
+        wishlistedProductIds = new Set();
+      }
     }
 
     try {
@@ -210,6 +218,9 @@ export function initHomepage() {
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
               <img src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" class="product-card__img" />
             </a>
+            <div class="product-card__img-hover">
+              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
+            </div>
             <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-home ${wishlistClass}" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -262,31 +273,51 @@ export function initHomepage() {
         e.stopPropagation();
         const productId = btn.getAttribute("data-id");
         const isActive = btn.classList.contains("active");
+        const token = localStorage.getItem("velura_token");
+
         try {
-          if (isActive) {
-            await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
-            btn.classList.remove("active");
-            wishlistedProductIds.delete(productId);
-            showToast("Đã xóa khỏi danh sách yêu thích");
+          if (token) {
+            if (isActive) {
+              await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              await apiRequest("/api/user/wishlist", {
+                method: "POST",
+                body: { product_id: productId }
+              });
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
             localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
-            updateWishlistBadge();
           } else {
-            await apiRequest("/api/user/wishlist", {
-              method: "POST",
-              body: { product_id: productId }
-            });
-            btn.classList.add("active");
-            wishlistedProductIds.add(productId);
-            showToast("Đã thêm vào danh sách yêu thích!");
-            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
-            updateWishlistBadge();
+            let guestIds = [];
+            try {
+              guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+            } catch {
+              guestIds = [];
+            }
+
+            if (isActive) {
+              guestIds = guestIds.filter(id => id !== productId);
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              if (!guestIds.includes(productId)) {
+                guestIds.push(productId);
+              }
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_guest_wishlist", JSON.stringify(guestIds));
           }
+          updateWishlistBadge();
         } catch (err) {
-          if (err.status === 401) {
-            showToast("Vui lòng đăng nhập để lưu sản phẩm!");
-          } else {
-            showToast(err.message || "Không thể lưu sản phẩm");
-          }
+          showToast(err.message || "Không thể lưu sản phẩm");
         }
       });
     });
@@ -349,6 +380,9 @@ export function initHomepage() {
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
               <img src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" class="product-card__img" />
             </a>
+            <div class="product-card__img-hover">
+              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
+            </div>
             <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-personalized ${wishlistClass}" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -397,31 +431,51 @@ export function initHomepage() {
         e.stopPropagation();
         const productId = btn.getAttribute("data-id");
         const isActive = btn.classList.contains("active");
+        const token = localStorage.getItem("velura_token");
+
         try {
-          if (isActive) {
-            await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
-            btn.classList.remove("active");
-            wishlistedProductIds.delete(productId);
-            showToast("Đã xóa khỏi danh sách yêu thích");
+          if (token) {
+            if (isActive) {
+              await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              await apiRequest("/api/user/wishlist", {
+                method: "POST",
+                body: { product_id: productId }
+              });
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
             localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
-            updateWishlistBadge();
           } else {
-            await apiRequest("/api/user/wishlist", {
-              method: "POST",
-              body: { product_id: productId }
-            });
-            btn.classList.add("active");
-            wishlistedProductIds.add(productId);
-            showToast("Đã thêm vào danh sách yêu thích!");
-            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
-            updateWishlistBadge();
+            let guestIds = [];
+            try {
+              guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+            } catch {
+              guestIds = [];
+            }
+
+            if (isActive) {
+              guestIds = guestIds.filter(id => id !== productId);
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              if (!guestIds.includes(productId)) {
+                guestIds.push(productId);
+              }
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_guest_wishlist", JSON.stringify(guestIds));
           }
+          updateWishlistBadge();
         } catch (err) {
-          if (err.status === 401) {
-            showToast("Vui lòng đăng nhập để lưu sản phẩm!");
-          } else {
-            showToast(err.message || "Không thể lưu sản phẩm");
-          }
+          showToast(err.message || "Không thể lưu sản phẩm");
         }
       });
     });

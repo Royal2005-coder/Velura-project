@@ -1,5 +1,5 @@
 import { HttpError, readJson, sendJson } from "../http.js";
-import { selectOne, selectRows, updateRows } from "../supabase.js";
+import { selectOne, selectRows, insertRow, deleteRows } from "../supabase.js";
 import { requireUserAuth } from "./auth.js";
 
 export async function handleWishlistRoute(req, res, corsHeaders, context) {
@@ -7,20 +7,13 @@ export async function handleWishlistRoute(req, res, corsHeaders, context) {
 
   // GET /api/user/wishlist
   if (req.method === "GET") {
-    const user = await selectOne("users", { user_id: `eq.${profile.user_id}` });
-    const wishlist = user.wishlist || [];
-    if (!wishlist.length) {
-      return sendJson(res, 200, { success: true, items: [] }, corsHeaders);
-    }
+    const result = await selectRows("Wishlists", {
+      select: "*,product:product(*)",
+      user_id: `eq.${profile.user_id}`
+    });
 
-    // Filter UUIDs to avoid SQL query format exceptions
-    const uuids = wishlist.filter(id => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id));
-    if (!uuids.length) {
-      return sendJson(res, 200, { success: true, items: [] }, corsHeaders);
-    }
-
-    const products = await selectRows("product", { product_id: `in.(${uuids.join(",")})` });
-    return sendJson(res, 200, { success: true, items: products.rows }, corsHeaders);
+    const products = result.rows.map(item => item.product).filter(Boolean);
+    return sendJson(res, 200, { success: true, items: products }, corsHeaders);
   }
 
   // POST /api/user/wishlist
@@ -31,12 +24,22 @@ export async function handleWishlistRoute(req, res, corsHeaders, context) {
       throw new HttpError(400, "BAD_REQUEST", "product_id là bắt buộc");
     }
 
-    const user = await selectOne("users", { user_id: `eq.${profile.user_id}` });
-    let wishlist = user.wishlist || [];
-    if (!wishlist.includes(product_id)) {
-      wishlist = [...wishlist, product_id];
-      await updateRows("users", { user_id: `eq.${profile.user_id}` }, { wishlist });
+    const existing = await selectOne("Wishlists", {
+      user_id: `eq.${profile.user_id}`,
+      product_id: `eq.${product_id}`
+    });
+
+    if (!existing) {
+      await insertRow("Wishlists", {
+        user_id: profile.user_id,
+        product_id
+      });
     }
+
+    const allWishlisted = await selectRows("Wishlists", {
+      user_id: `eq.${profile.user_id}`
+    });
+    const wishlist = allWishlisted.rows.map(item => item.product_id);
 
     return sendJson(res, 200, { success: true, wishlist }, corsHeaders);
   }
@@ -53,12 +56,15 @@ export async function handleWishlistRoute(req, res, corsHeaders, context) {
       throw new HttpError(400, "BAD_REQUEST", "product_id là bắt buộc");
     }
 
-    const user = await selectOne("users", { user_id: `eq.${profile.user_id}` });
-    let wishlist = user.wishlist || [];
-    if (wishlist.includes(product_id)) {
-      wishlist = wishlist.filter(id => id !== product_id);
-      await updateRows("users", { user_id: `eq.${profile.user_id}` }, { wishlist });
-    }
+    await deleteRows("Wishlists", {
+      user_id: `eq.${profile.user_id}`,
+      product_id: `eq.${product_id}`
+    });
+
+    const allWishlisted = await selectRows("Wishlists", {
+      user_id: `eq.${profile.user_id}`
+    });
+    const wishlist = allWishlisted.rows.map(item => item.product_id);
 
     return sendJson(res, 200, { success: true, wishlist }, corsHeaders);
   }
