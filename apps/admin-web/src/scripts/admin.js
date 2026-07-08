@@ -169,25 +169,29 @@ function updateKpis() {
 function filterBar() {
   return `
     <form class="admin-filter-bar admin-order-filter-bar" data-account-filter>
-      <label class="admin-search-field">
-        ${icon("search")}
-        <input class="admin-form-control" name="q" placeholder="Tìm tên, email hoặc số điện thoại">
-      </label>
-      <select class="admin-form-control" name="role" aria-label="Lọc loại tài khoản">
-        <option value="">Tất cả loại tài khoản</option>
-        <option value="member">Thành viên</option>
-        <option value="admin">Quản trị viên</option>
-      </select>
-      <select class="admin-form-control" name="status" aria-label="Lọc trạng thái">
-        <option value="">Tất cả trạng thái</option>
-        <option value="active">Đang hoạt động</option>
-        <option value="locked">Bị khóa</option>
-      </select>
-      <select class="admin-form-control" name="verified" aria-label="Lọc xác thực">
-        <option value="">Tất cả xác thực</option>
-        <option value="true">Đã xác thực</option>
-        <option value="false">Chưa xác thực</option>
-      </select>
+      <div class="admin-filter-bar__search">
+        <label class="admin-search-field">
+          ${icon("search")}
+          <input class="admin-form-control" name="q" placeholder="Tìm tên, email hoặc số điện thoại">
+        </label>
+      </div>
+      <div class="admin-filter-bar__filters">
+        <select class="admin-form-control" name="role" aria-label="Lọc loại tài khoản">
+          <option value="">Tất cả loại tài khoản</option>
+          <option value="member">Thành viên</option>
+          <option value="admin">Quản trị viên</option>
+        </select>
+        <select class="admin-form-control" name="status" aria-label="Lọc trạng thái">
+          <option value="">Tất cả trạng thái</option>
+          <option value="active">Đang hoạt động</option>
+          <option value="locked">Bị khóa</option>
+        </select>
+        <select class="admin-form-control" name="verified" aria-label="Lọc xác thực">
+          <option value="">Tất cả xác thực</option>
+          <option value="true">Đã xác thực</option>
+          <option value="false">Chưa xác thực</option>
+        </select>
+      </div>
       <div class="admin-filter-bar__actions">
         <button class="admin-btn admin-btn--filter admin-btn--sm">Lọc</button>
         <button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button>
@@ -287,12 +291,12 @@ function accountTable() {
       <table class="admin-table admin-data-table admin-member-table">
         <thead>
           <tr>
-            <th>Tài khoản</th>
-            <th>Nhóm</th>
-            <th>Xác thực</th>
-            <th>Trạng thái</th>
-            <th>Đăng nhập gần nhất</th>
-            <th>Thao tác</th>
+            <th class="col-main">Tài khoản</th>
+            <th class="col-compact">Nhóm</th>
+            <th class="col-status">Xác thực</th>
+            <th class="col-status">Trạng thái</th>
+            <th class="col-date">Đăng nhập gần nhất</th>
+            <th class="col-action">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -336,12 +340,12 @@ function requestTable() {
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Yêu cầu</th>
-            <th>Tài khoản</th>
-            <th>Vai trò</th>
-            <th>Hết hạn</th>
-            <th>Trạng thái</th>
-            <th>Thao tác</th>
+            <th class="col-main">Yêu cầu</th>
+            <th class="col-main">Tài khoản</th>
+            <th class="col-compact">Vai trò</th>
+            <th class="col-date">Hết hạn</th>
+            <th class="col-status">Trạng thái</th>
+            <th class="col-action">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -373,15 +377,15 @@ function logTable() {
   if (!state.logs.length) return '<div class="admin-empty-state"><strong>Chưa có nhật ký tài khoản</strong></div>';
   return `
     <div class="admin-table-wrap">
-      <table class="admin-table">
+      <table class="admin-table admin-table--dense">
         <thead>
           <tr>
-            <th>Thời gian</th>
-            <th>Người thực hiện</th>
-            <th>Hành động</th>
-            <th>Đối tượng</th>
-            <th>Dữ liệu cũ</th>
-            <th>Dữ liệu mới</th>
+            <th class="col-date">Thời gian</th>
+            <th class="col-main">Người thực hiện</th>
+            <th class="col-compact">Hành động</th>
+            <th class="col-compact">Đối tượng</th>
+            <th class="col-description">Dữ liệu cũ</th>
+            <th class="col-description">Dữ liệu mới</th>
           </tr>
         </thead>
         <tbody>
@@ -407,12 +411,12 @@ function skeletalTable() {
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Tài khoản</th>
-            <th>Nhóm</th>
-            <th>Xác thực</th>
-            <th>Trạng thái</th>
-            <th>Đăng nhập gần nhất</th>
-            <th>Thao tác</th>
+            <th class="col-main">Tài khoản</th>
+            <th class="col-compact">Nhóm</th>
+            <th class="col-status">Xác thực</th>
+            <th class="col-status">Trạng thái</th>
+            <th class="col-date">Đăng nhập gần nhất</th>
+            <th class="col-action">Thao tác</th>
           </tr>
         </thead>
         <tbody>

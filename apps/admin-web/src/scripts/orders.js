@@ -61,12 +61,14 @@ function filteredOrders() {
 
 function filterBar() {
   return `<form class="admin-filter-bar admin-order-filter-bar" data-order-filter>
-    <label class="admin-search-field">${icon("search")}<input class="admin-form-control" name="q" type="search" placeholder="Tên khách, số điện thoại, mã vận đơn..." /></label>
-    <label class="admin-form-group"><select class="admin-form-control" name="status" aria-label="Trạng thái">
-      <option value="">Tất cả trạng thái</option>${Object.keys(transitions).concat(["cancelled", "completed"]).map((value) => `<option value="${value}">${orderLabels[value]}</option>`).join("")}
-    </select></label>
-    <label class="admin-form-group"><select class="admin-form-control" name="paymentMethod" aria-label="Thanh toán"><option value="">Tất cả thanh toán</option><option value="COD">COD</option><option value="ONLINE_PAYMENT">Online</option></select></label>
-    <label class="admin-form-group"><input class="admin-form-control" name="from" type="date" aria-label="Từ ngày" /></label>
+    <div class="admin-filter-bar__search"><label class="admin-search-field">${icon("search")}<input class="admin-form-control" name="q" type="search" placeholder="Tên khách, số điện thoại, mã vận đơn..." /></label></div>
+    <div class="admin-filter-bar__filters">
+      <label class="admin-form-group"><select class="admin-form-control" name="status" aria-label="Trạng thái">
+        <option value="">Tất cả trạng thái</option>${Object.keys(transitions).concat(["cancelled", "completed"]).map((value) => `<option value="${value}">${orderLabels[value]}</option>`).join("")}
+      </select></label>
+      <label class="admin-form-group"><select class="admin-form-control" name="paymentMethod" aria-label="Thanh toán"><option value="">Tất cả thanh toán</option><option value="COD">COD</option><option value="ONLINE_PAYMENT">Online</option></select></label>
+      <label class="admin-form-group"><input class="admin-form-control" name="from" type="date" aria-label="Từ ngày" /></label>
+    </div>
     <div class="admin-filter-bar__actions"><button class="admin-btn admin-btn--filter admin-btn--sm" type="submit">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button></div>
   </form>`;
 }
@@ -128,7 +130,7 @@ function renderTable() {
 
   if (!pagedRows.length) return `<div class="admin-order-empty">${icon("cart")}<strong>Không có đơn hàng phù hợp</strong><span>Điều chỉnh bộ lọc hoặc tải lại dữ liệu.</span></div>`;
   return `<div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr>
-    <th>Mã đơn</th><th>Khách hàng</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thanh toán</th><th>Cần xử lý</th><th>Thao tác</th>
+    <th class="col-main">Mã đơn</th><th class="col-main">Khách hàng</th><th class="col-compact">Tổng tiền</th><th class="col-status">Trạng thái</th><th class="col-status">Thanh toán</th><th class="col-compact">Cần xử lý</th><th class="col-action">Thao tác</th>
   </tr></thead><tbody>${pagedRows.map((order) => {
     const payment = paymentOf(order);
     return `<tr><td><span class="admin-order-code">${escapeHtml(order.order_id)}</span><small class="admin-order-subtext">${escapeHtml(dateTime(order.order_date))}</small></td>
@@ -259,7 +261,7 @@ async function renderLogs() {
   try {
     const results = await Promise.all(targets.map((order) => orderApi.auditLogs(order.order_id, { limit: 20 })));
     state.logs = results.flatMap((result) => result.rows || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    panel.innerHTML = `<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Thời gian</th><th>Mã đơn</th><th>Vai trò</th><th>Hành động</th><th>Thay đổi</th></tr></thead><tbody>${state.logs.map((log) => `<tr><td>${escapeHtml(dateTime(log.timestamp))}</td><td>${escapeHtml(log.target_id)}</td><td>${escapeHtml(log.actor_role)}</td><td>${escapeHtml(log.action)}</td><td>${escapeHtml(JSON.stringify(log.new_value || {}))}</td></tr>`).join("") || `<tr><td colspan="5">Chưa có nhật ký</td></tr>`}</tbody></table></div>`;
+    panel.innerHTML = `<div class="admin-table-wrap"><table class="admin-table admin-table--dense"><thead><tr><th class="col-date">Thời gian</th><th class="col-main">Mã đơn</th><th class="col-compact">Vai trò</th><th class="col-compact">Hành động</th><th class="col-description">Thay đổi</th></tr></thead><tbody>${state.logs.map((log) => `<tr><td>${escapeHtml(dateTime(log.timestamp))}</td><td>${escapeHtml(log.target_id)}</td><td>${escapeHtml(log.actor_role)}</td><td>${escapeHtml(log.action)}</td><td><span class="description-content">${escapeHtml(JSON.stringify(log.new_value || {}))}</span></td></tr>`).join("") || `<tr><td colspan="5">Chưa có nhật ký</td></tr>`}</tbody></table></div>`;
   } catch (error) { panel.innerHTML = `<div class="admin-order-empty"><strong>Không thể tải nhật ký</strong><span>${escapeHtml(error.message)}</span></div>`; }
 }
 

@@ -117,15 +117,21 @@
 .admin-promo-composition button small { color:var(--soft); font-size:.75rem; }
 .admin-promo-product-readonly .admin-form-control:disabled { opacity:1; background:var(--field-bg); color:var(--text-body); cursor:default; }
 .admin-drawer__actions { display:flex; align-items:center; gap:8px; }
-.admin-table-actions { align-items:center; justify-content:center; gap:8px; }
+.admin-table-actions { align-items:center; justify-content:flex-end; gap:8px; }
 .admin-table-actions .admin-icon-button--sm { width:34px; height:34px; flex:0 0 34px; }
 .admin-promo-row-actions { position:relative; display:flex; align-items:center; flex:0 0 34px; }
 .admin-icon-button--danger { color:var(--error); }
 .admin-promo-modal .admin-product-form__section h3 { font-weight:500; }
 .admin-promo-modal .admin-form-label b { color:var(--error); }
-.admin-progress { width:150px; height:8px; overflow:hidden; border-radius:999px; background:var(--field-bg); }
+.admin-progress { width:150px; height:8px; overflow:hidden; border:0; border-radius:999px; background:var(--field-bg); appearance:none; }
 .admin-progress--wide { width:100%; }
-.admin-progress span { display:block; height:100%; border-radius:inherit; background:var(--terracotta); transition:width .4s ease; }
+.admin-progress::-webkit-progress-bar { border-radius:999px; background:var(--field-bg); }
+.admin-progress::-webkit-progress-value { border-radius:999px; background:var(--terracotta); transition:width .4s ease; }
+.admin-progress::-moz-progress-bar { border-radius:999px; background:var(--terracotta); }
+.admin-progress--warning::-webkit-progress-value { background:var(--warning,#e67e22); }
+.admin-progress--warning::-moz-progress-bar { background:var(--warning,#e67e22); }
+.admin-progress--danger::-webkit-progress-value { background:var(--error); }
+.admin-progress--danger::-moz-progress-bar { background:var(--error); }
 .admin-state-panel { display:grid; place-items:center; gap:8px; min-height:190px; color:var(--muted); text-align:center; }
 .admin-state-panel .admin-line-icon { width:32px; height:32px; color:var(--terracotta); }
 .admin-state-panel strong { color:var(--text-body); font-weight:500; }
@@ -143,5 +149,11 @@
 .admin-promo-console .admin-card__header { padding:16px 20px 0; }
 .admin-promo-console .admin-card__header h3 { font-size:1rem; font-weight:600; color:var(--ink); margin:0; }
 .admin-promo-console .admin-card__body { padding:16px 20px 20px; }
+.admin-promo-detail-grid--four { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.admin-promo-metric--success,.admin-promo-saving { color:var(--success,#27ae60)!important; }
+.admin-promo-metric--warning { color:var(--warning,#e67e22)!important; }
+.admin-promo-progress-block { margin-top:12px; }
+.admin-promo-table-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; }
+.admin-promo-table-title { margin:0; color:var(--text-dark); font-family:"Playfair Display",Georgia,serif; font-size:1.125rem; font-weight:500; }
 @media(max-width:1100px){.admin-pricing-kpis,.admin-promo-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.admin-promo-campaign-layout,.admin-promo-split,.admin-promo-workspace-grid,.admin-promo-overview-grid,.admin-promo-command-grid,.admin-promo-operational-grid{grid-template-columns:1fr;}.admin-promo-campaign-cards{grid-template-columns:repeat(2,minmax(0,1fr));}.admin-promo-preview-section:last-child{grid-column:auto;}.admin-promo-preview{position:static;}.admin-promo-mini-kpis .admin-promo-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.admin-promo-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:768px){.admin-page-tools,.admin-promo-view-head{align-items:flex-start;flex-direction:column;}.admin-promo-workspace-toolbar{width:100%;align-items:stretch;flex-direction:column;}.admin-promo-campaign-cards{grid-template-columns:1fr;}.admin-promo-campaign-card header,.admin-promo-campaign-card footer{align-items:flex-start;flex-direction:column;}.admin-price-range{flex:1 1 100%;}.admin-price-range .admin-form-control{width:100%;min-width:0;}.admin-promo-actions{display:grid;}.admin-price-form-grid,.admin-promo-form,.admin-promo-form-grid,.admin-promo-conditional,.admin-promo-combo-row,.admin-promo-detail-grid,.admin-promo-input-action{grid-template-columns:1fr;}.admin-price-modal,.admin-promo-modal{width:min(100vw - 24px, 100%);}.admin-drawer__actions{flex-wrap:wrap;justify-content:flex-end;}}

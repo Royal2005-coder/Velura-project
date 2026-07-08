@@ -8,13 +8,11 @@
 .admin-log-alerts b { justify-self:end; font-weight:500; }
 .admin-log-workspace { overflow:hidden; }
 .admin-log-filter { margin-bottom:18px; }
-.admin-log-table { min-width:1320px; }
-.admin-log-table th,.admin-log-table td { padding-inline:12px; }
 .admin-log-time { display:grid; gap:2px; min-width:112px; color:var(--ink); font-size:.8125rem; }
 .admin-log-time small { color:var(--soft); font-size:.75rem; }
 .admin-log-actor { display:grid; gap:3px; min-width:155px; }
-.admin-log-actor strong,.admin-log-target strong { color:var(--ink); font-size:.8125rem; font-weight:500; }
-.admin-log-actor small,.admin-log-target small { color:var(--soft); font-size:.75rem; }
+.admin-log-actor strong,.admin-log-target strong { color:var(--ink); }
+.admin-log-actor small,.admin-log-target small { color:var(--soft); }
 .admin-log-role { display:inline-flex; max-width:165px; color:var(--text-body); font-size:.75rem; line-height:1.4; }
 .admin-log-module { display:inline-flex; padding:4px 8px; border-radius:999px; background:var(--field-bg); color:var(--brown); font-size:.6875rem; font-weight:500; white-space:nowrap; }
 .admin-log-action { min-width:145px; color:var(--text-body); font-size:.8125rem; }

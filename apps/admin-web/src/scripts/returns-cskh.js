@@ -177,7 +177,7 @@ function renderTickets(rows = state.tickets) {
 
 function renderLogs() {
   const body = document.querySelector("#logs-body");
-  body.innerHTML = state.logs.length ? state.logs.map((row) => `<tr><td>${escapeServiceHtml(formatDate(row.timestamp))}</td><td>${escapeServiceHtml(row.module)}</td><td>${escapeServiceHtml(row.target_id)}</td><td>${escapeServiceHtml(row.actor_id || "system")}</td><td>${escapeServiceHtml(row.action)}</td><td>${escapeServiceHtml(JSON.stringify(row.old_value || {}))} -> ${escapeServiceHtml(JSON.stringify(row.new_value || {}))}</td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr>`).join("") : empty("Chưa có nhật ký phù hợp");
+  body.innerHTML = state.logs.length ? state.logs.map((row) => `<tr><td>${escapeServiceHtml(formatDate(row.timestamp))}</td><td>${escapeServiceHtml(row.module)}</td><td>${escapeServiceHtml(row.target_id)}</td><td>${escapeServiceHtml(row.actor_id || "system")}</td><td>${escapeServiceHtml(row.action)}</td><td><span class="description-content">${escapeServiceHtml(JSON.stringify(row.old_value || {}))} -> ${escapeServiceHtml(JSON.stringify(row.new_value || {}))}</span></td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr>`).join("") : empty("Chưa có nhật ký phù hợp");
 }
 
 function updateKpis() {

@@ -260,7 +260,7 @@ import { productApi } from "./product-api.js";
         <div class="admin-product-basic-list"><div><span>Danh mục</span><strong>${escapeHtml(categoryName(product))}</strong></div><div><span>Phiên bản</span><strong>v${Number(product.version || 1)}</strong></div><div><span>Giá bán</span><strong>${formatPrice(product.sale_price)}</strong></div><div><span>Cập nhật</span><strong>${escapeHtml(formatDate(product.updated_at))}</strong></div></div>
         <p class="admin-product-description">${escapeHtml(product.description || "Chưa có mô tả")}</p>
         <h3 class="admin-drawer__section">Biến thể và tồn kho <button class="admin-btn admin-btn--outline admin-btn--sm" type="button" data-product-variant-add="${escapeHtml(product.product_id)}">Thêm biến thể</button></h3>
-        <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Màu</th><th>Size</th><th>Tồn</th><th>Đã giữ</th><th></th></tr></thead><tbody>${variantRows}</tbody></table></div>
+          <div class="admin-table-wrap"><table class="admin-table admin-data-table admin-table--compact"><thead><tr><th class="col-compact">Màu</th><th class="col-compact">Size</th><th class="col-compact">Tồn</th><th class="col-compact">Đã giữ</th><th class="col-action"></th></tr></thead><tbody>${variantRows}</tbody></table></div>
       </div>`;
   }
 
@@ -522,7 +522,7 @@ import { productApi } from "./product-api.js";
         <td>${escapeHtml(log.actor_id || "—")}<br><small>${escapeHtml(log.actor_role || "")}</small></td>
         <td>${escapeHtml(log.target_id || "—")}</td>
         <td>${escapeHtml(log.action || "—")}</td>
-        <td><small>${escapeHtml(JSON.stringify(log.new_value || {})).slice(0, 180)}</small></td>
+        <td><span class="description-content">${escapeHtml(JSON.stringify(log.new_value || {})).slice(0, 180)}</span></td>
         <td><span class="admin-badge admin-badge--success">Thành công</span></td>
       </tr>`).join("") : `<tr><td colspan="6">Chưa có nhật ký sản phẩm.</td></tr>`;
     } catch (error) {
