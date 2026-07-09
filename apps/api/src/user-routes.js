@@ -25,6 +25,60 @@ function requireUserAuth(context) {
   return context.profile;
 }
 
+// Helper to automatically synchronize parent product's status when a variant's stock level changes
+async function syncProductStatusAfterVariantStockChange(variantId) {
+  try {
+    const variant = await selectOne("variant", { variant_id: `eq.${variantId}` });
+    if (!variant) return;
+    const productId = variant.product_id;
+    const product = await selectOne("product", { product_id: `eq.${productId}` });
+    if (!product) return;
+
+    const { rows: allVariants } = await selectRows("variant", { product_id: `eq.${productId}` });
+    const totalStock = (allVariants || []).reduce((sum, v) => sum + Number(v.stock_quantity || 0), 0);
+
+    if (totalStock <= 0 && product.status === "on_sale") {
+      await updateRows("product", { product_id: `eq.${productId}` }, { 
+        status: "out_of_stock", 
+        version: (product.version || 0) + 1,
+        updated_at: new Date().toISOString()
+      });
+      // Insert audit log
+      await insertRow("audit_log", {
+        actor_id: "system",
+        actor_role: "system",
+        action: "status_change",
+        module: "products",
+        target_id: productId,
+        old_value: { status: product.status },
+        new_value: { status: "out_of_stock" },
+        ip_address: "127.0.0.1",
+        timestamp: new Date().toISOString()
+      });
+    } else if (totalStock > 0 && product.status === "out_of_stock") {
+      await updateRows("product", { product_id: `eq.${productId}` }, { 
+        status: "on_sale", 
+        version: (product.version || 0) + 1,
+        updated_at: new Date().toISOString()
+      });
+      // Insert audit log
+      await insertRow("audit_log", {
+        actor_id: "system",
+        actor_role: "system",
+        action: "status_change",
+        module: "products",
+        target_id: productId,
+        old_value: { status: product.status },
+        new_value: { status: "on_sale" },
+        ip_address: "127.0.0.1",
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error(`[Stock Sync Error] Failed to sync product status for variant ${variantId}:`, error.message);
+  }
+}
+
 export async function handleUserRoute(req, res, parts, corsHeaders, context) {
   const subRoute = parts[2]; // e.g. "auth", "profile", "addresses", "style-quiz", "wishlist", "orders", "reviews", "returns"
   const action = parts[3];   // e.g. "signup", "signin", or order ID, etc.
@@ -807,10 +861,11 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
           for (const item of items) {
             try {
               const variant = await selectOne("variant", { variant_id: `eq.${item.variant_id}` });
-              if (variant) {
-                const nextStock = variant.stock_quantity + item.quantity;
-                await updateRows("variant", { variant_id: `eq.${item.variant_id}` }, { stock_quantity: nextStock });
-              }
+               if (variant) {
+                 const nextStock = variant.stock_quantity + item.quantity;
+                 await updateRows("variant", { variant_id: `eq.${item.variant_id}` }, { stock_quantity: nextStock });
+                 await syncProductStatusAfterVariantStockChange(item.variant_id);
+               }
             } catch (e) {
               console.error(`Failed to restore stock on cancellation:`, e.message);
             }

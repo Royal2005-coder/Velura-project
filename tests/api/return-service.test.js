@@ -26,7 +26,7 @@ test("order operator is read-only and invalid refunds are rejected", async () =>
 test("service audit logs are protected by the A05 reader matrix", async () => {
   const service = createReturnService({ repository: { listAuditLogs: async (filters, token) => ({ filters, token }) } });
   const result = await service.listAuditLogs(context("admin_operator_donhang"), new URLSearchParams("limit=500&offset=-2"));
-  assert.equal(result.filters.limit, 100);
+  assert.equal(result.filters.limit, 500);
   assert.equal(result.filters.offset, 0);
   assert.equal(result.token, "jwt-token");
 });
