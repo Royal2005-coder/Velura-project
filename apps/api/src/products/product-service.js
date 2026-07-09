@@ -1,5 +1,5 @@
 import { HttpError } from "../http.js";
-import { selectRows, insertRow } from "../supabase.js";
+import { selectRows, insertRow, selectOne, updateRows } from "../supabase.js";
 import {
   PRODUCT_ADMIN_ROLES,
   PRODUCT_VIEWER_ROLES,
