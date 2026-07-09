@@ -1,6 +1,7 @@
 import { auditLogApi } from "./audit-log-api.js";
+import { accountApi } from "./account-api.js";
 
-const state = { rows: [], filtered: [], tab: "all" };
+const state = { rows: [], filtered: [], tab: "all", users: [] };
 const panel = document.querySelector("#log-panel");
 const overlay = document.querySelector("#log-overlay");
 
@@ -12,7 +13,11 @@ function date(value) { const parsed = new Date(value); return Number.isNaN(parse
 function filters() { return `<form class="admin-filter-bar admin-log-filter" data-log-filter><label class="admin-search-field">${icon("search")}<input class="admin-form-control" name="q" placeholder="Tìm hành động, đối tượng hoặc admin" data-log-search></label><select class="admin-form-control" name="module" data-log-module><option value="">Tất cả phân hệ</option>${["accounts", "products", "orders", "reviews", "returns", "support", "pricing", "promotions", "vouchers", "system"].map((value) => `<option value="${value}">${value}</option>`).join("")}</select><select class="admin-form-control" name="result" data-log-result><option value="">Tất cả kết quả</option><option value="success">Thành công</option><option value="failure">Thất bại</option></select><button class="admin-btn admin-btn--filter admin-btn--sm">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button></form>`; }
 function table() {
   if (!state.filtered.length) return '<div class="admin-log-empty"><strong>Không có nhật ký phù hợp</strong><p>Dữ liệu được đọc từ audit_log theo RLS.</p></div>';
-  return `<div class="admin-table-wrap"><table class="admin-table admin-log-table"><thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Vai trò</th><th>Phân hệ</th><th>Hành động</th><th>Đối tượng</th><th>IP</th><th>Chi tiết</th></tr></thead><tbody>${state.filtered.map((row) => `<tr><td>${escapeAuditHtml(date(row.timestamp))}</td><td>${escapeAuditHtml(row.actor_id || "system")}</td><td>${escapeAuditHtml(row.actor_role || "-")}</td><td><span class="admin-log-module">${escapeAuditHtml(row.module)}</span></td><td>${escapeAuditHtml(row.action)}</td><td>${escapeAuditHtml(row.target_id || "-")}</td><td>${escapeAuditHtml(row.ip_address || "-")}</td><td><button class="admin-icon-button admin-icon-button--sm" data-log-detail="${escapeAuditHtml(row.audit_id)}">${icon("eye")}</button></td></tr>`).join("")}</tbody></table></div><div class="admin-log-footer"><p class="admin-table-note">Hiển thị ${state.filtered.length} / ${state.rows.length} nhật ký</p></div>`;
+  return `<div class="admin-table-wrap"><table class="admin-table admin-log-table"><thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Vai trò</th><th>Phân hệ</th><th>Hành động</th><th>Đối tượng</th><th>IP</th><th>Chi tiết</th></tr></thead><tbody>${state.filtered.map((row) => {
+    const actorUser = state.users?.find((u) => u.user_id === row.actor_id);
+    const actorName = actorUser ? `${actorUser.full_name} (${actorUser.email})` : (row.actor_id || "system");
+    return `<tr><td>${escapeAuditHtml(date(row.timestamp))}</td><td>${escapeAuditHtml(actorName)}</td><td>${escapeAuditHtml(row.actor_role || "-")}</td><td><span class="admin-log-module">${escapeAuditHtml(row.module)}</span></td><td>${escapeAuditHtml(row.action)}</td><td>${escapeAuditHtml(row.target_id || "-")}</td><td>${escapeAuditHtml(row.ip_address || "-")}</td><td><button class="admin-icon-button admin-icon-button--sm" data-log-detail="${escapeAuditHtml(row.audit_id)}">${icon("eye")}</button></td></tr>`;
+  }).join("")}</tbody></table></div><div class="admin-log-footer"><p class="admin-table-note">Hiển thị ${state.filtered.length} / ${state.rows.length} nhật ký</p></div>`;
 }
 function render() {
   panel.innerHTML = filters() + table();
@@ -20,8 +25,19 @@ function render() {
 }
 
 function updateKpis() {
-  const today = new Date().toDateString();
-  const todayRows = state.rows.filter((row) => new Date(row.timestamp).toDateString() === today);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  
+  const todayStr = today.toDateString();
+  const yesterdayStr = yesterday.toDateString();
+  
+  const todayRows = state.rows.filter((row) => new Date(row.timestamp).toDateString() === todayStr);
+  const yesterdayRows = state.rows.filter((row) => new Date(row.timestamp).toDateString() === yesterdayStr);
+  
+  const diff = todayRows.length - yesterdayRows.length;
+  const trendText = diff >= 0 ? `+${diff} so với hôm qua` : `${diff} so với hôm qua`;
+  const trendClass = diff >= 0 ? "admin-kpi-card__trend--up" : "admin-kpi-card__trend--down";
   
   const successCount = state.rows.filter(r => !String(r.action).toLowerCase().includes("fail") && !String(r.action).toLowerCase().includes("error")).length;
   const failureCount = state.rows.filter(r => String(r.action).toLowerCase().includes("fail") || String(r.action).toLowerCase().includes("error")).length;
@@ -32,6 +48,71 @@ function updateKpis() {
   document.querySelectorAll(".admin-log-kpis .admin-kpi-card__value").forEach((node, index) => {
     node.textContent = String(values[index] || 0);
   });
+
+  // Calculate and update subtext trends in KPIs
+  const cards = document.querySelectorAll(".admin-log-kpis .admin-kpi-card");
+  if (cards.length >= 5) {
+    // Card 1: Today events trend
+    const trendNode1 = cards[0].querySelector(".admin-kpi-card__trend");
+    if (trendNode1) {
+      trendNode1.textContent = trendText;
+      trendNode1.className = `admin-kpi-card__trend ${trendClass}`;
+    }
+    
+    // Card 2: Success rate percentage
+    const trendNode2 = cards[1].querySelector(".admin-kpi-card__trend");
+    if (trendNode2) {
+      const total = state.rows.length || 1;
+      const successPercent = ((successCount / total) * 100).toFixed(1);
+      trendNode2.textContent = `${successPercent}% tổng sự kiện`;
+    }
+    
+    // Card 3: Failure status
+    const trendNode3 = cards[2].querySelector(".admin-kpi-card__trend");
+    if (trendNode3) {
+      trendNode3.textContent = failureCount > 0 ? "Cần kiểm tra ngay" : "Hoạt động ổn định";
+      trendNode3.className = `admin-kpi-card__trend ${failureCount > 0 ? "admin-kpi-card__trend--warning" : "admin-kpi-card__trend--up"}`;
+    }
+    
+    // Card 4: Blocked conflicts
+    const trendNode4 = cards[3].querySelector(".admin-kpi-card__trend");
+    if (trendNode4) {
+      const conflictCount = state.rows.filter(r => String(r.action).toLowerCase().includes("conflict") || JSON.stringify(r).toLowerCase().includes("xung đột")).length;
+      trendNode4.textContent = `${conflictCount} xung đột dữ liệu`;
+      trendNode4.className = `admin-kpi-card__trend ${conflictCount > 0 ? "admin-kpi-card__trend--warning" : "admin-kpi-card__trend--up"}`;
+    }
+    
+    // Card 5: Security severity
+    const trendNode5 = cards[4].querySelector(".admin-kpi-card__trend");
+    if (trendNode5) {
+      const criticalCount = state.rows.filter(r => String(r.action).toLowerCase().includes("critical") || String(r.action).toLowerCase().includes("severe") || String(r.action).toLowerCase().includes("reject") || JSON.stringify(r).toLowerCase().includes("nghiêm trọng")).length;
+      trendNode5.textContent = `${criticalCount} nghiêm trọng`;
+      trendNode5.className = `admin-kpi-card__trend ${criticalCount > 0 ? "admin-kpi-card__trend--danger" : "admin-kpi-card__trend--up"}`;
+    }
+  }
+
+  // Calculate and update alert box counts
+  const deniedCount = state.rows.filter(r => String(r.action).toLowerCase().includes("deny") || String(r.action).toLowerCase().includes("refuse") || String(r.action).toLowerCase().includes("block")).length;
+  const conflict24hCount = state.rows.filter(r => (String(r.action).toLowerCase().includes("conflict") || JSON.stringify(r).toLowerCase().includes("xung đột")) && (new Date() - new Date(r.timestamp) < 24 * 60 * 60 * 1000)).length;
+  const emailFailedCount = state.rows.filter(r => String(r.module) === "email" && (String(r.action).toLowerCase().includes("fail") || String(r.action).toLowerCase().includes("error"))).length;
+
+  const deniedBtn = document.querySelector("[data-log-alert-result='denied']");
+  if (deniedBtn) {
+    deniedBtn.querySelector("span").textContent = `${deniedCount} thao tác bị từ chối do không đủ quyền`;
+    deniedBtn.style.display = deniedCount > 0 ? "" : "none";
+  }
+
+  const conflictBtn = document.querySelector("[data-log-alert-result='conflict']");
+  if (conflictBtn) {
+    conflictBtn.querySelector("span").textContent = `${conflict24hCount} xung đột dữ liệu trong 24 giờ`;
+    conflictBtn.style.display = conflict24hCount > 0 ? "" : "none";
+  }
+
+  const failedBtn = document.querySelector("[data-log-alert-result='failed']");
+  if (failedBtn) {
+    failedBtn.querySelector("span").textContent = `${emailFailedCount} lỗi gửi email cảnh báo`;
+    failedBtn.style.display = emailFailedCount > 0 ? "" : "none";
+  }
 
   // Calculate tab counts
   const allCount = state.rows.length;
@@ -50,14 +131,34 @@ function updateKpis() {
 function detail(id) {
   const row = state.rows.find((item) => item.audit_id === id);
   if (!row) return;
-  overlay.innerHTML = `<div class="admin-drawer-backdrop" data-log-close></div><aside class="admin-drawer admin-log-drawer"><header class="admin-drawer__header"><div><small>${escapeAuditHtml(row.audit_id)}</small><h2>Chi tiết nhật ký</h2></div><button class="admin-icon-button" data-log-close>×</button></header><div class="admin-drawer__body"><dl class="admin-data-list">${Object.entries(row).map(([key, value]) => `<div><dt>${escapeAuditHtml(key)}</dt><dd>${escapeAuditHtml(typeof value === "object" ? JSON.stringify(value) : value)}</dd></div>`).join("")}</dl></div></aside>`;
+  overlay.innerHTML = `<div class="admin-drawer-backdrop" data-log-close></div><aside class="admin-drawer admin-log-drawer"><header class="admin-drawer__header"><div><small>${escapeAuditHtml(row.audit_id)}</small><h2>Chi tiết nhật ký</h2></div><button class="admin-icon-button" data-log-close>×</button></header><div class="admin-drawer__body"><dl class="admin-data-list">${Object.entries(row).map(([key, value]) => {
+    let displayValue;
+    if (key === "actor_id" && value) {
+      const actorUser = state.users?.find(u => u.user_id === value);
+      displayValue = actorUser ? `${escapeAuditHtml(actorUser.full_name)} (${escapeAuditHtml(actorUser.email)}) <br/><small style="color:var(--admin-text-muted);">${escapeAuditHtml(value)}</small>` : escapeAuditHtml(value);
+    } else if (typeof value === "object" && value !== null) {
+      displayValue = `<pre style="margin: 0; font-family: monospace; white-space: pre-wrap; font-size: 12px; background: var(--admin-bg-light); padding: 8px; border-radius: 4px; border: 1px solid var(--admin-border-light);">${escapeAuditHtml(JSON.stringify(value, null, 2))}</pre>`;
+    } else {
+      displayValue = escapeAuditHtml(value ?? "-");
+    }
+    return `<div><dt>${escapeAuditHtml(key)}</dt><dd>${displayValue}</dd></div>`;
+  }).join("")}</dl></div></aside>`;
 }
 
 async function load() {
   panel.innerHTML = '<div class="admin-log-empty"><strong>Đang tải audit_log từ Supabase...</strong></div>';
   try {
-    const result = await auditLogApi.list({ limit: 100 });
-    state.rows = result.rows || [];
+    const [logResult, accountResult] = await Promise.allSettled([
+      auditLogApi.list({ limit: 1000 }),
+      accountApi.list({ limit: 1000 })
+    ]);
+    
+    if (logResult.status === "rejected") {
+      throw logResult.reason;
+    }
+    
+    state.rows = logResult.value.rows || [];
+    state.users = accountResult.status === "fulfilled" ? (accountResult.value.rows || []) : [];
     applyFilterAndRender();
   } catch (error) {
     panel.innerHTML = `<div class="admin-log-empty"><strong>${escapeAuditHtml(error.message)}</strong></div>`;
@@ -115,6 +216,24 @@ document.addEventListener("click", (event) => {
     document.querySelectorAll("[data-log-tab]").forEach((node) => node.classList.toggle("admin-tab--active", node === tab));
     state.tab = tab.dataset.logTab;
     applyFilterAndRender();
+  }
+
+  const alertBtn = event.target.closest("[data-log-alert-result]");
+  if (alertBtn) {
+    const type = alertBtn.dataset.logAlertResult;
+    const form = document.querySelector("[data-log-filter]");
+    if (form) {
+      form.reset();
+      const qInput = form.querySelector("[name='q']");
+      if (type === "denied") {
+        qInput.value = "deny";
+      } else if (type === "conflict") {
+        qInput.value = "conflict";
+      } else if (type === "failed") {
+        qInput.value = "fail";
+      }
+      applyFilterAndRender();
+    }
   }
   
   if (event.target.closest("[data-log-export]")) {

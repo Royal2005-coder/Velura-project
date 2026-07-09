@@ -13,7 +13,7 @@ export function createAuditLogService({ repository }) {
       return repository.list({
         module: module || undefined,
         targetId: searchParams.get("targetId") || undefined,
-        limit: integer(searchParams.get("limit"), 50, 1, 100),
+        limit: integer(searchParams.get("limit"), 50, 1, 1000),
         offset: integer(searchParams.get("offset"), 0, 0, 1_000_000)
       }, context.accessToken);
     }

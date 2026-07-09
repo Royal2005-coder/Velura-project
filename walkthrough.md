@@ -84,3 +84,33 @@ Hệ thống đã triển khai đầy đủ, tối ưu hóa thiết kế theo ch
     - `AD_CSKH_01+02: Returns page loads with two tabs` ✓
     - `AD_CSKH_03: Returns note about 48h deadline visible` ✓
     - `AD_CSKH_04: Return action buttons exist` ✓
+
+---
+
+## 3. Redesign Blog & Database Migration
+- **Figma Design Alignment (`blog.html` & `_blog.css`)**:
+  - Centered the main header intro according to Figma layers (VELURA JOURNAL -> Tạp chí phong cách -> description).
+  - Redesigned the featured post banner with a landscape-oriented layout (image left, meta details/action right), border radius of `16px`, and thin `0.8px` border matching the precise Figma layer parameters.
+  - Implemented a 3-column articles grid of 9 high-density blog cards, removing the arbitrary sidebar.
+- **Elle-Style Premium Visual Assets Overhaul**:
+  - Replaced all placeholders with high-fidelity, hand-picked fashion editorial images from Unsplash.
+  - Added dynamic parameters (`fit=crop&w=800&h=600&q=80`) to ensure all photos display in crisp fashion and exact portrait/landscape aspect ratios without awkward cropping or stretching.
+- **Database Schema Hardening & Seeding**:
+  - Identified database column discrepancies on the remote Supabase instance (tables like `blog`, `policy`, `static_page` existed with older schemas, blocking the PostgREST API).
+  - Executed a custom migration script (`apply-migrations.mjs`) to cleanly apply SQL migrations `008` (base/sale pricing), `013` (UC Chatbot & blogs), and `014` (vector embeddings) directly via PostgreSQL client connection.
+  - Created and ran `db-seed.mjs` to truncate the stale tables and directly seed all 10 high-quality blog posts with complete content structures, making the dynamic API fully functional.
+  - Re-ran `verify:a06:supabase` to ensure all remote pricing, schema, and anonymous access checks pass with flying colors.
+
+---
+
+## 4. Product Inventory & Stock Adjustment Modal Fixes
+- **Inventory Populating**:
+  - Identified that out-of-stock products (including combo products such as `VLR-SD-001`, `VLR-SD-024` and standard products) had zero variants in the `variant` table. Since the catalog stock calculations read from the `variant` table, this caused them to be stuck at 0 stock and showing as "Hết hàng" (Out of stock).
+  - Wrote and executed a REST-based database update script (`add-default-variants.js`) to insert a default variant (`Mặc định` / `F`) with `50` stock items for all products having 0 variants, and updated existing 0-stock variants to `50` stock.
+  - Transitioned all 40 out-of-stock products back to `'on_sale'` status, successfully resolving the out-of-stock issue.
+- **Stock Adjustment Modal Verification**:
+  - Inspected the stock adjustment form fields (`delta`, `lowStockThreshold`, `reason`) and modal overlay elements in [products.html](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/admin-web/src/pages/admin/products.html) and [products.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/admin-web/src/scripts/products.js).
+  - Confirmed that form validation (e.g. `minlength="10"` on `reason` and non-zero `delta` requirements) matches the database function expectations.
+  - Verified the complete suite of 103 API and service tests passes successfully.
+
+

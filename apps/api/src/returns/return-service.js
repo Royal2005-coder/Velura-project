@@ -22,7 +22,7 @@ export function createReturnService({ repository }) {
       return repository.listReturns({
         status: searchParams.get("status") || undefined,
         search: searchParams.get("q") || undefined,
-        limit: Math.min(parseInt(searchParams.get("limit") || "50"), 100),
+        limit: Math.min(parseInt(searchParams.get("limit") || "50"), 1000),
         offset: parseInt(searchParams.get("offset") || "0")
       }, context.accessToken);
     },
@@ -111,7 +111,7 @@ export function createReturnService({ repository }) {
       requireReturnReader(context);
       return repository.listTickets({
         status: searchParams.get("status") || undefined,
-        limit: Math.min(parseInt(searchParams.get("limit") || "50"), 100),
+        limit: Math.min(parseInt(searchParams.get("limit") || "50"), 1000),
         offset: parseInt(searchParams.get("offset") || "0")
       }, context.accessToken);
     },
@@ -151,7 +151,7 @@ export function createReturnService({ repository }) {
     async listAuditLogs(context, searchParams) {
       requireReturnReader(context);
       return repository.listAuditLogs({
-        limit: Math.min(parseInt(searchParams.get("limit") || "50"), 100),
+        limit: Math.min(parseInt(searchParams.get("limit") || "50"), 1000),
         offset: Math.max(parseInt(searchParams.get("offset") || "0"), 0),
         targetId: searchParams.get("targetId") || undefined
       }, context.accessToken);

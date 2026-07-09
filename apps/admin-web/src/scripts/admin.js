@@ -467,8 +467,6 @@ function render() {
   const shouldShowMemberSummary = state.tab === "all" || state.tab === "members";
 
   panel.innerHTML = `
-    ${memberCommandCenter()}
-    ${shouldShowMemberSummary ? memberSummary() : ""}
     ${filterBar()}
     ${accountTable()}
     <div class="admin-card__footer">

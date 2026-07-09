@@ -223,7 +223,14 @@ function updateKpis() {
     state.returns.filter((r) => r.status === "completed").length
   ];
   document.querySelectorAll(".admin-kpi-card__value").forEach((node, index) => { node.textContent = String(values[index] || 0); });
-  document.querySelectorAll("[data-zone] .admin-badge").forEach((node) => { node.textContent = String(node.parentElement.dataset.zone === "returns" ? state.returns.length : state.tickets.length); });
+  document.querySelectorAll("[data-zone] .admin-badge").forEach((node) => {
+    const zoneName = node.parentElement.dataset.zone;
+    if (zoneName === "returns") {
+      node.textContent = String(state.returns.length);
+    } else if (zoneName === "support") {
+      node.textContent = String(state.tickets.length);
+    }
+  });
 }
 
 function detail(type, id) {
@@ -659,9 +666,9 @@ async function submitAction(form) {
 async function loadAll() {
   try {
     const [returnsResult, ticketsResult, logsResult, chatResult] = await Promise.all([
-      returnApi.listReturns({ limit: 100 }), 
-      returnApi.listTickets({ limit: 100 }), 
-      returnApi.auditLogs({ limit: 100 }),
+      returnApi.listReturns({ limit: 1000 }), 
+      returnApi.listTickets({ limit: 1000 }), 
+      returnApi.auditLogs({ limit: 1000 }),
       loadChatSessions()
     ]);
     state.returns = returnsResult.rows || []; 
@@ -684,7 +691,7 @@ async function loadAll() {
 
 async function loadChatSessions() {
   try {
-    const data = await returnApi.listChatSessions({ limit: 100, handoffOnly: false });
+    const data = await returnApi.listChatSessions({ limit: 1000, handoffOnly: false });
     state.chatSessions = (data.rows || []).filter((session) => session.is_active !== false);
     renderChatSessionList();
     if (state.chat.selectedSessionId) {

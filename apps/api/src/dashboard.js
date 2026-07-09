@@ -71,10 +71,10 @@ export async function buildDashboardSummary(searchParams) {
       order: "updated_at.desc"
     }),
     safeSelect("review", {
-      select: "review_id,status,rating,created_at",
+      select: "review_id,status,rating,submitted_at",
       limit: 1000,
-      order: "created_at.desc",
-      ...dateFilter
+      order: "submitted_at.desc",
+      ...buildDateQuery(fromDate, toDate, "submitted_at")
     }),
     safeSelect("return_exchange", {
       select: "return_id,status,created_at",
@@ -89,7 +89,7 @@ export async function buildDashboardSummary(searchParams) {
       ...dateFilter
     }),
     safeSelect("promotion", {
-      select: "promotion_id,status,budget_limit,updated_at",
+      select: "promo_id,is_active,budget_limit,updated_at",
       limit: 1000,
       order: "updated_at.desc"
     })
