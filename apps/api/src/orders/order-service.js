@@ -104,7 +104,7 @@ function parseListFilters(searchParams) {
     from,
     to,
     paymentMethod: optionalEnum(searchParams.get("paymentMethod"), ["COD", "ONLINE_PAYMENT"], "paymentMethod"),
-    limit: clampInteger(searchParams.get("limit"), 20, 1, 100),
+    limit: clampInteger(searchParams.get("limit"), 20, 1, 1000),
     offset: clampInteger(searchParams.get("offset"), 0, 0, 1_000_000),
     order: ORDER_SORTS.includes(order) ? order : "order_date.desc"
   };

@@ -132,5 +132,12 @@ export async function handleProductRoute({ req, res, url, parts, context, header
     return true;
   }
 
+  // POST /api/v1/admin/products/:id/bulk-stock
+  if (req.method === "POST" && parts[5] === "bulk-stock" && parts.length === 6) {
+    const body = await readJson(req, config.maxBodyBytes);
+    sendJson(res, 200, await service.bulkUpdateStock(context, productId, body, requestMeta), headers);
+    return true;
+  }
+
   return false;
 }

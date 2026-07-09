@@ -135,6 +135,10 @@ import { productApi } from "./product-api.js";
   function renderProducts() {
     state.filtered = currentRows();
     const totalItems = state.filtered.length;
+    const catalogTabSpan = document.querySelector('[data-product-tab="catalog"] span');
+    if (catalogTabSpan) {
+      catalogTabSpan.textContent = String(totalItems);
+    }
     const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
     if (state.currentPage > totalPages) {
       state.currentPage = totalPages;
@@ -222,6 +226,24 @@ import { productApi } from "./product-api.js";
       productForm.elements.description.value = product.description || "";
       productForm.elements.aiTags.value = (product.style_tags || []).join(", ");
       productForm.elements.imageUrl.value = product.images?.[0] || "";
+      
+      const variants = product.variants || [];
+      const totalStock = variants.reduce((sum, v) => sum + Number(v.stock_quantity || 0), 0);
+      productForm.elements.stock.value = String(totalStock);
+      if (variants.length <= 1) {
+        productForm.elements.minStock.value = variants.length === 1 ? String(variants[0].low_stock_threshold ?? 5) : "5";
+        productForm.elements.stock.disabled = false;
+        productForm.elements.minStock.disabled = false;
+      } else {
+        productForm.elements.minStock.value = variants.length > 0 ? String(variants[0].low_stock_threshold ?? 5) : "5";
+        productForm.elements.stock.disabled = true;
+        productForm.elements.minStock.disabled = true;
+      }
+    } else {
+      productForm.elements.stock.value = "0";
+      productForm.elements.minStock.value = "5";
+      productForm.elements.stock.disabled = false;
+      productForm.elements.minStock.disabled = false;
     }
     productForm.elements.price.disabled = Boolean(product);
     productForm.elements.originalPrice.disabled = Boolean(product);
@@ -259,7 +281,13 @@ import { productApi } from "./product-api.js";
         <h3 class="admin-drawer__section">Thông tin sản phẩm</h3>
         <div class="admin-product-basic-list"><div><span>Danh mục</span><strong>${escapeHtml(categoryName(product))}</strong></div><div><span>Phiên bản</span><strong>v${Number(product.version || 1)}</strong></div><div><span>Giá bán</span><strong>${formatPrice(product.sale_price)}</strong></div><div><span>Cập nhật</span><strong>${escapeHtml(formatDate(product.updated_at))}</strong></div></div>
         <p class="admin-product-description">${escapeHtml(product.description || "Chưa có mô tả")}</p>
-        <h3 class="admin-drawer__section">Biến thể và tồn kho <button class="admin-btn admin-btn--outline admin-btn--sm" type="button" data-product-variant-add="${escapeHtml(product.product_id)}">Thêm biến thể</button></h3>
+        <h3 class="admin-drawer__section" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <span>Biến thể và tồn kho</span>
+          <div style="display: inline-flex; gap: 8px;">
+            <button class="admin-btn admin-btn--outline admin-btn--sm" type="button" data-product-variant-add="${escapeHtml(product.product_id)}">Thêm biến thể</button>
+            <button class="admin-btn admin-btn--outline admin-btn--sm" type="button" data-product-stock-bulk="${escapeHtml(product.product_id)}">Cập nhật hàng loạt</button>
+          </div>
+        </h3>
         <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Màu</th><th>Size</th><th>Tồn</th><th>Đã giữ</th><th></th></tr></thead><tbody>${variantRows}</tbody></table></div>
       </div>`;
   }
@@ -319,6 +347,7 @@ import { productApi } from "./product-api.js";
     stockModal.querySelector("[data-stock-product]").textContent = product.name;
     stockModal.querySelector("[data-stock-variant-label]").textContent = `${variant.color || "—"} / ${variant.size || "—"}`;
     stockModal.querySelector("[data-stock-current]").textContent = String(variant.stock_quantity || 0);
+    stockForm.elements.lowStockThreshold.value = String(variant.low_stock_threshold ?? 5);
     stockModal.hidden = false;
   }
 
@@ -346,6 +375,10 @@ import { productApi } from "./product-api.js";
     try {
       if (current) {
         payload.expectedVersion = current.version;
+        if (!productForm.elements.stock.disabled) {
+          payload.stock = Number(productForm.elements.stock.value || 0);
+          payload.minStock = Number(productForm.elements.minStock.value || 5);
+        }
         await productApi.update(productId, payload);
         if (status !== current.status) {
           const latest = await productApi.get(productId);
@@ -360,7 +393,9 @@ import { productApi } from "./product-api.js";
           salePrice: Number(productForm.elements.price.value),
           status,
           expectedVersion: 0,
-          images: payload.images
+          images: payload.images,
+          initialStock: Number(productForm.elements.stock.value || 0),
+          lowStockThreshold: Number(productForm.elements.minStock.value || 5)
         });
         await productApi.create(payload);
         showToast("Đã tạo sản phẩm.");
@@ -398,6 +433,7 @@ import { productApi } from "./product-api.js";
       await productApi.updateStock(stockForm.dataset.productId, {
         variantId: stockForm.dataset.variantId,
         delta: Number(stockForm.elements.delta.value),
+        lowStockThreshold: Number(stockForm.elements.lowStockThreshold.value),
         reason: stockForm.elements.reason.value,
         expectedVersion: Number(stockForm.dataset.version)
       });
@@ -425,6 +461,112 @@ import { productApi } from "./product-api.js";
       showToast("Đã tạo biến thể tồn kho.");
       await loadState();
       await openProductDrawer(form.dataset.productId);
+    } catch (error) {
+      showToast(error.message, true);
+    }
+  }
+
+  function openBulkStockModal(productId) {
+    const product = state.products.find((item) => item.product_id === productId);
+    if (!product) return;
+    document.querySelector("#product-bulk-stock-modal")?.remove();
+    
+    const variants = variantsOf(product);
+    const variantInputs = variants.map((variant) => `
+      <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line);">
+        <span><strong>${escapeHtml(variant.color || "—")} / ${escapeHtml(variant.size || "—")}</strong><br><small style="color:var(--muted)">Tồn hiện tại: ${variant.stock_quantity}</small></span>
+        <label class="admin-form-group" style="margin-bottom:0">
+          <input class="admin-form-control" name="delta_${variant.variant_id}" type="number" step="1" value="0" placeholder="Thay đổi (ví dụ: +10, -5)" required>
+        </label>
+        <label class="admin-form-group" style="margin-bottom:0">
+          <input class="admin-form-control" name="threshold_${variant.variant_id}" type="number" min="0" step="1" value="${variant.low_stock_threshold ?? 5}" required>
+        </label>
+      </div>
+    `).join("");
+
+    document.body.insertAdjacentHTML("beforeend", `
+      <div class="admin-modal-overlay" id="product-bulk-stock-modal" style="display: grid; place-items: center; z-index: 310;">
+        <section class="admin-modal" style="width: min(600px, 95vw); max-height: 90vh; display: flex; flex-direction: column;" role="dialog" aria-modal="true">
+          <form data-product-bulk-stock-form data-product-id="${escapeHtml(productId)}">
+            <header class="admin-modal__header">
+              <div>
+                <p class="label-upper">Quản lý tồn kho theo lô</p>
+                <h2>Cập nhật tồn kho hàng loạt</h2>
+              </div>
+              <button class="admin-icon-button" type="button" data-product-bulk-stock-close aria-label="Đóng">×</button>
+            </header>
+            <div class="admin-modal__body" style="overflow-y: auto; max-height: 50vh;">
+              <p style="margin-bottom: 16px; font-size: 0.875rem; color: var(--muted);">
+                Sản phẩm: <strong>${escapeHtml(product.name)}</strong> (${escapeHtml(product.sku)})
+              </p>
+              <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; font-size: 0.75rem; text-transform: uppercase; color: var(--muted); font-weight: 600; padding-bottom: 6px; border-bottom: 2px solid var(--line);">
+                <span>Biến thể</span>
+                <span>Số lượng thay đổi</span>
+                <span>Ngưỡng cảnh báo</span>
+              </div>
+              ${variantInputs || '<p style="padding: 16px 0; text-align: center;">Chưa có biến thể nào.</p>'}
+              
+              <label class="admin-form-group" style="margin-top: 20px;">
+                <span class="admin-form-label">Lý do điều chỉnh lô <b>*</b></span>
+                <textarea class="admin-form-control admin-form-textarea" name="reason" minlength="10" maxlength="500" required placeholder="Nhập lý do nhập/xuất kho lô này (tối thiểu 10 ký tự)..."></textarea>
+              </label>
+            </div>
+            <footer class="admin-modal__footer">
+              <button class="admin-btn admin-btn--ghost" type="button" data-product-bulk-stock-close>Hủy</button>
+              <button class="admin-btn admin-btn--secondary" type="submit">Xác nhận cập nhật</button>
+            </footer>
+          </form>
+        </section>
+      </div>
+    `);
+  }
+
+  async function submitBulkStock(event) {
+    event.preventDefault();
+    const form = event.target;
+    const productId = form.dataset.productId;
+    const product = state.products.find((item) => item.product_id === productId);
+    if (!product) return;
+
+    const updates = [];
+    const reason = form.elements.reason.value.trim();
+
+    variantsOf(product).forEach((variant) => {
+      const deltaInput = form.elements[`delta_${variant.variant_id}`];
+      const thresholdInput = form.elements[`threshold_${variant.variant_id}`];
+      
+      const delta = deltaInput ? Number(deltaInput.value) : 0;
+      const threshold = thresholdInput ? Number(thresholdInput.value) : 5;
+
+      if (delta !== 0 || threshold !== variant.low_stock_threshold) {
+        updates.push({
+          variantId: variant.variant_id,
+          delta,
+          lowStockThreshold: threshold,
+          expectedVersion: variant.version || 1
+        });
+      }
+    });
+
+    if (updates.length === 0) {
+      showToast("Không có thay đổi nào được thực hiện.");
+      document.querySelector("#product-bulk-stock-modal")?.remove();
+      return;
+    }
+
+    try {
+      const submitBtn = form.querySelector("button[type='submit']");
+      if (submitBtn) submitBtn.disabled = true;
+      
+      await productApi.bulkUpdateStock(productId, {
+        updates,
+        reason
+      });
+
+      document.querySelector("#product-bulk-stock-modal")?.remove();
+      showToast("Đã cập nhật tồn kho hàng loạt thành công.");
+      await loadState();
+      await openProductDrawer(productId);
     } catch (error) {
       showToast(error.message, true);
     }
@@ -533,7 +675,7 @@ import { productApi } from "./product-api.js";
   async function loadState() {
     tableBody.innerHTML = `<tr><td colspan="8"><div class="admin-empty-state"><strong>Đang tải dữ liệu Supabase...</strong></div></td></tr>`;
     const [products, categories, lowStock] = await Promise.all([
-      productApi.list({ limit: 100 }), productApi.categories(), productApi.lowStock()
+      productApi.list({ limit: 1000 }), productApi.categories(), productApi.lowStock()
     ]);
     state.products = products?.rows || [];
     state.totalCount = products?.count || state.products.length;
@@ -552,6 +694,8 @@ import { productApi } from "./product-api.js";
     const stopClose = event.target.closest("[data-product-stop-close]");
     const stock = event.target.closest("[data-stock-variant]");
     const variantAdd = event.target.closest("[data-product-variant-add]");
+    const bulkStockBtn = event.target.closest("[data-product-stock-bulk]");
+    const bulkStockClose = event.target.closest("[data-product-bulk-stock-close]");
     const variantClose = event.target.closest("[data-product-variant-close]");
     const stockClose = event.target.closest("[data-product-stock-close]");
     const menuButton = event.target.closest("[data-product-menu]");
@@ -575,6 +719,8 @@ import { productApi } from "./product-api.js";
     if (stop) openStatusModal(stop.dataset.productStop);
     if (stock) openStockModal(stock.dataset.stockVariant);
     if (variantAdd) openVariantModal(variantAdd.dataset.productVariantAdd);
+    if (bulkStockBtn) openBulkStockModal(bulkStockBtn.dataset.productStockBulk);
+    if (bulkStockClose) document.querySelector("#product-bulk-stock-modal")?.remove();
     if (variantClose) document.querySelector("#product-variant-modal")?.remove();
     if (menuButton) {
       const menu = document.querySelector(`#product-menu-${CSS.escape(menuButton.dataset.productMenu)}`);
@@ -620,6 +766,7 @@ import { productApi } from "./product-api.js";
   productForm.addEventListener("submit", submitProduct);
   document.addEventListener("submit", (event) => {
     if (event.target.matches("[data-product-variant-form]")) submitVariant(event);
+    if (event.target.matches("[data-product-bulk-stock-form]")) submitBulkStock(event);
   });
   stopForm.addEventListener("submit", submitStatus);
   if (stockForm) stockForm.addEventListener("submit", submitStock);

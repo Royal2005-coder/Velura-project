@@ -120,6 +120,12 @@ export function createPricingService({ repository }) {
       requirePricingAdmin(context);
       const voucher = await repository.getVoucher(voucherId, context.accessToken);
       if (!voucher) throw new HttpError(404, "VOUCHER_NOT_FOUND", "Voucher not found");
+      if (!voucher.is_active && voucher.promo_id) {
+        const promo = await repository.getPromotion(voucher.promo_id, context.accessToken);
+        if (promo && !promo.is_active) {
+          throw new HttpError(422, "PROMOTION_PAUSED", "Không thể kích hoạt voucher của chiến dịch đang tạm dừng");
+        }
+      }
       return repository.updateVoucher(voucherId, {
         expectedVersion: voucher.version,
         isActive: !voucher.is_active,

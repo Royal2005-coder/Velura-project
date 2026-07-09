@@ -58,6 +58,9 @@ export const productApi = {
   updateStock(productId, payload) {
     return request(`/api/v1/admin/products/${encodeURIComponent(productId)}/update-stock`, { method: "POST", body: payload });
   },
+  bulkUpdateStock(productId, payload) {
+    return request(`/api/v1/admin/products/${encodeURIComponent(productId)}/bulk-stock`, { method: "POST", body: payload });
+  },
   previewCsv(csv) {
     return request("/api/v1/admin/products/import-csv", { method: "POST", body: { csv } });
   },

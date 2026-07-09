@@ -7,6 +7,10 @@ playwright-report/
 permission-test.txt
 categories/
 *.log
+*.zip
+.mcp.json
+scratch/
+Velura-project (1)/
 .vscode/*
 !.vscode/settings.json
 .idea/

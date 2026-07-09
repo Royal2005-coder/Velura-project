@@ -1,28 +1,11 @@
-import fs from "fs";
+import pg from 'pg';
 
-const SUPABASE_URL = "https://drvkrpoojyncodfytftn.supabase.co";
+const { Client } = pg;
 
-let SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-if (!SERVICE_KEY) {
-  try {
-    const env = fs.readFileSync(new URL("../../.env", import.meta.url), "utf8");
-    const match = env.match(/VELURA_SUPABASE_SERVICE_ROLE_KEY=(.*)/);
-    if (match) SERVICE_KEY = match[1].trim();
-  } catch {}
-}
-
-if (!SERVICE_KEY) {
-  console.error("Error: Supabase Service Role Key not found in .env!");
-  process.exit(1);
-}
-
-const headers = {
-  apikey: SERVICE_KEY,
-  authorization: `Bearer ${SERVICE_KEY}`,
-  accept: "application/json",
-  prefer: "resolution=merge-duplicates,return=representation",
-  "content-type": "application/json"
-};
+const client = new Client({
+  connectionString: 'postgresql://postgres:UelVelura@123@db.drvkrpoojyncodfytftn.supabase.co:5432/postgres',
+  ssl: { rejectUnauthorized: false }
+});
 
 const NEW_BLOGS = [
   /* ──────────────────────────────────────────────────────────
@@ -33,12 +16,12 @@ const NEW_BLOGS = [
     category_slug: "trend",
     title: "Bảng màu mùa thu 2026: Sắc nâu cognac và hồng phấn lên ngôi",
     excerpt: "Năm nay, các nhà mốt lớn đồng loạt giới thiệu bảng màu ấm áp xoay quanh nâu cognac, hồng phấn dịu nhẹ và xanh sage. Velura mách bạn cách phối ba sắc màu chủ đạo để có tủ đồ mùa thu hoàn hảo.",
-    image_url: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=1200&h=800&q=80",
+    image_url: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1200&h=800&q=80",
     author: "Nguyễn Thu Hà",
     read_minutes: 8,
     is_featured: true,
     published_at: "2026-06-02T09:00:00+07:00",
-    content: JSON.stringify({
+    content: {
       intro: "Mùa thu 2026 đánh dấu sự quay trở lại mạnh mẽ của các gam màu trầm ấm, tinh tế. Bảng màu xoay quanh nâu cognac — sắc nâu đỏ gợi nhớ vị rượu sành điệu, hồng phấn pastel tựa cánh hoa đào và xanh sage mộng mơ trở thành bộ ba hoàn hảo cho tủ đồ thu đông.",
       takeaways: [
         "Nâu cognac là sắc màu trung tâm, thay thế hoàn hảo cho đen truyền thống.",
@@ -50,16 +33,16 @@ const NEW_BLOGS = [
         {
           heading: "Nâu cognac: Đẳng cấp thay thế đen kinh điển",
           body: [
-            "Cognac là sắc nâu có ánh đỏ ấm, gợi liên tưởng đến vẻ sang trọng của da thuộc và rượu vang thượng hạng. Khác với nâu đất thông thường, cognac có chiều sâu và độ ấm giúp tôn da người châu Á một cách tự nhiên nhất.",
-            "Blazer cognac kết hợp quần suông ivory hoặc đầm lụa rủ mềm mại là công thức phối đồ chuẩn chỉnh cho mùa thu. Thêm một chiếc túi da thật cùng tông sẽ hoàn thiện diện mạo thanh lịch mà không hề đơn điệu."
+            "Cognac is a warm reddish brown tone, reminiscent of luxury leather and fine wine. Unlike basic brown, cognac has depth and warmth that naturally flatters Asian skin tones.",
+            "A cognac blazer paired with ivory trousers or a fluid silk dress is a classic autumn look. Adding a matching genuine leather handbag finishes the look with quiet elegance."
           ],
           productSkus: ["VLR-SD-005", "VLR-AO-001", "VLR-SD-002"]
         },
         {
           heading: "Hồng phấn & Sage: Bộ đôi cân bằng hoàn hảo",
           body: [
-            "Sự kết hợp giữa hồng phấn pastel và xanh sage tạo ra bảng màu nhẹ nhàng nhưng đầy tính nghệ thuật. Hồng phấn mang lại nét dịu dàng qua áo blouse lụa hay khăn choàng mỏng, trong khi sage làm nền bằng quần wide-leg hay blazer dáng dài.",
-            "Cả hai tông màu đều thuộc họ trung tính mềm (soft neutral), giúp người mặc dễ dàng phối với bất kỳ phụ kiện nào mà vẫn giữ được tổng thể hài hòa, tinh tế."
+            "The combination of soft pastel pink and sage green creates a gentle yet artistic palette. Pastel pink brings softness via a silk blouse or light scarf, while sage green grounds the look as wide-leg trousers or a long coat.",
+            "Both shades behave as soft neutrals, making it easy to pair them with any accessories while keeping the overall aesthetic harmonized and refined."
           ],
           productSkus: ["VLR-SD-004", "VLR-SD-019", "VLR-AO-003"]
         }
@@ -69,7 +52,7 @@ const NEW_BLOGS = [
         { sku: "VLR-SD-004", note: "Set Sage Pleated xanh sage dịu mát cân bằng bảng màu ấm." },
         { sku: "VLR-SD-019", note: "Set Boho Linen Hồng Kem nhẹ nhàng cho những ngày thu nắng nhạt." }
       ]
-    })
+    }
   },
 
   /* ──────────────────────────────────────────────────────────
@@ -80,12 +63,12 @@ const NEW_BLOGS = [
     category_slug: "event",
     title: "Địch Lệ Nhiệt Ba mặc thiết kế Phan Huy trên bìa tạp chí",
     excerpt: "Mỹ nữ Tân Cương Địch Lệ Nhiệt Ba diện đầm Haute Couture 'Cành vàng lá ngọc' của NTK trẻ Phan Huy trên bìa ấn phẩm Marie Claire Trung Quốc.",
-    image_url: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?auto=format&fit=crop&w=800&h=600&q=80",
+    image_url: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&h=600&q=80",
     author: "Lê Minh Châu",
     read_minutes: 6,
     is_featured: false,
     published_at: "2026-05-28T09:00:00+07:00",
-    content: JSON.stringify({
+    content: {
       intro: "Sự xuất hiện của Địch Lệ Nhiệt Ba trên bìa Marie Claire Trung Quốc số tháng 6/2026 trong thiết kế Haute Couture của nhà thiết kế Việt Nam Phan Huy đã gây tiếng vang lớn trong làng thời trang châu Á.",
       takeaways: [
         "Thiết kế 'Cành vàng lá ngọc' kết hợp kỹ thuật thêu tay truyền thống Việt Nam với phom dáng haute couture Pháp.",
@@ -106,7 +89,7 @@ const NEW_BLOGS = [
         { sku: "VLR-SD-010", note: "Set Soft Ceremony thanh lịch lấy cảm hứng từ haute couture." },
         { sku: "VLR-SD-025", note: "Đầm dạ hội Tulle bồng bềnh với kỹ thuật xếp tầng thủ công." }
       ]
-    })
+    }
   },
 
   /* ──────────────────────────────────────────────────────────
@@ -122,7 +105,7 @@ const NEW_BLOGS = [
     read_minutes: 12,
     is_featured: false,
     published_at: "2026-05-25T09:00:00+07:00",
-    content: JSON.stringify({
+    content: {
       intro: "Hôn lễ của siêu mẫu Hề Mộng Dao và doanh nhân Hà Du Quân tại Pháp đã thu hút sự quan tâm lớn từ truyền thông và giới thời trang châu Á. Trong bộ ảnh pre-wedding, cô lựa chọn đầm ren thêu tinh xảo của thương hiệu Việt Montsand.",
       takeaways: [
         "Local brand Việt Nam ngày càng được các ngôi sao quốc tế tin tưởng lựa chọn.",
@@ -143,7 +126,7 @@ const NEW_BLOGS = [
         { sku: "VLR-SD-010", note: "Set Soft Ceremony ren tinh xảo lấy cảm hứng từ wedding couture." },
         { sku: "VLR-SD-025", note: "Đầm dạ hội Tulle lộng lẫy cho các dịp lễ trọng đại." }
       ]
-    })
+    }
   },
 
   /* ──────────────────────────────────────────────────────────
@@ -159,8 +142,8 @@ const NEW_BLOGS = [
     read_minutes: 10,
     is_featured: false,
     published_at: "2026-05-20T09:00:00+07:00",
-    content: JSON.stringify({
-      intro: "London Fashion Week Spring 2026 đánh dấu cột mốc lịch sử khi ba thương hiệu Việt Nam — TRAN HUNG, Montsand and IHF Studio — cùng xuất hiện trong lịch trình chính thức. Đây là bước tiến lớn khẳng định vị thế của thời trang Việt trên bản đồ thời trang quốc tế.",
+    content: {
+      intro: "London Fashion Week Spring 2026 đánh dấu cột mốc lịch sử khi ba thương hiệu Việt Nam — TRAN HUNG, Montsand và IHF Studio — cùng xuất hiện trong lịch trình chính thức. Đây là bước tiến lớn khẳng định vị thế của thời trang Việt trên bản đồ thời trang quốc tế.",
       takeaways: [
         "TRAN HUNG đã có 13 mùa liên tiếp góp mặt tại London Fashion Week.",
         "BST 'Xuân, Hạ, Thu, Đông,... và Xuân' mang ý niệm vòng tuần hoàn vô hạn của đời người.",
@@ -181,7 +164,7 @@ const NEW_BLOGS = [
         { sku: "VLR-SD-018", note: "Set White Resort lấy cảm hứng từ tinh thần bay bổng tại LFW." },
         { sku: "VLR-SD-004", note: "Set Sage Pleated mang đậm triết lý bền vững của thời trang mới." }
       ]
-    })
+    }
   },
 
   /* ──────────────────────────────────────────────────────────
@@ -197,7 +180,7 @@ const NEW_BLOGS = [
     read_minutes: 7,
     is_featured: false,
     published_at: "2026-05-18T09:00:00+07:00",
-    content: JSON.stringify({
+    content: {
       intro: "Quiet luxury — xu hướng sang trọng thầm lặng — đang dần thay thế phong cách 'logo mania' vốn thống trị thời trang suốt nhiều năm qua. Phái đẹp Việt ngày càng ưa chuộng những thiết kế tinh giản, đặt trọng tâm vào chất liệu và đường cắt.",
       takeaways: [
         "Quiet luxury tập trung vào chất liệu cao cấp thay vì logo thương hiệu.",
@@ -218,7 +201,7 @@ const NEW_BLOGS = [
         { sku: "VLR-SD-002", note: "Set Ivory Draped lụa rủ — hiện thân của quiet luxury." },
         { sku: "VLR-AO-002", note: "Áo sơ mi lụa tơ tằm mềm mại — đầu tư chất liệu thay vì logo." }
       ]
-    })
+    }
   },
 
   /* ──────────────────────────────────────────────────────────
@@ -234,7 +217,7 @@ const NEW_BLOGS = [
     read_minutes: 5,
     is_featured: false,
     published_at: "2026-05-14T09:00:00+07:00",
-    content: JSON.stringify({
+    content: {
       intro: "Blazer linen là món đồ đa năng bậc nhất cho mùa hè nhiệt đới. Với chất liệu thoáng mát và phom dáng thanh lịch, chiếc blazer giúp bạn tự tin từ văn phòng đến buổi hẹn hò lãng mạn.",
       takeaways: [
         "Chọn blazer linen dáng oversize để tạo cảm giác thoáng đãng trong ngày nóng.",
@@ -256,7 +239,7 @@ const NEW_BLOGS = [
         { sku: "VLR-SD-004", note: "Set Sage dịu mát phối blazer linen hoàn hảo cho mùa hè." },
         { sku: "VLR-AO-003", note: "Áo Peplum cổ vuông xanh sage thanh lịch layer cùng blazer." }
       ]
-    })
+    }
   },
 
   /* ──────────────────────────────────────────────────────────
@@ -272,7 +255,7 @@ const NEW_BLOGS = [
     read_minutes: 4,
     is_featured: false,
     published_at: "2026-05-10T09:00:00+07:00",
-    content: JSON.stringify({
+    content: {
       intro: "Áo dài cổ yếm đang trở thành xu hướng 'hot trend' được nhiều sao Việt lựa chọn. Á khôi Thanh Hương gần đây gây ấn tượng khi diện mốt áo dài cách tân này tại nhiều sự kiện lớn.",
       takeaways: [
         "Áo dài cổ yếm kế thừa di sản truyền thống và phá cách phù hợp phụ nữ hiện đại.",
@@ -293,7 +276,7 @@ const NEW_BLOGS = [
         { sku: "VLR-SD-010", note: "Set Soft Ceremony thanh lịch lấy cảm hứng từ áo dài cổ yếm." },
         { sku: "VLR-AO-004", note: "Áo cổ yếm lụa tinh tế tôn dáng người phụ nữ Việt." }
       ]
-    })
+    }
   },
 
   /* ──────────────────────────────────────────────────────────
@@ -309,7 +292,7 @@ const NEW_BLOGS = [
     read_minutes: 9,
     is_featured: false,
     published_at: "2026-05-06T09:00:00+07:00",
-    content: JSON.stringify({
+    content: {
       intro: "Đặng Mỹ Linh — nữ doanh nhân trẻ thế hệ millennials — chia sẻ rằng cô coi trang phục như những trang nhật ký ghi lại từng chương trong cuộc đời. Mỗi giai đoạn, mỗi tâm trạng đều được phản ánh qua cách cô chọn chất liệu, màu sắc và phom dáng.",
       takeaways: [
         "Phong cách cá nhân cần được xây dựng từ sự thấu hiểu bản thân.",
@@ -330,7 +313,7 @@ const NEW_BLOGS = [
         { sku: "VLR-AO-002", note: "Áo sơ mi lụa tơ tằm — nền tảng của phong cách tinh giản." },
         { sku: "VLR-SD-003", note: "Set Midnight Blue chạm eo tinh tế tôn nét quyến rũ cá nhân." }
       ]
-    })
+    }
   },
 
   /* ──────────────────────────────────────────────────────────
@@ -346,7 +329,7 @@ const NEW_BLOGS = [
     read_minutes: 11,
     is_featured: false,
     published_at: "2026-05-02T09:00:00+07:00",
-    content: JSON.stringify({
+    content: {
       intro: "Mỗi chiếc váy linen tại Velura đều mang trong mình một hành trình dài — từ cánh đồng lanh hữu cơ ở vùng Normandie (Pháp) qua bàn tay nghệ nhân dệt, nhuộm, cắt may cho đến khi chạm vào làn da người mặc. Đó là câu chuyện về sự tỉ mỉ, kiên nhẫn và tình yêu.",
       takeaways: [
         "Sợi lanh Normandie cho ra thớ sợi dai bền, mềm mại hơn sau mỗi lần giặt.",
@@ -367,7 +350,7 @@ const NEW_BLOGS = [
         { sku: "VLR-SD-016", note: "Set dạo biển linen thô mộc — sản phẩm tiêu biểu từ xưởng Velura." },
         { sku: "VLR-AO-003", note: "Áo Peplum cổ vuông xanh sage — chất liệu tự nhiên tinh khiết." }
       ]
-    })
+    }
   },
 
   /* ──────────────────────────────────────────────────────────
@@ -383,7 +366,7 @@ const NEW_BLOGS = [
     read_minutes: 7,
     is_featured: false,
     published_at: "2026-04-28T09:00:00+07:00",
-    content: JSON.stringify({
+    content: {
       intro: "Nghệ thuật xếp vali đi nghỉ dưỡng không nằm ở việc bạn mang theo bao nhiêu món đồ, mà ở khả năng biến hóa linh hoạt của từng thiết kế. Xu hướng resort wear hè 2026 tập trung tối giản hóa số lượng trang phục bằng cách ưu tiên các phom dáng thông minh.",
       takeaways: [
         "Công thức xếp đồ 5-4-3-2-1 giúp vali gọn nhẹ nhưng đa năng tối đa.",
@@ -404,24 +387,46 @@ const NEW_BLOGS = [
         { sku: "VLR-SD-016", note: "Set dạo biển linen thoáng mát, linh hoạt di chuyển." },
         { sku: "VLR-SD-018", note: "Set White Resort linen bay bổng tôn dáng nữ thần biển." }
       ]
-    })
+    }
   }
 ];
 
-async function seed() {
-  console.log("Upserting new modern blogs to Supabase database...");
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/blog`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(NEW_BLOGS)
-  });
+async function run() {
+  await client.connect();
+  console.log('Connected to PG client to seed blogs directly.');
 
-  if (!res.ok) {
-    console.error("Failed to seed blogs:", await res.text());
-    process.exit(1);
+  // Truncate existing blog records
+  console.log('Truncating blog table...');
+  await client.query('TRUNCATE TABLE public.blog CASCADE');
+  console.log('Table truncated.');
+
+  // Insert blogs one by one
+  console.log('Inserting 10 blogs directly...');
+  for (const blog of NEW_BLOGS) {
+    await client.query(
+      `INSERT INTO public.blog (
+        slug, category_slug, title, excerpt, content, image_url, author, read_minutes, is_featured, published_at, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'published')`,
+      [
+        blog.slug,
+        blog.category_slug,
+        blog.title,
+        blog.excerpt,
+        JSON.stringify(blog.content),
+        blog.image_url,
+        blog.author,
+        blog.read_minutes,
+        blog.is_featured,
+        blog.published_at
+      ]
+    );
   }
 
-  console.log("Successfully seeded new modern blog posts into Supabase database.");
+  console.log('Direct seeding finished successfully.');
+  await client.end();
 }
 
-seed().catch(console.error);
+run().catch(e => {
+  console.error('Seeding failed:', e);
+  process.exit(1);
+});

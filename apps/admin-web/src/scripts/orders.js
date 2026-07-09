@@ -47,14 +47,18 @@ function paymentOf(order) {
   return Array.isArray(order.payments) ? order.payments[0] : null;
 }
 
-function needsAttention(order) {
+function isPaymentError(order) {
   const payment = paymentOf(order);
-  return order.status === "pending" || order.status === "failed_delivery" || payment?.has_discrepancy || payment?.payment_status === "discrepancy";
+  return payment?.payment_status === "failed" || payment?.payment_status === "discrepancy" || payment?.has_discrepancy === true;
+}
+
+function needsAttention(order) {
+  return order.status === "pending" || order.status === "failed_delivery" || isPaymentError(order);
 }
 
 function filteredOrders() {
   if (state.active === "attention") return state.orders.filter(needsAttention);
-  if (state.active === "payment") return state.orders.filter((order) => paymentOf(order)?.has_discrepancy || paymentOf(order)?.payment_status === "discrepancy");
+  if (state.active === "payment") return state.orders.filter(isPaymentError);
   if (state.active === "cancelled") return state.orders.filter((order) => order.status === "cancelled");
   return state.orders;
 }
@@ -141,7 +145,7 @@ function renderTable() {
 }
 
 function updateCounters() {
-  const counts = [state.count, state.orders.filter((o) => o.status === "pending").length, state.orders.filter((o) => paymentOf(o)?.has_discrepancy).length, state.orders.filter(needsAttention).length];
+  const counts = [state.count, state.orders.filter((o) => o.status === "pending").length, state.orders.filter(isPaymentError).length, state.orders.filter(needsAttention).length];
   document.querySelectorAll(".admin-order-kpis .admin-kpi-card__value").forEach((node, index) => { node.textContent = String(counts[index] || 0); });
   document.querySelectorAll("[data-order-tab] span").forEach((node) => {
     const tab = node.parentElement.dataset.orderTab;
@@ -164,7 +168,7 @@ function render() {
 async function loadOrders(params = {}) {
   panel.innerHTML = `<div class="admin-order-empty"><strong>Đang tải dữ liệu đơn hàng...</strong></div>`;
   try {
-    const result = await orderApi.list({ ...params, limit: 100 });
+    const result = await orderApi.list({ ...params, limit: 1000 });
     state.orders = result.rows || [];
     state.count = result.count ?? state.orders.length;
     render();

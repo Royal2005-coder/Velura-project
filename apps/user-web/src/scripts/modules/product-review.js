@@ -18,11 +18,11 @@ export function initProductReview() {
   const stars = document.querySelectorAll(".review-rating__star");
   const tagBtns = document.querySelectorAll(".review-tag-btn");
   const textarea = document.getElementById("js-review-textarea");
-  
+
   const mediaInput = document.getElementById("js-media-input");
   const mediaPreview = document.getElementById("js-media-preview");
   const dropzone = document.getElementById("js-dropzone");
-  
+
   const submitBtn = document.getElementById("js-btn-submit-review-main");
 
   let ratingValue = 0;
@@ -42,7 +42,7 @@ export function initProductReview() {
         if (order && order.items && order.items.length > 0) {
           const items = order.items;
           let firstItem = items[0];
-          
+
           // Check if there's a specific product_id in URL to pre-select
           const productIdFromUrl = urlParams.get("product_id");
           if (productIdFromUrl) {
@@ -88,11 +88,11 @@ export function initProductReview() {
     const selectorDiv = document.createElement("div");
     selectorDiv.id = "js-review-product-selector";
     selectorDiv.style.cssText = "margin-top: 24px; width: 100%; border-top: 1px dashed var(--line, #E8DFD6); padding-top: 24px;";
-    
+
     let optionsHtml = items.map((item, index) => {
       const isSelected = item.item_id === currentProduct.item_id;
       const priceFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.unit_price);
-      
+
       return `
         <div class="review-product-card ${isSelected ? 'is-selected' : ''}" data-index="${index}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid ${isSelected ? '#7D562D' : '#E8DFD6'}; border-radius: 8px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; background-color: ${isSelected ? '#FAF6F2' : '#FFF'};">
           <img src="${item.product_image || '/src/assets/images/placeholder.jpg'}" alt="${item.product_name}" style="width: 48px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #E8DFD6;" />
@@ -190,12 +190,72 @@ export function initProductReview() {
           const escapedText = text.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
           const regex = new RegExp(`(,\\s*)?${escapedText}|(,\\s*)?${escapedText.toLowerCase()}`, "g");
           let cleanComment = currentComment.replace(regex, "").trim();
-          
+
           // Fix formatting issues
           cleanComment = cleanComment.replace(/^,\s*/, "").replace(/,\s*$/, "");
           textarea.value = cleanComment;
         }
       });
+    });
+  }
+
+  // Real-time Profanity Filter
+  function setupProfanityFilter() {
+    if (!textarea) return;
+
+    const bannedWords = [
+      "đm", "địt", "đéo", "vl", "vcl", "lồn", "cặc", "buồi", "chó đẻ",
+      "con đĩ", "đĩ", "phò", "đậu má", "đĩ mẹ", "má mày", "mẹ mày", "thằng chó", "con chó",
+      "vãi l", "vãi lồn", "đcm", "dcm", "đmm", "dmm", "đệt", "vãi lol", "đkm", "dkm",
+      "cứt", "đái", "ngu", "óc chó", "đần", "cặc", "đụ", "cak", "đụ má",
+      "cc", "cđĩ", "cdi", "đjt", "djt", "lon", "lol", "lìn", "ml", "sml",
+      "cave", "gái điếm", "đĩ điếm", "đĩ chó", "mặt lồn", "mặt lol",
+      "thằng lồn", "thằng lol", "con lồn", "con lol", "cái lồn", "cái lol",
+      "vãi cứt", "vãi đái", "hãm lồn", "hãm lol", "xàm lồn", "xàm lol",
+      "đụ mẹ", "đụ mọe", "đụ cha", "đụ đĩ", "đụ lồn", "đụ cặc",
+      "chết cụ", "chết mẹ", "chết cha", "bố mày", "ông nội mày", "chó chết",
+      "câm mồm", "ngu học", "đần độn", "ngu si", "ngu như bò", "ngu như chó"
+    ];
+
+    const escapeRegex = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Positive lookahead for trailing boundary so spaces aren't consumed, allowing consecutive matches
+    const bannedPattern = new RegExp(`(^|\\s|[,.!?;])(${bannedWords.map(escapeRegex).join('|')})(?=\\s|[,.!?;]|$)`, 'gi');
+
+    textarea.addEventListener("input", (e) => {
+      let content = e.target.value;
+      let hasProfanity = false;
+
+      const newContent = content.replace(bannedPattern, (match, p1, p2) => {
+        hasProfanity = true;
+        return p1 + "***";
+      });
+
+      if (hasProfanity) {
+        // Save cursor position
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+
+        textarea.value = newContent;
+
+        // Restore cursor position
+        try {
+          textarea.setSelectionRange(start, end);
+        } catch (e) { }
+
+        // Visual feedback
+        textarea.style.transition = "all 0.3s ease";
+        textarea.style.borderColor = "var(--primary-color, #E53935)"; // Red alert
+        textarea.style.backgroundColor = "#fff0f0";
+        textarea.style.color = "#d32f2f";
+
+        setTimeout(() => {
+          textarea.style.borderColor = "";
+          textarea.style.backgroundColor = "";
+          textarea.style.color = "";
+        }, 1500);
+
+        createToast("⚠️ Cảnh báo: Vui lòng sử dụng ngôn từ phù hợp. Từ khóa nhạy cảm đã bị che lại.", 3500);
+      }
     });
   }
 
@@ -218,7 +278,7 @@ export function initProductReview() {
         }
 
         selectedFiles.push(file);
-        
+
         const wrapper = document.createElement("div");
         wrapper.className = "media-upload__thumb-wrapper";
 
@@ -349,7 +409,7 @@ export function initProductReview() {
         try {
           const errData = await response.json();
           errMsg = errData?.error?.message || errData?.message || errMsg;
-        } catch {}
+        } catch { }
         throw new Error(errMsg);
       }
 
@@ -406,6 +466,7 @@ export function initProductReview() {
   loadProductSummary();
   setupStars();
   setupTags();
+  setupProfanityFilter();
   setupMediaUpload();
   setupSubmit();
 }

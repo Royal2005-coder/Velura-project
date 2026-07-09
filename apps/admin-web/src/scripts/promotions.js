@@ -65,7 +65,15 @@ function campaignRows() {
 }
 
 function voucherRows() {
-  return state.vouchers.map((row) => `<tr><td><strong>${escapePromotionHtml(row.code)}</strong><small class="admin-order-subtext">${escapePromotionHtml(row.name)}</small></td><td>${escapePromotionHtml(row.discount_type === "percentage" ? "Theo phần trăm" : row.discount_type === "fixed_amount" ? "Số tiền cố định" : row.discount_type === "free_shipping" ? "Miễn phí vận chuyển" : row.discount_type)}</td><td>${row.discount_type === "percentage" ? row.discount_value + "%" : money(row.discount_value)}</td><td>${money(row.min_order_value)}</td><td>${escapePromotionHtml(row.used_count || 0)} / ${escapePromotionHtml(row.usage_limit_total || "∞")}</td><td>${date(row.end_date)}</td><td>${badge(row.is_active)}</td><td><div class="admin-table-actions"><button class="admin-icon-button admin-icon-button--sm" data-promo-detail="voucher:${escapePromotionHtml(row.voucher_id)}" title="Chi tiết">${icon("eye")}</button><button class="admin-icon-button admin-icon-button--sm" data-voucher-toggle="${escapePromotionHtml(row.voucher_id)}" title="${row.is_active ? "Tạm dừng" : "Kích hoạt"}">${icon("refresh")}</button></div></td></tr>`).join("");
+  return state.vouchers.map((row) => {
+    const promo = row.promo_id ? state.promotions.find(p => p.promo_id === row.promo_id) : null;
+    const isPromoActive = promo ? promo.is_active : true;
+    const isActive = row.is_active && isPromoActive;
+    const statusBadge = isActive 
+      ? `<span class="admin-badge admin-badge--success">Đang hoạt động</span>`
+      : `<span class="admin-badge admin-badge--warning">${!row.is_active ? "Tạm dừng" : "Tạm dừng (Theo chiến dịch)"}</span>`;
+    return `<tr><td><strong>${escapePromotionHtml(row.code)}</strong><small class="admin-order-subtext">${escapePromotionHtml(row.name)}</small></td><td>${escapePromotionHtml(row.discount_type === "percentage" ? "Theo phần trăm" : row.discount_type === "fixed_amount" ? "Số tiền cố định" : row.discount_type === "free_shipping" ? "Miễn phí vận chuyển" : row.discount_type)}</td><td>${row.discount_type === "percentage" ? row.discount_value + "%" : money(row.discount_value)}</td><td>${money(row.min_order_value)}</td><td>${escapePromotionHtml(row.used_count || 0)} / ${escapePromotionHtml(row.usage_limit_total || "∞")}</td><td>${date(row.end_date)}</td><td>${statusBadge}</td><td><div class="admin-table-actions"><button class="admin-icon-button admin-icon-button--sm" data-promo-detail="voucher:${escapePromotionHtml(row.voucher_id)}" title="Chi tiết">${icon("eye")}</button><button class="admin-icon-button admin-icon-button--sm" data-voucher-toggle="${escapePromotionHtml(row.voucher_id)}" title="${row.is_active ? "Tạm dừng" : "Kích hoạt"}">${icon("refresh")}</button></div></td></tr>`;
+  }).join("");
 }
 
 function bundleRows() {
@@ -165,9 +173,72 @@ function detail(type, id) {
   if (type === "promotion") {
     const budgetUsed = Number(row.total_discount_issued || 0);
     const budgetTotal = Number(row.budget_limit || 0);
-    bodyHtml = `<dl class="admin-data-list"><div><dt>Tên chiến dịch</dt><dd>${escapePromotionHtml(row.promo_name)}</dd></div><div><dt>Loại</dt><dd>${escapePromotionHtml(row.promo_type)}</dd></div><div><dt>Trạng thái</dt><dd>${badge(row.is_active)}</dd></div><div><dt>Thời gian</dt><dd>${date(row.start_date)} - ${date(row.end_date)}</dd></div><div><dt>Ngân sách</dt><dd>${money(budgetTotal)}</dd></div><div><dt>Đã phát hành</dt><dd>${money(budgetUsed)}</dd></div><div><dt>Tiến trình</dt><dd>${budgetTotal > 0 ? progressBar(budgetUsed, budgetTotal) : "Không giới hạn"}</dd></div><div><dt>Phiên bản</dt><dd>${escapePromotionHtml(row.version)}</dd></div></dl>`;
+    const linkedVouchers = state.vouchers.filter((v) => v.promo_id === id);
+    const totalVoucherUses = linkedVouchers.reduce((sum, v) => sum + (v.used_count || 0), 0);
+    
+    let vouchersHtml = "";
+    if (linkedVouchers.length > 0) {
+      vouchersHtml = `
+        <h3 class="admin-drawer__section" style="margin-top:20px;font-family:'Playfair Display',Georgia,serif;font-size:1.125rem;font-weight:500;">Mã giảm giá liên kết (${linkedVouchers.length})</h3>
+        <table class="admin-table admin-data-table" style="font-size:0.8125rem;margin-top:8px;">
+          <thead><tr><th>Mã Voucher</th><th>Loại giảm</th><th>Giá trị</th><th>Lượt dùng</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            ${linkedVouchers.map(v => `
+              <tr>
+                <td><strong>${escapePromotionHtml(v.code)}</strong><br><small style="color:var(--muted)">${escapePromotionHtml(v.name)}</small></td>
+                <td>${escapePromotionHtml(v.discount_type === "percentage" ? "Theo phần trăm" : v.discount_type === "fixed_amount" ? "Số tiền cố định" : "Miễn phí vận chuyển")}</td>
+                <td>${v.discount_type === "percentage" ? v.discount_value + "%" : money(v.discount_value)}</td>
+                <td>${v.used_count || 0} / ${v.usage_limit_total || "∞"}</td>
+                <td>${v.is_active && row.is_active ? badge(true) : `<span class="admin-badge admin-badge--warning">${!v.is_active ? "Tạm dừng" : "Tạm dừng (Theo chiến dịch)"}</span>`}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+    } else {
+      vouchersHtml = `
+        <h3 class="admin-drawer__section" style="margin-top:20px;font-family:'Playfair Display',Georgia,serif;font-size:1.125rem;font-weight:500;">Mã giảm giá liên kết</h3>
+        <div style="font-style:italic;color:var(--muted);padding:8px 0;font-size:0.8125rem;">Chiến dịch này chưa được liên kết với mã giảm giá nào.</div>
+      `;
+    }
+
+    bodyHtml = `
+      <dl class="admin-data-list">
+        <div><dt>Tên chiến dịch</dt><dd>${escapePromotionHtml(row.promo_name)}</dd></div>
+        <div><dt>Loại</dt><dd>${escapePromotionHtml(row.promo_type)}</dd></div>
+        <div><dt>Trạng thái</dt><dd>${badge(row.is_active)}</dd></div>
+        <div><dt>Thời gian</dt><dd>${date(row.start_date)} - ${date(row.end_date)}</dd></div>
+        <div><dt>Ngân sách</dt><dd>${money(budgetTotal)}</dd></div>
+        <div><dt>Đã phát hành</dt><dd>${money(budgetUsed)}</dd></div>
+        <div><dt>Tiến trình</dt><dd>${budgetTotal > 0 ? progressBar(budgetUsed, budgetTotal) : "Không giới hạn"}</dd></div>
+        <div><dt>Tổng lượt dùng mã liên kết</dt><dd><b>${totalVoucherUses}</b> lượt</dd></div>
+        <div><dt>Phiên bản</dt><dd>${escapePromotionHtml(row.version)}</dd></div>
+      </dl>
+      ${vouchersHtml}
+    `;
   } else if (type === "voucher") {
-    bodyHtml = `<dl class="admin-data-list"><div><dt>Mã</dt><dd><strong>${escapePromotionHtml(row.code)}</strong></dd></div><div><dt>Tên</dt><dd>${escapePromotionHtml(row.name)}</dd></div><div><dt>Loại giảm</dt><dd>${escapePromotionHtml(row.discount_type)}</dd></div><div><dt>Giá trị</dt><dd>${row.discount_type === "percentage" ? row.discount_value + "%" : money(row.discount_value)}</dd></div><div><dt>Giảm tối đa</dt><dd>${row.max_discount_amount ? money(row.max_discount_amount) : "Không giới hạn"}</dd></div><div><dt>Đơn tối thiểu</dt><dd>${money(row.min_order_value)}</dd></div><div><dt>Lượt dùng</dt><dd>${row.used_count || 0} / ${row.usage_limit_total || "∞"}</dd></div><div><dt>Giới hạn/user</dt><dd>${row.usage_limit_per_user}</dd></div><div><dt>Thời hạn</dt><dd>${date(row.start_date)} - ${date(row.end_date)}</dd></div><div><dt>Trạng thái</dt><dd>${badge(row.is_active)}</dd></div></dl>`;
+    const promo = row.promo_id ? state.promotions.find(p => p.promo_id === row.promo_id) : null;
+    const promoName = promo ? promo.promo_name : "Không thuộc chiến dịch";
+    const isPromoActive = promo ? promo.is_active : true;
+    const isVoucherActive = row.is_active && isPromoActive;
+    const finalBadge = isVoucherActive 
+      ? badge(true) 
+      : `<span class="admin-badge admin-badge--warning">${!row.is_active ? "Tạm dừng" : "Tạm dừng (Theo chiến dịch)"}</span>`;
+    bodyHtml = `<dl class="admin-data-list">
+      <div><dt>Mã</dt><dd><strong>${escapePromotionHtml(row.code)}</strong></dd></div>
+      <div><dt>Tên</dt><dd>${escapePromotionHtml(row.name)}</dd></div>
+      <div><dt>Chiến dịch áp dụng</dt><dd><strong>${escapePromotionHtml(promoName)}</strong></dd></div>
+      <div><dt>Loại giảm</dt><dd>${escapePromotionHtml(row.discount_type === "percentage" ? "Theo phần trăm" : row.discount_type === "fixed_amount" ? "Số tiền cố định" : "Miễn phí vận chuyển")}</dd></div>
+      <div><dt>Giá trị</dt><dd>${row.discount_type === "percentage" ? row.discount_value + "%" : money(row.discount_value)}</dd></div>
+      <div><dt>Giảm tối đa</dt><dd>${row.max_discount_amount ? money(row.max_discount_amount) : "Không giới hạn"}</dd></div>
+      <div><dt>Đơn tối thiểu</dt><dd>${money(row.min_order_value)}</dd></div>
+      <div><dt>Lượt dùng</dt><dd>${row.used_count || 0} / ${row.usage_limit_total || "∞"}</dd></div>
+      <div><dt>Giới hạn/user</dt><dd>${row.usage_limit_per_user}</dd></div>
+      <div><dt>Danh mục áp dụng</dt><dd>${row.applicable_categories ? escapePromotionHtml(row.applicable_categories) : "Tất cả danh mục"}</dd></div>
+      <div><dt>Nhóm khách hàng</dt><dd>${row.applicable_user_group === "all_users" ? "Tất cả khách hàng" : row.applicable_user_group === "new_users" ? "Khách hàng mới" : row.applicable_user_group === "vip_members" ? "Thành viên VIP" : escapePromotionHtml(row.applicable_user_group || "Tất cả khách hàng")}</dd></div>
+      <div><dt>Thời hạn</dt><dd>${date(row.start_date)} - ${date(row.end_date)}</dd></div>
+      <div><dt>Trạng thái</dt><dd>${finalBadge}</dd></div>
+    </dl>`;
   } else {
     const comboId = escapePromotionHtml(row.product_id);
     const cachedItems = state.comboItems[row.product_id] || [];
@@ -269,7 +340,7 @@ function createModal(type) {
     overlay.innerHTML = `<div class="admin-modal-overlay"><section class="admin-modal admin-modal--lg"><form data-combo-create-form><header class="admin-modal__header"><h2>Tạo Combo mới</h2><button class="admin-icon-button" type="button" data-promo-close>×</button></header><div class="admin-modal__body"><label class="admin-form-group"><span class="admin-form-label">Tên combo <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="name" required placeholder="VD: Set Đầm Dạ Hội Rose" minlength="2" maxlength="255"></label><label class="admin-form-group"><span class="admin-form-label">Mã SKU <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="sku" required placeholder="VD: VLR-SD-001" pattern="[A-Z]{2,6}-[A-Z0-9]{2,20}(-[A-Z0-9]{1,10})*" title="VD: VLR-SD-001 (2-6 chữ cái HOA - 2-20 chữ số/chữ cái)"></label><label class="admin-form-group"><span class="admin-form-label">Danh mục <b style="color:var(--error)">*</b></span><select class="admin-form-control" name="categoryId" required><option value="">-- Chọn danh mục --</option>${categories.map(c => `<option value="${escapePromotionHtml(c.category_id)}"${c.slug === "set-do" ? " selected" : ""}>${escapePromotionHtml(c.name)}</option>`).join("")}</select></label><label class="admin-form-group"><span class="admin-form-label">Giá gốc (VNĐ) <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="basePrice" type="number" min="0" required></label><label class="admin-form-group"><span class="admin-form-label">Giá bán combo (VNĐ)</span><input class="admin-form-control" name="salePrice" type="number" min="0" placeholder="Để trống = giá gốc"></label><label class="admin-form-group"><span class="admin-form-label">Mô tả</span><textarea class="admin-form-control admin-form-textarea" name="description" placeholder="Mô tả combo..." maxlength="5000"></textarea></label><label class="admin-form-group"><span class="admin-form-label">Ảnh (URL)</span><input class="admin-form-control" name="images" placeholder="URL ảnh đại diện combo"></label><div style="padding:12px;background:var(--field-bg);border-radius:var(--radius-md);font-size:0.8125rem;color:var(--muted);margin-top:8px;"><strong>Lưu ý:</strong> Sau khi tạo combo, nhấn vào nút bút chì (✏️) để xem chi tiết và quản lý thành phần combo.</div></div><footer class="admin-modal__footer"><button class="admin-btn admin-btn--ghost" type="button" data-promo-close>Hủy</button><button class="admin-btn admin-btn--secondary">Tạo combo</button></footer></form></section></div>`;
     return;
   }
-  overlay.innerHTML = `<div class="admin-modal-overlay"><section class="admin-modal admin-modal--lg"><form data-promo-form data-type="${voucher ? "voucher" : "promotion"}"><header class="admin-modal__header"><h2>${voucher ? "Tạo voucher" : "Tạo chiến dịch"}</h2><button class="admin-icon-button" type="button" data-promo-close>×</button></header><div class="admin-modal__body">${voucher ? `<label class="admin-form-group"><span class="admin-form-label">Mã code <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="primary" required placeholder="VD: SALE50"></label><label class="admin-form-group"><span class="admin-form-label">Tên voucher <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="name" required></label><label class="admin-form-group"><span class="admin-form-label">Chiến dịch áp dụng</span><select class="admin-form-control" name="promoId"><option value="">-- Không thuộc chiến dịch --</option>${state.promotions.map(p => `<option value="${escapePromotionHtml(p.promo_id)}">${escapePromotionHtml(p.promo_name)}</option>`).join("")}</select></label><label class="admin-form-group"><span class="admin-form-label">Loại giảm giá</span><select class="admin-form-control" name="kind"><option value="percentage">Theo phần trăm</option><option value="fixed_amount">Số tiền cố định</option><option value="free_shipping">Miễn phí vận chuyển</option></select></label><label class="admin-form-group"><span class="admin-form-label">Giá trị <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="value" type="number" min="0" required></label><label class="admin-form-group"><span class="admin-form-label">Đơn tối thiểu</span><input class="admin-form-control" name="minOrder" type="number" min="0" value="0"></label><label class="admin-form-group"><span class="admin-form-label">Giới hạn tổng lượt dùng</span><input class="admin-form-control" name="maxUses" type="number" min="0" placeholder="0 = không giới hạn"></label><label class="admin-form-group"><span class="admin-form-label">Giới hạn/người</span><input class="admin-form-control" name="maxPerUser" type="number" min="1" value="1"></label><label class="admin-form-group"><span class="admin-form-label">Ngày bắt đầu <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="start" type="datetime-local" required></label><label class="admin-form-group"><span class="admin-form-label">Ngày kết thúc <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="end" type="datetime-local" required></label>` : `<label class="admin-form-group"><span class="admin-form-label">Tên chiến dịch <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="primary" required></label><label class="admin-form-group"><span class="admin-form-label">Loại</span><select class="admin-form-control" name="kind"><option value="product_discount">Giảm giá sản phẩm</option><option value="combo_discount">Giảm giá Combo</option><option value="flash_sale">Flash Sale</option><option value="seasonal_sale">Giảm giá theo mùa</option></select></label><label class="admin-form-group"><span class="admin-form-label">Ngày bắt đầu <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="start" type="datetime-local" required></label><label class="admin-form-group"><span class="admin-form-label">Ngày kết thúc <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="end" type="datetime-local" required></label><label class="admin-form-group"><span class="admin-form-label">Ngân sách (VNĐ)</span><input class="admin-form-control" name="budget" type="number" min="0" value="0"></label>`}</div><footer class="admin-modal__footer"><button class="admin-btn admin-btn--ghost" type="button" data-promo-close>Hủy</button><button class="admin-btn admin-btn--secondary">Tạo mới</button></footer></form></section></div>`;
+  overlay.innerHTML = `<div class="admin-modal-overlay"><section class="admin-modal admin-modal--lg"><form data-promo-form data-type="${voucher ? "voucher" : "promotion"}"><header class="admin-modal__header"><h2>${voucher ? "Tạo voucher" : "Tạo chiến dịch"}</h2><button class="admin-icon-button" type="button" data-promo-close>×</button></header><div class="admin-modal__body">${voucher ? `<label class="admin-form-group"><span class="admin-form-label">Mã code <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="primary" required placeholder="VD: SALE50"></label><label class="admin-form-group"><span class="admin-form-label">Tên voucher <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="name" required></label><label class="admin-form-group"><span class="admin-form-label">Chiến dịch áp dụng</span><select class="admin-form-control" name="promoId"><option value="">-- Không thuộc chiến dịch --</option>${state.promotions.map(p => `<option value="${escapePromotionHtml(p.promo_id)}">${escapePromotionHtml(p.promo_name)}</option>`).join("")}</select></label><label class="admin-form-group"><span class="admin-form-label">Loại giảm giá</span><select class="admin-form-control" name="kind"><option value="percentage">Theo phần trăm</option><option value="fixed_amount">Số tiền cố định</option><option value="free_shipping">Miễn phí vận chuyển</option></select></label><label class="admin-form-group"><span class="admin-form-label">Giá trị <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="value" type="number" min="0" required></label><label class="admin-form-group"><span class="admin-form-label">Giảm tối đa (VNĐ)</span><input class="admin-form-control" name="maxDiscount" type="number" min="0" placeholder="Để trống = không giới hạn"></label><label class="admin-form-group"><span class="admin-form-label">Đơn tối thiểu</span><input class="admin-form-control" name="minOrder" type="number" min="0" value="0"></label><label class="admin-form-group"><span class="admin-form-label">Giới hạn tổng lượt dùng</span><input class="admin-form-control" name="maxUses" type="number" min="0" placeholder="Để trống = không giới hạn"></label><label class="admin-form-group"><span class="admin-form-label">Giới hạn/người</span><input class="admin-form-control" name="maxPerUser" type="number" min="1" value="1"></label><label class="admin-form-group"><span class="admin-form-label">Danh mục áp dụng</span><select class="admin-form-control" name="applicableCategories"><option value="">-- Tất cả danh mục --</option>${state.categories.map(c => `<option value="${escapePromotionHtml(c.slug)}">${escapePromotionHtml(c.name)}</option>`).join("")}</select></label><label class="admin-form-group"><span class="admin-form-label">Nhóm khách hàng áp dụng</span><select class="admin-form-control" name="applicableUserGroup"><option value="all_users">Tất cả khách hàng</option><option value="new_users">Khách hàng mới</option><option value="vip_members">Thành viên VIP</option></select></label><label class="admin-form-group"><span class="admin-form-label">Ngày bắt đầu <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="start" type="datetime-local" required></label><label class="admin-form-group"><span class="admin-form-label">Ngày kết thúc <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="end" type="datetime-local" required></label>` : `<label class="admin-form-group"><span class="admin-form-label">Tên chiến dịch <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="primary" required></label><label class="admin-form-group"><span class="admin-form-label">Loại</span><select class="admin-form-control" name="kind"><option value="product_discount">Giảm giá sản phẩm</option><option value="combo_discount">Giảm giá Combo</option><option value="flash_sale">Flash Sale</option><option value="seasonal_sale">Giảm giá theo mùa</option></select></label><label class="admin-form-group"><span class="admin-form-label">Ngày bắt đầu <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="start" type="datetime-local" required></label><label class="admin-form-group"><span class="admin-form-label">Ngày kết thúc <b style="color:var(--error)">*</b></span><input class="admin-form-control" name="end" type="datetime-local" required></label><label class="admin-form-group"><span class="admin-form-label">Ngân sách (VNĐ)</span><input class="admin-form-control" name="budget" type="number" min="0" value="0"></label>`}</div><footer class="admin-modal__footer"><button class="admin-btn admin-btn--ghost" type="button" data-promo-close>Hủy</button><button class="admin-btn admin-btn--secondary">Tạo mới</button></footer></form></section></div>`;
 }
 
 function addComboItemModal(productId) {
@@ -459,11 +530,14 @@ document.addEventListener("submit", async (event) => {
           promoId: form.elements.promoId.value || null,
           type: form.elements.kind.value,
           value: Number(form.elements.value.value),
-          startDate: new Date(form.elements.start.value).toISOString(),
-          endDate: new Date(form.elements.end.value).toISOString(),
+          maxDiscount: form.elements.maxDiscount?.value ? Number(form.elements.maxDiscount.value) : null,
           minOrderValue: Number(form.elements.minOrder?.value || 0),
           maxUses: Number(form.elements.maxUses?.value) || null,
-          maxPerUser: Number(form.elements.maxPerUser?.value || 1)
+          maxPerUser: Number(form.elements.maxPerUser?.value || 1),
+          applicableCategories: form.elements.applicableCategories?.value || null,
+          applicableUserGroup: form.elements.applicableUserGroup?.value || "all_users",
+          startDate: new Date(form.elements.start.value).toISOString(),
+          endDate: new Date(form.elements.end.value).toISOString()
         });
         showToast("Tạo voucher thành công!", "success");
       }

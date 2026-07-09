@@ -1,5 +1,5 @@
 import { HttpError } from "../http.js";
-import { selectRows, insertRow } from "../supabase.js";
+import { selectRows, insertRow, selectOne, updateRows } from "../supabase.js";
 import {
   PRODUCT_ADMIN_ROLES,
   PRODUCT_VIEWER_ROLES,
@@ -12,6 +12,48 @@ import {
 
 export function createProductService({ repository }) {
   if (!repository) throw new TypeError("repository is required");
+
+  // Run an asynchronous alignment of stock status on startup with a brief delay
+  setTimeout(async () => {
+    try {
+      if (
+        !repository
+        || typeof repository.list !== "function"
+        || typeof repository.listVariants !== "function"
+        || typeof repository.changeStatus !== "function"
+      ) {
+        return;
+      }
+      const products = await repository.list({ limit: 1000 }, null);
+      const rows = products?.rows || (Array.isArray(products) ? products : []);
+      for (const product of rows) {
+        if (product.status === "on_sale" || product.status === "out_of_stock") {
+          const variants = await repository.listVariants(product.product_id, null);
+          const list = variants?.rows || (Array.isArray(variants) ? variants : []);
+          const totalStock = list.reduce((sum, v) => sum + Number(v.stock_quantity || 0), 0);
+          if (totalStock <= 0 && product.status === "on_sale") {
+            await repository.changeStatus(product.product_id, {
+              status: "out_of_stock",
+              reason: "Đồng bộ tồn kho hệ thống (hết hàng)",
+              expectedVersion: product.version,
+              ipAddress: "127.0.0.1"
+            }, null);
+            console.log(`[Startup Sync] Product ${product.sku} status aligned to out_of_stock (stock: 0)`);
+          } else if (totalStock > 0 && product.status === "out_of_stock") {
+            await repository.changeStatus(product.product_id, {
+              status: "on_sale",
+              reason: "Đồng bộ tồn kho hệ thống (còn hàng)",
+              expectedVersion: product.version,
+              ipAddress: "127.0.0.1"
+            }, null);
+            console.log(`[Startup Sync] Product ${product.sku} status aligned to on_sale (stock: ${totalStock})`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[Startup Sync Error] Failed to align stock status:", err.message);
+    }
+  }, 1000);
 
   return {
     async list(context, searchParams) {
@@ -42,7 +84,23 @@ export function createProductService({ repository }) {
       requireProductAdmin(context, body?.isCombo === true);
       const input = validateCreateProduct(body);
       input.ipAddress = requestMeta.ipAddress || "0.0.0.0";
-      return repository.createProduct(input, context.accessToken);
+      const product = await repository.createProduct(input, context.accessToken);
+
+      // Auto-create a default variant with the initial stock and threshold if repository method exists
+      if (repository && typeof repository.createVariant === "function") {
+        const initialStock = body.initialStock !== undefined ? Number(body.initialStock) : 0;
+        const lowStockThreshold = body.lowStockThreshold !== undefined ? Number(body.lowStockThreshold) : 5;
+
+        await repository.createVariant(product.product_id, {
+          color: "Mặc định",
+          colorHex: "#FFFFFF",
+          size: "F",
+          stockQuantity: initialStock,
+          lowStockThreshold: lowStockThreshold
+        });
+      }
+
+      return product;
     },
 
     async update(context, productId, body, requestMeta) {
@@ -52,7 +110,40 @@ export function createProductService({ repository }) {
       requireProductAdmin(context, current.is_combo === true);
       const input = validateUpdateProduct(body);
       input.ipAddress = requestMeta.ipAddress || "0.0.0.0";
-      return repository.updateProduct(productId, input, context.accessToken);
+      const result = await repository.updateProduct(productId, input, context.accessToken);
+
+      // If stock/threshold are passed, update the default/first variant
+      const stock = body.stock !== undefined ? Number(body.stock) : undefined;
+      const minStock = body.minStock !== undefined ? Number(body.minStock) : undefined;
+
+      if (stock !== undefined || minStock !== undefined) {
+        const variants = await repository.listVariants(productId, context.accessToken);
+        const list = variants?.rows || (Array.isArray(variants) ? variants : []);
+        
+        if (list.length === 1) {
+          const firstVariant = list[0];
+          if (stock !== undefined) {
+            const delta = stock - Number(firstVariant.stock_quantity || 0);
+            if (delta !== 0) {
+              await repository.updateStock(productId, firstVariant.variant_id, {
+                delta,
+                reason: "Điều chỉnh tồn kho từ biểu mẫu sản phẩm",
+                expectedVersion: firstVariant.version || 1,
+                ipAddress: input.ipAddress
+              }, context.accessToken);
+            }
+          }
+          if (minStock !== undefined) {
+            await updateRows("variant", { variant_id: `eq.${firstVariant.variant_id}` }, {
+              low_stock_threshold: minStock,
+              version: (firstVariant.version || 0) + 1,
+              updated_at: new Date().toISOString()
+            });
+          }
+        }
+      }
+
+      return result;
     },
 
     async changeStatus(context, productId, body, requestMeta) {
@@ -74,12 +165,104 @@ export function createProductService({ repository }) {
       if (!current) throw new HttpError(404, "PRODUCT_NOT_FOUND", "Product was not found");
       requireProductAdmin(context, current.is_combo === true);
       requireUuid(body?.variantId, "variantId");
-      const input = validateStockUpdate(body);
-      input.ipAddress = requestMeta.ipAddress || "0.0.0.0";
-      const result = await repository.updateStock(productId, body.variantId, input, context.accessToken);
-      await syncProductStockStatus(repository, context, productId, input.reason, input.ipAddress);
+
+      const delta = Number(body?.delta || 0);
+      const lowStockThreshold = body?.lowStockThreshold !== undefined ? Number(body.lowStockThreshold) : undefined;
+      const reason = String(body?.reason || "").trim();
+      const ipAddress = requestMeta.ipAddress || "0.0.0.0";
+
+      if (delta === 0 && lowStockThreshold === undefined) {
+        throw validationError("delta", "Either delta must be non-zero or lowStockThreshold must be provided");
+      }
+      if (reason.length < 10) {
+        throw validationError("reason", "Reason must be at least 10 characters");
+      }
+
+      let result = { success: true };
+      if (delta !== 0) {
+        const input = validateStockUpdate(body);
+        input.ipAddress = ipAddress;
+        result = await repository.updateStock(productId, body.variantId, input, context.accessToken);
+      }
+
+      if (lowStockThreshold !== undefined) {
+        if (!Number.isInteger(lowStockThreshold) || lowStockThreshold < 0) {
+          throw validationError("lowStockThreshold", "Threshold must be a non-negative integer");
+        }
+        const freshVariant = await selectOne("variant", { variant_id: `eq.${body.variantId}` });
+        if (freshVariant) {
+          await updateRows("variant", { variant_id: `eq.${body.variantId}` }, {
+            low_stock_threshold: lowStockThreshold,
+            version: freshVariant.version + 1,
+            updated_at: new Date().toISOString()
+          });
+        }
+      }
+
+      await syncProductStockStatus(repository, context, productId, reason, ipAddress);
       await checkAndAlertLowStock(repository, context, productId, body.variantId);
       return result;
+    },
+
+    async bulkUpdateStock(context, productId, body, requestMeta) {
+      requireUuid(productId, "productId");
+      const current = await repository.findById(productId, context.accessToken);
+      if (!current) throw new HttpError(404, "PRODUCT_NOT_FOUND", "Product was not found");
+      requireProductAdmin(context, current.is_combo === true);
+
+      if (!body || !Array.isArray(body.updates)) {
+        throw validationError("updates", "updates must be an array");
+      }
+      const reason = String(body.reason || "").trim();
+      if (reason.length < 10) {
+        throw validationError("reason", "Reason must be at least 10 characters");
+      }
+
+      const ipAddress = requestMeta.ipAddress || "0.0.0.0";
+      const results = [];
+
+      for (const update of body.updates) {
+        requireUuid(update.variantId, "variantId");
+        const delta = Number(update.delta || 0);
+        const lowStockThreshold = update.lowStockThreshold !== undefined ? Number(update.lowStockThreshold) : undefined;
+        
+        if (!Number.isInteger(delta)) {
+          throw validationError("delta", "Delta must be an integer");
+        }
+        if (lowStockThreshold !== undefined && (!Number.isInteger(lowStockThreshold) || lowStockThreshold < 0)) {
+          throw validationError("lowStockThreshold", "Threshold must be a non-negative integer");
+        }
+
+        // Apply updates
+        if (delta !== 0) {
+          await repository.updateStock(productId, update.variantId, {
+            delta,
+            reason,
+            expectedVersion: update.expectedVersion || 1,
+            ipAddress
+          }, context.accessToken);
+        }
+
+        if (lowStockThreshold !== undefined) {
+          const freshVariant = await selectOne("variant", { variant_id: `eq.${update.variantId}` });
+          if (freshVariant) {
+            await updateRows("variant", { variant_id: `eq.${update.variantId}` }, {
+              low_stock_threshold: lowStockThreshold,
+              version: freshVariant.version + 1,
+              updated_at: new Date().toISOString()
+            });
+          }
+        }
+        results.push({ variantId: update.variantId, success: true });
+      }
+
+      await syncProductStockStatus(repository, context, productId, reason, ipAddress);
+
+      for (const update of body.updates) {
+        await checkAndAlertLowStock(repository, context, productId, update.variantId);
+      }
+
+      return { success: true, results };
     },
 
     async createVariant(context, productId, body, requestMeta) {
@@ -451,7 +634,7 @@ function parseListFilters(searchParams) {
     isFeatured: searchParams.get("isFeatured") === "true" ? true : searchParams.get("isFeatured") === "false" ? false : undefined,
     minPrice,
     maxPrice,
-    limit: clampInteger(searchParams.get("limit"), 20, 1, 100),
+    limit: clampInteger(searchParams.get("limit"), 20, 1, 1000),
     offset: clampInteger(searchParams.get("offset"), 0, 0, 1000000),
     order: allowedOrders.includes(orderInput) ? orderInput : "updated_at.desc"
   };
