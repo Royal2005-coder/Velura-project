@@ -332,7 +332,16 @@ import { productApi } from "./product-api.js";
     stopModal.querySelector("[data-product-stop-status]").textContent = statusLabel(product.status);
     stopModal.querySelector("[data-product-stop-stock]").textContent = `${stockOf(product)} sản phẩm`;
     const options = stopModal.querySelector(".admin-product-stop-options");
-    options.innerHTML = allowedStatusTargets(product.status).map((status, index) => `<label><input type="radio" name="nextStatus" value="${status}" ${index === 0 ? "checked" : ""}><span><strong>${escapeHtml(statusLabel(status))}</strong></span></label>`).join("");
+    const targets = allowedStatusTargets(product.status);
+    options.innerHTML = targets.map((status, index) => `<label><input type="radio" name="nextStatus" value="${status}" ${index === 0 ? "checked" : ""}><span><strong>${escapeHtml(statusLabel(status))}</strong></span></label>`).join("");
+    
+    // Set initial submit button text matching the default checked option
+    const firstOption = targets[0];
+    const submitBtn = stopModal.querySelector("[data-product-stop-submit]");
+    if (submitBtn) {
+      submitBtn.textContent = firstOption ? `Xác nhận ${statusLabel(firstOption).toLowerCase()}` : "Xác nhận";
+    }
+    
     stopModal.hidden = false;
   }
 
@@ -769,6 +778,14 @@ import { productApi } from "./product-api.js";
     if (event.target.matches("[data-product-bulk-stock-form]")) submitBulkStock(event);
   });
   stopForm.addEventListener("submit", submitStatus);
+  stopForm.addEventListener("change", (event) => {
+    if (event.target.name === "nextStatus") {
+      const submitBtn = stopModal.querySelector("[data-product-stop-submit]");
+      if (submitBtn) {
+        submitBtn.textContent = `Xác nhận ${statusLabel(event.target.value).toLowerCase()}`;
+      }
+    }
+  });
   if (stockForm) stockForm.addEventListener("submit", submitStock);
   document.querySelector("[data-product-csv-file]")?.addEventListener("change", (event) => previewCsv(event.target.files?.[0]));
   document.querySelector("[data-product-csv-commit]")?.addEventListener("click", commitCsv);

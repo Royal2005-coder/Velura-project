@@ -98,6 +98,8 @@ export function createProductService({ repository }) {
           stockQuantity: initialStock,
           lowStockThreshold: lowStockThreshold
         });
+
+        await syncProductStockStatus(repository, context, product.product_id, "Khởi tạo tồn kho sản phẩm mới", input.ipAddress);
       }
 
       return product;
@@ -122,6 +124,7 @@ export function createProductService({ repository }) {
         
         if (list.length === 1) {
           const firstVariant = list[0];
+          let variantUpdated = false;
           if (stock !== undefined) {
             const delta = stock - Number(firstVariant.stock_quantity || 0);
             if (delta !== 0) {
@@ -131,6 +134,7 @@ export function createProductService({ repository }) {
                 expectedVersion: firstVariant.version || 1,
                 ipAddress: input.ipAddress
               }, context.accessToken);
+              variantUpdated = true;
             }
           }
           if (minStock !== undefined) {
@@ -139,6 +143,10 @@ export function createProductService({ repository }) {
               version: (firstVariant.version || 0) + 1,
               updated_at: new Date().toISOString()
             });
+            variantUpdated = true;
+          }
+          if (variantUpdated) {
+            await syncProductStockStatus(repository, context, productId, "Đồng bộ tồn kho từ biểu mẫu sản phẩm", input.ipAddress);
           }
         }
       }
