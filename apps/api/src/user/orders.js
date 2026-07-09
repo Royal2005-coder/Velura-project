@@ -516,7 +516,7 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
             template_code: "otp_verification",
             subject: "Mã xác thực đơn hàng Velura",
             body: emailBody,
-            status: "pending",
+            status: "sent", // Already sent directly, don't let worker resend
             created_at: new Date().toISOString()
           });
         } catch (e) { /* ignore */ }
@@ -617,14 +617,30 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
         is_default: true
       }];
       
-      await updateRows("users", { user_id: `eq.${guestUser.user_id}` }, {
-        is_active: true,
-        otp_code: null,
-        otp_expires_at: null,
-        password_hash: hashedPassword,
-        saved_addresses: savedAddresses,
-        updated_at: new Date().toISOString()
-      });
+      let guestUser = await selectOne("users", { phone: `eq.${phone}` });
+      if (!guestUser) {
+        guestUser = await insertRow("users", {
+          full_name: sessionState.full_name,
+          phone: phone,
+          email: sessionState.email,
+          password_hash: hashedPassword,
+          role: "member",
+          is_active: true,
+          saved_addresses: savedAddresses,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      } else {
+        await updateRows("users", { user_id: `eq.${guestUser.user_id}` }, {
+          is_active: true,
+          otp_code: null,
+          otp_expires_at: null,
+          password_hash: hashedPassword,
+          saved_addresses: savedAddresses,
+          updated_at: new Date().toISOString()
+        });
+        guestUser.email = guestUser.email || sessionState.email;
+      }
 
       const shipping_email = body.shipping_email || order.shipping_email;
       if (shipping_email || guestUser.email) {
@@ -667,10 +683,10 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
         try {
           await insertRow("email_outbox", {
             recipient: targetEmail,
-            template_code: "welcome_account",
+            template_code: "member_welcome",
             subject: "Chào mừng bạn đến với Velura",
             body: emailBody,
-            status: "pending",
+            status: "sent", // Already sent directly, don't let worker resend
             created_at: new Date().toISOString()
           });
         } catch (e) { /* ignore */ }
