@@ -27,6 +27,7 @@ import { hasRealAuthSession } from "./modules/auth-session.js";
 import { initAiSuggestions } from "./modules/ai-suggestions.js";
 import { initHotBannerSlider } from "./modules/hot-banner-slider.js";
 import { initNotifications } from "./modules/notifications.js";
+import { initExitIntentPopup } from "./modules/exit-intent.js";
 
 (function () {
   "use strict";
@@ -83,6 +84,7 @@ import { initNotifications } from "./modules/notifications.js";
   initContentPages();
   initAiSuggestions();
   initNotifications();
+  initExitIntentPopup();
 
   /* Mobile navigation */
   var menuToggle = document.querySelector(".menu-toggle");

@@ -227,9 +227,9 @@ export function initReturnRequest() {
     }
   }
 
-  function renderProductsForOrder(order) {
+  async function renderProductsForOrder(order) {
     if (!productSelectionList) return;
-    productSelectionList.innerHTML = "";
+    productSelectionList.innerHTML = `<div style="padding: 16px 0; color: var(--soft);">Đang kiểm tra thông tin sản phẩm...</div>`;
 
     const isEligible = checkReturnEligibility(order);
 
@@ -239,13 +239,40 @@ export function initReturnRequest() {
       return;
     }
 
+    // Fetch existing returns for this order to disable already returned items
+    let existingReturns = [];
+    try {
+      const returnData = await apiRequest(`/api/user/returns?order_id=${order.order_id}`);
+      if (returnData && returnData.returns) {
+        existingReturns = returnData.returns.filter(r => r.status !== "rejected");
+      }
+    } catch (err) {
+      console.warn("Could not fetch existing returns:", err);
+    }
+
+    productSelectionList.innerHTML = "";
+
     items.forEach((item, index) => {
+      // Calculate how many have already been returned
+      let returnedQty = 0;
+      existingReturns.forEach(r => {
+        const matchedItem = (r.items || []).find(ri => ri.order_item_id === item.item_id);
+        if (matchedItem) {
+          returnedQty += matchedItem.quantity;
+        }
+      });
+
+      const remainingQty = item.quantity - returnedQty;
+      const isAlreadyReturned = remainingQty <= 0;
+
       const priceFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.unit_price);
       const isRestricted = item.category_name === "Phụ kiện";
+      
+      const isDisabled = isRestricted || isAlreadyReturned || !isEligible;
 
       const card = document.createElement("div");
-      card.className = "selection-card" + (index === 0 && isEligible && !isRestricted ? " is-selected" : "");
-      if (isRestricted) {
+      card.className = "selection-card" + (index === 0 && !isDisabled ? " is-selected" : "");
+      if (isDisabled) {
         card.className += " selection-card--disabled";
         card.style.opacity = "0.6";
         card.style.cursor = "not-allowed";
@@ -259,20 +286,21 @@ export function initReturnRequest() {
           <div class="product-details">
             <strong>${item.product_name}</strong>
             ${isRestricted ? `<span style="color: #c92a2a; font-weight: bold; font-size: 0.8125rem; display: block; margin-top: 4px;">(Danh mục hạn chế đổi trả)</span>` : ""}
-            <span>Số lượng trong đơn: ${item.quantity}</span>
+            ${isAlreadyReturned ? `<span style="color: #b56727; font-weight: bold; font-size: 0.8125rem; display: block; margin-top: 4px;">(Đang trong quá trình xử lý Đổi/Trả)</span>` : ""}
+            <span>Số lượng có thể đổi/trả: ${remainingQty} / ${item.quantity}</span>
             <span class="product-price">${priceFormatted}</span>
           </div>
         </div>
-        ${!isRestricted ? `
+        ${!isDisabled ? `
         <div class="checkbox-indicator">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
             stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </div>
-        <input type="checkbox" name="product_select" value="${item.item_id}" data-qty="${item.quantity}" ${index === 0 && isEligible ? "checked" : ""} style="display:none;" />
+        <input type="checkbox" name="product_select" value="${item.item_id}" data-qty="${remainingQty}" ${index === 0 && !isDisabled ? "checked" : ""} style="display:none;" />
         ` : `
-        <input type="checkbox" name="product_select" value="${item.item_id}" data-qty="${item.quantity}" disabled style="display:none;" />
+        <input type="checkbox" name="product_select" value="${item.item_id}" data-qty="0" disabled style="display:none;" />
         `}
       `;
       productSelectionList.appendChild(card);

@@ -459,6 +459,8 @@ export function initProductCatalog() {
       const urlParams = new URLSearchParams(window.location.search);
       const categoryParam = urlParams.get("category");
       const qParam = urlParams.get("q");
+      const specialParam = urlParams.get("special");
+      const sortParam = urlParams.get("sort");
 
       if (categoryParam) {
         categoryCheckboxes.forEach(cb => {
@@ -472,6 +474,20 @@ export function initProductCatalog() {
             cb.checked = (cb.value === inferredCategory);
           });
         }
+      }
+
+      if (specialParam) {
+        const specialVals = specialParam.split(",");
+        const specialCheckboxes = document.querySelectorAll('input[name="special"]');
+        specialCheckboxes.forEach(cb => {
+          if (specialVals.includes(cb.value)) {
+            cb.checked = true;
+          }
+        });
+      }
+
+      if (sortParam && sortSelect) {
+        sortSelect.value = sortParam;
       }
 
       // Set max price limit input value if suggestions are not active
@@ -580,69 +596,23 @@ export function initProductCatalog() {
       p.relevanceScore = score;
       return p;
     }).filter(p => {
-      // Search query filter
-      if (qParam) {
-        const query = qParam.toLowerCase().trim();
-        const tokens = query.split(/\s+/).filter(t => t.length > 0);
-        const matchesAllTokens = tokens.every(token => {
-          const matchesName = (p.name || "").toLowerCase().includes(token);
-          const matchesDesc = (p.description || "").toLowerCase().includes(token);
-          const matchesBrand = (p.brand || "").toLowerCase().includes(token);
-          
-          let matchesCategory = (p.category_slug || "").toLowerCase().includes(token);
-          if (token === "áo" && p.category_slug === "ao") matchesCategory = true;
-          if (token === "quần" && p.category_slug === "quan") matchesCategory = true;
-          if (token === "đầm" && p.category_slug === "dam-vay") matchesCategory = true;
-          if (token === "váy" && p.category_slug === "dam-vay") matchesCategory = true;
-          if (token === "giày" && p.category_slug === "giay-dep") matchesCategory = true;
-          if (token === "dép" && p.category_slug === "giay-dep") matchesCategory = true;
-          if (token === "phụ" && p.category_slug === "phu-kien") matchesCategory = true;
-          if (token === "kiện" && p.category_slug === "phu-kien") matchesCategory = true;
-          if (token === "túi" && p.category_slug === "phu-kien") matchesCategory = true;
-          if (token === "xách" && p.category_slug === "phu-kien") matchesCategory = true;
-
-          const matchesVariants = p.variants?.some(v => {
-            if ((v.size || "").toLowerCase() === token) return true;
-            const cn = (v.color || "").toLowerCase();
-            if (token === "trắng" || token === "white") {
-              return cn.includes("white") || cn.includes("ivory") || cn.includes("cream") || cn.includes("champagne") || cn.includes("sakura white") || cn.includes("off-white");
-            }
-            if (token === "đen" || token === "black") {
-              return cn.includes("black") || cn.includes("onyx") || cn.includes("charcoal") || cn.includes("slate") || cn.includes("midnight");
-            }
-            if (token === "hồng" || token === "pink") {
-              return cn.includes("pink") || cn.includes("rose") || cn.includes("blush") || cn.includes("sakura");
-            }
-            if (token === "xanh" || token === "blue" || token === "green") {
-              return cn.includes("blue") || cn.includes("green") || cn.includes("sage") || cn.includes("mint") || cn.includes("emerald") || cn.includes("slate");
-            }
-            if (token === "vàng" || token === "yellow" || token === "gold") {
-              return cn.includes("yellow") || cn.includes("gold") || cn.includes("butter");
-            }
-            if (token === "nâu" || token === "brown") {
-              return cn.includes("brown") || cn.includes("cocoa") || cn.includes("mocha") || cn.includes("coffee") || cn.includes("espresso") || cn.includes("cinnamon");
-            }
-            if (token === "xám" || token === "gray" || token === "grey") {
-              return cn.includes("gray") || cn.includes("grey") || cn.includes("pewter") || cn.includes("slate") || cn.includes("charcoal");
-            }
-            if (token === "kem" || token === "beige") {
-              return cn.includes("cream") || cn.includes("beige") || cn.includes("buttercream") || cn.includes("sand") || cn.includes("oat");
-            }
-            if (token === "đỏ" || token === "red") {
-              return cn.includes("red") || cn.includes("burgundy") || cn.includes("terracotta") || cn.includes("cinnamon");
-            }
-            return cn.includes(token);
-          });
-
-          return matchesName || matchesDesc || matchesBrand || matchesCategory || matchesVariants;
-        });
-
-        if (!matchesAllTokens) return false;
+      // Search query filter based on computed relevanceScore
+      if (qParam && p.relevanceScore <= 0) {
+        return false;
       }
 
       // Category Filter
       if (checkedCategories.length > 0) {
-        if (!checkedCategories.includes(p.category_slug)) return false;
+        let isCategoryMatch = checkedCategories.includes(p.category_slug);
+        
+        // Bổ sung fallback cho Set đồ: nếu sản phẩm là combo hoặc tên có chữ "set" (đứng độc lập) thì cũng được tính là Set đồ
+        if (!isCategoryMatch && checkedCategories.includes("set-do")) {
+          if (p.is_combo || (p.name && /\\bset\\b/i.test(p.name))) {
+            isCategoryMatch = true;
+          }
+        }
+        
+        if (!isCategoryMatch) return false;
       }
 
       // Brand Filter
@@ -801,8 +771,12 @@ export function initProductCatalog() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
+      const isOutOfStock = product.status === "out_of_stock";
+      
       let badgeHtml = "";
-      if (discountPercent > 0) {
+      if (isOutOfStock) {
+        badgeHtml = `<span class="card__badge card__badge--out-of-stock" style="background:#555;color:#fff;">HẾT HÀNG</span>`;
+      } else if (discountPercent > 0) {
         badgeHtml = `<span class="card__badge card__badge--sale">-${discountPercent}%</span>`;
       } else if (product.is_combo) {
         badgeHtml = `<span class="card__badge card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
@@ -826,16 +800,23 @@ export function initProductCatalog() {
       const isWishlisted = wishlistedProductIds.has(product.product_id);
       const wishlistClass = isWishlisted ? "active" : "";
 
+      const cardStyle = isOutOfStock ? "opacity: 0.6; filter: grayscale(100%); cursor: not-allowed;" : "";
+      const linkTag = isOutOfStock ? "div" : "a";
+      const linkHref = isOutOfStock ? "" : `href="/src/pages/products/detail.html?id=${product.product_id}"`;
+      const hoverHtml = isOutOfStock ? 
+        `<div class="product-card__img-hover" style="cursor: not-allowed;"><span class="btn-detail" style="background:#555; pointer-events:none;">Đã hết hàng</span></div>` :
+        `<div class="product-card__img-hover">
+              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
+            </div>`;
+
       return `
-        <article class="card card--product" data-detail-url="/src/pages/products/detail.html?id=${product.product_id}">
+        <article class="card card--product" style="${cardStyle}" ${isOutOfStock ? "" : `data-detail-url="/src/pages/products/detail.html?id=${product.product_id}"`}>
           <div class="card__image-container product-card__image-wrapper">
             ${badgeHtml}
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
+            <${linkTag} ${linkHref} class="product-card__img-link">
               <img class="card__img" src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" />
-            </a>
-            <div class="product-card__img-hover">
-              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
-            </div>
+            </${linkTag}>
+            ${hoverHtml}
             <button class="card__wishlist-btn js-add-wishlist-catalog ${wishlistClass}" type="button" aria-label="Yêu thích" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -849,10 +830,10 @@ export function initProductCatalog() {
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
               </span>
-              <span>4.8</span>
-              <span>(96)</span>
+              <span>${Number(product.rating_value || 0).toFixed(1)}</span>
+              <span>(${product.rating_count || 0})</span>
             </div>
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="card__title">${product.name}</a>
+            <${linkTag} ${linkHref} class="card__title">${product.name}</${linkTag}>
             <p class="card__excerpt">${product.description || ""}</p>
             <div class="card__colors">
               ${colorDotsHtml}

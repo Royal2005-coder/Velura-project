@@ -64,10 +64,10 @@ export function initAiSuggestions() {
   }
 
   // 2. Fetch recommendations from server
-  loadAiSuggestionPayload()
+  apiRequest("/api/user/recommendations/style-profile")
     .then(res => {
       const quiz = res.quiz;
-      if (hasCompletedQuiz(quiz)) {
+      if (quiz && (quiz.body_shape || quiz.style_tags)) {
         // User has already completed the style profile quiz!
         emptyState.style.display = "none";
         if (comboSection) comboSection.style.display = "block";
@@ -258,27 +258,62 @@ export function initAiSuggestions() {
           // Render corresponding Panels
           const panelsHtml = res.categories.map((cat, index) => `
             <div class="ai-category-panel ${index === 0 ? 'is-active' : ''}" id="cat-panel-${cat.category_id}">
-              <div class="profile-grid">
-                ${cat.products.map(p => {
-            const image = p.images && p.images.length > 0 ? p.images[0] : "/src/assets/images/product-silk-blazer.png";
-            return `
-                    <article class="profile-card" style="cursor: pointer;" onclick="window.location.href='/src/pages/products/list.html'">
-                      <div class="profile-card__img-container">
-                        <img src="${image}" alt="${p.name}" />
+              <div class="ai-slider-wrapper" style="position: relative;">
+                <button class="ai-slider-nav prev" type="button" aria-label="Trượt trái">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="profile-slider" style="display: flex; overflow-x: auto; scroll-behavior: smooth; gap: 24px; scroll-snap-type: x mandatory;">
+                  ${cat.products.map(p => {
+              const image = p.images && p.images.length > 0 ? p.images[0] : "/src/assets/images/product-silk-blazer.png";
+              
+              const priceVal = p.sale_price || p.base_price;
+              const oldPriceVal = p.sale_price && p.base_price > p.sale_price ? p.base_price : null;
+              const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
+
+              let badges = [];
+              if (discountPercent > 0) badges.push(`<div class="profile-card__badge" style="background: #2a2522;">-${discountPercent}%</div>`);
+              if (p.is_combo) badges.push(`<div class="profile-card__badge" style="background: #4A90E2;">COMBO</div>`);
+              if ((p.sold_count || 0) > 0) badges.push(`<div class="profile-card__badge" style="background: #c97b63;">BÁN CHẠY</div>`);
+              if (p.is_featured) badges.push(`<div class="profile-card__badge" style="background: #8c857e;">NỔI BẬT</div>`);
+
+              const badgesHtml = badges.length > 0 ? `<div class="profile-card__badges">${badges.slice(0, 2).join('')}</div>` : '';
+
+              return `
+                    <article class="profile-card" style="scroll-snap-align: start; flex: 0 0 calc(25% - 18px); position: relative;">
+                      ${badgesHtml}
+                      <button class="profile-card__like" type="button" aria-label="Yêu thích">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                      </button>
+                      <div class="profile-card__img-container" onclick="window.location.href='/src/pages/products/detail.html?id=${p.product_id}'" style="cursor: pointer;">
+                        <img src="${image}" alt="${p.name}" loading="lazy" />
                       </div>
-                      <div class="profile-card__info">
-                        <h3>${p.name}</h3>
+                      <div class="profile-card__info" onclick="window.location.href='/src/pages/products/detail.html?id=${p.product_id}'" style="cursor: pointer;">
                         <div class="profile-card__rating">
-                          <svg class="star-icon" width="12" height="12" viewBox="0 0 24 24" fill="#C97B63">
-                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                          </svg>
-                          <span>4.8</span>
+                          <svg class="star-icon" width="12" height="12" viewBox="0 0 24 24" fill="#FBBF24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                          <span>${Number(p.rating_value || 0).toFixed(1)} (${p.rating_count || 0})</span>
                         </div>
-                        <strong class="profile-card__price">${Number(p.sale_price || p.base_price).toLocaleString('vi-VN')}₫</strong>
+                        <h3>${p.name}</h3>
+                        <div class="profile-card__price-wrap" style="margin-top: 8px;">
+                          <strong class="profile-card__price">${Number(p.sale_price || p.base_price).toLocaleString('vi-VN')} ₫</strong>
+                          ${p.sale_price && p.base_price > p.sale_price ? `<span class="profile-card__old-price" style="text-decoration: line-through; color: #a0a0a0; font-size: 0.8rem; margin-left: 6px;">${Number(p.base_price).toLocaleString('vi-VN')} ₫</span>` : ''}
+                        </div>
+                      </div>
+                      <div class="profile-card__actions" style="display: flex; gap: 8px; padding: 0 16px 16px;">
+                        <button class="btn-buy-now" onclick="window.location.href='/src/pages/products/detail.html?id=${p.product_id}'" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: #f4e4dc; color: #c97b63; border: none; border-radius: 4px; height: 36px; font-weight: 500; cursor: pointer; transition: background 0.2s;">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                          Mua ngay
+                        </button>
+                        <button class="btn-add-cart-icon" type="button" style="width: 36px; height: 36px; border: 1px solid #e8c9be; border-radius: 50%; background: white; color: #c97b63; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                        </button>
                       </div>
                     </article>
                   `;
-          }).join('')}
+            }).join('')}
+                </div>
+                <button class="ai-slider-nav next" type="button" aria-label="Trượt phải">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
               </div>
             </div>
           `).join('');
@@ -304,100 +339,37 @@ export function initAiSuggestions() {
               if (activePanel) activePanel.classList.add("is-active");
             });
           });
+          
+          // Bind slider functionality
+          initProfileSlider(categoriesContainer);
+          
+          // Bind add to cart for individual suggested products
+          categoriesContainer.querySelectorAll(".btn-add-cart-icon").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              // Using a default configuration for quick add since size/color isn't selected here
+              showToast("Đã thêm sản phẩm vào giỏ hàng");
+              // This relies on cart.js being able to handle a minimal item object or we redirect to detail
+              // Actually since size/color are required, it's safer to just redirect, or add a mock item.
+              // We'll redirect to detail if they try to add directly, or maybe add a mock variant.
+              // For now, let's redirect to detail since they need to choose size/color.
+              const productCard = btn.closest(".profile-card");
+              if (productCard) {
+                const img = productCard.querySelector("img");
+                if (img) img.click();
+              }
+            });
+          });
         }
       } else {
-        // Check if there is local quiz data in sessionStorage we can auto-submit/sync to the backend
-        const localShape = sessionStorage.getItem("quiz-body-shape");
-        const localStyle = sessionStorage.getItem("quiz-main-style");
-        
-        if (localShape || localStyle) {
-          console.log("[AI Suggestions] Server quiz state was empty but local quiz data exists. Syncing...");
-          
-          let style_tags = [];
-          try {
-            const parsed = JSON.parse(localStyle || "[]");
-            style_tags = Array.isArray(parsed) ? parsed : [parsed];
-          } catch(e) {}
-          
-          const occasions = sessionStorage.getItem("quiz-context") ? [sessionStorage.getItem("quiz-context")] : [];
-          
-          let budget_range = sessionStorage.getItem("quiz-budget") || "300k_700k";
-          if (!['under_300k', '300k_700k', '700k_1.5m', 'above_1.5m'].includes(budget_range)) {
-            if (budget_range.includes("300") && budget_range.includes("700")) budget_range = "300k_700k";
-            else if (budget_range.includes("300")) budget_range = "under_300k";
-            else if (budget_range.includes("1.5")) budget_range = "above_1.5m";
-            else budget_range = "700k_1.5m";
-          }
-          
-          apiRequest("/api/user/style-quiz", {
-            method: "POST",
-            body: {
-              height_cm: parseInt(sessionStorage.getItem("quiz-height"), 10) || null,
-              weight_kg: parseInt(sessionStorage.getItem("quiz-weight"), 10) || null,
-              chest_cm: parseInt(sessionStorage.getItem("quiz-vong1"), 10) || null,
-              waist_cm: parseInt(sessionStorage.getItem("quiz-vong2"), 10) || null,
-              hip_cm: parseInt(sessionStorage.getItem("quiz-vong3"), 10) || null,
-              body_shape: localShape || null,
-              skin_tone: sessionStorage.getItem("quiz-skin-tone") || "Neutral",
-              style_tags,
-              preferred_occasions: occasions,
-              favorite_brands: ["Velura"],
-              budget_range
-            }
-          })
-          .then(() => {
-            console.log("[AI Suggestions] Successfully synced local quiz to server. Re-fetching recommendations...");
-            initAiSuggestions();
-          })
-          .catch(err => {
-            console.error("[AI Suggestions] Failed to auto-sync local quiz:", err);
-            emptyState.style.display = "block";
-          });
-        } else {
-          emptyState.style.display = "block";
-        }
+        // No quiz completed yet
+        emptyState.style.display = "block";
       }
     })
     .catch(err => {
       console.error("Failed to load style quiz recommendations:", err);
       emptyState.style.display = "block";
     });
-}
-
-async function loadAiSuggestionPayload() {
-  const recommendations = await apiRequest("/api/user/recommendations/style-profile");
-  if (recommendations?.quiz && hasCompletedQuiz(recommendations.quiz)) {
-    return recommendations;
-  }
-
-  try {
-    const profileResponse = await apiRequest("/api/user/style-quiz");
-    if (profileResponse?.quiz && hasCompletedQuiz(profileResponse.quiz)) {
-      return {
-        ...recommendations,
-        success: true,
-        quiz: profileResponse.quiz,
-        source: recommendations?.source || "style_quiz_recovery"
-      };
-    }
-  } catch (error) {
-    console.warn("[AI Suggestions] Could not recover style quiz directly:", error);
-  }
-
-  return recommendations;
-}
-
-function hasCompletedQuiz(quiz) {
-  return Boolean(
-    quiz &&
-    (
-      quiz.body_shape ||
-      (Array.isArray(quiz.style_tags) && quiz.style_tags.length > 0) ||
-      quiz.skin_tone ||
-      quiz.height_cm ||
-      quiz.weight_kg
-    )
-  );
 }
 
 function translateBodyShape(shape) {
@@ -527,6 +499,22 @@ async function addComboProductsToCart(combo) {
   const comboName = combo.name;
   const comboImage = combo.images && combo.images.length > 0 ? combo.images[0] : (combo.products[0]?.images?.[0] || "");
 
+  let newItemsCount = 0;
+  for (const p of combo.products) {
+    const variant = (p.variants && p.variants.length > 0) ? p.variants[0] : { variant_id: `mock-var-${p.product_id}` };
+    const existing = cart.find(x => x.variant_id === variant.variant_id && x.combo_id === comboId);
+    if (!existing) newItemsCount++;
+  }
+
+  if (cart.length + newItemsCount > 50) {
+    if (typeof showToast === "function") {
+      showToast("Giỏ hàng của bạn đã đầy (tối đa 50 sản phẩm). Vui lòng thanh toán hoặc xóa bớt.");
+    } else {
+      alert("Giỏ hàng của bạn đã đầy (tối đa 50 sản phẩm). Vui lòng thanh toán hoặc xóa bớt.");
+    }
+    return;
+  }
+
   for (const p of combo.products) {
     const variant = (p.variants && p.variants.length > 0) ? p.variants[0] : {
       variant_id: `mock-var-${p.product_id}`,
@@ -549,11 +537,68 @@ async function addComboProductsToCart(combo) {
         size: variant.size || "Free Size",
         combo_id: comboId,
         combo_name: comboName,
-        combo_image: comboImage
+        combo_image: comboImage,
+        combo_price: Number(combo.sale_price || combo.base_price || 0)
       });
     }
   }
 
   await saveCart(cart);
   updateBadge();
+}
+
+// ─── Slider Logic ────────────────────────────────────────────────────────
+function initProfileSlider(container) {
+  const wrappers = container.querySelectorAll('.ai-slider-wrapper');
+  
+  wrappers.forEach(wrapper => {
+    const slider = wrapper.querySelector('.profile-slider');
+    const btnPrev = wrapper.querySelector('.ai-slider-nav.prev');
+    const btnNext = wrapper.querySelector('.ai-slider-nav.next');
+    if (!slider) return;
+
+    let autoPlayInterval;
+    
+    // Manual Navigation
+    const scrollAmount = 300; // Approximate card width + gap
+    
+    if (btnPrev) {
+      btnPrev.addEventListener('click', () => {
+        slider.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      });
+    }
+    
+    if (btnNext) {
+      btnNext.addEventListener('click', () => {
+        slider.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      });
+    }
+
+    // Auto-play Logic
+    const startAutoPlay = () => {
+      autoPlayInterval = setInterval(() => {
+        // If reached the end, scroll back to start, else scroll right
+        if (slider.scrollLeft + slider.clientWidth >= slider.scrollWidth - 10) {
+          slider.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          slider.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+      }, 3000); // 3 seconds
+    };
+
+    const stopAutoPlay = () => {
+      if (autoPlayInterval) clearInterval(autoPlayInterval);
+    };
+
+    // Pause on hover
+    wrapper.addEventListener('mouseenter', stopAutoPlay);
+    wrapper.addEventListener('mouseleave', startAutoPlay);
+    
+    // Pause on touch
+    wrapper.addEventListener('touchstart', stopAutoPlay, { passive: true });
+    wrapper.addEventListener('touchend', startAutoPlay, { passive: true });
+
+    // Start auto-play initially
+    startAutoPlay();
+  });
 }

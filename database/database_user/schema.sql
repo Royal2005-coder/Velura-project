@@ -136,6 +136,8 @@ CREATE TABLE style_profile (
   preferred_occasions VARCHAR(50)[],
   favorite_brands     VARCHAR(100)[],
   budget_range        budget_range,
+  age_group           VARCHAR(20),
+  favorite_colors     VARCHAR(20)[],
   quiz_completed_at   TIMESTAMP,
   updated_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

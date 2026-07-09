@@ -75,7 +75,7 @@ async function getWishlistProductIds(userId) {
   const user = await selectOne("users", {
     select: "user_id,wishlist",
     user_id: `eq.${userId}`
-  }, { useAnonKey: false });
+  }, { useAnonKey: true });
 
   return normalizeWishlist(user?.wishlist);
 }
@@ -84,7 +84,7 @@ async function saveWishlistProductIds(userId, wishlist) {
   await updateRows("users", { user_id: `eq.${userId}` }, {
     wishlist: normalizeWishlist(wishlist),
     updated_at: new Date().toISOString()
-  }, { useAnonKey: false });
+  }, { useAnonKey: true });
 }
 
 async function hydrateWishlistProducts(wishlist) {

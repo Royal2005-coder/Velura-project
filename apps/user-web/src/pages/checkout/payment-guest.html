@@ -79,12 +79,8 @@
 
           <aside class="order-summary">
             <h2 class="order-summary__title">Tóm tắt đơn hàng</h2>
-            <div class="form-group">
-              <label for="coupon-guest">Mã giảm giá</label>
-              <div class="coupon-row">
-                <input class="form-input" type="text" id="coupon-guest" placeholder="Nhập mã" />
-                <button type="button" class="btn-outline">Áp dụng</button>
-              </div>
+            <div class="checkout-product-list" style="max-height: 400px; overflow-y: auto; padding-right: 8px; margin-bottom: 24px;">
+              <!-- JS will inject products here -->
             </div>
             <div class="summary-lines">
               <div class="summary-line"><span>Tạm tính</span><span class="summary-line__value">9.050.000₫</span></div>
@@ -98,6 +94,8 @@
         </div>
       </div>
     </main>
+
+
 
     <load src="/src/components/footer.html" />
   </div>

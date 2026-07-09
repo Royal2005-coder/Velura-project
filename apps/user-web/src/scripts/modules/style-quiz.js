@@ -388,7 +388,7 @@ export function initStyleQuiz() {
       sessionStorage.setItem("quiz-main-style", JSON.stringify(styles));
 
       const selectedColors = container.querySelectorAll('.js-quiz-color-option.is-selected');
-      const colors = Array.from(selectedColors).map(btn => btn.getAttribute("data-value"));
+      const colors = Array.from(selectedColors).map(btn => `${btn.getAttribute("data-value")}|${btn.getAttribute("data-color-hex")}`);
       sessionStorage.setItem("quiz-colors", JSON.stringify(colors));
 
       const budget = container.querySelector('.quiz-budget-card.is-selected')?.getAttribute("data-value");
@@ -595,7 +595,7 @@ export function initStyleQuiz() {
     }
 
     // 7. Budget
-    const budgetCard = container.querySelector('.quiz-budget-card.is-selected');
+    const budgetCard = container.querySelector('[data-group="budget"] .quiz-budget-card.is-selected');
     const budgetTitle = budgetCard ? budgetCard.querySelector(".quiz-budget-card__title")?.textContent.trim() : "-";
     const budgetDisplay = document.getElementById("summary-budget");
     if (budgetDisplay) {
@@ -640,11 +640,18 @@ export function initStyleQuiz() {
     else if (rawShape.toLowerCase().includes("rectangle") || rawShape.toLowerCase().includes("chu-nhat")) body_shape = "Rectangle";
     else if (rawShape.toLowerCase().includes("triangle") || rawShape.toLowerCase().includes("tam-giac")) body_shape = "Inverted Triangle";
 
-    // Styles & Colors
+    // Styles
     let style_tags = [];
     try {
       const parsedStyles = JSON.parse(sessionStorage.getItem("quiz-main-style") || "[]");
       style_tags = Array.isArray(parsedStyles) ? parsedStyles : [parsedStyles];
+    } catch(e) {}
+    
+    const age = sessionStorage.getItem("quiz-age") || null;
+    let colors = [];
+    try {
+      const parsedColors = JSON.parse(sessionStorage.getItem("quiz-colors") || "[]");
+      colors = Array.isArray(parsedColors) ? parsedColors : [];
     } catch(e) {}
 
     const occasions = sessionStorage.getItem("quiz-context") ? [sessionStorage.getItem("quiz-context")] : [];
@@ -674,7 +681,9 @@ export function initStyleQuiz() {
           style_tags,
           preferred_occasions: occasions,
           favorite_brands: ["Velura"],
-          budget_range
+          budget_range,
+          age_group: age,
+          favorite_colors: colors
         }
       });
     }).then((res) => {

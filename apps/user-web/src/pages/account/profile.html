@@ -39,8 +39,8 @@
                 <span class="account-sidebar__verify-badge">✓</span>
               </div>
               <div class="account-sidebar__user-info">
-                <h2 class="account-sidebar__name">Nguyễn Thanh Hà</h2>
-                <span class="account-sidebar__badge">Hạng Gold</span>
+                <h2 class="account-sidebar__name">Tên khách hàng</h2>
+                <span class="account-sidebar__badge">Thành viên mới</span>
               </div>
             </div>
 
@@ -122,8 +122,8 @@
                   </button>
                 </div>
                 <div class="profile-avatar-info">
-                  <h3 class="profile-avatar-name">Nguyễn Thanh Hà</h3>
-                  <p class="profile-avatar-meta">Thành viên từ tháng 03/2024 · 1.245 điểm tích lũy</p>
+                  <h3 class="profile-avatar-name">Tên khách hàng</h3>
+                  <p class="profile-avatar-meta">Đang tải thông tin thành viên...</p>
                 </div>
               </div>
 
@@ -535,53 +535,91 @@
                 <p class="account-main__subtitle">Hồ sơ phong cách giúp Velura gợi ý cho bạn</p>
               </div>
 
+              <!-- Empty State Block -->
+              <div class="style-profile-empty" id="js-style-profile-empty" style="display: none; text-align: center; padding: 60px 20px; background: #FAF6F2; border-radius: 12px; border: 1px dashed #D4C4B7;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#7D562D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 20px;">
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <h3 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: #1C1B1B; margin: 0 0 12px 0;">Bạn chưa có Style Profile</h3>
+                <p style="font-family: 'DM Sans', sans-serif; font-size: 0.9375rem; color: #6B635D; max-width: 400px; margin: 0 auto 24px auto; line-height: 1.6;">Thực hiện bài trắc nghiệm nhanh để giúp Velura hiểu rõ hơn về vóc dáng và sở thích của bạn, từ đó đưa ra những gợi ý phối đồ chuẩn xác nhất.</p>
+                <button class="btn btn--primary" type="button" onclick="window.location.href='/src/pages/ai/style-quiz.html'" style="padding: 0 32px;">
+                  Làm Trắc Nghiệm Ngay
+                </button>
+              </div>
+
               <!-- AI Stylist Container Block -->
-              <div class="style-profile-container">
-                <!-- Left side: cozy styling image -->
-                <div class="style-profile__image-box">
-                  <img class="style-profile__image" src="../../assets/images/collection-2.png"
-                    alt="Clothes rack styling" />
-                </div>
+              <div class="style-profile-container" id="js-style-profile-filled" style="display: none;">
+
 
                 <!-- Right side: style results content -->
                 <div class="style-profile__details">
                   <span class="style-profile__tag">✨ Phong cách của bạn</span>
-                  <h3 class="style-profile__heading">Tối giản thanh lịch</h3>
+                  <h3 class="style-profile__heading" id="js-style-heading">Tối giản thanh lịch</h3>
 
                   <!-- Measurements and Shapes grid -->
-                  <div class="style-profile__metrics">
-                    <div class="style-profile__metric-row">
-                      <span class="style-profile__metric-label">Chiều cao</span>
-                      <span class="style-profile__metric-value">1m62</span>
+                  <!-- Grid Layout for Metrics -->
+                  <div class="style-profile__metrics" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 40px; margin-top: 24px;">
+                    
+                    <!-- Group 1: Cơ thể (Body) -->
+                    <div style="grid-column: 1 / -1; padding-bottom: 8px; border-bottom: 2px solid #EAE3DC; margin-bottom: 8px;">
+                      <h4 style="font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #1C1B1B; margin: 0;">Chỉ số cơ thể</h4>
                     </div>
-                    <div class="style-profile__metric-row">
-                      <span class="style-profile__metric-label">Cân nặng</span>
-                      <span class="style-profile__metric-value">52kg</span>
+                    
+                    <div class="style-profile__metric-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F0ECE6;">
+                      <span class="style-profile__metric-label" style="color: #666; font-size: 0.95rem;">Chiều cao</span>
+                      <span class="style-profile__metric-value" id="js-style-height" style="font-weight: 500;">Chưa cập nhật</span>
                     </div>
-                    <div class="style-profile__metric-row">
-                      <span class="style-profile__metric-label">Dáng người</span>
-                      <span class="style-profile__metric-value">Đồng hồ cát</span>
+                    <div class="style-profile__metric-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F0ECE6;">
+                      <span class="style-profile__metric-label" style="color: #666; font-size: 0.95rem;">Cân nặng</span>
+                      <span class="style-profile__metric-value" id="js-style-weight" style="font-weight: 500;">Chưa cập nhật</span>
                     </div>
-                    <div class="style-profile__metric-row">
-                      <span class="style-profile__metric-label">Tông màu yêu thích</span>
-                      <span class="style-profile__metric-value">Be · Nude · Trắng kem</span>
+                    <div class="style-profile__metric-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F0ECE6;">
+                      <span class="style-profile__metric-label" style="color: #666; font-size: 0.95rem;">Dáng người</span>
+                      <span class="style-profile__metric-value" id="js-style-shape" style="font-weight: 500;">Chưa cập nhật</span>
                     </div>
+                    <div class="style-profile__metric-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F0ECE6;">
+                      <span class="style-profile__metric-label" style="color: #666; font-size: 0.95rem;">Số đo 3 vòng</span>
+                      <span class="style-profile__metric-value" style="font-weight: 500;">
+                        <span id="js-style-chest">--</span> - <span id="js-style-waist">--</span> - <span id="js-style-hip">--</span>
+                      </span>
+                    </div>
+
+                    <!-- Group 2: Màu sắc & Phong cách (Style & Colors) -->
+                    <div style="grid-column: 1 / -1; padding-bottom: 8px; border-bottom: 2px solid #EAE3DC; margin-top: 24px; margin-bottom: 8px;">
+                      <h4 style="font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #1C1B1B; margin: 0;">Sở thích & Phong cách</h4>
+                    </div>
+
+                    <div class="style-profile__metric-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F0ECE6;">
+                      <span class="style-profile__metric-label" style="color: #666; font-size: 0.95rem;">Sắc tố da</span>
+                      <span class="style-profile__metric-value" id="js-style-tone" style="font-weight: 500;">Chưa cập nhật</span>
+                    </div>
+                    <div class="style-profile__metric-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F0ECE6; align-items: center;">
+                      <span class="style-profile__metric-label" style="color: #666; font-size: 0.95rem;">Màu sắc yêu thích</span>
+                      <div class="style-profile__metric-value" id="js-style-colors" style="display: flex; gap: 8px; flex-wrap: wrap; font-weight: 500;">Chưa cập nhật</div>
+                    </div>
+                    <div class="style-profile__metric-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F0ECE6;">
+                      <span class="style-profile__metric-label" style="color: #666; font-size: 0.95rem;">Dịp thường mặc</span>
+                      <span class="style-profile__metric-value" id="js-style-occasions" style="font-weight: 500;">Chưa cập nhật</span>
+                    </div>
+                    <div class="style-profile__metric-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F0ECE6;">
+                      <span class="style-profile__metric-label" style="color: #666; font-size: 0.95rem;">Độ tuổi</span>
+                      <span class="style-profile__metric-value" id="js-style-age" style="font-weight: 500;">Chưa cập nhật</span>
+                    </div>
+                    <div class="style-profile__metric-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F0ECE6;">
+                      <span class="style-profile__metric-label" style="color: #666; font-size: 0.95rem;">Thương hiệu</span>
+                      <span class="style-profile__metric-value" id="js-style-brands" style="font-weight: 500;">Chưa cập nhật</span>
+                    </div>
+                    <div class="style-profile__metric-row" style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F0ECE6;">
+                      <span class="style-profile__metric-label" style="color: #666; font-size: 0.95rem;">Ngân sách mỗi món</span>
+                      <span class="style-profile__metric-value" id="js-style-budget" style="font-weight: 500;">Chưa cập nhật</span>
+                    </div>
+
                   </div>
 
-                  <!-- Personal Color Palette visualization -->
-                  <div class="personal-palette">
-                    <h4 class="personal-palette__title">Bảng màu phù hợp nhất với da</h4>
-                    <div class="personal-palette__colors">
-                      <div class="personal-palette__color" style="background-color: #E6D9CD;" title="Beige"></div>
-                      <div class="personal-palette__color" style="background-color: #D8BFA9;" title="Nude"></div>
-                      <div class="personal-palette__color" style="background-color: #F8F5F2;" title="Cream"></div>
-                      <div class="personal-palette__color" style="background-color: #8C5E45;" title="Warm Brown"></div>
-                      <div class="personal-palette__color" style="background-color: #A2B5CD;" title="Muted Blue"></div>
-                    </div>
-                  </div>
+
 
                   <!-- Update style profile action -->
-                  <button class="btn btn--primary style-profile__update-btn" type="button">
+                  <button class="btn btn--primary style-profile__update-btn" type="button" onclick="window.location.href='/src/pages/ai/style-quiz.html'">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                       stroke-linecap="round" stroke-linejoin="round">
                       <path d="M12 20h9" />

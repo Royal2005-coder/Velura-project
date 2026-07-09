@@ -36,17 +36,38 @@ export function initSearchOverlay() {
     }
   }
 
+  // Load recent searches from localStorage
+  let currentRecentSearches = [];
+  try {
+    const saved = localStorage.getItem("velura_recent_searches");
+    if (saved) {
+      currentRecentSearches = JSON.parse(saved);
+    } else {
+      currentRecentSearches = [...recentSearches]; // fallback to mock
+    }
+  } catch (e) {
+    currentRecentSearches = [...recentSearches];
+  }
+
+  function saveRecentSearches() {
+    localStorage.setItem("velura_recent_searches", JSON.stringify(currentRecentSearches));
+  }
+
   // Render mock data into the overlay (and dynamic categories)
   function renderSearchData() {
     // 1. Render Recent Searches with close buttons
     var recentContainer = overlay.querySelector(".js-recent-searches");
     if (recentContainer) {
-      recentContainer.innerHTML = recentSearches.map(function (keyword) {
-        return '<span class="search-pill">' + 
-          '<span class="js-search-pill-keyword" style="cursor:pointer;">' + escapeHtml(keyword) + '</span>' +
-          '<button type="button" class="js-delete-recent" data-val="' + escapeHtml(keyword) + '" aria-label="Xóa">✕</button>' +
-        '</span>';
-      }).join("");
+      if (currentRecentSearches.length === 0) {
+         recentContainer.innerHTML = '<p style="color: #9e9e9e; font-size: 0.9rem;">Chưa có tìm kiếm gần đây</p>';
+      } else {
+         recentContainer.innerHTML = currentRecentSearches.map(function (keyword) {
+           return '<span class="search-pill">' + 
+             '<span class="js-search-pill-keyword" style="cursor:pointer;">' + escapeHtml(keyword) + '</span>' +
+             '<button type="button" class="js-delete-recent" data-val="' + escapeHtml(keyword) + '" aria-label="Xóa">✕</button>' +
+           '</span>';
+         }).join("");
+      }
 
       // Bind dynamic delete events
       var deleteBtns = recentContainer.querySelectorAll(".js-delete-recent");
@@ -59,9 +80,13 @@ export function initSearchOverlay() {
           if (pill) {
             pill.remove();
           }
-          var index = recentSearches.indexOf(val);
+          var index = currentRecentSearches.indexOf(val);
           if (index > -1) {
-            recentSearches.splice(index, 1);
+            currentRecentSearches.splice(index, 1);
+            saveRecentSearches();
+          }
+          if (currentRecentSearches.length === 0) {
+             recentContainer.innerHTML = '<p style="color: #9e9e9e; font-size: 0.9rem;">Chưa có tìm kiếm gần đây</p>';
           }
         });
       });
@@ -177,9 +202,10 @@ export function initSearchOverlay() {
         e.preventDefault();
         var val = overlayInput.value.trim();
         if (val) {
-          if (!recentSearches.includes(val)) {
-            recentSearches.unshift(val);
-            if (recentSearches.length > 5) recentSearches.pop();
+          if (!currentRecentSearches.includes(val)) {
+            currentRecentSearches.unshift(val);
+            if (currentRecentSearches.length > 5) currentRecentSearches.pop();
+            saveRecentSearches();
           }
           window.location.href = "/src/pages/products/list.html?q=" + encodeURIComponent(val);
         }
