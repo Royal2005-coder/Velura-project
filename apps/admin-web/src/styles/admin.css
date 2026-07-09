@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Velura â€” Admin foundation
    Loaded after main.css; reuse shared tokens without changing user UI.
    ============================================================ */
@@ -118,7 +118,7 @@ body.admin-page::-webkit-scrollbar-thumb:hover { background: var(--terracotta); 
 
 .admin-tabs { display: flex; gap: 4px; padding: 16px 24px 0; border-bottom: 1px solid var(--line); }.admin-tab { padding: 10px 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--soft); cursor: pointer; font-size: .8125rem; font-weight: 500; }.admin-tab:hover { color: var(--ink); }.admin-tab--active { border-bottom-color: var(--terracotta); color: var(--terracotta); }
 .admin-tab-content { padding: 20px 24px 0; }.admin-tab-content[hidden] { display: none; }
-.admin-filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 20px; }.admin-search-field { display: flex; flex: 1 1 220px; align-items: center; gap: 8px; min-width: 0; }.admin-search-field .admin-form-control { min-width: 0; }.admin-filter-bar__actions { display: flex; gap: 8px; }
+.admin-filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }.admin-filter-bar .admin-form-group { display: block; margin-bottom: 0; }.admin-search-field { display: flex; flex: 1 1 220px; align-items: center; gap: 8px; min-width: 0; }.admin-search-field .admin-form-control { min-width: 0; }.admin-filter-bar__actions { display: flex; gap: 16px; align-items: center; }
 .admin-form-group { display: grid; gap: 7px; margin-bottom: 16px; }.admin-form-label { color: var(--text-body); font-size: .8125rem; font-weight: 500; }.admin-form-control { min-width: 150px; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); outline: 0; background: #fff; color: var(--ink); font-size: .8125rem; transition: border-color .2s, box-shadow .2s; }.admin-form-control:focus { border-color: var(--terracotta); box-shadow: 0 0 0 3px rgba(201, 123, 99, .12); }.admin-form-textarea { height: auto; min-height: 96px; padding: 12px; resize: vertical; }.admin-form-helper { color: var(--soft); font-size: .75rem; }.admin-form-error { color: var(--error); font-size: .75rem; }.admin-form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 
 .admin-table-wrap { overflow-x: auto; }.admin-table { width: 100%; min-width: 720px; border-collapse: collapse; text-align: left; }.admin-table th { padding: 12px 16px; background: var(--field-bg); color: var(--muted); font-size: .6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }.admin-table td { padding: 15px 16px; border-bottom: 1px solid var(--line); color: var(--text-body); font-size: .8125rem; }.admin-table tbody tr { transition: background .2s; }.admin-table tbody tr:hover { background: #fdfaf8; }.admin-table td:first-child { color: var(--ink); }.admin-table__actions { position: relative; width: 48px; text-align: right; }
@@ -157,8 +157,9 @@ body.admin-page::-webkit-scrollbar-thumb:hover { background: var(--terracotta); 
 .admin-sidebar .admin-menu-item { justify-content: flex-start; gap: 12px; text-align: left; }
 .admin-sidebar .admin-menu-icon { margin-right: 0; }
 
-.admin-filter-bar .admin-search-field { flex: 2 1 420px; max-width: 560px; }
-.admin-filter-bar .admin-search-field .admin-form-control { width: 100%; }
+.admin-filter-bar .admin-search-field { position: relative; display: flex; align-items: center; flex: 2 1 420px; max-width: 560px; }
+.admin-filter-bar .admin-search-field .admin-line-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--soft); }
+.admin-filter-bar .admin-search-field .admin-form-control { width: 100%; padding-left: 36px; }
 .admin-badge--pending { background: #e5f1fb; color: #3d6f91; }
 .admin-table thead th { background: var(--tab-bg); color: var(--brown); border-bottom: 1px solid var(--line); }
 .admin-table th { text-transform: uppercase; letter-spacing: .06em; font-weight: 400; }
@@ -251,11 +252,11 @@ body.admin-page::-webkit-scrollbar-thumb:hover { background: var(--terracotta); 
 .admin-order-amount { color:var(--brown); font-variant-numeric:tabular-nums; white-space:nowrap; }
 
 [data-review-filter] .admin-form-label { display:none; }
-.admin-filter-bar { flex-wrap:nowrap; }
+.admin-filter-bar { flex-wrap: nowrap; }
 .admin-filter-bar .admin-search-field,
-
-.admin-filter-bar > :not(.admin-search-field) { flex:0 0 auto; }
-.admin-filter-bar > .admin-form-control { flex:0 0 auto; width:auto; }
+.admin-filter-bar .admin-form-group,
+.admin-filter-bar > :not(.admin-search-field) { flex: 0 0 auto; }
+.admin-filter-bar > .admin-form-control { flex: 0 0 auto; width: auto; }
 
 @media (max-width:768px) {
   .admin-filter-bar { flex-wrap:wrap; }
@@ -619,4 +620,28 @@ input:checked + .admin-sim-slider:before {
   background: var(--muted);
   border-radius: 2px;
 }
+
+/* Responsive and scrollable modals */
+.admin-modal {
+  display: flex;
+  flex-direction: column;
+  max-height: min(90vh, 760px);
+}
+.admin-modal form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: inherit;
+  min-height: 0;
+}
+.admin-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.admin-modal__header,
+.admin-modal__footer {
+  flex: 0 0 auto;
+}
+
 

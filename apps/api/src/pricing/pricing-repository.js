@@ -64,6 +64,13 @@ export function createPricingRepository() {
       });
     },
 
+    async getPromotion(promotionId, accessToken) {
+      return selectOne("promotion", {
+        select: PROMOTION_SELECT,
+        promo_id: `eq.${promotionId}`
+      }, authOptions(accessToken));
+    },
+
     async updatePromotion(promotionId, input, accessToken) {
       return callRpc("admin_update_promotion", {
         p_promo_id: promotionId,
@@ -123,7 +130,7 @@ export function createPricingRepository() {
           usage_limit_per_user: input.maxPerUser || 1,
           used_count: 0,
           applicable_categories: input.applicableCategories || null,
-          applicable_user_group: "all_users",
+          applicable_user_group: input.applicableUserGroup || "all_users",
           start_date: input.startDate,
           end_date: input.endDate,
           is_active: true,

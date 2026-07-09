@@ -24,7 +24,7 @@ export function createReviewService({ repository }) {
         rating: searchParams.get("rating") || undefined,
         search: searchParams.get("q") || undefined,
         order: "submitted_at.desc",
-        limit: Math.min(parseInt(searchParams.get("limit") || "50"), 100),
+        limit: Math.min(parseInt(searchParams.get("limit") || "50"), 1000),
         offset: parseInt(searchParams.get("offset") || "0")
       }, context.accessToken);
     },
@@ -74,7 +74,7 @@ export function createReviewService({ repository }) {
       requireReviewReader(context);
       return repository.listAuditLogs({
         targetId: searchParams.get("targetId") || undefined,
-        limit: Math.min(parseInt(searchParams.get("limit") || "50"), 100),
+        limit: Math.min(parseInt(searchParams.get("limit") || "50"), 1000),
         offset: parseInt(searchParams.get("offset") || "0")
       }, context.accessToken);
     }

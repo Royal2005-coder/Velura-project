@@ -20,8 +20,19 @@ function render() {
 }
 
 function updateKpis() {
-  const today = new Date().toDateString();
-  const todayRows = state.rows.filter((row) => new Date(row.timestamp).toDateString() === today);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+  
+  const todayStr = today.toDateString();
+  const yesterdayStr = yesterday.toDateString();
+  
+  const todayRows = state.rows.filter((row) => new Date(row.timestamp).toDateString() === todayStr);
+  const yesterdayRows = state.rows.filter((row) => new Date(row.timestamp).toDateString() === yesterdayStr);
+  
+  const diff = todayRows.length - yesterdayRows.length;
+  const trendText = diff >= 0 ? `+${diff} so với hôm qua` : `${diff} so với hôm qua`;
+  const trendClass = diff >= 0 ? "admin-kpi-card__trend--up" : "admin-kpi-card__trend--down";
   
   const successCount = state.rows.filter(r => !String(r.action).toLowerCase().includes("fail") && !String(r.action).toLowerCase().includes("error")).length;
   const failureCount = state.rows.filter(r => String(r.action).toLowerCase().includes("fail") || String(r.action).toLowerCase().includes("error")).length;
@@ -32,6 +43,71 @@ function updateKpis() {
   document.querySelectorAll(".admin-log-kpis .admin-kpi-card__value").forEach((node, index) => {
     node.textContent = String(values[index] || 0);
   });
+
+  // Calculate and update subtext trends in KPIs
+  const cards = document.querySelectorAll(".admin-log-kpis .admin-kpi-card");
+  if (cards.length >= 5) {
+    // Card 1: Today events trend
+    const trendNode1 = cards[0].querySelector(".admin-kpi-card__trend");
+    if (trendNode1) {
+      trendNode1.textContent = trendText;
+      trendNode1.className = `admin-kpi-card__trend ${trendClass}`;
+    }
+    
+    // Card 2: Success rate percentage
+    const trendNode2 = cards[1].querySelector(".admin-kpi-card__trend");
+    if (trendNode2) {
+      const total = state.rows.length || 1;
+      const successPercent = ((successCount / total) * 100).toFixed(1);
+      trendNode2.textContent = `${successPercent}% tổng sự kiện`;
+    }
+    
+    // Card 3: Failure status
+    const trendNode3 = cards[2].querySelector(".admin-kpi-card__trend");
+    if (trendNode3) {
+      trendNode3.textContent = failureCount > 0 ? "Cần kiểm tra ngay" : "Hoạt động ổn định";
+      trendNode3.className = `admin-kpi-card__trend ${failureCount > 0 ? "admin-kpi-card__trend--warning" : "admin-kpi-card__trend--up"}`;
+    }
+    
+    // Card 4: Blocked conflicts
+    const trendNode4 = cards[3].querySelector(".admin-kpi-card__trend");
+    if (trendNode4) {
+      const conflictCount = state.rows.filter(r => String(r.action).toLowerCase().includes("conflict") || JSON.stringify(r).toLowerCase().includes("xung đột")).length;
+      trendNode4.textContent = `${conflictCount} xung đột dữ liệu`;
+      trendNode4.className = `admin-kpi-card__trend ${conflictCount > 0 ? "admin-kpi-card__trend--warning" : "admin-kpi-card__trend--up"}`;
+    }
+    
+    // Card 5: Security severity
+    const trendNode5 = cards[4].querySelector(".admin-kpi-card__trend");
+    if (trendNode5) {
+      const criticalCount = state.rows.filter(r => String(r.action).toLowerCase().includes("critical") || String(r.action).toLowerCase().includes("severe") || String(r.action).toLowerCase().includes("reject") || JSON.stringify(r).toLowerCase().includes("nghiêm trọng")).length;
+      trendNode5.textContent = `${criticalCount} nghiêm trọng`;
+      trendNode5.className = `admin-kpi-card__trend ${criticalCount > 0 ? "admin-kpi-card__trend--danger" : "admin-kpi-card__trend--up"}`;
+    }
+  }
+
+  // Calculate and update alert box counts
+  const deniedCount = state.rows.filter(r => String(r.action).toLowerCase().includes("deny") || String(r.action).toLowerCase().includes("refuse") || String(r.action).toLowerCase().includes("block")).length;
+  const conflict24hCount = state.rows.filter(r => (String(r.action).toLowerCase().includes("conflict") || JSON.stringify(r).toLowerCase().includes("xung đột")) && (new Date() - new Date(r.timestamp) < 24 * 60 * 60 * 1000)).length;
+  const emailFailedCount = state.rows.filter(r => String(r.module) === "email" && (String(r.action).toLowerCase().includes("fail") || String(r.action).toLowerCase().includes("error"))).length;
+
+  const deniedBtn = document.querySelector("[data-log-alert-result='denied']");
+  if (deniedBtn) {
+    deniedBtn.querySelector("span").textContent = `${deniedCount} thao tác bị từ chối do không đủ quyền`;
+    deniedBtn.style.display = deniedCount > 0 ? "" : "none";
+  }
+
+  const conflictBtn = document.querySelector("[data-log-alert-result='conflict']");
+  if (conflictBtn) {
+    conflictBtn.querySelector("span").textContent = `${conflict24hCount} xung đột dữ liệu trong 24 giờ`;
+    conflictBtn.style.display = conflict24hCount > 0 ? "" : "none";
+  }
+
+  const failedBtn = document.querySelector("[data-log-alert-result='failed']");
+  if (failedBtn) {
+    failedBtn.querySelector("span").textContent = `${emailFailedCount} lỗi gửi email cảnh báo`;
+    failedBtn.style.display = emailFailedCount > 0 ? "" : "none";
+  }
 
   // Calculate tab counts
   const allCount = state.rows.length;
@@ -115,6 +191,24 @@ document.addEventListener("click", (event) => {
     document.querySelectorAll("[data-log-tab]").forEach((node) => node.classList.toggle("admin-tab--active", node === tab));
     state.tab = tab.dataset.logTab;
     applyFilterAndRender();
+  }
+
+  const alertBtn = event.target.closest("[data-log-alert-result]");
+  if (alertBtn) {
+    const type = alertBtn.dataset.logAlertResult;
+    const form = document.querySelector("[data-log-filter]");
+    if (form) {
+      form.reset();
+      const qInput = form.querySelector("[name='q']");
+      if (type === "denied") {
+        qInput.value = "deny";
+      } else if (type === "conflict") {
+        qInput.value = "conflict";
+      } else if (type === "failed") {
+        qInput.value = "fail";
+      }
+      applyFilterAndRender();
+    }
   }
   
   if (event.target.closest("[data-log-export]")) {

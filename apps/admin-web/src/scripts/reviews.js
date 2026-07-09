@@ -1,6 +1,6 @@
 import { reviewApi } from "./review-api.js";
 
-const state = { rows: [], count: 0, active: "all", selected: null, currentPage: 1, itemsPerPage: 10 };
+const state = { rows: [], count: 0, active: "all", selected: null, currentPage: 1, itemsPerPage: 10, filters: {} };
 const panel = document.querySelector("#review-panel");
 const overlay = document.querySelector("#review-overlay");
 const statusLabels = { pending: "Chờ duyệt", approved: "Đã duyệt", rejected: "Đã ẩn" };
@@ -25,23 +25,69 @@ function stars(value) {
   return `<span class="admin-review-snippet__stars">${"★".repeat(rating)}${"☆".repeat(5 - rating)} <small>${rating}/5</small></span>`;
 }
 
+function reviewImages(images) {
+  const list = Array.isArray(images) ? images : [];
+  if (!list.length) return "";
+  return `<div class="admin-review-images" style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+    ${list.map((img) => `<a href="${escapeReviewHtml(img)}" target="_blank" title="Xem ảnh gốc"><img src="${escapeReviewHtml(img)}" alt="Ảnh đánh giá" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--line); cursor: pointer;" /></a>`).join("")}
+  </div>`;
+}
+
 function statusBadge(status) {
   return `<span class="admin-badge admin-badge--review-${escapeReviewHtml(status)}">${escapeReviewHtml(statusLabels[status] || status)}</span>`;
 }
 
 function filteredRows() {
-  if (state.active === "pending") return state.rows.filter((row) => row.status === "pending" && !row.is_flagged_urgent);
-  if (state.active === "urgent") return state.rows.filter((row) => row.is_flagged_urgent || Number(row.rating) <= 2);
-  if (state.active === "processed") return state.rows.filter((row) => row.status !== "pending" || row.admin_reply);
-  return state.rows;
+  let list = [...state.rows];
+
+  // Apply tab filter
+  if (state.active === "pending") {
+    list = list.filter((row) => row.status === "pending" && !row.is_flagged_urgent);
+  } else if (state.active === "urgent") {
+    list = list.filter((row) => row.is_flagged_urgent || Number(row.rating) <= 2);
+  } else if (state.active === "processed") {
+    list = list.filter((row) => row.status !== "pending" || row.admin_reply);
+  }
+
+  // Apply search query (local)
+  const q = String(state.filters.q || "").toLowerCase().trim();
+  if (q) {
+    list = list.filter((row) => 
+      String(row.comment || "").toLowerCase().includes(q) ||
+      String(row.product?.name || "").toLowerCase().includes(q) ||
+      String(row.product?.sku || "").toLowerCase().includes(q) ||
+      String(row.user_id || "").toLowerCase().includes(q)
+    );
+  }
+
+  // Apply rating filter
+  if (state.filters.rating) {
+    list = list.filter((row) => Number(row.rating) === Number(state.filters.rating));
+  }
+
+  // Apply status filter
+  if (state.filters.status) {
+    list = list.filter((row) => row.status === state.filters.status);
+  }
+
+  // Apply alert filter
+  if (state.filters.alert) {
+    if (state.filters.alert === "urgent") {
+      list = list.filter((row) => row.is_flagged_urgent);
+    } else {
+      list = list.filter((row) => !row.is_flagged_urgent);
+    }
+  }
+
+  return list;
 }
 
 function filters() {
   return `<form class="admin-filter-bar admin-order-filter-bar" data-review-filter>
-    <label class="admin-search-field">${icon("search")}<input class="admin-form-control" name="q" type="search" placeholder="Nội dung hoặc sản phẩm..." data-review-search /></label>
-    <label class="admin-form-group"><select class="admin-form-control" name="rating" data-review-stars aria-label="Số sao"><option value="">Tất cả số sao</option>${[5,4,3,2,1].map((value) => `<option value="${value}">${value} sao</option>`).join("")}</select></label>
-    <label class="admin-form-group"><select class="admin-form-control" name="status" data-review-status aria-label="Trạng thái"><option value="">Tất cả trạng thái</option><option value="pending">Chờ duyệt</option><option value="approved">Đã duyệt</option><option value="rejected">Đã ẩn</option></select></label>
-    <label class="admin-form-group"><select class="admin-form-control" name="alert" data-review-alert aria-label="Cảnh báo"><option value="">Tất cả cảnh báo</option><option value="urgent">Khẩn cấp</option><option value="normal">Bình thường</option></select></label>
+    <label class="admin-search-field">${icon("search")}<input class="admin-form-control" name="q" value="${escapeReviewHtml(state.filters.q || "")}" placeholder="Nội dung hoặc sản phẩm..." data-review-search /></label>
+    <label class="admin-form-group"><select class="admin-form-control" name="rating" data-review-stars aria-label="Số sao"><option value="">Tất cả số sao</option>${[5,4,3,2,1].map((value) => `<option value="${value}" ${Number(state.filters.rating) === value ? "selected" : ""}>${value} sao</option>`).join("")}</select></label>
+    <label class="admin-form-group"><select class="admin-form-control" name="status" data-review-status aria-label="Trạng thái"><option value="">Tất cả trạng thái</option><option value="pending" ${state.filters.status === "pending" ? "selected" : ""}>Chờ duyệt</option><option value="approved" ${state.filters.status === "approved" ? "selected" : ""}>Đã duyệt</option><option value="rejected" ${state.filters.status === "rejected" ? "selected" : ""}>Đã ẩn</option></select></label>
+    <label class="admin-form-group"><select class="admin-form-control" name="alert" data-review-alert aria-label="Cảnh báo"><option value="">Tất cả cảnh báo</option><option value="urgent" ${state.filters.alert === "urgent" ? "selected" : ""}>Khẩn cấp</option><option value="normal" ${state.filters.alert === "normal" ? "selected" : ""}>Bình thường</option></select></label>
     <div class="admin-filter-bar__actions"><button class="admin-btn admin-btn--filter admin-btn--sm" type="submit">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button></div>
   </form>`;
 }
@@ -101,7 +147,7 @@ function table() {
 
   if (!pagedRows.length) return `<div class="admin-order-empty">${icon("star")}<strong>Không có đánh giá phù hợp</strong><span>Dữ liệu được tải trực tiếp từ Supabase.</span></div>`;
   return `<div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Đánh giá</th><th>Sản phẩm</th><th>Khách hàng</th><th>Cảnh báo</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>${pagedRows.map((row) => `<tr>
-    <td><div class="admin-review-snippet">${stars(row.rating)}<p>${escapeReviewHtml(row.comment || "—")}</p></div></td>
+    <td><div class="admin-review-snippet">${stars(row.rating)}<p>${escapeReviewHtml(row.comment || "—")}</p>${reviewImages(row.images)}</div></td>
     <td><div class="admin-review-product"><strong>${escapeReviewHtml(row.product?.name || "—")}</strong><small>${escapeReviewHtml(row.product?.sku || row.product_id)}</small></div></td>
     <td><span class="admin-order-code">${escapeReviewHtml(row.user_id)}</span></td>
     <td>${row.is_flagged_urgent ? '<span class="admin-badge admin-badge--danger">Khẩn cấp</span>' : '<span class="admin-badge admin-badge--neutral">Bình thường</span>'}</td>
@@ -132,7 +178,7 @@ function render() {
 async function load(params = {}) {
   panel.innerHTML = '<div class="admin-order-empty"><strong>Đang tải đánh giá...</strong></div>';
   try {
-    const result = await reviewApi.list({ ...params, limit: 100 });
+    const result = await reviewApi.list({ ...params, limit: 1000 });
     state.rows = result.rows || [];
     state.count = result.count ?? state.rows.length;
     render();
@@ -142,7 +188,7 @@ async function load(params = {}) {
 async function loadLogs() {
   panel.innerHTML = '<div class="admin-order-empty"><strong>Đang tải nhật ký...</strong></div>';
   try {
-    const result = await reviewApi.auditLogs({ limit: 100 });
+    const result = await reviewApi.auditLogs({ limit: 1000 });
     const rows = result.rows || [];
     panel.innerHTML = `<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Thời gian</th><th>Đối tượng</th><th>Vai trò</th><th>Hành động</th><th>Thay đổi</th></tr></thead><tbody>${rows.map((log) => `<tr><td>${escapeReviewHtml(formatDate(log.timestamp))}</td><td>${escapeReviewHtml(log.target_id)}</td><td>${escapeReviewHtml(log.actor_role)}</td><td>${escapeReviewHtml(log.action)}</td><td>${escapeReviewHtml(JSON.stringify(log.new_value || {}))}</td></tr>`).join("") || '<tr><td colspan="5">Chưa có nhật ký</td></tr>'}</tbody></table></div>`;
   } catch (error) { showError(error); }
@@ -153,7 +199,7 @@ async function openDetail(id) {
   try {
     const row = await reviewApi.get(id);
     state.selected = row;
-    overlay.innerHTML = `<div class="admin-drawer-backdrop" data-review-close></div><aside class="admin-drawer admin-drawer--wide"><header class="admin-drawer__header"><div><p class="admin-product-code">${escapeReviewHtml(row.review_id)}</p><h2 class="admin-section__title">${escapeReviewHtml(row.product?.name || "Đánh giá")}</h2><div class="admin-status-group">${stars(row.rating)}${statusBadge(row.status)}</div></div><button class="admin-icon-button" data-review-close>×</button></header><div class="admin-drawer__body"><h3 class="admin-drawer__section">Nội dung</h3><p class="admin-review-original">${escapeReviewHtml(row.comment || "—")}</p>${row.admin_reply ? `<div class="admin-review-response"><strong>Phản hồi Velura</strong><br>${escapeReviewHtml(row.admin_reply)}</div>` : ""}<dl class="admin-data-list"><div><dt>Đơn hàng</dt><dd>${escapeReviewHtml(row.order_id)}</dd></div><div><dt>Khách hàng</dt><dd>${escapeReviewHtml(row.user_id)}</dd></div><div><dt>Ngày gửi</dt><dd>${escapeReviewHtml(formatDate(row.submitted_at))}</dd></div></dl></div></aside>`;
+    overlay.innerHTML = `<div class="admin-drawer-backdrop" data-review-close></div><aside class="admin-drawer admin-drawer--wide"><header class="admin-drawer__header"><div><p class="admin-product-code">${escapeReviewHtml(row.review_id)}</p><h2 class="admin-section__title">${escapeReviewHtml(row.product?.name || "Đánh giá")}</h2><div class="admin-status-group">${stars(row.rating)}${statusBadge(row.status)}</div></div><button class="admin-icon-button" data-review-close>×</button></header><div class="admin-drawer__body"><h3 class="admin-drawer__section">Nội dung</h3><p class="admin-review-original">${escapeReviewHtml(row.comment || "—")}</p>${reviewImages(row.images)}${row.admin_reply ? `<div class="admin-review-response"><strong>Phản hồi Velura</strong><br>${escapeReviewHtml(row.admin_reply)}</div>` : ""}<dl class="admin-data-list"><div><dt>Đơn hàng</dt><dd>${escapeReviewHtml(row.order_id)}</dd></div><div><dt>Khách hàng</dt><dd>${escapeReviewHtml(row.user_id)}</dd></div><div><dt>Ngày gửi</dt><dd>${escapeReviewHtml(formatDate(row.submitted_at))}</dd></div></dl></div></aside>`;
   } catch (error) { overlay.innerHTML = ""; toast(error.message, true); }
 }
 
@@ -226,12 +272,22 @@ panel.addEventListener("submit", (event) => {
   if (event.target.matches("[data-review-filter]")) {
     event.preventDefault();
     state.currentPage = 1;
-    load(Object.fromEntries(new FormData(event.target)));
+    const data = new FormData(event.target);
+    state.filters = {
+      q: data.get("q"),
+      rating: data.get("rating"),
+      status: data.get("status"),
+      alert: data.get("alert")
+    };
+    render();
   }
 });
-panel.addEventListener("reset", () => {
-  state.currentPage = 1;
-  setTimeout(() => load(), 0);
+panel.addEventListener("reset", (event) => {
+  if (event.target.matches("[data-review-filter]")) {
+    state.currentPage = 1;
+    state.filters = {};
+    setTimeout(render, 0);
+  }
 });
 overlay.addEventListener("submit", (event) => { if (event.target.matches("[data-review-action-form]")) { event.preventDefault(); submitAction(event.target); } });
 
