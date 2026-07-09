@@ -243,8 +243,12 @@ export function initHomepage() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
+      const isOutOfStock = product.status === "out_of_stock";
+
       let badgeHtml = "";
-      if (discountPercent > 0) {
+      if (isOutOfStock) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--out-of-stock" style="background:#555;color:#fff;">HẾT HÀNG</span>`;
+      } else if (discountPercent > 0) {
         badgeHtml = `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`;
       } else if (product.is_combo) {
         badgeHtml = `<span class="product-card__badge product-card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
@@ -257,16 +261,39 @@ export function initHomepage() {
       const isWishlisted = wishlistedProductIds.has(product.product_id);
       const wishlistClass = isWishlisted ? "active" : "";
 
+      const cardStyle = isOutOfStock ? "opacity: 0.6; filter: grayscale(100%); cursor: not-allowed;" : "";
+      const linkTag = isOutOfStock ? "div" : "a";
+      const linkHref = isOutOfStock ? "" : `href="/src/pages/products/detail.html?id=${product.product_id}"`;
+      const hoverHtml = isOutOfStock ? 
+        `<div class="product-card__img-hover" style="cursor: not-allowed;"><span class="btn-detail" style="background:#555; pointer-events:none;">Đã hết hàng</span></div>` :
+        `<div class="product-card__img-hover">
+              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
+            </div>`;
+
+      const actionsHtml = isOutOfStock ? `
+          <div class="product-card__actions" style="justify-content: center;">
+            <span style="color: #555; font-weight: bold;">HẾT HÀNG</span>
+          </div>
+      ` : `
+          <div class="product-card__actions">
+            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
+              <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+              <span>Mua ngay</span>
+            </a>
+            <button class="product-card__btn-cart js-add-cart-home" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
+              <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
+            </button>
+          </div>
+      `;
+
       return `
-        <article class="product-card" data-detail-url="/src/pages/products/detail.html?id=${product.product_id}">
+        <article class="product-card" style="${cardStyle}" ${isOutOfStock ? "" : `data-detail-url="/src/pages/products/detail.html?id=${product.product_id}"`}>
           <div class="product-card__img-wrapper">
             ${badgeHtml}
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
+            <${linkTag} ${linkHref} class="product-card__img-link">
               <img src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" class="product-card__img" />
-            </a>
-            <div class="product-card__img-hover">
-              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
-            </div>
+            </${linkTag}>
+            ${hoverHtml}
             <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-home ${wishlistClass}" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -281,27 +308,18 @@ export function initHomepage() {
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
               </span>
-              <span>4.8</span>
-              <span>(96)</span>
+              <span>${Number(product.rating_value || 0).toFixed(1)}</span>
+              <span>(${product.rating_count || 0})</span>
             </div>
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__title-link">
+            <${linkTag} ${linkHref} class="product-card__title-link">
               <h3 class="product-card__title">${product.name}</h3>
-            </a>
+            </${linkTag}>
             <div class="product-card__price-row">
               <span class="product-card__price">${formatVND(priceVal)}</span>
               ${oldPriceVal ? `<span class="product-card__price-old">${formatVND(oldPriceVal)}</span>` : ""}
             </div>
           </div>
-
-          <div class="product-card__actions">
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
-              <span>Mua ngay</span>
-            </a>
-            <button class="product-card__btn-cart js-add-cart-home" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
-            </button>
-          </div>
+          ${actionsHtml}
         </article>
       `;
     }).join("");
@@ -410,8 +428,12 @@ export function initHomepage() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
+      const isOutOfStock = product.status === "out_of_stock";
+
       let badgeHtml = "";
-      if (discountPercent > 0) {
+      if (isOutOfStock) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--out-of-stock" style="background:#555;color:#fff;">HẾT HÀNG</span>`;
+      } else if (discountPercent > 0) {
         badgeHtml = `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`;
       } else if (product.is_combo) {
         badgeHtml = `<span class="product-card__badge product-card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
@@ -424,16 +446,39 @@ export function initHomepage() {
       const isWishlisted = wishlistedProductIds.has(product.product_id);
       const wishlistClass = isWishlisted ? "active" : "";
 
+      const cardStyle = isOutOfStock ? "opacity: 0.6; filter: grayscale(100%); cursor: not-allowed;" : "";
+      const linkTag = isOutOfStock ? "div" : "a";
+      const linkHref = isOutOfStock ? "" : `href="/src/pages/products/detail.html?id=${product.product_id}"`;
+      const hoverHtml = isOutOfStock ? 
+        `<div class="product-card__img-hover" style="cursor: not-allowed;"><span class="btn-detail" style="background:#555; pointer-events:none;">Đã hết hàng</span></div>` :
+        `<div class="product-card__img-hover">
+              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
+            </div>`;
+
+      const actionsHtml = isOutOfStock ? `
+          <div class="product-card__actions" style="justify-content: center;">
+            <span style="color: #555; font-weight: bold;">HẾT HÀNG</span>
+          </div>
+      ` : `
+          <div class="product-card__actions">
+            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
+              <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+              <span>Mua ngay</span>
+            </a>
+            <button class="product-card__btn-cart js-add-cart-personalized" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
+              <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
+            </button>
+          </div>
+      `;
+
       return `
-        <article class="product-card" data-detail-url="/src/pages/products/detail.html?id=${product.product_id}">
+        <article class="product-card" style="${cardStyle}" ${isOutOfStock ? "" : `data-detail-url="/src/pages/products/detail.html?id=${product.product_id}"`}>
           <div class="product-card__img-wrapper">
             ${badgeHtml}
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
+            <${linkTag} ${linkHref} class="product-card__img-link">
               <img src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" class="product-card__img" />
-            </a>
-            <div class="product-card__img-hover">
-              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
-            </div>
+            </${linkTag}>
+            ${hoverHtml}
             <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-personalized ${wishlistClass}" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -448,27 +493,18 @@ export function initHomepage() {
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
               </span>
-              <span>4.8</span>
-              <span>(96)</span>
+              <span>${Number(product.rating_value || 0).toFixed(1)}</span>
+              <span>(${product.rating_count || 0})</span>
             </div>
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__title-link">
+            <${linkTag} ${linkHref} class="product-card__title-link">
               <h3 class="product-card__title">${product.name}</h3>
-            </a>
+            </${linkTag}>
             <div class="product-card__price-row">
               <span class="product-card__price">${formatVND(priceVal)}</span>
               ${oldPriceVal ? `<span class="product-card__price-old">${formatVND(oldPriceVal)}</span>` : ""}
             </div>
           </div>
-
-          <div class="product-card__actions">
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
-              <span>Mua ngay</span>
-            </a>
-            <button class="product-card__btn-cart js-add-cart-personalized" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
-            </button>
-          </div>
+          ${actionsHtml}
         </article>
       `;
     }).join("");

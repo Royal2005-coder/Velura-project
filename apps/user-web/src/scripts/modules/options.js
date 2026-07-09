@@ -414,46 +414,61 @@ export async function initOptions() {
 
       // Cart binding in product details
       const detailCartBtn = document.querySelector(".js-add-cart");
-      if (detailCartBtn) {
-        detailCartBtn.removeAttribute("onclick"); // Clear fallback inline redirect
-        detailCartBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          
-          const selectedColorBtn = document.querySelector(".js-color-btn.is-selected");
-          const selectedSizeBtn = document.querySelector(".js-size-btn.is-selected");
-          const qtyInputEl = document.querySelector(".js-qty-input");
-          const qty = qtyInputEl ? parseInt(qtyInputEl.value, 10) || 1 : 1;
-
-          if (!selectedColorBtn || !selectedSizeBtn) {
-            showToast("Vui lòng chọn màu sắc và kích cỡ sản phẩm!");
-            return;
-          }
-
-          const color = selectedColorBtn.getAttribute("data-color");
-          const size = selectedSizeBtn.getAttribute("data-size");
-
-          const matchedVariant = (product.variants || []).find(v => v.color === color && v.size === size);
-          if (!matchedVariant) {
-            showToast("Sản phẩm tùy chọn này hiện không khả dụng!");
-            return;
-          }
-
-          addToCart({
-            variant_id: matchedVariant.variant_id,
-            product_id: product.product_id,
-            product_name: product.name,
-            product_image: getVariantImage(product, color),
-            quantity: qty,
-            unit_price: product.sale_price || product.base_price,
-            color: color,
-            size: size
-          });
-        });
-      }
-
-      // Buy Now binding in product details
       const buyNowBtn = document.querySelector(".js-buy-now");
-      if (buyNowBtn) {
+      
+      const isOutOfStock = product.status === "out_of_stock";
+
+      if (isOutOfStock) {
+        if (detailCartBtn) {
+          detailCartBtn.textContent = "SẢN PHẨM HẾT HÀNG";
+          detailCartBtn.style.backgroundColor = "#555";
+          detailCartBtn.style.cursor = "not-allowed";
+          detailCartBtn.disabled = true;
+          detailCartBtn.removeAttribute("onclick");
+        }
+        if (buyNowBtn) {
+          buyNowBtn.style.display = "none";
+        }
+      } else {
+        if (detailCartBtn) {
+          detailCartBtn.removeAttribute("onclick"); // Clear fallback inline redirect
+          detailCartBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            
+            const selectedColorBtn = document.querySelector(".js-color-btn.is-selected");
+            const selectedSizeBtn = document.querySelector(".js-size-btn.is-selected");
+            const qtyInputEl = document.querySelector(".js-qty-input");
+            const qty = qtyInputEl ? parseInt(qtyInputEl.value, 10) || 1 : 1;
+
+            if (!selectedColorBtn || !selectedSizeBtn) {
+              showToast("Vui lòng chọn màu sắc và kích cỡ sản phẩm!");
+              return;
+            }
+
+            const color = selectedColorBtn.getAttribute("data-color");
+            const size = selectedSizeBtn.getAttribute("data-size");
+
+            const matchedVariant = (product.variants || []).find(v => v.color === color && v.size === size);
+            if (!matchedVariant) {
+              showToast("Sản phẩm tùy chọn này hiện không khả dụng!");
+              return;
+            }
+
+            addToCart({
+              variant_id: matchedVariant.variant_id,
+              product_id: product.product_id,
+              product_name: product.name,
+              product_image: getVariantImage(product, color),
+              quantity: qty,
+              unit_price: product.sale_price || product.base_price,
+              color: color,
+              size: size
+            });
+          });
+        }
+
+        // Buy Now binding in product details
+        if (buyNowBtn) {
         buyNowBtn.addEventListener("click", async (e) => {
           e.preventDefault();
 
@@ -476,7 +491,7 @@ export async function initOptions() {
             return;
           }
 
-          await addToCart({
+          const checkoutItem = {
             variant_id: matchedVariant.variant_id,
             product_id: product.product_id,
             product_name: product.name,
@@ -485,10 +500,24 @@ export async function initOptions() {
             unit_price: product.sale_price || product.base_price,
             color: color,
             size: size
-          });
+          };
 
-          window.location.href = "/src/pages/cart/cart.html";
+          await addToCart(checkoutItem);
+          
+          sessionStorage.setItem("checkout_items", JSON.stringify([checkoutItem]));
+          
+          // Clear any old checkout session data
+          localStorage.removeItem("checkout_discount");
+          localStorage.removeItem("checkout_voucher_id");
+          localStorage.removeItem("checkout_voucher_code");
+
+          if (localStorage.getItem("velura_token")) {
+            window.location.href = "/src/pages/checkout/payment-user.html";
+          } else {
+            window.location.href = "/src/pages/checkout/payment-guest.html";
+          }
         });
+      }
       }
 
     } catch (err) {
@@ -609,9 +638,13 @@ async function loadRelatedProducts(product) {
           const rpOldPrice = rp.sale_price && rp.base_price > rp.sale_price ? rp.base_price : null;
           const rpDiscount = rpOldPrice ? Math.round((1 - rpPrice / rpOldPrice) * 100) : 0;
           
-          const badgeHtml = rpDiscount > 0 
-            ? `<span class="card__badge card__badge--sale">-${rpDiscount}%</span>` 
-            : (rp.is_featured ? `<span class="card__badge" style="background:#A18265;color:#fff;">HOT</span>` : "");
+          const isOutOfStock = rp.status === "out_of_stock";
+
+          const badgeHtml = isOutOfStock
+            ? `<span class="card__badge card__badge--out-of-stock" style="background:#555;color:#fff;">HẾT HÀNG</span>`
+            : (rpDiscount > 0 
+              ? `<span class="card__badge card__badge--sale">-${rpDiscount}%</span>` 
+              : (rp.is_featured ? `<span class="card__badge" style="background:#A18265;color:#fff;">HOT</span>` : ""));
             
           const colorMap = new Map();
           rp.variants?.forEach(v => {
@@ -623,13 +656,21 @@ async function loadRelatedProducts(product) {
             return `<span class="card__color-dot" style="background-color: ${hex}; border: 1px solid #ddd;" title="${name}"></span>`;
           }).join("");
           
+          const cardStyle = isOutOfStock ? "opacity: 0.6; filter: grayscale(100%); cursor: not-allowed;" : "";
+          const linkTag = isOutOfStock ? "div" : "a";
+          const linkHref = isOutOfStock ? "" : `href="/src/pages/products/detail.html?id=${rp.product_id}"`;
+
+          const actionsHtml = isOutOfStock 
+            ? `<div style="text-align:center; padding:12px; color:#555; font-weight:bold; border-top:1px solid #eee;">HẾT HÀNG</div>`
+            : `<button class="btn btn--primary card__add-btn js-add-cart-related" type="button" data-id="${rp.product_id}">Thêm giỏ</button>`;
+
           return `
-            <article class="card card--product">
+            <article class="card card--product" style="${cardStyle}">
               <div class="card__image-container">
                 ${badgeHtml}
-                <a href="/src/pages/products/detail.html?id=${rp.product_id}">
+                <${linkTag} ${linkHref}>
                   <img class="card__img" src="${rp.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${rp.name}" loading="lazy" />
-                </a>
+                </${linkTag}>
                 <button class="card__wishlist-btn js-add-wishlist-related" type="button" aria-label="Yêu thích" data-id="${rp.product_id}">
                   <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67">
                     <path d="M10 17.5l-5.83-5.83a4.17 4.17 0 115.83-5.83 4.17 4.17 0 115.83 5.83L10 17.5z" />
@@ -637,7 +678,7 @@ async function loadRelatedProducts(product) {
                 </button>
               </div>
               <div class="card__info">
-                <a href="/src/pages/products/detail.html?id=${rp.product_id}" class="card__title">${rp.name}</a>
+                <${linkTag} ${linkHref} class="card__title">${rp.name}</${linkTag}>
                 <div class="card__colors">
                   ${colorDotsHtml}
                 </div>
@@ -646,7 +687,7 @@ async function loadRelatedProducts(product) {
                   ${rpOldPrice ? `<span class="card__price-old" style="text-decoration: line-through; color: var(--soft); margin-left: 8px;">${formatVND(rpOldPrice)}</span>` : ""}
                 </div>
               </div>
-              <button class="btn btn--primary card__add-btn js-add-cart-related" type="button" data-id="${rp.product_id}">Thêm giỏ</button>
+              ${actionsHtml}
             </article>
           `;
         }).join("");

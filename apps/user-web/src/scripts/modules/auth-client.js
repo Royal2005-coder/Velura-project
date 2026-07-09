@@ -702,6 +702,21 @@ export function updateHeaderAuthUI() {
 // ─── Main entry ──────────────────────────────────────────────────────────────
 
 export function initAuthClient() {
+  // Enforce strict guest session (clear localStorage if new browser session)
+  const token = localStorage.getItem("velura_token");
+  if (!token) {
+    const hasSessionCookie = document.cookie.includes("velura_session_active=1");
+    if (!hasSessionCookie) {
+      localStorage.removeItem("velura_cart");
+      localStorage.removeItem("velura_guest_wishlist");
+      localStorage.removeItem("velura_guest_session_id");
+      localStorage.removeItem("velura_quiz_answers");
+      localStorage.removeItem("velura_style_profile_results");
+      localStorage.removeItem("velura_guest_quiz_completed");
+      document.cookie = "velura_session_active=1; path=/";
+    }
+  }
+
   bindSignin();
   bindSignup();
   bindForgotPassword();

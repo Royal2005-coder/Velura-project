@@ -67,7 +67,7 @@ export async function handleProductsRoute(req, res, subRoute, action, corsHeader
         return sendJson(res, 200, { ...product, variants, category, reviews, sold_count }, corsHeaders);
       }
 
-      const { rows: products } = await selectRows("product", { status: "eq.on_sale" }, { useAnonKey: true });
+      const { rows: products } = await selectRows("product", { status: "in.(on_sale,out_of_stock)" }, { useAnonKey: true });
       
       let allVariants = [];
       let variantOffset = 0;
@@ -107,6 +107,24 @@ export async function handleProductsRoute(req, res, subRoute, action, corsHeader
         console.error("Error calculating bulk sold counts:", err);
       }
 
+      // Calculate bulk reviews
+      const ratingMap = new Map();
+      try {
+        const { rows: allReviews } = await selectRows("review", { select: "*", status: "eq.approved" }, { useAnonKey: true });
+        if (allReviews) {
+          allReviews.forEach(r => {
+            if (!ratingMap.has(r.product_id)) {
+              ratingMap.set(r.product_id, { sum: 0, count: 0 });
+            }
+            const data = ratingMap.get(r.product_id);
+            data.sum += Number(r.rating || 0);
+            data.count += 1;
+          });
+        }
+      } catch (err) {
+        console.error("Error calculating bulk reviews:", err);
+      }
+
       const productsWithVariants = products.map(p => {
         let variants = [];
         if (p.is_combo) {
@@ -131,13 +149,23 @@ export async function handleProductsRoute(req, res, subRoute, action, corsHeader
           });
         }
 
+        const reviewData = ratingMap.get(p.product_id);
+        let rating_value = 0;
+        let rating_count = 0;
+        if (reviewData && reviewData.count > 0) {
+          rating_value = Number((reviewData.sum / reviewData.count).toFixed(1));
+          rating_count = reviewData.count;
+        }
+
         const category = categories.find(c => c.category_id === p.category_id);
         return { 
           ...p, 
           variants, 
           category_slug: category ? category.slug : null, 
           category_name: category ? category.name : null,
-          sold_count
+          sold_count,
+          rating_value,
+          rating_count
         };
       });
 

@@ -237,6 +237,18 @@ function loadProfileData(form) {
       if (largeName && profile.full_name) {
         largeName.textContent = profile.full_name;
       }
+      
+      const avatarMeta = document.querySelector(".profile-avatar-meta");
+      if (avatarMeta) {
+        if (profile.created_at) {
+          const date = new Date(profile.created_at);
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const year = date.getFullYear();
+          avatarMeta.textContent = `Thành viên từ tháng ${month}/${year} · 0 điểm tích lũy`;
+        } else {
+          avatarMeta.textContent = `Thành viên mới · 0 điểm tích lũy`;
+        }
+      }
 
       // Render user avatar (initials fallback or custom URL)
       renderUserAvatar(profile.avatar, profile.full_name);
@@ -279,6 +291,18 @@ function loadProfileData(form) {
             const largeName = document.querySelector(".profile-avatar-name");
             if (largeName && profile.full_name) {
               largeName.textContent = profile.full_name;
+            }
+            
+            const avatarMeta = document.querySelector(".profile-avatar-meta");
+            if (avatarMeta) {
+              if (profile.created_at) {
+                const date = new Date(profile.created_at);
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                avatarMeta.textContent = `Thành viên từ tháng ${month}/${year} · 0 điểm tích lũy`;
+              } else {
+                avatarMeta.textContent = `Thành viên mới · 0 điểm tích lũy`;
+              }
             }
 
             // Render user avatar (initials fallback or custom URL)
@@ -1214,37 +1238,104 @@ function initSettingsAndStyleActions() {
   }
 
   // Load Style Profile details
-  const metricsContainer = document.querySelector(".style-profile__metrics");
-  if (metricsContainer) {
+  const emptyContainer = document.getElementById("js-style-profile-empty");
+  const filledContainer = document.getElementById("js-style-profile-filled");
+
+  if (emptyContainer && filledContainer) {
     apiRequest("/api/user/style-quiz")
       .then(res => {
-        if (res.success && res.quiz) {
+        if (res.success && res.quiz && Object.keys(res.quiz).length > 0) {
           const q = res.quiz;
-          const heading = document.querySelector(".style-profile__heading");
+          
+          // Show filled state, hide empty state
+          emptyContainer.style.display = "none";
+          filledContainer.style.display = "flex"; // style-profile-container is a flex container (based on CSS usually, or block)
+          
+          // Fallback if flex is broken
+          if (getComputedStyle(filledContainer).display === 'none') {
+             filledContainer.style.display = "block";
+          }
+
+          const heading = document.getElementById("js-style-heading");
           if (heading && q.style_tags) {
             heading.textContent = Array.isArray(q.style_tags) ? q.style_tags.join(", ") : q.style_tags;
           }
-          metricsContainer.innerHTML = `
-            <div class="style-profile__metric-row">
-              <span class="style-profile__metric-label">Chiều cao</span>
-              <span class="style-profile__metric-value">${q.height_cm ? q.height_cm + 'cm' : 'Chưa cập nhật'}</span>
-            </div>
-            <div class="style-profile__metric-row">
-              <span class="style-profile__metric-label">Cân nặng</span>
-              <span class="style-profile__metric-value">${q.weight_kg ? q.weight_kg + 'kg' : 'Chưa cập nhật'}</span>
-            </div>
-            <div class="style-profile__metric-row">
-              <span class="style-profile__metric-label">Dáng người</span>
-              <span class="style-profile__metric-value">${q.body_shape || 'Chưa cập nhật'}</span>
-            </div>
-            <div class="style-profile__metric-row">
-              <span class="style-profile__metric-label">Tông màu da / Yêu thích</span>
-              <span class="style-profile__metric-value">${q.skin_tone || 'Chưa cập nhật'}</span>
-            </div>
-          `;
+          
+          const ageEl = document.getElementById("js-style-age");
+          if (ageEl) ageEl.textContent = q.age_group ? `Nhóm tuổi ${q.age_group}` : 'Chưa cập nhật';
+          
+          const colorsEl = document.getElementById("js-style-colors");
+          if (colorsEl) {
+            if (q.favorite_colors && Array.isArray(q.favorite_colors) && q.favorite_colors.length > 0) {
+              const fallbackColorMap = {
+                "Kem": "#E6D9CD", "Phấn": "#F5E1D3", "Hồng đào": "#E8C3B9", 
+                "Hồng đất": "#C97B63", "Xanh ô liu": "#A0AF9C", "Onyx": "#2C2A29", 
+                "Xám ấm": "#8F8A85", "Xanh khói": "#5B6C7A", "Camel": "#D3A273", "Đỏ rượu": "#732C2B"
+              };
+              colorsEl.innerHTML = q.favorite_colors.map(c => {
+                const parts = c.split("|");
+                let colorHex = parts.length > 1 ? parts[1] : parts[0];
+                const colorName = parts[0];
+                if (parts.length === 1 && fallbackColorMap[colorName]) {
+                  colorHex = fallbackColorMap[colorName];
+                }
+                return `<span style="display:inline-block; width:20px; height:20px; border-radius:50%; background-color:${colorHex}; border: 1px solid #e0e0e0;" title="${colorName}"></span>`;
+              }).join("");
+            } else {
+              colorsEl.textContent = 'Chưa cập nhật';
+            }
+          }
+          
+          const heightEl = document.getElementById("js-style-height");
+          if (heightEl) heightEl.textContent = q.height_cm ? q.height_cm + 'cm' : 'Chưa cập nhật';
+
+          const weightEl = document.getElementById("js-style-weight");
+          if (weightEl) weightEl.textContent = q.weight_kg ? q.weight_kg + 'kg' : 'Chưa cập nhật';
+
+          const shapeEl = document.getElementById("js-style-shape");
+          if (shapeEl) shapeEl.textContent = q.body_shape || 'Chưa cập nhật';
+
+          const toneEl = document.getElementById("js-style-tone");
+          if (toneEl) toneEl.textContent = q.skin_tone || 'Chưa cập nhật';
+          
+          const chestEl = document.getElementById("js-style-chest");
+          if (chestEl) chestEl.textContent = q.chest_cm ? q.chest_cm + 'cm' : 'Chưa cập nhật';
+          
+          const waistEl = document.getElementById("js-style-waist");
+          if (waistEl) waistEl.textContent = q.waist_cm ? q.waist_cm + 'cm' : 'Chưa cập nhật';
+          
+          const hipEl = document.getElementById("js-style-hip");
+          if (hipEl) hipEl.textContent = q.hip_cm ? q.hip_cm + 'cm' : 'Chưa cập nhật';
+
+          const occasionsEl = document.getElementById("js-style-occasions");
+          if (occasionsEl) {
+             const occ = Array.isArray(q.preferred_occasions) ? q.preferred_occasions.join(", ") : q.preferred_occasions;
+             occasionsEl.textContent = occ || 'Chưa cập nhật';
+          }
+          
+          const brandsEl = document.getElementById("js-style-brands");
+          if (brandsEl) {
+             const b = Array.isArray(q.favorite_brands) ? q.favorite_brands.join(", ") : q.favorite_brands;
+             brandsEl.textContent = b || 'Chưa cập nhật';
+          }
+          
+          const budgetEl = document.getElementById("js-style-budget");
+          if (budgetEl) budgetEl.textContent = q.budget_range || 'Chưa cập nhật';
+
+        } else {
+          // Show empty state, hide filled state
+          emptyContainer.style.display = "block";
+          filledContainer.style.display = "none";
         }
       })
-      .catch(err => console.error("Failed to load style profile:", err));
+      .catch(err => {
+        console.error("Failed to load style profile:", err);
+        // On error, we'll assume no profile and show empty state so user isn't stuck
+        if (emptyContainer && filledContainer) {
+          emptyContainer.style.display = "block";
+          filledContainer.style.display = "none";
+        }
+      });
   }
 }
 

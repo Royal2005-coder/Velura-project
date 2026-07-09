@@ -40,16 +40,23 @@ export function initProductReview() {
     apiRequest(`/api/user/orders/${orderId}`)
       .then(order => {
         if (order && order.items && order.items.length > 0) {
-          const firstItem = order.items[0];
-          currentProduct = firstItem;
-
-          if (productImg) productImg.src = firstItem.product_image || "../../assets/images/product-silk-blazer.png";
-          if (productName) productName.textContent = firstItem.product_name;
-          if (productVariant) productVariant.innerHTML = "Sản phẩm trong đơn hàng";
-          if (productPrice) {
-            productPrice.textContent = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(firstItem.unit_price);
+          const items = order.items;
+          let firstItem = items[0];
+          
+          // Check if there's a specific product_id in URL to pre-select
+          const productIdFromUrl = urlParams.get("product_id");
+          if (productIdFromUrl) {
+            const foundItem = items.find(i => i.product_id === productIdFromUrl);
+            if (foundItem) firstItem = foundItem;
           }
-          if (productColorDot) productColorDot.style.backgroundColor = "var(--terracotta)";
+
+          currentProduct = firstItem;
+          updateProductSummaryUI(currentProduct);
+
+          // If multiple items, add a selector
+          if (items.length > 1) {
+            renderProductSelector(items);
+          }
         } else {
           setDefaultFallback();
         }
@@ -58,6 +65,69 @@ export function initProductReview() {
         console.error("Failed to load order items:", err);
         setDefaultFallback();
       });
+  }
+
+  function updateProductSummaryUI(item) {
+    if (productImg) productImg.src = item.product_image || "../../assets/images/placeholder.jpg";
+    if (productName) productName.textContent = item.product_name;
+    if (productVariant) productVariant.innerHTML = "Sản phẩm trong đơn hàng";
+    if (productPrice) {
+      productPrice.textContent = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.unit_price);
+    }
+    if (productColorDot) productColorDot.style.backgroundColor = "var(--terracotta)";
+  }
+
+  function renderProductSelector(items) {
+    const summaryDetails = document.querySelector(".product-summary__details");
+    if (!summaryDetails) return;
+
+    // Remove old selector if exists
+    const oldSelector = document.getElementById("js-review-product-selector");
+    if (oldSelector) oldSelector.remove();
+
+    const selectorDiv = document.createElement("div");
+    selectorDiv.id = "js-review-product-selector";
+    selectorDiv.style.cssText = "margin-top: 24px; width: 100%; border-top: 1px dashed var(--line, #E8DFD6); padding-top: 24px;";
+    
+    let optionsHtml = items.map((item, index) => {
+      const isSelected = item.item_id === currentProduct.item_id;
+      const priceFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.unit_price);
+      
+      return `
+        <div class="review-product-card ${isSelected ? 'is-selected' : ''}" data-index="${index}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid ${isSelected ? '#7D562D' : '#E8DFD6'}; border-radius: 8px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; background-color: ${isSelected ? '#FAF6F2' : '#FFF'};">
+          <img src="${item.product_image || '/src/assets/images/placeholder.jpg'}" alt="${item.product_name}" style="width: 48px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #E8DFD6;" />
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+            <strong style="font-size: 0.875rem; color: #1C1B1B;">${item.product_name}</strong>
+            <span style="font-size: 0.75rem; color: #6B635D;">Số lượng: ${item.quantity}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-weight: 600; font-size: 0.875rem; color: #7D562D;">${priceFormatted}</span>
+            <div style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid ${isSelected ? '#7D562D' : '#D4C4B7'}; display: flex; align-items: center; justify-content: center; background-color: ${isSelected ? '#7D562D' : 'transparent'};">
+              ${isSelected ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    selectorDiv.innerHTML = `
+      <label style="display: block; font-size: 0.8125rem; font-weight: 700; margin-bottom: 16px; color: #50453B; letter-spacing: 1px;">CHỌN SẢN PHẨM KHÁC ĐỂ ĐÁNH GIÁ</label>
+      <div class="review-product-list" style="display: flex; flex-direction: column;">
+        ${optionsHtml}
+      </div>
+    `;
+
+    summaryDetails.appendChild(selectorDiv);
+
+    const cards = selectorDiv.querySelectorAll(".review-product-card");
+    cards.forEach(card => {
+      card.addEventListener("click", () => {
+        const selectedIndex = parseInt(card.getAttribute("data-index"), 10);
+        currentProduct = items[selectedIndex];
+        updateProductSummaryUI(currentProduct);
+        renderProductSelector(items); // Re-render to update selected state
+      });
+    });
   }
 
   function setDefaultFallback() {

@@ -25,7 +25,12 @@
   padding: 16px;
   border-radius: 12px;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.address-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .address-card input { position: absolute; opacity: 0; pointer-events: none; }
@@ -77,8 +82,17 @@
 
 .address-card__check {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 16px;
+  right: 16px;
+  color: var(--brown);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.address-card.is-selected .address-card__check {
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* Option card (radio) */
@@ -658,4 +672,77 @@
   .card--product .card__actions .btn-buy {
     white-space: normal;
   }
+}
+
+/* ============================================================
+   Voucher Card Component (for Promo Code Modal)
+   ============================================================ */
+.voucher-card {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  position: relative;
+}
+
+.voucher-card:hover:not(.voucher-card--disabled) {
+  border-color: var(--brown);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.voucher-card--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #fcfcfc;
+}
+
+.voucher-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.voucher-card__code {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--terracotta);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.voucher-card__badge {
+  padding: 4px 8px;
+  background: #E8DFD6;
+  color: var(--brown);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.voucher-card__desc {
+  font-size: 0.875rem;
+  color: var(--text-dark);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.voucher-card__meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.voucher-card__error {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #D4183D;
+  font-weight: 500;
 }

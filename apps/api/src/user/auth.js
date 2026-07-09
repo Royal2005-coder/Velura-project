@@ -40,10 +40,10 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
     let exists = false;
     if (email) {
       const user = await selectOne("users", { email: `eq.${email}` });
-      exists = !!user;
+      exists = !!user && user.is_active;
     } else if (phone) {
       const user = await selectOne("users", { phone: `eq.${phone}` });
-      exists = !!user;
+      exists = !!user && user.is_active;
     }
 
     return sendJson(res, 200, { exists }, corsHeaders);

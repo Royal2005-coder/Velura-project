@@ -4,6 +4,10 @@ import { hashPassword, signJwt } from "../auth-helper.js";
 import { requireUserAuth } from "./auth.js";
 import { createNotification } from "./notifications.js";
 
+const checkoutOtpAttemptsMap = new Map();
+
+import { config } from "../config.js";
+
 // Helper to parse Postgres date as UTC robustly
 export function parseUtcDate(dateStr) {
   if (!dateStr) return new Date();
@@ -12,6 +16,36 @@ export function parseUtcDate(dateStr) {
     return new Date(cleanStr + "Z");
   }
   return new Date(cleanStr);
+}
+
+// Helper to send email directly without relying on email_outbox and service role worker
+async function sendDirectEmail(to, subject, text, html) {
+  if (!config.smtpHost || !config.smtpUser || !config.smtpAppPassword) {
+    console.log(`[EMAIL MOCK] Gửi tới ${to}: ${subject}\n${text}`);
+    return;
+  }
+  try {
+    const nodemailer = await import("nodemailer");
+    const transporter = nodemailer.default.createTransport({
+      host: config.smtpHost,
+      port: config.smtpPort || 587,
+      secure: config.smtpSecure === "true" || config.smtpSecure === true,
+      auth: {
+        user: config.smtpUser,
+        pass: config.smtpAppPassword
+      }
+    });
+    await transporter.sendMail({
+      from: `"Velura" <${config.smtpUser}>`,
+      to,
+      subject,
+      text,
+      html
+    });
+    console.log(`[EMAIL SENT] Gửi thành công tới ${to}`);
+  } catch (err) {
+    console.error(`[EMAIL ERROR] Lỗi gửi email tới ${to}:`, err.message);
+  }
 }
 
 // Auto-progress order statuses based on time elapsed since creation
@@ -131,6 +165,26 @@ export async function autoProgressOrder(order) {
 
 export async function handleOrdersRoute(req, res, subRoute, action, parts, corsHeaders, context) {
   if (subRoute === "vouchers") {
+    // GET /api/user/vouchers
+    if (!action && req.method === "GET") {
+      const now = new Date().toISOString();
+      const { rows: allVouchers } = await selectRows("voucher", { is_active: "eq.true" });
+      
+      const validVouchers = allVouchers.filter(v => {
+        if (v.start_date && v.start_date > now) return false;
+        if (v.end_date && v.end_date < now) return false;
+        if (v.usage_limit_total !== null && v.used_count >= v.usage_limit_total) return false;
+        return true;
+      });
+      
+      validVouchers.sort((a, b) => (a.min_order_value || 0) - (b.min_order_value || 0));
+      
+      return sendJson(res, 200, {
+        success: true,
+        vouchers: validVouchers
+      }, corsHeaders);
+    }
+
     // POST /api/user/vouchers/apply
     if (action === "apply" && req.method === "POST") {
       const body = await readJson(req);
@@ -418,30 +472,54 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
       console.log(`[CHECKOUT GUEST OTP] Mã xác thực đơn hàng của ${phone} là: ${otpCode}`);
       console.log(`==================================================\n`);
       
-      let userId;
-      if (existingUser) {
-        await updateRows("users", { user_id: `eq.${existingUser.user_id}` }, {
-          otp_code: otpCode,
-          otp_expires_at: otpExpiresAt,
-          full_name: full_name || existingUser.full_name
-        });
-        userId = existingUser.user_id;
-      } else {
-        const tempPassword = "GuestPassword123!";
-        const hashedPassword = hashPassword(tempPassword);
-        const newGuest = await insertRow("users", {
-          full_name: full_name || "Khách hàng Guest",
-          phone: phone,
-          email: email || null,
-          password_hash: hashedPassword,
-          role: "member",
-          is_active: false,
-          otp_code: otpCode,
-          otp_expires_at: otpExpiresAt,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-        userId = newGuest.user_id;
+      let userId = existingUser ? existingUser.user_id : null;
+      
+      // Store OTP and guest info in memory instead of DB
+      checkoutOtpAttemptsMap.set(phone, { 
+        otpCode, 
+        expiresAt: new Date(otpExpiresAt).getTime(),
+        email: email || null,
+        full_name: full_name || (existingUser ? existingUser.full_name : "Khách hàng Guest"),
+        attempts: 0 
+      });
+      
+      // Send OTP email directly
+      if (email) {
+        const emailBody = `Chào ${full_name || "bạn"},\n\nMã xác thực OTP của bạn là: ${otpCode}.\n\nMã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.`;
+        const emailHtml = `
+          <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            <div style="background-color: #d1b8a8; padding: 24px; text-align: center;">
+              <h1 style="color: #fff; margin: 0; font-size: 32px; letter-spacing: 4px; font-weight: 700;">VELURA</h1>
+            </div>
+            <div style="padding: 32px; background-color: #fff;">
+              <h2 style="color: #333; margin-top: 0; font-size: 20px;">Xác thực đơn hàng</h2>
+              <p style="color: #555; line-height: 1.6;">Chào <strong>${full_name || "bạn"}</strong>,</p>
+              <p style="color: #555; line-height: 1.6;">Bạn đang thực hiện thanh toán đơn hàng tại Velura. Vui lòng sử dụng mã OTP dưới đây để xác nhận:</p>
+              
+              <div style="background-color: #fcfaf8; border: 1px dashed #d1b8a8; border-radius: 8px; padding: 20px; margin: 28px 0; text-align: center;">
+                <span style="font-size: 36px; font-weight: bold; color: #b89b88; letter-spacing: 12px; display: inline-block; margin-left: 12px;">${otpCode}</span>
+              </div>
+              
+              <p style="color: #888; font-size: 14px; text-align: center; margin-bottom: 0;">Mã có hiệu lực trong <strong>5 phút</strong>. Vui lòng không chia sẻ mã này.</p>
+            </div>
+            <div style="background-color: #f9f9f9; padding: 16px; text-align: center; border-top: 1px solid #eaeaea;">
+              <p style="color: #aaa; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} Velura. Mọi quyền được bảo lưu.</p>
+            </div>
+          </div>
+        `;
+        await sendDirectEmail(email, "Mã xác thực đơn hàng Velura", emailBody, emailHtml);
+        
+        // Vẫn cố gắng lưu vết vào email_outbox nếu RLS cho phép
+        try {
+          await insertRow("email_outbox", {
+            recipient: email,
+            template_code: "otp_verification",
+            subject: "Mã xác thực đơn hàng Velura",
+            body: emailBody,
+            status: "pending",
+            created_at: new Date().toISOString()
+          });
+        } catch (e) { /* ignore */ }
       }
       
       return sendJson(res, 200, {
@@ -472,17 +550,35 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
         throw new HttpError(400, "BAD_REQUEST", "Thông tin xác thực hoặc đơn hàng không đầy đủ");
       }
       
-      const guestUser = await selectOne("users", { phone: `eq.${phone}` });
-      if (!guestUser) {
-        throw new HttpError(400, "INVALID_OTP", "Số điện thoại không hợp lệ hoặc mã xác thực đã hết hạn");
+      const sessionState = checkoutOtpAttemptsMap.get(phone);
+      if (!sessionState) {
+        throw new HttpError(400, "INVALID_OTP", "Không tìm thấy phiên xác thực. Vui lòng nhận lại mã OTP.");
       }
       
-      const now = new Date().toISOString();
-      if (!guestUser.otp_code || guestUser.otp_code !== otp_code || (guestUser.otp_expires_at && guestUser.otp_expires_at < now)) {
+      if (sessionState.attempts >= 5) {
+        throw new HttpError(403, "SESSION_LOCKED", "Phiên xác thực bị khóa do nhập sai quá 5 lần. Vui lòng đặt lại đơn hàng.");
+      }
+
+      if (sessionState.expiresAt < Date.now()) {
+        throw new HttpError(400, "EXPIRED_OTP", "Mã xác thực đã hết hạn.");
+      }
+
+      if (sessionState.otpCode !== otp_code) {
         if (otp_code !== "1234") {
-          throw new HttpError(400, "INVALID_OTP", "Mã xác thực không chính xác hoặc đã hết hạn");
+          sessionState.attempts += 1;
+          checkoutOtpAttemptsMap.set(phone, sessionState);
+          
+          if (sessionState.attempts >= 5) {
+            checkoutOtpAttemptsMap.delete(phone);
+            throw new HttpError(403, "SESSION_LOCKED", "Phiên xác thực bị khóa do nhập sai quá 5 lần. Vui lòng đặt lại đơn hàng.");
+          } else {
+            throw new HttpError(400, "INVALID_OTP", `Mã OTP không hợp lệ. Bạn còn ${5 - sessionState.attempts} lần thử.`);
+          }
         }
       }
+      
+      // OTP is valid
+      checkoutOtpAttemptsMap.delete(phone);
       
       // Stock check
       const affectedItems = [];
@@ -529,6 +625,56 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
         saved_addresses: savedAddresses,
         updated_at: new Date().toISOString()
       });
+
+      const shipping_email = body.shipping_email || order.shipping_email;
+      if (shipping_email || guestUser.email) {
+        const targetEmail = shipping_email || guestUser.email;
+        const emailBody = `Chào ${shipping_name},\n\nTài khoản thành viên của bạn đã được tạo thành công dựa trên đơn đặt hàng.\n\nThông tin đăng nhập:\n- Số điện thoại: ${phone}\n- Mật khẩu tạm thời: ${tempPassword}\n\nVui lòng đăng nhập và đổi mật khẩu sớm nhất có thể.`;
+        
+        const emailHtml = `
+          <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eaeaea; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+            <div style="background-color: #222; padding: 24px; text-align: center;">
+              <h1 style="color: #d1b8a8; margin: 0; font-size: 32px; letter-spacing: 4px; font-weight: 700;">VELURA</h1>
+            </div>
+            <div style="padding: 32px; background-color: #fff;">
+              <h2 style="color: #333; margin-top: 0; font-size: 22px;">Chào mừng thành viên mới!</h2>
+              <p style="color: #555; line-height: 1.6;">Chào <strong>${shipping_name}</strong>,</p>
+              <p style="color: #555; line-height: 1.6;">Cảm ơn bạn đã đặt hàng! Để giúp bạn dễ dàng theo dõi đơn hàng và nhận các ưu đãi hấp dẫn, tài khoản thành viên của bạn đã được tự động khởi tạo.</p>
+              
+              <div style="background-color: #fcfaf8; border-left: 4px solid #d1b8a8; padding: 20px; margin: 28px 0; border-radius: 0 8px 8px 0;">
+                <h3 style="margin-top: 0; color: #333; font-size: 16px; margin-bottom: 16px;">Thông tin đăng nhập của bạn:</h3>
+                <p style="margin: 8px 0; color: #555; display: flex; align-items: center;">
+                  <span style="display: inline-block; width: 120px; color: #777;">Tài khoản:</span> 
+                  <strong>${phone}</strong>
+                </p>
+                <p style="margin: 8px 0; color: #555; display: flex; align-items: center;">
+                  <span style="display: inline-block; width: 120px; color: #777;">Mật khẩu:</span> 
+                  <span style="background-color: #eee; padding: 4px 12px; border-radius: 4px; font-family: monospace; color: #b89b88; font-weight: bold; font-size: 16px; letter-spacing: 1px;">${tempPassword}</span>
+                </p>
+              </div>
+              
+              <p style="color: #777; font-size: 14px;">Vui lòng đăng nhập và đổi mật khẩu trong phần <em>Tài khoản</em> của bạn để đảm bảo bảo mật.</p>
+            </div>
+            <div style="background-color: #f9f9f9; padding: 16px; text-align: center; border-top: 1px solid #eaeaea;">
+              <p style="color: #aaa; font-size: 12px; margin: 0;">&copy; ${new Date().getFullYear()} Velura. Mọi quyền được bảo lưu.</p>
+            </div>
+          </div>
+        `;
+        
+        await sendDirectEmail(targetEmail, "Chào mừng bạn đến với Velura", emailBody, emailHtml);
+        
+        // Cố gắng lưu vết
+        try {
+          await insertRow("email_outbox", {
+            recipient: targetEmail,
+            template_code: "welcome_account",
+            subject: "Chào mừng bạn đến với Velura",
+            body: emailBody,
+            status: "pending",
+            created_at: new Date().toISOString()
+          });
+        } catch (e) { /* ignore */ }
+      }
       
       const trackingCode = "VLR" + Date.now().toString().slice(-8).toUpperCase();
       const dbPaymentMethod = (payment_method === "COD" || payment_method === "cod") ? "COD" : "ONLINE_PAYMENT";
