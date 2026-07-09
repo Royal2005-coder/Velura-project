@@ -95,7 +95,6 @@ export async function fetchAuthContext(accessToken = getAccessToken()) {
   const text = await response.text();
   let payload;
   try { payload = JSON.parse(text); } catch { payload = null; }
-  console.log('[fetchAuthContext] status', response.status, 'body', text.slice(0, 300));
   if (!response.ok) {
     clearSession();
     throw new Error(payload?.error?.message || "Unable to verify the Supabase session");

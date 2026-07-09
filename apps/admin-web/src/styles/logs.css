@@ -1,3 +1,7 @@
+.admin-layout[data-admin-module="logs"] .admin-log-table { min-width:1180px; table-layout:auto; }
+.admin-layout[data-admin-module="logs"] .admin-log-table .cell-primary { min-width:180px; }
+.admin-layout[data-admin-module="logs"] .admin-log-table .cell-date { width:148px; }
+.admin-layout[data-admin-module="logs"] .admin-log-table .cell-action { width:76px; }
 .admin-log-kpis { grid-template-columns:repeat(5,minmax(0,1fr)); }
 .admin-log-kpis .admin-kpi-card__label { font-size:.875rem; font-weight:500; }
 .admin-log-alerts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:18px; }

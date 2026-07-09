@@ -13,6 +13,14 @@ const state = {
 const panel = document.querySelector("#panel");
 const overlay = document.querySelector("#overlay");
 
+const notify = (message, type = "info") => {
+  if (typeof window.showAdminToast === "function") {
+    window.showAdminToast(message, type);
+    return;
+  }
+  console[type === "error" ? "error" : "log"](message);
+};
+
 const roles = [
   "admin_viewer",
   "admin_operator_sanpham",
@@ -288,21 +296,21 @@ function accountTable() {
 
   return `
     <div class="admin-table-wrap">
-      <table class="admin-table admin-data-table admin-member-table">
+      <table class="admin-table admin-table--default admin-data-table admin-member-table">
         <thead>
           <tr>
-            <th class="col-main">Tài khoản</th>
-            <th class="col-compact">Nhóm</th>
-            <th class="col-status">Xác thực</th>
-            <th class="col-status">Trạng thái</th>
-            <th class="col-date">Đăng nhập gần nhất</th>
-            <th class="col-action">Thao tác</th>
+            <th class="cell-primary">Tài khoản</th>
+            <th>Nhóm</th>
+            <th class="cell-status">Xác thực</th>
+            <th class="cell-status">Trạng thái</th>
+            <th class="cell-date">Đăng nhập gần nhất</th>
+            <th class="cell-action">Thao tác</th>
           </tr>
         </thead>
         <tbody>
           ${pagedRows.map((row) => `
             <tr>
-              <td>
+              <td class="cell-primary">
                 <div class="admin-person">
                   <span class="admin-avatar">${escapeHtml(initials(row))}</span>
                   <span>
@@ -315,10 +323,10 @@ function accountTable() {
                 ${badge(row.role === "admin" ? "admin" : "member")}
                 <small class="admin-member-role">${escapeHtml(accountRoleText(row))}</small>
               </td>
-              <td>${badge(row.is_verified ? "verified" : "unverified")}</td>
-              <td>${badge(status(row))}</td>
-              <td>${escapeHtml(date(row.last_login_at))}</td>
-              <td>
+              <td class="cell-status">${badge(row.is_verified ? "verified" : "unverified")}</td>
+              <td class="cell-status">${badge(status(row))}</td>
+              <td class="cell-date">${escapeHtml(date(row.last_login_at))}</td>
+              <td class="cell-action">
                 <div class="admin-table-actions">
                   <button class="admin-icon-button admin-icon-button--sm" data-account-detail="${escapeHtml(row.user_id)}" title="Xem chi tiết">${icon("eye")}</button>
                   <button class="admin-icon-button admin-icon-button--sm" data-account-action="${row.is_active ? "lock" : "unlock"}:${escapeHtml(row.user_id)}" title="${row.is_active ? "Khóa" : "Mở khóa"} tài khoản">${icon(row.is_active ? "lock" : "unlock")}</button>
@@ -337,15 +345,15 @@ function requestTable() {
   if (!state.requests.length) return '<div class="admin-empty-state"><strong>Không có yêu cầu nâng quyền</strong></div>';
   return `
     <div class="admin-table-wrap">
-      <table class="admin-table">
+      <table class="admin-table admin-table--default">
         <thead>
           <tr>
-            <th class="col-main">Yêu cầu</th>
-            <th class="col-main">Tài khoản</th>
-            <th class="col-compact">Vai trò</th>
-            <th class="col-date">Hết hạn</th>
-            <th class="col-status">Trạng thái</th>
-            <th class="col-action">Thao tác</th>
+            <th class="cell-primary">Yêu cầu</th>
+            <th class="cell-primary">Tài khoản</th>
+            <th>Vai trò</th>
+            <th class="cell-date">Hết hạn</th>
+            <th class="cell-status">Trạng thái</th>
+            <th class="cell-action">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -376,16 +384,16 @@ function requestTable() {
 function logTable() {
   if (!state.logs.length) return '<div class="admin-empty-state"><strong>Chưa có nhật ký tài khoản</strong></div>';
   return `
-    <div class="admin-table-wrap">
-      <table class="admin-table admin-table--dense">
+    <div class="admin-table-wrap admin-table-wrap--scroll">
+      <table class="admin-table admin-table--log">
         <thead>
           <tr>
-            <th class="col-date">Thời gian</th>
-            <th class="col-main">Người thực hiện</th>
-            <th class="col-compact">Hành động</th>
-            <th class="col-compact">Đối tượng</th>
-            <th class="col-description">Dữ liệu cũ</th>
-            <th class="col-description">Dữ liệu mới</th>
+            <th class="cell-date">Thời gian</th>
+            <th class="cell-primary">Người thực hiện</th>
+            <th>Hành động</th>
+            <th>Đối tượng</th>
+            <th class="cell-description">Dữ liệu cũ</th>
+            <th class="cell-description">Dữ liệu mới</th>
           </tr>
         </thead>
         <tbody>
@@ -408,15 +416,15 @@ function logTable() {
 function skeletalTable() {
   return `
     <div class="admin-table-wrap">
-      <table class="admin-table">
+      <table class="admin-table admin-table--default">
         <thead>
           <tr>
-            <th class="col-main">Tài khoản</th>
-            <th class="col-compact">Nhóm</th>
-            <th class="col-status">Xác thực</th>
-            <th class="col-status">Trạng thái</th>
-            <th class="col-date">Đăng nhập gần nhất</th>
-            <th class="col-action">Thao tác</th>
+            <th class="cell-primary">Tài khoản</th>
+            <th>Nhóm</th>
+            <th class="cell-status">Xác thực</th>
+            <th class="cell-status">Trạng thái</th>
+            <th class="cell-date">Đăng nhập gần nhất</th>
+            <th class="cell-action">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -821,7 +829,7 @@ document.addEventListener("submit", async (event) => {
         errorNode.textContent = error.message;
         errorNode.hidden = false;
       } else {
-        window.alert(error.message);
+        notify(error.message, "error");
       }
     }
     return;
@@ -861,7 +869,7 @@ document.addEventListener("submit", async (event) => {
         errorNode.textContent = error.message;
         errorNode.hidden = false;
       } else {
-        window.alert(error.message);
+        notify(error.message, "error");
       }
     }
   }

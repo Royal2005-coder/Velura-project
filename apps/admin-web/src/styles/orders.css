@@ -1,4 +1,10 @@
 ﻿/* Order management module styles. */
+.admin-layout[data-admin-module="orders"] .admin-table--default { min-width:1080px; }
+.admin-layout[data-admin-module="orders"] .admin-table--default .cell-primary { width:20%; }
+.admin-layout[data-admin-module="orders"] .admin-table--default .cell-status { width:132px; }
+.admin-layout[data-admin-module="orders"] .admin-table--default .cell-action { width:112px; }
+.admin-layout[data-admin-module="orders"] .admin-table--log { min-width:940px; table-layout:fixed; }
+.admin-layout[data-admin-module="orders"] .admin-table--log .cell-description { width:38%; }
 .admin-order-kpis { grid-template-columns:repeat(4, minmax(0, 1fr)); }
 .admin-badge--order-pending { background:#f6eee0; color:#9a6b28; }
 .admin-badge--order-confirmed { background:var(--tab-bg); color:var(--brown); }

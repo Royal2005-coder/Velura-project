@@ -55,16 +55,46 @@ function table() {
   const start = (state.currentPage - 1) * state.itemsPerPage;
   const end = start + state.itemsPerPage;
   const pagedRows = state.filtered.slice(start, end);
-  return `<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th class="col-main">Sản phẩm</th><th class="col-compact">Danh mục</th><th class="col-compact">Giá gốc</th><th class="col-compact">Giá bán</th><th class="col-compact">Giảm</th><th class="col-status">Trạng thái</th><th class="col-date">Cập nhật</th><th class="col-action">Thao tác</th></tr></thead><tbody>${pagedRows.map((row) => { const d = discount(row); const isInvalid = Number(row.sale_price) > Number(row.base_price); return `<tr><td><strong>${escapePricingHtml(row.name)}</strong><small class="admin-order-subtext">${escapePricingHtml(row.sku)}</small></td><td>${escapePricingHtml(row.category?.name || "-")}</td><td>${money(row.base_price)}</td><td class="${isInvalid ? "admin-price-discount" : ""}">${money(row.sale_price ?? row.base_price)}${isInvalid ? ' <small title="Giá bán > Giá gốc">⚠</small>' : ""}</td><td>${d > 0 ? `<span class="admin-badge admin-badge--info">-${d}%</span>` : d === 0 && row.sale_price != null ? "0%" : "-"}</td><td><span class="admin-badge admin-badge--${row.status === "on_sale" ? "success" : "warning"}">${escapePricingHtml(row.status === "on_sale" ? "Đang bán" : "Tạm ẩn")}</span></td><td>${escapePricingHtml(formatDate(row.updated_at))}</td><td><div class="admin-table-actions"><button class="admin-icon-button admin-icon-button--sm" data-price-detail="${escapePricingHtml(row.product_id)}" title="Chi tiết">${icon("eye")}</button><button class="admin-icon-button admin-icon-button--sm" data-price-change="${escapePricingHtml(row.product_id)}" title="Cập nhật giá">${icon("edit")}</button></div></td></tr>`; }).join("")}</tbody></table></div><div class="admin-card__footer"><p class="admin-table-note">Hiển thị ${start + 1} - ${Math.min(end, state.filtered.length)} / ${state.filtered.length} sản phẩm</p>${pagination()}</div>`;
+  return `<div class="admin-table-wrap"><table class="admin-table admin-table--default"><thead><tr><th class="cell-primary">Sản phẩm</th><th>Danh mục</th><th>Giá gốc</th><th>Giá bán</th><th>Giảm</th><th class="cell-status">Trạng thái</th><th class="cell-date">Cập nhật</th><th class="cell-action">Thao tác</th></tr></thead><tbody>${pagedRows.map((row) => { const d = discount(row); const isInvalid = Number(row.sale_price) > Number(row.base_price); return `<tr><td class="cell-primary"><strong>${escapePricingHtml(row.name)}</strong><small class="admin-order-subtext">${escapePricingHtml(row.sku)}</small></td><td>${escapePricingHtml(row.category?.name || "-")}</td><td>${money(row.base_price)}</td><td class="${isInvalid ? "admin-price-discount" : ""}">${money(row.sale_price ?? row.base_price)}${isInvalid ? ' <small title="Giá bán > Giá gốc">⚠</small>' : ""}</td><td>${d > 0 ? `<span class="admin-badge admin-badge--info">-${d}%</span>` : d === 0 && row.sale_price != null ? "0%" : "-"}</td><td class="cell-status"><span class="admin-badge admin-badge--${row.status === "on_sale" ? "success" : "warning"}">${escapePricingHtml(row.status === "on_sale" ? "Đang bán" : "Tạm ẩn")}</span></td><td class="cell-date">${escapePricingHtml(formatDate(row.updated_at))}</td><td class="cell-action"><div class="admin-table-actions"><button class="admin-icon-button admin-icon-button--sm" data-price-detail="${escapePricingHtml(row.product_id)}" title="Chi tiết">${icon("eye")}</button><button class="admin-icon-button admin-icon-button--sm" data-price-change="${escapePricingHtml(row.product_id)}" title="Cập nhật giá">${icon("edit")}</button></div></td></tr>`; }).join("")}</tbody></table></div><div class="admin-card__footer"><p class="admin-table-note">Hiển thị ${start + 1} - ${Math.min(end, state.filtered.length)} / ${state.filtered.length} sản phẩm</p>${pagination()}</div>`;
 }
 function render() { panel.innerHTML = `${filters()}${table()}`; }
 function historyView() {
-  panel.innerHTML = `<div class="admin-filter-bar"><button class="admin-btn admin-btn--outline admin-btn--sm" data-price-back>Quay lại</button></div><div class="admin-table-wrap"><table class="admin-table admin-table--dense"><thead><tr><th class="col-date">Thời gian</th><th class="col-main">Sản phẩm</th><th class="col-compact">Giá gốc cũ</th><th class="col-compact">Giá gốc mới</th><th class="col-compact">Giá bán cũ</th><th class="col-compact">Giá bán mới</th><th class="col-description">Lý do</th><th class="col-compact">Người sửa</th></tr></thead><tbody>${state.history.length ? state.history.map((row) => `<tr><td>${escapePricingHtml(formatDate(row.changed_at))}</td><td>${escapePricingHtml(row.product_id)}</td><td>${money(row.old_base_price)}</td><td>${money(row.new_base_price)}</td><td>${money(row.old_sale_price)}</td><td>${money(row.new_sale_price)}</td><td><span class="description-content">${escapePricingHtml(row.reason)}</span></td><td>${escapePricingHtml(row.changed_by)}</td></tr>`).join("") : '<tr><td colspan="8">Chưa có lịch sử thay đổi giá</td></tr>'}</tbody></table></div>`;
+  panel.innerHTML = `<div class="admin-filter-bar"><button class="admin-btn admin-btn--outline admin-btn--sm" data-price-back>Quay lại</button></div><div class="admin-table-wrap admin-table-wrap--scroll"><table class="admin-table admin-table--log"><thead><tr><th class="cell-date">Thời gian</th><th class="cell-primary">Sản phẩm</th><th>Giá gốc cũ</th><th>Giá gốc mới</th><th>Giá bán cũ</th><th>Giá bán mới</th><th class="cell-description">Lý do</th><th>Người sửa</th></tr></thead><tbody>${state.history.length ? state.history.map((row) => `<tr><td>${escapePricingHtml(formatDate(row.changed_at))}</td><td>${escapePricingHtml(row.product_id)}</td><td>${money(row.old_base_price)}</td><td>${money(row.new_base_price)}</td><td>${money(row.old_sale_price)}</td><td>${money(row.new_sale_price)}</td><td><span class="cell-description-content">${escapePricingHtml(row.reason)}</span></td><td>${escapePricingHtml(row.changed_by)}</td></tr>`).join("") : '<tr><td colspan="8">Chưa có lịch sử thay đổi giá</td></tr>'}</tbody></table></div>`;
 }
 function detail(id) {
   const row = state.products.find((p) => p.product_id === id); if (!row) return;
   const d = discount(row);
-  overlay.innerHTML = `<div class="admin-drawer-backdrop" data-price-close></div><aside class="admin-drawer admin-drawer--wide"><header class="admin-drawer__header"><div><p class="admin-product-code">${escapePricingHtml(row.sku)}</p><h2>${escapePricingHtml(row.name)}</h2></div><button class="admin-icon-button" data-price-close>×</button></header><div class="admin-drawer__body"><dl class="admin-data-list"><div><dt>Giá gốc</dt><dd>${money(row.base_price)}</dd></div><div><dt>Giá bán</dt><dd>${money(row.sale_price ?? row.base_price)}</dd></div><div><dt>Phần trăm giảm</dt><dd>${d > 0 ? `<span class="admin-badge admin-badge--info">-${d}%</span>` : "0%"}</dd></div><div><dt>Số biến thể</dt><dd>${row.variants?.length || 0}</dd></div><div><dt>Phiên bản</dt><dd>${escapePricingHtml(row.version)}</dd></div><div><dt>Trạng thái</dt><dd><span class="admin-badge admin-badge--${row.status === "on_sale" ? "success" : "warning"}">${row.status === "on_sale" ? "Đang bán" : "Tạm ẩn"}</span></dd></div></dl>${Number(row.sale_price) > Number(row.base_price) ? '<div class="admin-note admin-note--warning admin-note--spaced">⚠ Giá bán đang cao hơn giá gốc. Vui lòng kiểm tra lại.</div>' : ""}</div></aside>`;
+  const salePrice = Number(row.sale_price ?? row.base_price);
+  const statusText = row.status === "on_sale" ? "Đang bán" : "Tạm ẩn";
+  overlay.innerHTML = `<div class="admin-drawer-backdrop" data-price-close></div><aside class="admin-drawer admin-detail-drawer">
+    <header class="admin-drawer__header">
+      <div class="admin-detail-header">
+        <span class="admin-detail-header__eyebrow">${escapePricingHtml(row.sku)}</span>
+        <h2>${escapePricingHtml(row.name)}</h2>
+        <div class="admin-detail-header__meta"><span class="admin-badge admin-badge--${row.status === "on_sale" ? "success" : "warning"}">${statusText}</span>${d > 0 ? `<span class="admin-badge admin-badge--info">Giảm ${d}%</span>` : ""}</div>
+      </div>
+      <button class="admin-icon-button" data-price-close aria-label="Đóng">×</button>
+    </header>
+    <div class="admin-drawer__body">
+      <section class="admin-detail-section">
+        <h3 class="admin-detail-section__title">Tổng quan giá</h3>
+        <div class="admin-detail-metrics">
+          <article class="admin-detail-metric"><span>Giá gốc</span><strong>${money(row.base_price)}</strong></article>
+          <article class="admin-detail-metric"><span>Giá bán hiện tại</span><strong>${money(salePrice)}</strong></article>
+          <article class="admin-detail-metric"><span>Chênh lệch</span><strong>${money(Math.max(0, Number(row.base_price) - salePrice))}</strong></article>
+        </div>
+      </section>
+      <section class="admin-detail-section">
+        <h3 class="admin-detail-section__title">Thông tin sản phẩm</h3>
+        <dl class="admin-data-list admin-detail-list">
+          <div><dt>Số biến thể</dt><dd>${row.variants?.length || 0}</dd></div>
+          <div><dt>Phiên bản dữ liệu</dt><dd>${escapePricingHtml(row.version)}</dd></div>
+          <div><dt>Trạng thái kinh doanh</dt><dd><span class="admin-badge admin-badge--${row.status === "on_sale" ? "success" : "warning"}">${statusText}</span></dd></div>
+        </dl>
+      </section>
+      ${Number(row.sale_price) > Number(row.base_price) ? '<div class="admin-note admin-note--warning admin-note--spaced">Giá bán đang cao hơn giá gốc. Vui lòng kiểm tra lại trước khi tiếp tục.</div>' : ""}
+    </div>
+  </aside>`;
 }
 function changeModal(id) {
   const row = state.products.find((p) => p.product_id === id); if (!row) return;

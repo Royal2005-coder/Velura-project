@@ -154,14 +154,14 @@ import { productApi } from "./product-api.js";
         const stock = stockOf(product);
         const image = safeImageUrl(product.images?.[0]);
         return `<tr>
-          <td><div class="admin-table__entity"><img src="${escapeHtml(image)}" alt=""><span><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.brand || product.collection || "")}</small></span></div></td>
+          <td class="cell-primary"><div class="admin-table__entity"><img src="${escapeHtml(image)}" alt=""><span><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.brand || product.collection || "")}</small></span></div></td>
           <td>${escapeHtml(product.sku)}</td>
           <td><span class="admin-role-badge">${escapeHtml(categoryName(product))}</span></td>
           <td>${formatPrice(product.sale_price)}</td>
           <td><span class="admin-stock ${stockClass(stock)}">${stock}</span></td>
-          <td>${statusBadge(product.status)}</td>
-          <td>${escapeHtml(formatDate(product.updated_at))}</td>
-          <td><div class="admin-table-actions">
+          <td class="cell-status">${statusBadge(product.status)}</td>
+          <td class="cell-date">${escapeHtml(formatDate(product.updated_at))}</td>
+          <td class="cell-action"><div class="admin-table-actions">
             <button class="admin-icon-button admin-icon-button--sm" title="Xem chi tiết" data-product-drawer="${escapeHtml(product.product_id)}">${icon("eye")}</button>
             <span class="admin-product-actions"><button class="admin-icon-button admin-icon-button--sm" title="Thao tác" data-product-menu="${escapeHtml(product.product_id)}">${icon("edit")}</button>
               <span class="admin-dropdown admin-table-action-menu" id="product-menu-${escapeHtml(product.product_id)}" hidden>
@@ -260,7 +260,7 @@ import { productApi } from "./product-api.js";
         <div class="admin-product-basic-list"><div><span>Danh mục</span><strong>${escapeHtml(categoryName(product))}</strong></div><div><span>Phiên bản</span><strong>v${Number(product.version || 1)}</strong></div><div><span>Giá bán</span><strong>${formatPrice(product.sale_price)}</strong></div><div><span>Cập nhật</span><strong>${escapeHtml(formatDate(product.updated_at))}</strong></div></div>
         <p class="admin-product-description">${escapeHtml(product.description || "Chưa có mô tả")}</p>
         <h3 class="admin-drawer__section">Biến thể và tồn kho <button class="admin-btn admin-btn--outline admin-btn--sm" type="button" data-product-variant-add="${escapeHtml(product.product_id)}">Thêm biến thể</button></h3>
-          <div class="admin-table-wrap"><table class="admin-table admin-data-table admin-table--compact"><thead><tr><th class="col-compact">Màu</th><th class="col-compact">Size</th><th class="col-compact">Tồn</th><th class="col-compact">Đã giữ</th><th class="col-action"></th></tr></thead><tbody>${variantRows}</tbody></table></div>
+          <div class="admin-table-wrap"><table class="admin-table admin-data-table admin-table--variants"><thead><tr><th>Màu</th><th>Size</th><th>Tồn</th><th>Đã giữ</th><th class="cell-action"></th></tr></thead><tbody>${variantRows}</tbody></table></div>
       </div>`;
   }
 
@@ -522,7 +522,7 @@ import { productApi } from "./product-api.js";
         <td>${escapeHtml(log.actor_id || "—")}<br><small>${escapeHtml(log.actor_role || "")}</small></td>
         <td>${escapeHtml(log.target_id || "—")}</td>
         <td>${escapeHtml(log.action || "—")}</td>
-        <td><span class="description-content">${escapeHtml(JSON.stringify(log.new_value || {})).slice(0, 180)}</span></td>
+        <td><span class="cell-description-content">${escapeHtml(JSON.stringify(log.new_value || {})).slice(0, 180)}</span></td>
         <td><span class="admin-badge admin-badge--success">Thành công</span></td>
       </tr>`).join("") : `<tr><td colspan="6">Chưa có nhật ký sản phẩm.</td></tr>`;
     } catch (error) {

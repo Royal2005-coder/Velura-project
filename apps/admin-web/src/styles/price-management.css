@@ -1,3 +1,16 @@
+.admin-layout[data-admin-module="pricing"] .admin-table--default { min-width:1080px; }
+.admin-layout[data-admin-module="pricing"] .admin-table--default .cell-primary { width:23%; }
+.admin-layout[data-admin-module="pricing"] .admin-table--default .cell-status { width:122px; }
+.admin-layout[data-admin-module="pricing"] .admin-table--default .cell-date { width:136px; }
+.admin-layout[data-admin-module="pricing"] .admin-table--default .cell-action { width:104px; }
+.admin-layout[data-admin-module="pricing"] .admin-table--log { min-width:1160px; table-layout:fixed; }
+.admin-layout[data-admin-module="pricing"] .admin-table--log .cell-description { width:22%; }
+.admin-layout[data-admin-module="promotions"] .admin-table--default { min-width:1040px; }
+.admin-layout[data-admin-module="promotions"] .admin-table--support { min-width:1220px; }
+.admin-layout[data-admin-module="promotions"] .admin-table--log { min-width:1080px; table-layout:fixed; }
+.admin-layout[data-admin-module="promotions"] .admin-table--log .cell-description { width:32%; }
+.admin-table--combo-items { min-width:680px; }
+.admin-table--combo-items th,.admin-table--combo-items td { padding:11px 12px; }
 .admin-price-range { display:flex; align-items:center; gap:8px; }
 .admin-price-range .admin-form-control { width:130px; min-width:130px; }
 .admin-price-old { color:var(--muted); text-decoration:line-through; }
@@ -82,8 +95,47 @@
 .admin-promo-modal--wide { width:min(1120px, calc(100vw - 48px)); }
 .admin-promo-modal .admin-modal__body { overflow-y:auto; }
 .admin-promo-modal .admin-modal__footer { gap:10px; }
-.admin-promo-modal .admin-modal__footer .admin-btn { min-width:128px; justify-content:center; }
 .admin-promo-modal form { min-height:0; display:flex; flex-direction:column; }
+
+/* Report hotfix: keep every Promotions popup fully inside the viewport. */
+#promo-overlay .admin-modal-overlay {
+  align-items: center;
+  overflow: hidden;
+}
+
+#promo-overlay .admin-modal {
+  display: flex;
+  max-height: min(88dvh, 860px);
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#promo-overlay .admin-promo-modal:not(.admin-promo-modal--wide) {
+  width: min(720px, calc(100vw - 48px));
+}
+
+#promo-overlay .admin-promo-modal--wide {
+  width: min(1120px, calc(100vw - 48px));
+}
+
+#promo-overlay .admin-modal > form {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+#promo-overlay .admin-modal__header,
+#promo-overlay .admin-modal__footer {
+  flex: 0 0 auto;
+}
+
+#promo-overlay .admin-modal__body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .admin-promo-form { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 .admin-promo-modal:not(.admin-promo-modal--wide) .admin-promo-form { grid-template-columns:1fr; }
 .admin-promo-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
@@ -117,10 +169,7 @@
 .admin-promo-composition button small { color:var(--soft); font-size:.75rem; }
 .admin-promo-product-readonly .admin-form-control:disabled { opacity:1; background:var(--field-bg); color:var(--text-body); cursor:default; }
 .admin-drawer__actions { display:flex; align-items:center; gap:8px; }
-.admin-table-actions { align-items:center; justify-content:flex-end; gap:8px; }
-.admin-table-actions .admin-icon-button--sm { width:34px; height:34px; flex:0 0 34px; }
 .admin-promo-row-actions { position:relative; display:flex; align-items:center; flex:0 0 34px; }
-.admin-icon-button--danger { color:var(--error); }
 .admin-promo-modal .admin-product-form__section h3 { font-weight:500; }
 .admin-promo-modal .admin-form-label b { color:var(--error); }
 .admin-progress { width:150px; height:8px; overflow:hidden; border:0; border-radius:999px; background:var(--field-bg); appearance:none; }

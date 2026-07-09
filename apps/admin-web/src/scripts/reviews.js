@@ -102,12 +102,12 @@ function table() {
   const pagedRows = activeRows.slice(start, end);
 
   if (!pagedRows.length) return `<div class="admin-order-empty">${icon("star")}<strong>Không có đánh giá phù hợp</strong><span>Dữ liệu được tải trực tiếp từ Supabase.</span></div>`;
-  return `<div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th class="col-description">Đánh giá</th><th class="col-main">Sản phẩm</th><th class="col-compact">Khách hàng</th><th class="col-status">Cảnh báo</th><th class="col-status">Trạng thái</th><th class="col-date">Ngày tạo</th><th class="col-action">Thao tác</th></tr></thead><tbody>${pagedRows.map((row) => `<tr>
-    <td><div class="admin-review-snippet">${stars(row.rating)}<p>${escapeReviewHtml(row.comment || "—")}</p></div></td>
-    <td><div class="admin-review-product"><strong>${escapeReviewHtml(row.product?.name || "—")}</strong><small>${escapeReviewHtml(row.product?.sku || row.product_id)}</small></div></td>
+  return `<div class="admin-table-wrap"><table class="admin-table admin-table--content admin-data-table"><thead><tr><th class="cell-description">Đánh giá</th><th class="cell-primary">Sản phẩm</th><th>Khách hàng</th><th class="cell-status">Cảnh báo</th><th class="cell-status">Trạng thái</th><th class="cell-date">Ngày tạo</th><th class="cell-action">Thao tác</th></tr></thead><tbody>${pagedRows.map((row) => `<tr>
+    <td class="cell-description"><div class="admin-review-snippet">${stars(row.rating)}<p>${escapeReviewHtml(row.comment || "—")}</p></div></td>
+    <td class="cell-primary"><div class="admin-review-product"><strong>${escapeReviewHtml(row.product?.name || "—")}</strong><small>${escapeReviewHtml(row.product?.sku || row.product_id)}</small></div></td>
     <td><span class="admin-order-code">${escapeReviewHtml(row.user_id)}</span></td>
-    <td>${row.is_flagged_urgent ? '<span class="admin-badge admin-badge--danger">Khẩn cấp</span>' : '<span class="admin-badge admin-badge--neutral">Bình thường</span>'}</td>
-    <td>${statusBadge(row.status)}</td><td>${escapeReviewHtml(formatDate(row.submitted_at))}</td><td>${actions(row)}</td></tr>`).join("")}</tbody></table></div>`;
+    <td class="cell-status">${row.is_flagged_urgent ? '<span class="admin-badge admin-badge--danger">Khẩn cấp</span>' : '<span class="admin-badge admin-badge--neutral">Bình thường</span>'}</td>
+    <td class="cell-status">${statusBadge(row.status)}</td><td class="cell-date">${escapeReviewHtml(formatDate(row.submitted_at))}</td><td class="cell-action">${actions(row)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function updateKpis() {
@@ -146,7 +146,7 @@ async function loadLogs() {
   try {
     const result = await reviewApi.auditLogs({ limit: 100 });
     const rows = result.rows || [];
-    panel.innerHTML = `<div class="admin-table-wrap"><table class="admin-table admin-table--dense"><thead><tr><th class="col-date">Thời gian</th><th class="col-compact">Đối tượng</th><th class="col-compact">Vai trò</th><th class="col-compact">Hành động</th><th class="col-description">Thay đổi</th></tr></thead><tbody>${rows.map((log) => `<tr><td>${escapeReviewHtml(formatDate(log.timestamp))}</td><td>${escapeReviewHtml(log.target_id)}</td><td>${escapeReviewHtml(log.actor_role)}</td><td>${escapeReviewHtml(log.action)}</td><td><span class="description-content">${escapeReviewHtml(JSON.stringify(log.new_value || {}))}</span></td></tr>`).join("") || '<tr><td colspan="5">Chưa có nhật ký</td></tr>'}</tbody></table></div>`;
+    panel.innerHTML = `<div class="admin-table-wrap admin-table-wrap--scroll"><table class="admin-table admin-table--log"><thead><tr><th class="cell-date">Thời gian</th><th>Đối tượng</th><th>Vai trò</th><th>Hành động</th><th class="cell-description">Thay đổi</th></tr></thead><tbody>${rows.map((log) => `<tr><td>${escapeReviewHtml(formatDate(log.timestamp))}</td><td>${escapeReviewHtml(log.target_id)}</td><td>${escapeReviewHtml(log.actor_role)}</td><td>${escapeReviewHtml(log.action)}</td><td><span class="cell-description-content">${escapeReviewHtml(JSON.stringify(log.new_value || {}))}</span></td></tr>`).join("") || '<tr><td colspan="5">Chưa có nhật ký</td></tr>'}</tbody></table></div>`;
   } catch (error) { showError(error); }
 }
 

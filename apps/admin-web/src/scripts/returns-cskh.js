@@ -22,6 +22,14 @@ const state = {
   }
 };
 const layer = document.querySelector("#service-layer");
+const notify = (message, type = "info") => {
+  if (typeof window.showAdminToast === "function") {
+    window.showAdminToast(message, type);
+    return;
+  }
+  console[type === "error" ? "error" : "log"](message);
+};
+
 const labels = {
   pending: "Chờ xử lý", approved: "Đã duyệt", shipping_back: "Đang gửi về",
   received: "Đã nhận", completed: "Hoàn tất", rejected: "Từ chối",
@@ -103,17 +111,16 @@ function renderReturns(rows = state.returns) {
     }
 
     return `<tr>
-      <td><strong>${escapeServiceHtml(row.return_id)}</strong><small class="admin-order-subtext">${escapeServiceHtml(row.order_id)} · ${escapeServiceHtml(formatDate(row.created_at))}</small></td>
+      <td class="cell-primary"><strong>${escapeServiceHtml(row.return_id)}</strong><small class="admin-order-subtext">${escapeServiceHtml(row.order_id)} · ${escapeServiceHtml(formatDate(row.created_at))}</small></td>
       <td>${escapeServiceHtml(row.return_type === "refund" ? "Trả hàng hoàn tiền" : "Đổi hàng")}</td>
-      <td><span class="${row.status === 'pending' && hoursLeft < 6 ? 'admin-text-danger' : ''}">${escapeServiceHtml(timeText)}</span></td>
-      <td>${badge(row.status)}</td>
-      <td>${escapeServiceHtml(row.description || row.admin_note || "-")}</td>
-      <td><div class="admin-table-actions">
-        ${["completed", "rejected"].includes(row.status) ? `
-          <button class="admin-icon-button admin-icon-button--sm" data-menu data-service-detail="return:${escapeServiceHtml(row.return_id)}" title="Chi tiết">${icon("eye")}</button>
-        ` : `
+      <td class="cell-date"><span class="${row.status === 'pending' && hoursLeft < 6 ? 'admin-text-danger' : ''}">${escapeServiceHtml(timeText)}</span></td>
+      <td class="cell-status">${badge(row.status)}</td>
+      <td class="cell-description">${escapeServiceHtml(row.description || row.admin_note || "-")}</td>
+      <td class="cell-action"><div class="admin-table-actions">
+        <button class="admin-icon-button admin-icon-button--sm" data-menu data-service-detail="return:${escapeServiceHtml(row.return_id)}" title="Chi tiết">${icon("eye")}</button>
+        ${!["completed", "rejected"].includes(row.status) ? `
           <button class="admin-icon-button admin-icon-button--sm" data-menu data-service-action="process-return:${escapeServiceHtml(row.return_id)}" title="Xử lý nghiệp vụ">${icon("edit")}</button>
-        `}
+        ` : ""}
       </div></td>
     </tr>`;
   }).join("") : empty("Không có yêu cầu đổi trả phù hợp");
@@ -152,16 +159,15 @@ function renderTickets(rows = state.tickets) {
     <td><strong>${escapeServiceHtml(row.ticket_id)}</strong><small class="admin-order-subtext">${escapeServiceHtml(formatDate(row.created_at))}</small></td>
     <td>${escapeServiceHtml(row.user_id || row.guest_email || row.guest_phone || "Khách")}</td>
     <td>${escapeServiceHtml(row.title)}</td>
-    <td>${escapeServiceHtml(row.description)}</td>
-    <td><span class="admin-badge admin-badge--priority-${row.priority}">${escapeServiceHtml(row.priority === "high" ? "Cao" : row.priority === "normal" ? "Trung bình" : "Thấp")}</span></td>
-    <td>${badge(row.status)}</td>
+    <td class="cell-description">${escapeServiceHtml(row.description)}</td>
+    <td class="cell-status"><span class="admin-badge admin-badge--priority-${row.priority}">${escapeServiceHtml(row.priority === "high" ? "Cao" : row.priority === "normal" ? "Trung bình" : "Thấp")}</span></td>
+    <td class="cell-status">${badge(row.status)}</td>
     <td>${row.csat_score == null ? "-" : escapeServiceHtml(row.csat_score)}</td>
-    <td><div class="admin-table-actions">
-      ${row.status === 'closed' ? `
-        <button class="admin-icon-button admin-icon-button--sm" data-menu data-service-detail="ticket:${escapeServiceHtml(row.ticket_id)}" title="Chi tiết">${icon("eye")}</button>
-      ` : `
+    <td class="cell-action"><div class="admin-table-actions">
+      <button class="admin-icon-button admin-icon-button--sm" data-menu data-service-detail="ticket:${escapeServiceHtml(row.ticket_id)}" title="Chi tiết">${icon("eye")}</button>
+      ${row.status !== "closed" ? `
         <button class="admin-icon-button admin-icon-button--sm" data-menu data-service-action="process-ticket:${escapeServiceHtml(row.ticket_id)}" title="Xử lý ticket">${icon("edit")}</button>
-      `}
+      ` : ""}
     </div></td>
   </tr>`).join("") : empty("Không có phiếu hỗ trợ phù hợp");
 
@@ -177,7 +183,7 @@ function renderTickets(rows = state.tickets) {
 
 function renderLogs() {
   const body = document.querySelector("#logs-body");
-  body.innerHTML = state.logs.length ? state.logs.map((row) => `<tr><td>${escapeServiceHtml(formatDate(row.timestamp))}</td><td>${escapeServiceHtml(row.module)}</td><td>${escapeServiceHtml(row.target_id)}</td><td>${escapeServiceHtml(row.actor_id || "system")}</td><td>${escapeServiceHtml(row.action)}</td><td><span class="description-content">${escapeServiceHtml(JSON.stringify(row.old_value || {}))} -> ${escapeServiceHtml(JSON.stringify(row.new_value || {}))}</span></td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr>`).join("") : empty("Chưa có nhật ký phù hợp");
+  body.innerHTML = state.logs.length ? state.logs.map((row) => `<tr><td>${escapeServiceHtml(formatDate(row.timestamp))}</td><td>${escapeServiceHtml(row.module)}</td><td>${escapeServiceHtml(row.target_id)}</td><td>${escapeServiceHtml(row.actor_id || "system")}</td><td>${escapeServiceHtml(row.action)}</td><td><span class="cell-description-content">${escapeServiceHtml(JSON.stringify(row.old_value || {}))} -> ${escapeServiceHtml(JSON.stringify(row.new_value || {}))}</span></td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr>`).join("") : empty("Chưa có nhật ký phù hợp");
 }
 
 function updateKpis() {
@@ -876,7 +882,7 @@ document.querySelector("#admin-chat-form")?.addEventListener("submit", async (ev
   try {
     await sendAgentReply(state.chat.selectedSessionId, text);
   } catch (error) {
-    window.alert("Không thể gửi tin nhắn: " + (error.message || "Lỗi không xác định"));
+    notify("Không thể gửi tin nhắn: " + (error.message || "Lỗi không xác định"), "error");
   }
 });
 
@@ -942,7 +948,7 @@ document.addEventListener("submit", async (event) => {
   try { 
     await submitAction(event.target); 
   } catch (error) { 
-    window.alert(error.message || "Không thể xử lý yêu cầu"); 
+    notify(error.message || "Không thể xử lý yêu cầu", "error");
   }
 });
 

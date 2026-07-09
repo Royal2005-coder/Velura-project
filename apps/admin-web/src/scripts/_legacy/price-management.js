@@ -1,3 +1,4 @@
+// Legacy unused script. Kept for reference only. Do not import.
 (function () {
   "use strict";
   const modal = document.querySelector(".admin-modal-overlay");

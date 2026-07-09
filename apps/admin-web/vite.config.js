@@ -22,6 +22,9 @@ export default defineConfig({
         adminReturnsCskh: resolve(__dirname, "src/pages/admin/returns-cskh.html"),
         adminPricing:     resolve(__dirname, "src/pages/admin/pricing.html"),
         adminPromotions:  resolve(__dirname, "src/pages/admin/promotions.html"),
+        adminPriceManagementLegacy: resolve(__dirname, "src/pages/admin/price-management.html"),
+        adminPricingPromotionsLegacy: resolve(__dirname, "src/pages/admin/pricing-promotions.html"),
+        adminPromotionManagementLegacy: resolve(__dirname, "src/pages/admin/promotion-management.html"),
         adminAuthCallback: resolve(__dirname, "src/pages/admin/auth-callback.html")
       }
     }

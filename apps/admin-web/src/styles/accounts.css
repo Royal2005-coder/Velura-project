@@ -287,11 +287,18 @@
 }
 
 .admin-layout[data-admin-module="accounts"] .admin-table-wrap {
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: #fff;
 }
+
+.admin-layout[data-admin-module="accounts"] .admin-table--default { min-width: 940px; }
+.admin-layout[data-admin-module="accounts"] .admin-table--log {
+  min-width: 1080px;
+  table-layout: fixed;
+}
+.admin-layout[data-admin-module="accounts"] .admin-table--log .cell-description { width: 28%; }
 
 .admin-layout[data-admin-module="accounts"] .admin-person {
   gap: 12px;
@@ -304,7 +311,7 @@
 
 .admin-layout[data-admin-module="accounts"] .admin-table-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 4px;
 }
 

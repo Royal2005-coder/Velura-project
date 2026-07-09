@@ -1,4 +1,12 @@
 ﻿/* Product-review management module */
+.admin-layout[data-admin-module="reviews"] .admin-table--content { min-width:1180px; }
+.admin-layout[data-admin-module="reviews"] .admin-table--content .cell-description { width:27%; }
+.admin-layout[data-admin-module="reviews"] .admin-table--content .cell-primary { width:19%; }
+.admin-layout[data-admin-module="reviews"] .admin-table--content .cell-status { width:118px; }
+.admin-layout[data-admin-module="reviews"] .admin-table--content .cell-date { width:136px; }
+.admin-layout[data-admin-module="reviews"] .admin-table--content .cell-action { width:104px; }
+.admin-layout[data-admin-module="reviews"] .admin-table--log { min-width:940px; table-layout:fixed; }
+.admin-layout[data-admin-module="reviews"] .admin-table--log .cell-description { width:42%; }
 .admin-review-kpis { grid-template-columns:repeat(5, minmax(0, 1fr)); }
 .admin-review-snippet { display:grid; gap:5px; min-width:220px; max-width:320px; }
 .admin-review-snippet__stars { color:#a35f1e; font-size:.8125rem; letter-spacing:.08em; }

@@ -2,6 +2,14 @@
    ADMIN CHAT PANEL â€” Real-time Customer Service Chat
    ============================================================ */
 
+.admin-layout[data-admin-module="returns-cskh"] .admin-table--content { min-width:1080px; }
+.admin-layout[data-admin-module="returns-cskh"] .admin-table--content .cell-primary { width:23%; }
+.admin-layout[data-admin-module="returns-cskh"] .admin-table--content .cell-description { width:28%; }
+.admin-layout[data-admin-module="returns-cskh"] .admin-table--support { min-width:1240px; }
+.admin-layout[data-admin-module="returns-cskh"] .admin-table--support .cell-description { width:26%; }
+.admin-layout[data-admin-module="returns-cskh"] .admin-table--log { min-width:1120px; table-layout:fixed; }
+.admin-layout[data-admin-module="returns-cskh"] .admin-table--log .cell-description { width:30%; }
+
 .admin-chat-layout {
   display: flex;
   height: 520px;

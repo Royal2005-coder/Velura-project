@@ -129,16 +129,16 @@ function renderTable() {
   const pagedRows = activeOrders.slice(start, end);
 
   if (!pagedRows.length) return `<div class="admin-order-empty">${icon("cart")}<strong>Không có đơn hàng phù hợp</strong><span>Điều chỉnh bộ lọc hoặc tải lại dữ liệu.</span></div>`;
-  return `<div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr>
-    <th class="col-main">Mã đơn</th><th class="col-main">Khách hàng</th><th class="col-compact">Tổng tiền</th><th class="col-status">Trạng thái</th><th class="col-status">Thanh toán</th><th class="col-compact">Cần xử lý</th><th class="col-action">Thao tác</th>
+  return `<div class="admin-table-wrap"><table class="admin-table admin-table--default admin-data-table"><thead><tr>
+    <th class="cell-primary">Mã đơn</th><th class="cell-primary">Khách hàng</th><th>Tổng tiền</th><th class="cell-status">Trạng thái</th><th class="cell-status">Thanh toán</th><th>Cần xử lý</th><th class="cell-action">Thao tác</th>
   </tr></thead><tbody>${pagedRows.map((order) => {
     const payment = paymentOf(order);
-    return `<tr><td><span class="admin-order-code">${escapeHtml(order.order_id)}</span><small class="admin-order-subtext">${escapeHtml(dateTime(order.order_date))}</small></td>
-      <td><div class="admin-order-customer"><strong>${escapeHtml(order.shipping_name)}</strong><small>${escapeHtml(order.shipping_phone)}</small></div></td>
-      <td class="admin-order-amount">${money(order.total_amount)}</td><td>${badge(order.status)}</td>
-      <td>${badge(payment?.payment_status || "pending", "payment")}</td>
+    return `<tr><td class="cell-primary"><span class="admin-order-code">${escapeHtml(order.order_id)}</span><small class="admin-order-subtext">${escapeHtml(dateTime(order.order_date))}</small></td>
+      <td class="cell-primary"><div class="admin-order-customer"><strong>${escapeHtml(order.shipping_name)}</strong><small>${escapeHtml(order.shipping_phone)}</small></div></td>
+      <td class="admin-order-amount">${money(order.total_amount)}</td><td class="cell-status">${badge(order.status)}</td>
+      <td class="cell-status">${badge(payment?.payment_status || "pending", "payment")}</td>
       <td>${needsAttention(order) ? `<span class="admin-order-attention admin-order-attention--alert">${icon("alert")}Cần xử lý</span>` : "—"}</td>
-      <td>${actionMenu(order)}</td></tr>`;
+      <td class="cell-action">${actionMenu(order)}</td></tr>`;
   }).join("")}</tbody></table></div>`;
 }
 
@@ -261,7 +261,7 @@ async function renderLogs() {
   try {
     const results = await Promise.all(targets.map((order) => orderApi.auditLogs(order.order_id, { limit: 20 })));
     state.logs = results.flatMap((result) => result.rows || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    panel.innerHTML = `<div class="admin-table-wrap"><table class="admin-table admin-table--dense"><thead><tr><th class="col-date">Thời gian</th><th class="col-main">Mã đơn</th><th class="col-compact">Vai trò</th><th class="col-compact">Hành động</th><th class="col-description">Thay đổi</th></tr></thead><tbody>${state.logs.map((log) => `<tr><td>${escapeHtml(dateTime(log.timestamp))}</td><td>${escapeHtml(log.target_id)}</td><td>${escapeHtml(log.actor_role)}</td><td>${escapeHtml(log.action)}</td><td><span class="description-content">${escapeHtml(JSON.stringify(log.new_value || {}))}</span></td></tr>`).join("") || `<tr><td colspan="5">Chưa có nhật ký</td></tr>`}</tbody></table></div>`;
+    panel.innerHTML = `<div class="admin-table-wrap admin-table-wrap--scroll"><table class="admin-table admin-table--log"><thead><tr><th class="cell-date">Thời gian</th><th class="cell-primary">Mã đơn</th><th>Vai trò</th><th>Hành động</th><th class="cell-description">Thay đổi</th></tr></thead><tbody>${state.logs.map((log) => `<tr><td>${escapeHtml(dateTime(log.timestamp))}</td><td>${escapeHtml(log.target_id)}</td><td>${escapeHtml(log.actor_role)}</td><td>${escapeHtml(log.action)}</td><td><span class="cell-description-content">${escapeHtml(JSON.stringify(log.new_value || {}))}</span></td></tr>`).join("") || `<tr><td colspan="5">Chưa có nhật ký</td></tr>`}</tbody></table></div>`;
   } catch (error) { panel.innerHTML = `<div class="admin-order-empty"><strong>Không thể tải nhật ký</strong><span>${escapeHtml(error.message)}</span></div>`; }
 }
 

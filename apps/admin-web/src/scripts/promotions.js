@@ -101,7 +101,7 @@ function calcSaving(combo, comboItems) {
   return totalItemValue > 0 ? ((totalItemValue - comboPrice) / totalItemValue) * 100 : 0;
 }
 
-function logRows() { return state.logs.map((row) => `<tr><td>${date(row.timestamp)}</td><td>${escapePromotionHtml(row.actor_id || "system")}</td><td>${escapePromotionHtml(row.module)}</td><td>${escapePromotionHtml(row.target_id)}</td><td>${escapePromotionHtml(row.action)}</td><td><span class="description-content">${escapePromotionHtml(JSON.stringify(row.new_value || {}))}</span></td></tr>`).join(""); }
+function logRows() { return state.logs.map((row) => `<tr><td>${date(row.timestamp)}</td><td>${escapePromotionHtml(row.actor_id || "system")}</td><td>${escapePromotionHtml(row.module)}</td><td>${escapePromotionHtml(row.target_id)}</td><td>${escapePromotionHtml(row.action)}</td><td><span class="cell-description-content">${escapePromotionHtml(JSON.stringify(row.new_value || {}))}</span></td></tr>`).join(""); }
 
 function statsView() {
   const s = state.stats;
@@ -146,19 +146,20 @@ function statsView() {
 }
 
 function tableWrap(headers, rows, emptyText, footer, headerClasses = [], tableClass = "") {
-  return `<div class="admin-table-wrap"><table class="admin-table${tableClass ? ` ${tableClass}` : ""} admin-data-table"><thead><tr>${headers.map((h, index) => `<th${headerClasses[index] ? ` class="${headerClasses[index]}"` : ""}>${h}</th>`).join("")}</tr></thead><tbody>${rows || `<tr><td colspan="${headers.length}">${emptyText}</td></tr>`}</tbody></table></div>${footer || ""}`;
+  const wrapClass = tableClass.includes("admin-table--log") ? "admin-table-wrap admin-table-wrap--scroll" : "admin-table-wrap";
+  return `<div class="${wrapClass}"><table class="admin-table${tableClass ? ` ${tableClass}` : ""} admin-data-table"><thead><tr>${headers.map((h, index) => `<th${headerClasses[index] ? ` class="${headerClasses[index]}"` : ""}>${h}</th>`).join("")}</tr></thead><tbody>${rows || `<tr><td colspan="${headers.length}">${emptyText}</td></tr>`}</tbody></table></div>${footer || ""}`;
 }
 
 function render() {
   if (state.view === "stats") return statsView();
-  if (state.view === "vouchers") panel.innerHTML = tableWrap(["Mã", "Loại", "Giá trị", "Đơn tối thiểu", "Lượt dùng", "Hết hạn", "Trạng thái", "Thao tác"], voucherRows(), "Chưa có voucher", "", ["col-main", "col-compact", "col-compact", "col-compact", "col-compact", "col-date", "col-status", "col-action"]);
+  if (state.view === "vouchers") panel.innerHTML = tableWrap(["Mã", "Loại", "Giá trị", "Đơn tối thiểu", "Lượt dùng", "Hết hạn", "Trạng thái", "Thao tác"], voucherRows(), "Chưa có voucher", "", ["cell-primary", "", "", "", "", "cell-date", "cell-status", "cell-action"], "admin-table--default");
   else if (state.view === "bundles") {
     const b = bundleRows();
     const footer = `<div class="admin-card__footer"><p class="admin-table-note">Hiển thị ${b.start + 1} - ${b.end} / ${b.total} combo</p>${renderPagination(b.total, state.comboPage, state.comboPerPage, "combo-page")}</div>`;
-    panel.innerHTML = `<div class="admin-promo-table-head"><h3 class="admin-promo-table-title">Danh sách Combo</h3><button class="admin-btn admin-btn--secondary admin-btn--sm" data-promo-modal="combo">${icon("plus")} Tạo Combo mới</button></div>` + tableWrap(["Combo", "Giá gốc", "Giá bán", "Thành phần", "Trạng thái", "Thao tác"], b.rows, "Chưa có combo trong danh sách sản phẩm", footer, ["col-main", "col-compact", "col-compact", "col-description", "col-status", "col-action"]);
+    panel.innerHTML = `<div class="admin-promo-table-head"><h3 class="admin-promo-table-title">Danh sách Combo</h3><button class="admin-btn admin-btn--primary admin-btn--sm" data-promo-modal="combo">${icon("plus")} Tạo Combo mới</button></div>` + tableWrap(["Combo", "Giá gốc", "Giá bán", "Thành phần", "Trạng thái", "Thao tác"], b.rows, "Chưa có combo trong danh sách sản phẩm", footer, ["cell-primary", "", "cell-description", "cell-status", "cell-action"], "admin-table--default");
   }
-  else if (state.view === "logs") panel.innerHTML = tableWrap(["Thời gian", "Người thực hiện", "Nhóm", "Đối tượng", "Hành động", "Dữ liệu mới"], logRows(), "Chưa có nhật ký", "", ["col-date", "col-main", "col-compact", "col-compact", "col-compact", "col-description"], "admin-table--dense");
-  else panel.innerHTML = tableWrap(["Chiến dịch", "Loại", "Thời gian", "Ngân sách", "Trạng thái", "Thao tác"], campaignRows(), "Chưa có chiến dịch", "", ["col-main", "col-compact", "col-date", "col-compact", "col-status", "col-action"]);
+  else if (state.view === "logs") panel.innerHTML = tableWrap(["Thời gian", "Người thực hiện", "Nhóm", "Đối tượng", "Hành động", "Dữ liệu mới"], logRows(), "Chưa có nhật ký", "", ["cell-date", "cell-primary", "", "", "", "cell-description"], "admin-table--log");
+  else panel.innerHTML = tableWrap(["Chiến dịch", "Loại", "Thời gian", "Ngân sách", "Trạng thái", "Thao tác"], campaignRows(), "Chưa có chiến dịch", "", ["cell-primary", "", "cell-date", "", "cell-status", "cell-action"], "admin-table--default");
 }
 
 function detail(type, id) {
@@ -168,9 +169,43 @@ function detail(type, id) {
   if (type === "promotion") {
     const budgetUsed = Number(row.total_discount_issued || 0);
     const budgetTotal = Number(row.budget_limit || 0);
-    bodyHtml = `<dl class="admin-data-list"><div><dt>Tên chiến dịch</dt><dd>${escapePromotionHtml(row.promo_name)}</dd></div><div><dt>Loại</dt><dd>${escapePromotionHtml(row.promo_type)}</dd></div><div><dt>Trạng thái</dt><dd>${badge(row.is_active)}</dd></div><div><dt>Thời gian</dt><dd>${date(row.start_date)} - ${date(row.end_date)}</dd></div><div><dt>Ngân sách</dt><dd>${money(budgetTotal)}</dd></div><div><dt>Đã phát hành</dt><dd>${money(budgetUsed)}</dd></div><div><dt>Tiến trình</dt><dd>${budgetTotal > 0 ? progressBar(budgetUsed, budgetTotal) : "Không giới hạn"}</dd></div><div><dt>Phiên bản</dt><dd>${escapePromotionHtml(row.version)}</dd></div></dl>`;
+    const remaining = Math.max(0, budgetTotal - budgetUsed);
+    bodyHtml = `<section class="admin-detail-section">
+      <h3 class="admin-detail-section__title">Hiệu quả ngân sách</h3>
+      <div class="admin-detail-metrics">
+        <article class="admin-detail-metric"><span>Ngân sách</span><strong>${money(budgetTotal)}</strong></article>
+        <article class="admin-detail-metric"><span>Đã phát hành</span><strong>${money(budgetUsed)}</strong></article>
+        <article class="admin-detail-metric"><span>Còn lại</span><strong>${money(remaining)}</strong></article>
+      </div>
+    </section>
+    <section class="admin-detail-section">
+      <h3 class="admin-detail-section__title">Thiết lập chiến dịch</h3>
+      <dl class="admin-data-list admin-detail-list">
+        <div><dt>Loại khuyến mãi</dt><dd>${escapePromotionHtml(row.promo_type)}</dd></div>
+        <div><dt>Thời gian áp dụng</dt><dd>${date(row.start_date)} – ${date(row.end_date)}</dd></div>
+        <div><dt>Tiến trình sử dụng</dt><dd class="admin-detail-progress">${budgetTotal > 0 ? progressBar(budgetUsed, budgetTotal) : "Không giới hạn"}</dd></div>
+        <div><dt>Phiên bản dữ liệu</dt><dd>${escapePromotionHtml(row.version)}</dd></div>
+      </dl>
+    </section>`;
   } else if (type === "voucher") {
-    bodyHtml = `<dl class="admin-data-list"><div><dt>Mã</dt><dd><strong>${escapePromotionHtml(row.code)}</strong></dd></div><div><dt>Tên</dt><dd>${escapePromotionHtml(row.name)}</dd></div><div><dt>Loại giảm</dt><dd>${escapePromotionHtml(row.discount_type)}</dd></div><div><dt>Giá trị</dt><dd>${row.discount_type === "percentage" ? row.discount_value + "%" : money(row.discount_value)}</dd></div><div><dt>Giảm tối đa</dt><dd>${row.max_discount_amount ? money(row.max_discount_amount) : "Không giới hạn"}</dd></div><div><dt>Đơn tối thiểu</dt><dd>${money(row.min_order_value)}</dd></div><div><dt>Lượt dùng</dt><dd>${row.used_count || 0} / ${row.usage_limit_total || "∞"}</dd></div><div><dt>Giới hạn/user</dt><dd>${row.usage_limit_per_user}</dd></div><div><dt>Thời hạn</dt><dd>${date(row.start_date)} - ${date(row.end_date)}</dd></div><div><dt>Trạng thái</dt><dd>${badge(row.is_active)}</dd></div></dl>`;
+    const voucherValue = row.discount_type === "percentage" ? row.discount_value + "%" : money(row.discount_value);
+    bodyHtml = `<section class="admin-detail-section">
+      <h3 class="admin-detail-section__title">Giá trị ưu đãi</h3>
+      <div class="admin-detail-metrics">
+        <article class="admin-detail-metric"><span>Mức giảm</span><strong>${voucherValue}</strong></article>
+        <article class="admin-detail-metric"><span>Đơn tối thiểu</span><strong>${money(row.min_order_value)}</strong></article>
+        <article class="admin-detail-metric"><span>Đã sử dụng</span><strong>${row.used_count || 0} / ${row.usage_limit_total || "∞"}</strong></article>
+      </div>
+    </section>
+    <section class="admin-detail-section">
+      <h3 class="admin-detail-section__title">Điều kiện sử dụng</h3>
+      <dl class="admin-data-list admin-detail-list">
+        <div><dt>Loại giảm giá</dt><dd>${escapePromotionHtml(row.discount_type)}</dd></div>
+        <div><dt>Giảm tối đa</dt><dd>${row.max_discount_amount ? money(row.max_discount_amount) : "Không giới hạn"}</dd></div>
+        <div><dt>Giới hạn mỗi khách hàng</dt><dd>${row.usage_limit_per_user}</dd></div>
+        <div><dt>Thời hạn áp dụng</dt><dd>${date(row.start_date)} – ${date(row.end_date)}</dd></div>
+      </dl>
+    </section>`;
   } else {
     const comboId = escapePromotionHtml(row.product_id);
     const cachedItems = state.comboItems[row.product_id] || [];
@@ -199,12 +234,26 @@ function detail(type, id) {
       </dl>
       <div class="admin-drawer-section-head">
         <h3 class="admin-drawer__section admin-drawer-section-title">Thành phần combo (${cachedItems.length})</h3>
-        <button class="admin-btn admin-btn--secondary admin-btn--sm" data-combo-add-item="${comboId}">${icon("plus")}Thêm thành phần</button>
+        <button class="admin-btn admin-btn--primary admin-btn--sm" data-combo-add-item="${comboId}">${icon("plus")}Thêm thành phần</button>
       </div>
       <div id="combo-items-list" class="admin-drawer-section-body">${cachedItems.length ? "" : "Đang tải thông tin thành phần..."}</div>
     `;
   }
-  overlay.innerHTML = `<div class="admin-drawer-backdrop" data-promo-close></div><aside class="admin-drawer admin-drawer--wide"><header class="admin-drawer__header"><h2>Chi tiết ${escapePromotionHtml(type === "promotion" ? "chiến dịch" : type === "voucher" ? "voucher" : "combo")}</h2><button class="admin-icon-button" data-promo-close>×</button></header><div class="admin-drawer__body">${bodyHtml}</div></aside>`;
+  const detailTitle = type === "promotion" ? row.promo_name : type === "voucher" ? (row.name || row.code) : row.name;
+  const detailCode = type === "promotion" ? row.promo_id : type === "voucher" ? row.code : row.sku;
+  const detailKind = type === "promotion" ? "Chiến dịch khuyến mãi" : type === "voucher" ? "Voucher" : "Combo sản phẩm";
+  const detailStatus = type === "bundle" ? badge(row.status === "on_sale") : badge(row.is_active);
+  overlay.innerHTML = `<div class="admin-drawer-backdrop" data-promo-close></div><aside class="admin-drawer admin-detail-drawer">
+    <header class="admin-drawer__header">
+      <div class="admin-detail-header">
+        <span class="admin-detail-header__eyebrow">${escapePromotionHtml(detailKind)} · ${escapePromotionHtml(detailCode)}</span>
+        <h2>${escapePromotionHtml(detailTitle)}</h2>
+        <div class="admin-detail-header__meta">${detailStatus}</div>
+      </div>
+      <button class="admin-icon-button" data-promo-close aria-label="Đóng">×</button>
+    </header>
+    <div class="admin-drawer__body">${bodyHtml}</div>
+  </aside>`;
   if (type === "bundle") {
     loadComboItems(row.product_id);
   }
@@ -222,8 +271,8 @@ async function loadComboItems(productId) {
       return;
     }
     listEl.innerHTML = `
-      <table class="admin-table admin-data-table admin-table--compact">
-        <thead><tr><th class="col-main">Sản phẩm</th><th class="col-compact">Biến thể</th><th class="col-compact">SL</th><th class="col-compact">Đơn giá</th><th class="col-action">Thao tác</th></tr></thead>
+      <table class="admin-table admin-data-table admin-table--combo-items">
+        <thead><tr><th class="cell-primary">Sản phẩm</th><th>Biến thể</th><th>SL</th><th>Đơn giá</th><th class="cell-action">Thao tác</th></tr></thead>
         <tbody>
           ${items.map(item => {
             const product = (state.allProducts || []).find(p => p.product_id === item.component_product_id);
@@ -261,7 +310,7 @@ async function loadComboItems(productId) {
 function editPromotionModal(id) {
   const row = state.promotions.find((item) => item.promo_id === id);
   if (!row) return;
-  overlay.innerHTML = `<div class="admin-modal-overlay"><section class="admin-modal admin-modal--lg"><form data-promo-edit-form data-id="${escapePromotionHtml(id)}"><header class="admin-modal__header"><h2>Chỉnh sửa chiến dịch</h2><button class="admin-icon-button" type="button" data-promo-close>×</button></header><div class="admin-modal__body"><label class="admin-form-group"><span class="admin-form-label">Tên chiến dịch <b class="admin-required">*</b></span><input class="admin-form-control" name="name" value="${escapePromotionHtml(row.promo_name)}" required></label><label class="admin-form-group"><span class="admin-form-label">Mô tả</span><textarea class="admin-form-control admin-form-textarea" name="description">${escapePromotionHtml(row.description || "")}</textarea></label><label class="admin-form-group"><span class="admin-form-label">Ngân sách</span><input class="admin-form-control" name="budgetLimit" type="number" min="0" value="${escapePromotionHtml(row.budget_limit || 0)}"></label><input type="hidden" name="expectedVersion" value="${escapePromotionHtml(row.version)}"></div><footer class="admin-modal__footer"><button class="admin-btn admin-btn--ghost" type="button" data-promo-close>Hủy</button><button class="admin-btn admin-btn--secondary">Lưu thay đổi</button></footer></form></section></div>`;
+  overlay.innerHTML = `<div class="admin-modal-overlay"><section class="admin-modal admin-modal--lg"><form data-promo-edit-form data-id="${escapePromotionHtml(id)}"><header class="admin-modal__header"><h2>Chỉnh sửa chiến dịch</h2><button class="admin-icon-button" type="button" data-promo-close>×</button></header><div class="admin-modal__body"><label class="admin-form-group"><span class="admin-form-label">Tên chiến dịch <b class="admin-required">*</b></span><input class="admin-form-control" name="name" value="${escapePromotionHtml(row.promo_name)}" required></label><label class="admin-form-group"><span class="admin-form-label">Mô tả</span><textarea class="admin-form-control admin-form-textarea" name="description">${escapePromotionHtml(row.description || "")}</textarea></label><label class="admin-form-group"><span class="admin-form-label">Ngân sách</span><input class="admin-form-control" name="budgetLimit" type="number" min="0" value="${escapePromotionHtml(row.budget_limit || 0)}"></label><input type="hidden" name="expectedVersion" value="${escapePromotionHtml(row.version)}"></div><footer class="admin-modal__footer"><button class="admin-btn admin-btn--ghost" type="button" data-promo-close>Hủy</button><button class="admin-btn admin-btn--primary">Lưu thay đổi</button></footer></form></section></div>`;
 }
 
 function createModal(type) {
