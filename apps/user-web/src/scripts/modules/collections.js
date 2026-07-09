@@ -21,6 +21,7 @@ export function initCollectionsFilter() {
       label: "Thanh lịch & Kiêu sa",
       quote: "Thanh lịch không phải là nổi bật, mà là biết cách tôn lên chính mình.",
       banner: "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Soft-Ceremony_cover.png",
+      decor: "/src/assets/images/collections/soft-ceremony-decor.png",
       story: [
         "Soft Ceremony là bộ sưu tập dành cho những dịp cần sự chỉn chu hơn thường ngày như tiệc nhẹ, hẹn hò, chụp ảnh hay những buổi gặp gỡ đặc biệt.",
         "Lấy cảm hứng từ vẻ đẹp nữ tính và thanh lịch, các thiết kế được xây dựng với phom dáng mềm mại, đường cắt tinh tế cùng những điểm nhấn vừa đủ.",
@@ -33,6 +34,7 @@ export function initCollectionsFilter() {
       label: "Năng động & Thời thượng",
       quote: "Nhịp sống hiện đại đẹp nhất khi sự tự tin luôn vừa vặn với từng chuyển động.",
       banner: "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/Velura_urban-rythm_cover.png",
+      decor: "/src/assets/images/collections/the-urban-rhythm-decor.png",
       story: [
         "The Urban Rhythm dành cho những quý cô hiện đại yêu thích sự linh hoạt giữa môi trường công sở và nhịp sống phố thị.",
         "Các thiết kế tập trung vào phom dáng hiện đại, đường cắt sắc sảo và tính ứng dụng cao để tôn lên thần thái độc lập.",
@@ -45,6 +47,7 @@ export function initCollectionsFilter() {
       label: "Tự do & Phóng khoáng",
       quote: "Một cuối tuần đẹp bắt đầu từ cảm giác nhẹ nhàng trong chính bộ đồ mình chọn.",
       banner: "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Weekend-Escape_cover.png",
+      decor: "/src/assets/images/collections/weekend-escape-decor.png",
       story: [
         "Weekend Escape lấy cảm hứng từ những chuyến đi cuối tuần và những ngày thư giãn trọn vẹn.",
         "Bộ sưu tập đề cao sự thoải mái nhưng vẫn giữ vẻ thanh lịch với phom dáng nhẹ nhàng và chất liệu thoáng mát.",
@@ -57,6 +60,7 @@ export function initCollectionsFilter() {
       label: "Cá tính & Đường phố",
       quote: "Cá tính không cần ồn ào, chỉ cần đủ rõ để người mặc thấy mình trong đó.",
       banner: "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Midnight-Mirage_cover.png",
+      decor: "/src/assets/images/collections/midnight-mirage-decor.png",
       story: [
         "Midnight Mirage lấy cảm hứng từ thời trang đường phố Hàn Quốc, kết hợp nét cá tính, tối giản và hiện đại.",
         "Các outfit mang nhiều sắc thái như Grunge, Soft Neutral, Campus Girl, Street Prep và Y2K Minimal.",
@@ -69,6 +73,7 @@ export function initCollectionsFilter() {
       label: "Dư âm Vương giả",
       quote: "Có những khoảnh khắc không cần phô diễn, chỉ cần lưu lại như một vệt sáng rất riêng.",
       banner: "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_The-Afterglow_cover.png",
+      decor: "/src/assets/images/collections/the-afterglow-decor.png",
       story: [
         "The Afterglow lấy cảm hứng từ ánh hoàng hôn diễm lệ và vẻ đẹp kiêu sa, lãng mạn.",
         "Những chất liệu mềm mại, corset tinh tế và sắc màu từ hồng tulle đến xanh Sapphire tạo nên cảm giác vương giả.",
@@ -92,6 +97,7 @@ export function initCollectionsFilter() {
       label: "Thiết kế mới nhất",
       quote: "Một lựa chọn đúng có thể làm cả ngày trở nên mềm mại hơn.",
       banner: "/src/assets/images/about_02.jpg",
+      decor: "/src/assets/images/collections/soft-ceremony-decor.png",
       story: [
         `Khám phá các set đồ mới nhất trong bộ sưu tập ${name} của Velura.`,
         "Mỗi thiết kế được tuyển chọn để giữ tinh thần thanh lịch, hiện đại và dễ ứng dụng.",
@@ -131,10 +137,10 @@ export function initCollectionsFilter() {
         })
       ].join("");
 
-      listContainer.innerHTML = orderedColNames.map(colName => {
+      listContainer.innerHTML = orderedColNames.map((colName, index) => {
         const meta = getMeta(colName);
         const colProducts = comboProducts.filter(p => p.collection === colName);
-        return renderCollectionBlock(meta, colProducts, formatVND);
+        return renderCollectionBlock(meta, colProducts, formatVND, index);
       }).join("");
 
       const tabs = tabsContainer.querySelectorAll(".collections-tab");
@@ -165,23 +171,25 @@ export function initCollectionsFilter() {
     });
 }
 
-function renderCollectionBlock(meta, products, formatVND) {
+function renderCollectionBlock(meta, products, formatVND, index) {
   const countClass = `collection-detail__products-grid--count-${Math.min(products.length, 6)}`;
   const cardsHtml = products.length
-    ? products.map((product, index) => renderOutfitCard(product, index, formatVND)).join("")
+    ? products.map((product, idx) => renderOutfitCard(product, idx, formatVND)).join("")
     : `<div class="collections-state">Bộ sưu tập này chưa có set đồ đang bán.</div>`;
+
+  const isReverse = index % 2 === 1;
+  const bodyClass = isReverse ? "collection-detail__body collection-detail__body--reverse" : "collection-detail__body";
 
   return `
     <section class="collection-detail" data-category="${escapeHtml(meta.id)}" aria-labelledby="collection-${escapeHtml(meta.id)}">
       <div class="collection-detail__cover">
         <img src="${escapeAttribute(meta.banner)}" alt="Ảnh đại diện bộ sưu tập ${escapeAttribute(meta.vnName)}" class="collection-detail__cover-img" loading="lazy" />
         <div class="collection-detail__cover-overlay">
-          <span>${escapeHtml(meta.label)}</span>
           <strong>${escapeHtml(meta.vnName)}</strong>
         </div>
       </div>
 
-      <div class="collection-detail__body">
+      <div class="${bodyClass}">
         <aside class="collection-detail__info">
           <div class="collection-detail__copy">
             <span class="collection-detail__story-tag">${escapeHtml(meta.label)}</span>
@@ -191,6 +199,9 @@ function renderCollectionBlock(meta, products, formatVND) {
               ${meta.story.map(paragraph => `<p>${escapeHtml(paragraph)}</p>`).join("")}
             </div>
           </div>
+          <figure class="collection-detail__decor" aria-hidden="true">
+            <img src="${escapeAttribute(meta.decor)}" alt="" class="collection-detail__decor-img" loading="lazy" />
+          </figure>
         </aside>
 
         <div class="collection-detail__products">

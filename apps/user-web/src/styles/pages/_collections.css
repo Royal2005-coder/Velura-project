@@ -135,11 +135,21 @@
 .collection-detail__cover {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 7;
-  min-height: 280px;
-  max-height: 420px;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   background: #eee6df;
+}
+
+@media (min-width: 901px) {
+  .collection-detail__body--reverse .collection-detail__info {
+    order: 2;
+    padding-left: 4px;
+    padding-right: 0;
+  }
+
+  .collection-detail__body--reverse .collection-detail__products {
+    order: 1;
+  }
 }
 
 .collection-detail__cover-img {
@@ -196,10 +206,11 @@
   top: 96px;
   align-self: start;
   grid-column: span 4;
-  min-height: auto;
+  min-height: min(720px, calc(100dvh - 132px));
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: space-between;
+  gap: 48px;
   padding-right: 4px;
 }
 
@@ -263,6 +274,70 @@
   color: #585858;
   font-size: 0.98rem;
   line-height: 1.82;
+}
+
+.collection-detail__decor {
+  position: relative;
+  width: min(112%, 450px);
+  min-height: 280px;
+  margin: 18px 0 0 -8px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  pointer-events: none;
+}
+
+.collection-detail__decor::before {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 4%;
+  bottom: 2%;
+  height: 34%;
+  background: radial-gradient(ellipse, rgba(96, 70, 54, 0.13), transparent 68%);
+  filter: blur(12px);
+  opacity: 0.62;
+}
+
+.collection-detail__decor-img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-height: 390px;
+  object-fit: cover;
+  object-position: left bottom;
+  display: block;
+  border-radius: 26px;
+  opacity: 0.92;
+  box-shadow:
+    0 20px 54px rgba(80, 55, 42, 0.12),
+    inset 0 0 0 1px rgba(234, 228, 222, 0.82);
+  filter: saturate(0.98) contrast(1.02);
+}
+
+.collection-detail[data-category="the-urban-rhythm"] .collection-detail__decor-img,
+.collection-detail[data-category="midnight-mirage"] .collection-detail__decor-img {
+  opacity: 0.86;
+}
+
+.collection-detail[data-category="weekend-escape"] .collection-detail__decor-img {
+  max-height: 410px;
+  width: 112%;
+  margin-left: -6%;
+}
+
+.collection-detail[data-category="the-afterglow"] .collection-detail__decor-img,
+.collection-detail[data-category="midnight-mirage"] .collection-detail__decor-img {
+  width: 118%;
+  margin-left: -8%;
+}
+
+.collection-detail__body--reverse .collection-detail__decor {
+  justify-content: flex-end;
+}
+
+.collection-detail__body--reverse .collection-detail__decor-img {
+  object-position: right bottom;
 }
 
 .collection-detail__products {
@@ -438,6 +513,7 @@
 
   .collection-detail__info {
     grid-column: span 5;
+    min-height: min(680px, calc(100dvh - 132px));
   }
 
   .collection-detail__products {
@@ -502,6 +578,7 @@
   .collection-detail__info {
     position: static;
     min-height: 0;
+    gap: 32px;
   }
 
   .collection-detail__copy {
@@ -516,6 +593,15 @@
     max-width: 620px;
   }
 
+  .collection-detail__decor {
+    width: min(100%, 560px);
+    min-height: 230px;
+    margin-top: 0;
+  }
+
+  .collection-detail__decor-img {
+    max-height: 320px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -549,6 +635,16 @@
 
   .collection-detail__body {
     padding: 28px 18px;
+  }
+
+  .collection-detail__decor {
+    min-height: 190px;
+    margin-left: 0;
+  }
+
+  .collection-detail__decor-img {
+    max-height: 260px;
+    border-radius: 20px;
   }
 
   .collection-detail__products-header {

@@ -905,6 +905,12 @@ function renderOrderSummarySidebar(shippingFee = 0) {
   }
 }
 
+function calculatePolicyShippingFee() {
+  const cart = getCheckoutItems();
+  const subtotal = cart.reduce((sum, x) => sum + x.unit_price * x.quantity, 0);
+  return subtotal >= 500000 ? 0 : 30000;
+}
+
 export function renderCheckoutProductList() {
   const listContainer = document.querySelector(".checkout-product-list");
   if (!listContainer) return;
@@ -1544,7 +1550,7 @@ function initShippingPaymentPage() {
     const checkedRadio = document.querySelector("input[name='shipping']:checked");
     if (checkedRadio) {
       checkedRadio.closest(".option-card")?.classList.add("is-selected");
-      const fee = checkedRadio.value === "express" ? 50000 : 30000;
+      const fee = calculatePolicyShippingFee();
       renderOrderSummarySidebar(fee);
     }
   };
@@ -1570,10 +1576,10 @@ function initShippingPaymentPage() {
     continueBtn.addEventListener("click", (e) => {
       e.preventDefault();
 
-      const activeShipping = document.querySelector("input[name='shipping']:checked")?.value || "express";
+      const activeShipping = document.querySelector("input[name='shipping']:checked")?.value || "standard";
       const activePayment = document.querySelector("input[name='payment']:checked")?.value || "cod";
       
-      const shippingFee = activeShipping === "express" ? 50000 : 30000;
+      const shippingFee = calculatePolicyShippingFee();
 
       const methods = {
         shippingMethod: activeShipping,
@@ -1612,9 +1618,7 @@ function initOrderConfirmPage() {
   const shippingBlock = document.querySelector(".review-section:nth-of-type(2) .review-section__text");
   if (shippingBlock) {
     const feeText = methods.shippingFee > 0 ? `${methods.shippingFee.toLocaleString("vi-VN")}đ` : "Miễn phí";
-    shippingBlock.textContent = methods.shippingMethod === "express" 
-      ? `Giao hàng nhanh (1-2 ngày) — ${feeText}`
-      : `Giao hàng tiêu chuẩn (3-5 ngày) — ${feeText}`;
+    shippingBlock.textContent = `Giao hàng tiêu chuẩn — TP.HCM/Hà Nội 1 - 3 ngày, tỉnh thành khác 3 - 5 ngày — ${feeText}`;
   }
 
   // Render Payment Method info

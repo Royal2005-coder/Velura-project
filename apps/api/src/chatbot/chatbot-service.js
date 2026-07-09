@@ -734,12 +734,12 @@ export async function getFallbackReply(message, products = [], repository = null
         console.warn("[FALLBACK-RAG] Failed to search policies:", err.message);
       }
     }
-    return "Chính sách đổi trả của Velura: Đổi trả trong vòng 7 ngày đối với sản phẩm nguyên giá; đổi trả trong vòng 3 ngày đối với sản phẩm giảm giá trên 30% kể từ khi nhận hàng. Yêu cầu sản phẩm phải chưa qua sử dụng, còn nguyên tem mác và hóa đơn/mã đơn hàng. Bạn có thể tự thực hiện yêu cầu đổi trả ngay trên website hoặc liên hệ CSKH để được hỗ trợ.";
+    return "Mình chưa tải được dữ liệu chính sách mới nhất từ database ở thời điểm này nên sẽ không dùng thông tin cũ để trả lời. Bạn có thể mở trang Chính sách trên website hoặc liên hệ CSKH Velura qua hotline 1900 1212 để được xác nhận chính xác nhất nhé.";
   }
 
   const isShippingQuery = /(phí ship|phí vận chuyển|miễn phí|free ship|giao mất bao lâu|thời gian giao)/i.test(text);
   if (isShippingQuery) {
-    return "Velura miễn phí vận chuyển cho đơn từ 500.000đ. Đơn dưới 500.000đ phí ship cố định 30.000đ. Thời gian giao hàng từ 2-5 ngày tùy khu vực.";
+    return "Chính sách vận chuyển Velura: phí vận chuyển tiêu chuẩn toàn quốc là 30.000đ; miễn phí vận chuyển cho đơn từ 500.000đ. Nội thành TP.HCM và Hà Nội dự kiến 1 - 3 ngày làm việc, các tỉnh thành khác 3 - 5 ngày làm việc.";
   }
 
   const isSizeQuery = /(size|kích cỡ|số đo|vừa người|đo size|bảng size)/i.test(text);
@@ -774,12 +774,12 @@ export function createFallbackReply(message, products = []) {
 
   const isPolicyQuery = /(đổi trả|return|bảo hành|chính sách|policy|quy định|điều khoản)/i.test(text);
   if (isPolicyQuery) {
-    return "Chính sách đổi trả của Velura: Đổi trả trong vòng 7 ngày đối với sản phẩm nguyên giá; đổi trả trong vòng 3 ngày đối với sản phẩm giảm giá trên 30% kể từ khi nhận hàng. Yêu cầu sản phẩm phải chưa qua sử dụng, còn nguyên tem mác và hóa đơn/mã đơn hàng. Bạn có thể tự thực hiện yêu cầu đổi trả ngay trên website hoặc liên hệ CSKH để được hỗ trợ.";
+    return "Chính sách đổi trả Velura: khách hàng cần gửi yêu cầu trong vòng tối đa 2 ngày (48 giờ) kể từ lúc đơn hàng cập nhật trạng thái \"Đã giao thành công\". Sản phẩm phải chưa qua sử dụng, còn nguyên tem mác, nhãn barcode và bao bì đóng gói gốc của Velura. Hoàn tiền được xử lý trong 4 - 5 ngày làm việc sau khi hàng về kho đạt tiêu chuẩn kiểm tra.";
   }
 
   const isShippingQuery = /(phí ship|phí vận chuyển|miễn phí|free ship|giao mất bao lâu|thời gian giao)/i.test(text);
   if (isShippingQuery) {
-    return "Velura miễn phí vận chuyển cho đơn từ 500.000đ. Đơn dưới 500.000đ phí ship cố định 30.000đ. Thời gian giao hàng từ 2-5 ngày tùy khu vực.";
+    return "Chính sách vận chuyển Velura: phí vận chuyển tiêu chuẩn toàn quốc là 30.000đ; miễn phí vận chuyển cho đơn từ 500.000đ. Nội thành TP.HCM và Hà Nội dự kiến 1 - 3 ngày làm việc, các tỉnh thành khác 3 - 5 ngày làm việc.";
   }
 
   const isSizeQuery = /(size|kích cỡ|số đo|vừa người|đo size|bảng size)/i.test(text);
