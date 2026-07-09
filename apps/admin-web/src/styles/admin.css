@@ -66,14 +66,16 @@ body.admin-page::-webkit-scrollbar-thumb:hover { background: var(--terracotta); 
 
 .admin-main { min-width: 0; overflow-x: hidden; }
 .admin-topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 72px; padding: 0 36px; background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 180; }
-.admin-topbar__leading, .admin-topbar__actions { display: flex; align-items: center; gap: 12px; }
+.admin-topbar__leading { display: flex; align-items: center; gap: 12px; }
+.admin-topbar__actions { display: flex; align-items: center; gap: 16px; }
 .admin-topbar__menu { display: none; }
 .admin-breadcrumb { display: flex; gap: 8px; color: var(--soft); font-size: .8125rem; }
 .admin-breadcrumb strong { color: var(--text-body); font-weight: 500; }
 .admin-quick-search { display: flex; align-items: center; width: min(280px, 30vw); gap: 8px; padding: 0 12px; background: var(--field-bg); border: 1px solid var(--line); border-radius: var(--radius-md); }
 .admin-quick-search input { width: 100%; height: 38px; border: 0; outline: 0; background: transparent; font-size: .8125rem; }
 .admin-quick-search__icon, .admin-search-field__icon { color: var(--soft); font-size: 1.25rem; line-height: 1; }
-.admin-profile { display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; cursor: pointer; text-align: left; }
+.admin-profile { display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; cursor: pointer; text-align: left; border-left: 1px solid var(--line); padding-left: 16px; margin-left: 4px; }
+.admin-topbar__actions button[data-admin-logout] { border-left: 1px solid var(--line); padding-left: 16px; margin-left: 4px; }
 .admin-profile__avatar { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: var(--tab-bg); color: var(--terracotta); font-size: .6875rem; font-weight: 700; }
 .admin-profile__copy { display: grid; gap: 1px; font-size: .75rem; }
 .admin-profile__copy strong { color: var(--ink); font-weight: 600; }.admin-profile__copy small { color: var(--soft); font-size: .6875rem; }

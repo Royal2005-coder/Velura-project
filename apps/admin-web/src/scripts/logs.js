@@ -1,6 +1,7 @@
 import { auditLogApi } from "./audit-log-api.js";
+import { accountApi } from "./account-api.js";
 
-const state = { rows: [], filtered: [], tab: "all" };
+const state = { rows: [], filtered: [], tab: "all", users: [] };
 const panel = document.querySelector("#log-panel");
 const overlay = document.querySelector("#log-overlay");
 
@@ -12,7 +13,11 @@ function date(value) { const parsed = new Date(value); return Number.isNaN(parse
 function filters() { return `<form class="admin-filter-bar admin-log-filter" data-log-filter><label class="admin-search-field">${icon("search")}<input class="admin-form-control" name="q" placeholder="Tìm hành động, đối tượng hoặc admin" data-log-search></label><select class="admin-form-control" name="module" data-log-module><option value="">Tất cả phân hệ</option>${["accounts", "products", "orders", "reviews", "returns", "support", "pricing", "promotions", "vouchers", "system"].map((value) => `<option value="${value}">${value}</option>`).join("")}</select><select class="admin-form-control" name="result" data-log-result><option value="">Tất cả kết quả</option><option value="success">Thành công</option><option value="failure">Thất bại</option></select><button class="admin-btn admin-btn--filter admin-btn--sm">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button></form>`; }
 function table() {
   if (!state.filtered.length) return '<div class="admin-log-empty"><strong>Không có nhật ký phù hợp</strong><p>Dữ liệu được đọc từ audit_log theo RLS.</p></div>';
-  return `<div class="admin-table-wrap"><table class="admin-table admin-log-table"><thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Vai trò</th><th>Phân hệ</th><th>Hành động</th><th>Đối tượng</th><th>IP</th><th>Chi tiết</th></tr></thead><tbody>${state.filtered.map((row) => `<tr><td>${escapeAuditHtml(date(row.timestamp))}</td><td>${escapeAuditHtml(row.actor_id || "system")}</td><td>${escapeAuditHtml(row.actor_role || "-")}</td><td><span class="admin-log-module">${escapeAuditHtml(row.module)}</span></td><td>${escapeAuditHtml(row.action)}</td><td>${escapeAuditHtml(row.target_id || "-")}</td><td>${escapeAuditHtml(row.ip_address || "-")}</td><td><button class="admin-icon-button admin-icon-button--sm" data-log-detail="${escapeAuditHtml(row.audit_id)}">${icon("eye")}</button></td></tr>`).join("")}</tbody></table></div><div class="admin-log-footer"><p class="admin-table-note">Hiển thị ${state.filtered.length} / ${state.rows.length} nhật ký</p></div>`;
+  return `<div class="admin-table-wrap"><table class="admin-table admin-log-table"><thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Vai trò</th><th>Phân hệ</th><th>Hành động</th><th>Đối tượng</th><th>IP</th><th>Chi tiết</th></tr></thead><tbody>${state.filtered.map((row) => {
+    const actorUser = state.users?.find((u) => u.user_id === row.actor_id);
+    const actorName = actorUser ? `${actorUser.full_name} (${actorUser.email})` : (row.actor_id || "system");
+    return `<tr><td>${escapeAuditHtml(date(row.timestamp))}</td><td>${escapeAuditHtml(actorName)}</td><td>${escapeAuditHtml(row.actor_role || "-")}</td><td><span class="admin-log-module">${escapeAuditHtml(row.module)}</span></td><td>${escapeAuditHtml(row.action)}</td><td>${escapeAuditHtml(row.target_id || "-")}</td><td>${escapeAuditHtml(row.ip_address || "-")}</td><td><button class="admin-icon-button admin-icon-button--sm" data-log-detail="${escapeAuditHtml(row.audit_id)}">${icon("eye")}</button></td></tr>`;
+  }).join("")}</tbody></table></div><div class="admin-log-footer"><p class="admin-table-note">Hiển thị ${state.filtered.length} / ${state.rows.length} nhật ký</p></div>`;
 }
 function render() {
   panel.innerHTML = filters() + table();
@@ -126,14 +131,34 @@ function updateKpis() {
 function detail(id) {
   const row = state.rows.find((item) => item.audit_id === id);
   if (!row) return;
-  overlay.innerHTML = `<div class="admin-drawer-backdrop" data-log-close></div><aside class="admin-drawer admin-log-drawer"><header class="admin-drawer__header"><div><small>${escapeAuditHtml(row.audit_id)}</small><h2>Chi tiết nhật ký</h2></div><button class="admin-icon-button" data-log-close>×</button></header><div class="admin-drawer__body"><dl class="admin-data-list">${Object.entries(row).map(([key, value]) => `<div><dt>${escapeAuditHtml(key)}</dt><dd>${escapeAuditHtml(typeof value === "object" ? JSON.stringify(value) : value)}</dd></div>`).join("")}</dl></div></aside>`;
+  overlay.innerHTML = `<div class="admin-drawer-backdrop" data-log-close></div><aside class="admin-drawer admin-log-drawer"><header class="admin-drawer__header"><div><small>${escapeAuditHtml(row.audit_id)}</small><h2>Chi tiết nhật ký</h2></div><button class="admin-icon-button" data-log-close>×</button></header><div class="admin-drawer__body"><dl class="admin-data-list">${Object.entries(row).map(([key, value]) => {
+    let displayValue;
+    if (key === "actor_id" && value) {
+      const actorUser = state.users?.find(u => u.user_id === value);
+      displayValue = actorUser ? `${escapeAuditHtml(actorUser.full_name)} (${escapeAuditHtml(actorUser.email)}) <br/><small style="color:var(--admin-text-muted);">${escapeAuditHtml(value)}</small>` : escapeAuditHtml(value);
+    } else if (typeof value === "object" && value !== null) {
+      displayValue = `<pre style="margin: 0; font-family: monospace; white-space: pre-wrap; font-size: 12px; background: var(--admin-bg-light); padding: 8px; border-radius: 4px; border: 1px solid var(--admin-border-light);">${escapeAuditHtml(JSON.stringify(value, null, 2))}</pre>`;
+    } else {
+      displayValue = escapeAuditHtml(value ?? "-");
+    }
+    return `<div><dt>${escapeAuditHtml(key)}</dt><dd>${displayValue}</dd></div>`;
+  }).join("")}</dl></div></aside>`;
 }
 
 async function load() {
   panel.innerHTML = '<div class="admin-log-empty"><strong>Đang tải audit_log từ Supabase...</strong></div>';
   try {
-    const result = await auditLogApi.list({ limit: 100 });
-    state.rows = result.rows || [];
+    const [logResult, accountResult] = await Promise.allSettled([
+      auditLogApi.list({ limit: 1000 }),
+      accountApi.list({ limit: 1000 })
+    ]);
+    
+    if (logResult.status === "rejected") {
+      throw logResult.reason;
+    }
+    
+    state.rows = logResult.value.rows || [];
+    state.users = accountResult.status === "fulfilled" ? (accountResult.value.rows || []) : [];
     applyFilterAndRender();
   } catch (error) {
     panel.innerHTML = `<div class="admin-log-empty"><strong>${escapeAuditHtml(error.message)}</strong></div>`;
