@@ -424,8 +424,13 @@
           </div>
         </div>
         <div class="card__actions">
-          <button class="btn-buy js-buy-now-blog" data-sku="${sku}" type="button">Mua ngay</button>
-          <button class="card__btn-cart js-add-cart-blog" data-sku="${sku}" type="button">Thêm vào giỏ</button>
+          <button class="btn-buy js-buy-now-blog" data-sku="${sku}" type="button">
+            <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+            <span>Mua ngay</span>
+          </button>
+          <button class="card__btn-cart js-add-cart-blog" data-sku="${sku}" type="button" title="Thêm vào giỏ hàng">
+            <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
+          </button>
         </div>
       `;
       return card;
@@ -468,8 +473,13 @@
           </div>
         </div>
         <div class="card__actions">
-          <button class="btn-buy js-buy-now-blog" data-sku="${sku}" type="button">Mua ngay</button>
-          <button class="card__btn-cart js-add-cart-blog" data-sku="${sku}" type="button">Thêm vào giỏ</button>
+          <button class="btn-buy js-buy-now-blog" data-sku="${sku}" type="button">
+            <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+            <span>Mua ngay</span>
+          </button>
+          <button class="card__btn-cart js-add-cart-blog" data-sku="${sku}" type="button" title="Thêm vào giỏ hàng">
+            <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
+          </button>
         </div>
       `;
       return card;
@@ -531,13 +541,21 @@
           });
           updateBadge();
 
-          const original = btn.innerHTML;
-          btn.innerHTML = 'Đã thêm ✓';
-          btn.classList.add('is-added');
-          setTimeout(() => {
-            btn.innerHTML = original;
-            btn.classList.remove('is-added');
-          }, 1500);
+          if (btn.classList.contains('card__btn-cart')) {
+            showToast(`Đã thêm ${product.name} vào giỏ hàng!`);
+            btn.classList.add('is-added');
+            setTimeout(() => {
+              btn.classList.remove('is-added');
+            }, 1500);
+          } else {
+            const original = btn.innerHTML;
+            btn.innerHTML = 'Đã thêm ✓';
+            btn.classList.add('is-added');
+            setTimeout(() => {
+              btn.innerHTML = original;
+              btn.classList.remove('is-added');
+            }, 1500);
+          }
         });
       });
     }

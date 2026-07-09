@@ -5,8 +5,8 @@
 .chatbot-page {
   display: flex;
   flex-direction: row-reverse; /* Lịch sử bên phải */
-  height: auto;
-  min-height: calc(100vh - 160px); /* Đảm bảo tối thiểu bằng chiều cao viewport trừ header */
+  height: calc(100vh - 120px); /* Đảm bảo bằng chiều cao viewport trừ header và breadcrumb */
+  overflow: hidden;
   background: #FAF8F6;
   font-family: "DM Sans", sans-serif;
   border-top: 1px solid var(--line);
@@ -22,9 +22,7 @@
   flex-direction: column;
   box-sizing: border-box;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: sticky;
-  top: 120px;
-  height: calc(100vh - 120px);
+  height: 100%;
   overflow-y: auto;
 }
 
@@ -40,28 +38,28 @@
 .chatbot-page__main {
   flex: 1;
   display: flex;
+  flex-direction: column;
   justify-content: stretch;
   align-items: stretch;
   padding: 0;
   background: #FAF8F6;
   box-sizing: border-box;
+  height: 100%;
+  overflow: hidden;
 }
 
-/* Cho phép nội dung tin nhắn tự giãn rộng và đẩy toàn trang cuộn */
+/* Cho phép nội dung tin nhắn tự cuộn tròn bên trong, không cuộn toàn trang */
 .page-chatbot .chatbot-messages {
-  height: auto !important;
-  overflow-y: visible !important;
-  flex: 1 0 auto !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+  flex: 1 1 auto !important;
 }
 
 .page-chatbot .chatbot-footer-sticky-wrap {
-  position: sticky;
-  bottom: 0;
-  z-index: 1000;
+  flex-shrink: 0;
   background: #ffffff;
   border-top: 1px solid var(--line);
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
-  margin-top: auto; /* Đẩy xuống sát đáy box kể cả khi ít tin nhắn */
 }
 
 /* Chat box layout override inside full-page chatbot */
@@ -69,8 +67,7 @@
   position: static !important;
   width: 100% !important;
   max-width: 100% !important;
-  height: auto !important; /* Thay đổi thành auto để co giãn theo nội dung */
-  min-height: 100% !important;
+  height: 100% !important; /* Thay đổi thành 100% để lấp đầy main */
   opacity: 1 !important;
   visibility: visible !important;
   transform: none !important;
@@ -80,7 +77,7 @@
   border: none !important;
   display: flex;
   flex-direction: column;
-  overflow: visible !important; /* Cho phép sticky hiển thị */
+  overflow: hidden !important; /* Ngăn scroll toàn cục */
 }
 
 /* Sidebar History Title & Header */

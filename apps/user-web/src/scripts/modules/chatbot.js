@@ -875,13 +875,3 @@ function showGuestWarningModal() {
     modal.style.display = "flex";
   }
 }
-
-// Bắt sự kiện beforeunload trên trình duyệt
-window.addEventListener("beforeunload", (e) => {
-  const tempFavorites = sessionStorage.getItem("velura_temporary_favorites");
-  if (tempFavorites && JSON.parse(tempFavorites).length > 0) {
-    e.preventDefault();
-    e.returnValue = "Bạn đang trải nghiệm dưới quyền Khách vãng lai. Lịch sử phối đồ yêu thích tạm thời sẽ bị mất nếu bạn tải lại hoặc đóng trang!";
-    return e.returnValue;
-  }
-});
