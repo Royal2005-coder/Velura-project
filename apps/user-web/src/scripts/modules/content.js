@@ -105,11 +105,29 @@ async function initPolicyPage() {
         display_order: policy.display_order || 0
       }));
 
-    tabs.innerHTML = categorySource
-      .filter((category) => policies.some((policy) => policy.slug === category.slug))
-      .map((category, index) => renderPolicyTab(category, index === 0))
+    // Hỗ trợ nhảy trực tiếp tới tab từ URL (ví dụ: ?tab=faq)
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTabSlug = urlParams.get('tab');
+    let activeIndex = 0;
+    
+    // Lọc lại các danh mục có bài chính sách
+    const activeCategories = categorySource.filter((category) => policies.some((policy) => policy.slug === category.slug));
+
+    if (activeTabSlug) {
+      const foundIndex = activeCategories.findIndex(c => c.slug === activeTabSlug);
+      if (foundIndex !== -1) {
+        activeIndex = foundIndex;
+      }
+    }
+
+    tabs.innerHTML = activeCategories
+      .map((category, index) => renderPolicyTab(category, index === activeIndex))
       .join("");
-    content.innerHTML = policies.map((policy, index) => renderPolicyPanel(policy, index === 0)).join("");
+    content.innerHTML = policies.map((policy) => {
+      // Find the correct index in activeCategories for this policy
+      const catIndex = activeCategories.findIndex(c => c.slug === policy.slug);
+      return renderPolicyPanel(policy, catIndex === activeIndex);
+    }).join("");
     bindPolicyTabs();
   } catch (error) {
     console.warn("Policy content API unavailable.", error);
