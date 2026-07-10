@@ -1,6 +1,7 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
-import { addToCart } from "./cart.js";
+import { addToCart, getVariantImage } from "./cart.js";
+import { updateWishlistBadge } from "./wishlist.js";
 
 /**
  * ES6 Module: Homepage Controller
@@ -13,8 +14,35 @@ export function initHomepage() {
   const categoriesGrid = document.querySelector(".categories-section__grid");
   const productsGrid = document.querySelector(".products-section__grid");
 
+  // State
+  let wishlistedProductIds = new Set();
+
   // Load Homepage Data
   async function loadData() {
+    loadPolicyHighlights();
+
+    // Fetch user wishlist first to set up active classes
+    const token = localStorage.getItem("velura_token");
+    if (token) {
+      try {
+        const wishlistData = await apiRequest("/api/user/wishlist");
+        const items = wishlistData.items || [];
+        wishlistedProductIds = new Set(items.map(item => item.product_id));
+        localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+        updateWishlistBadge();
+      } catch (wishlistErr) {
+        console.error("Failed to load wishlist for homepage:", wishlistErr);
+      }
+    } else {
+      try {
+        const guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+        wishlistedProductIds = new Set(guestIds);
+        updateWishlistBadge();
+      } catch (guestErr) {
+        wishlistedProductIds = new Set();
+      }
+    }
+
     try {
       // 1. Fetch categories
       if (categoriesGrid) {
@@ -35,14 +63,18 @@ export function initHomepage() {
         console.error("Failed to fetch products for homepage:", prodErr);
       }
 
-      // 2. Fetch featured products
-      if (productsGrid && products.length > 0) {
-        // Limit to 8 products for the homepage section
-        const featuredProducts = products.filter(p => p.is_featured).slice(0, 8);
-        // If not enough featured, just take the first 8 products
-        const productsToRender = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 8);
+        // Get featured products that have sales, sorted by sold_count DESC
+        const activeFeatured = products
+          .filter(p => p.is_featured && (p.sold_count || 0) > 0)
+          .sort((a, b) => (b.sold_count || 0) - (a.sold_count || 0));
+        
+        // Get featured products that do not have sales yet
+        const quietFeatured = products
+          .filter(p => p.is_featured && (p.sold_count || 0) === 0);
+
+        // Combine both lists and take the top 8 (best-selling will always appear first)
+        const productsToRender = [...activeFeatured, ...quietFeatured].slice(0, 8);
         renderProducts(productsToRender);
-      }
 
       // 3. Fetch personalized products based on Style Profile body shape
       const personalizedSection = document.querySelector("#personalized-recommendations");
@@ -89,6 +121,45 @@ export function initHomepage() {
       }
     } catch (err) {
       console.error("Failed to load homepage data:", err);
+    }
+  }
+
+  async function loadPolicyHighlights() {
+    const cards = Array.from(document.querySelectorAll(".policies-section .policy-card"));
+    if (!cards.length) return;
+
+    try {
+      const result = await apiRequest("/api/content/policies");
+      const policies = result.rows || [];
+      const bySlug = new Map(policies.map((policy) => [policy.slug, policy]));
+      const highlights = [
+        {
+          policy: bySlug.get("shipping"),
+          title: "Miễn phí vận chuyển",
+          description: "Cho đơn hàng từ 500.000đ"
+        },
+        {
+          policy: bySlug.get("returns"),
+          title: "Đổi trả minh bạch",
+          description: "Gửi yêu cầu trong 48 giờ"
+        },
+        {
+          policy: bySlug.get("privacy"),
+          title: "Bảo mật Style Quiz",
+          description: "Dữ liệu dùng khép kín cho AI Stylist"
+        }
+      ];
+
+      highlights.forEach((item, index) => {
+        const card = cards[index];
+        if (!card) return;
+        const title = card.querySelector(".policy-card__title");
+        const desc = card.querySelector(".policy-card__desc");
+        if (title) title.textContent = item.title;
+        if (desc) desc.textContent = item.description || item.policy?.summary || "";
+      });
+    } catch (error) {
+      console.warn("Homepage policy highlights unavailable.", error);
     }
   }
 
@@ -152,6 +223,11 @@ export function initHomepage() {
         </a>
       `;
     }).join("");
+
+    setupHomepageCarousel(categoriesGrid, {
+      label: "Danh mục nổi bật",
+      scrollRatio: 0.75
+    });
   }
 
   // Render featured products
@@ -167,18 +243,58 @@ export function initHomepage() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
-      const badgeHtml = discountPercent > 0
-        ? `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`
-        : (product.is_featured ? `<span class="product-card__badge product-card__badge--best">HOT</span>` : "");
+      const isOutOfStock = product.status === "out_of_stock";
+
+      let badgeHtml = "";
+      if (isOutOfStock) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--out-of-stock" style="background:#555;color:#fff;">HẾT HÀNG</span>`;
+      } else if (discountPercent > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`;
+      } else if (product.is_combo) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
+      } else if ((product.sold_count || 0) > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--best">BÁN CHẠY</span>`;
+      } else if (product.is_featured) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--hot">NỔI BẬT</span>`;
+      }
+
+      const isWishlisted = wishlistedProductIds.has(product.product_id);
+      const wishlistClass = isWishlisted ? "active" : "";
+
+      const cardStyle = isOutOfStock ? "opacity: 0.6; filter: grayscale(100%); cursor: not-allowed;" : "";
+      const linkTag = isOutOfStock ? "div" : "a";
+      const linkHref = isOutOfStock ? "" : `href="/src/pages/products/detail.html?id=${product.product_id}"`;
+      const hoverHtml = isOutOfStock ? 
+        `<div class="product-card__img-hover" style="cursor: not-allowed;"><span class="btn-detail" style="background:#555; pointer-events:none;">Đã hết hàng</span></div>` :
+        `<div class="product-card__img-hover">
+              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
+            </div>`;
+
+      const actionsHtml = isOutOfStock ? `
+          <div class="product-card__actions" style="justify-content: center;">
+            <span style="color: #555; font-weight: bold;">HẾT HÀNG</span>
+          </div>
+      ` : `
+          <div class="product-card__actions">
+            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
+              <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+              <span>Mua ngay</span>
+            </a>
+            <button class="product-card__btn-cart js-add-cart-home" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
+              <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
+            </button>
+          </div>
+      `;
 
       return `
-        <article class="product-card" data-detail-url="/src/pages/products/detail.html?id=${product.product_id}">
+        <article class="product-card" style="${cardStyle}" ${isOutOfStock ? "" : `data-detail-url="/src/pages/products/detail.html?id=${product.product_id}"`}>
           <div class="product-card__img-wrapper">
             ${badgeHtml}
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
+            <${linkTag} ${linkHref} class="product-card__img-link">
               <img src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" class="product-card__img" />
-            </a>
-            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-home" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
+            </${linkTag}>
+            ${hoverHtml}
+            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-home ${wishlistClass}" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
@@ -192,31 +308,28 @@ export function initHomepage() {
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
               </span>
-              <span>4.8</span>
-              <span>(96)</span>
+              <span>${Number(product.rating_value || 0).toFixed(1)}</span>
+              <span>(${product.rating_count || 0})</span>
             </div>
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__title-link">
+            <${linkTag} ${linkHref} class="product-card__title-link">
               <h3 class="product-card__title">${product.name}</h3>
-            </a>
+            </${linkTag}>
             <div class="product-card__price-row">
               <span class="product-card__price">${formatVND(priceVal)}</span>
               ${oldPriceVal ? `<span class="product-card__price-old">${formatVND(oldPriceVal)}</span>` : ""}
             </div>
           </div>
-
-          <div class="product-card__actions">
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              Mua hàng
-            </a>
-            <button class="product-card__btn-cart js-add-cart-home" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              Thêm vào giỏ hàng
-            </button>
-          </div>
+          ${actionsHtml}
         </article>
       `;
     }).join("");
 
     bindHomeEvents(products);
+    setupHomepageCarousel(productsGrid, {
+      label: "Sản phẩm nổi bật",
+      scrollRatio: 0.95,
+      autoplay: "forward"
+    });
   }
 
   // Bind cart/wishlist click events
@@ -229,19 +342,52 @@ export function initHomepage() {
         e.preventDefault();
         e.stopPropagation();
         const productId = btn.getAttribute("data-id");
+        const isActive = btn.classList.contains("active");
+        const token = localStorage.getItem("velura_token");
+
         try {
-          await apiRequest("/api/user/wishlist", {
-            method: "POST",
-            body: { product_id: productId }
-          });
-          btn.classList.add("active");
-          showToast("Đã thêm vào danh sách yêu thích!");
-        } catch (err) {
-          if (err.status === 401) {
-            showToast("Vui lòng đăng nhập để lưu sản phẩm!");
+          if (token) {
+            if (isActive) {
+              await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              await apiRequest("/api/user/wishlist", {
+                method: "POST",
+                body: { product_id: productId }
+              });
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
           } else {
-            showToast(err.message || "Không thể lưu sản phẩm");
+            let guestIds = [];
+            try {
+              guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+            } catch {
+              guestIds = [];
+            }
+
+            if (isActive) {
+              guestIds = guestIds.filter(id => id !== productId);
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              if (!guestIds.includes(productId)) {
+                guestIds.push(productId);
+              }
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_guest_wishlist", JSON.stringify(guestIds));
           }
+          updateWishlistBadge();
+        } catch (err) {
+          showToast(err.message || "Không thể lưu sản phẩm");
         }
       });
     });
@@ -259,7 +405,7 @@ export function initHomepage() {
             variant_id: matchedVariant.variant_id,
             product_id: prod.product_id,
             product_name: prod.name,
-            product_image: prod.images?.[0] || "",
+            product_image: getVariantImage(prod, matchedVariant.color || "Mặc định"),
             quantity: 1,
             unit_price: prod.sale_price || prod.base_price,
             color: matchedVariant.color || "Mặc định",
@@ -283,18 +429,58 @@ export function initHomepage() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
-      const badgeHtml = discountPercent > 0
-        ? `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`
-        : (product.is_featured ? `<span class="product-card__badge product-card__badge--best">HOT</span>` : "");
+      const isOutOfStock = product.status === "out_of_stock";
+
+      let badgeHtml = "";
+      if (isOutOfStock) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--out-of-stock" style="background:#555;color:#fff;">HẾT HÀNG</span>`;
+      } else if (discountPercent > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--sale">-${discountPercent}%</span>`;
+      } else if (product.is_combo) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
+      } else if ((product.sold_count || 0) > 0) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--best">BÁN CHẠY</span>`;
+      } else if (product.is_featured) {
+        badgeHtml = `<span class="product-card__badge product-card__badge--hot">NỔI BẬT</span>`;
+      }
+
+      const isWishlisted = wishlistedProductIds.has(product.product_id);
+      const wishlistClass = isWishlisted ? "active" : "";
+
+      const cardStyle = isOutOfStock ? "opacity: 0.6; filter: grayscale(100%); cursor: not-allowed;" : "";
+      const linkTag = isOutOfStock ? "div" : "a";
+      const linkHref = isOutOfStock ? "" : `href="/src/pages/products/detail.html?id=${product.product_id}"`;
+      const hoverHtml = isOutOfStock ? 
+        `<div class="product-card__img-hover" style="cursor: not-allowed;"><span class="btn-detail" style="background:#555; pointer-events:none;">Đã hết hàng</span></div>` :
+        `<div class="product-card__img-hover">
+              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
+            </div>`;
+
+      const actionsHtml = isOutOfStock ? `
+          <div class="product-card__actions" style="justify-content: center;">
+            <span style="color: #555; font-weight: bold;">HẾT HÀNG</span>
+          </div>
+      ` : `
+          <div class="product-card__actions">
+            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
+              <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+              <span>Mua ngay</span>
+            </a>
+            <button class="product-card__btn-cart js-add-cart-personalized" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
+              <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
+            </button>
+          </div>
+      `;
 
       return `
-        <article class="product-card" data-detail-url="/src/pages/products/detail.html?id=${product.product_id}">
+        <article class="product-card" style="${cardStyle}" ${isOutOfStock ? "" : `data-detail-url="/src/pages/products/detail.html?id=${product.product_id}"`}>
           <div class="product-card__img-wrapper">
             ${badgeHtml}
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
+            <${linkTag} ${linkHref} class="product-card__img-link">
               <img src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" class="product-card__img" />
-            </a>
-            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-personalized" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
+            </${linkTag}>
+            ${hoverHtml}
+            <button class="btn-icon product-card__btn-wishlist card__wishlist-btn js-add-wishlist-personalized ${wishlistClass}" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
@@ -308,26 +494,18 @@ export function initHomepage() {
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
               </span>
-              <span>4.8</span>
-              <span>(96)</span>
+              <span>${Number(product.rating_value || 0).toFixed(1)}</span>
+              <span>(${product.rating_count || 0})</span>
             </div>
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__title-link">
+            <${linkTag} ${linkHref} class="product-card__title-link">
               <h3 class="product-card__title">${product.name}</h3>
-            </a>
+            </${linkTag}>
             <div class="product-card__price-row">
               <span class="product-card__price">${formatVND(priceVal)}</span>
               ${oldPriceVal ? `<span class="product-card__price-old">${formatVND(oldPriceVal)}</span>` : ""}
             </div>
           </div>
-
-          <div class="product-card__actions">
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              Mua hàng
-            </a>
-            <button class="product-card__btn-cart js-add-cart-personalized" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              Thêm vào giỏ hàng
-            </button>
-          </div>
+          ${actionsHtml}
         </article>
       `;
     }).join("");
@@ -341,19 +519,52 @@ export function initHomepage() {
         e.preventDefault();
         e.stopPropagation();
         const productId = btn.getAttribute("data-id");
+        const isActive = btn.classList.contains("active");
+        const token = localStorage.getItem("velura_token");
+
         try {
-          await apiRequest("/api/user/wishlist", {
-            method: "POST",
-            body: { product_id: productId }
-          });
-          btn.classList.add("active");
-          showToast("Đã thêm vào danh sách yêu thích!");
-        } catch (err) {
-          if (err.status === 401) {
-            showToast("Vui lòng đăng nhập để lưu sản phẩm!");
+          if (token) {
+            if (isActive) {
+              await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              await apiRequest("/api/user/wishlist", {
+                method: "POST",
+                body: { product_id: productId }
+              });
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
           } else {
-            showToast(err.message || "Không thể lưu sản phẩm");
+            let guestIds = [];
+            try {
+              guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+            } catch {
+              guestIds = [];
+            }
+
+            if (isActive) {
+              guestIds = guestIds.filter(id => id !== productId);
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              if (!guestIds.includes(productId)) {
+                guestIds.push(productId);
+              }
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_guest_wishlist", JSON.stringify(guestIds));
           }
+          updateWishlistBadge();
+        } catch (err) {
+          showToast(err.message || "Không thể lưu sản phẩm");
         }
       });
     });
@@ -371,7 +582,7 @@ export function initHomepage() {
             variant_id: matchedVariant.variant_id,
             product_id: prod.product_id,
             product_name: prod.name,
-            product_image: prod.images?.[0] || "",
+            product_image: getVariantImage(prod, matchedVariant.color || "Mặc định"),
             quantity: 1,
             unit_price: prod.sale_price || prod.base_price,
             color: matchedVariant.color || "Mặc định",
@@ -403,47 +614,43 @@ export function initHomepage() {
     const COLLECTION_META = {
       'Soft Ceremony': {
         id: 'soft-ceremony',
-        vnName: 'Nghi lễ Dịu dàng',
+        vnName: 'Soft Ceremony',
         badge: 'ELEGANT',
-        story: 'Những thiết kế mang phom dáng bất đối xứng tôn eo, gam màu thanh nhã mang đến vẻ ngoài sang trọng.',
-        banner: '/src/assets/images/collection-1.png'
+        story: 'Những thiết kế mềm mại, tinh tế cho những dịp tiệc nhẹ, hẹn hò và các buổi gặp gỡ đặc biệt — sang trọng, hiện đại, dễ ứng dụng.',
+        banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Soft-Ceremony_cover.png'
       },
       'The Urban Rhythm': {
         id: 'the-urban-rhythm',
-        vnName: 'Nhịp điệu Đô thị',
+        vnName: 'The Urban Rhythm',
         badge: 'CASUAL',
-        story: 'Tập trung vào sự linh hoạt giữa phong cách công sở và dạo phố hiện đại. Chất liệu linen tự nhiên kết hợp lụa mềm mại.',
-        banner: '/src/assets/images/collection-2.png'
-      },
-      'Modern Academia': {
-        id: 'modern-academia',
-        vnName: 'Học viện Hiện đại',
-        badge: 'PREPPY',
-        story: 'Cảm hứng từ phong cách Preppy học đường pha chút phá cách hiện đại, sử dụng các gam màu ấm và họa tiết kẻ thanh lịch.',
-        banner: '/src/assets/images/image-4.png'
+        story: 'Phom dáng hiện đại, đường cắt sắc sảo — bảng màu beige, charcoal, olive dễ mix-and-match cho cả ngày làm việc bận rộn lẫn buổi dạo phố cuối tuần.',
+        banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/Velura_urban-rythm_cover.png'
       },
       'Weekend Escape': {
         id: 'weekend-escape',
-        vnName: 'Trốn chạy Cuối tuần',
+        vnName: 'Weekend Escape',
         badge: 'TRAVEL',
-        story: 'Bộ sưu tập của những chuyến đi ngẫu hứng đầy nắng và gió. Các chất liệu Linen mộc mạc và Silk mát mẻ.',
-        banner: '/src/assets/images/about_01.jpg'
+        story: 'Phom dáng nhẹ nhàng, chất liệu thoáng mát — dạo phố, cà phê hay du lịch đều thoải mái, thanh lịch trong mọi hành trình.',
+        banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Weekend-Escape_cover.png'
       },
       'Midnight Mirage': {
         id: 'midnight-mirage',
-        vnName: 'Ảo ảnh Nửa đêm',
-        badge: 'PARTY',
-        story: 'Sự đan xen quyến rũ của các đường khoét vai tinh tế, chất liệu len dệt kim móc (crochet) cá tính.',
-        banner: '/src/assets/images/image-5.png'
+        vnName: 'Midnight Mirage',
+        badge: 'STREET',
+        story: 'Street style Hàn Quốc — Grunge, Campus Girl, Y2K Minimal. Bảng màu trung tính pha pastel, trẻ trung và dễ phối đồ mọi ngày.',
+        banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_Midnight-Mirage_cover.png'
       },
       'The Afterglow': {
         id: 'the-afterglow',
-        vnName: 'Rực rỡ Hoàng hôn',
+        vnName: 'The Afterglow',
         badge: 'COUTURE',
-        story: 'Dòng sản phẩm dạ hội cao cấp nhất của Velura. Phom dáng đầm xòe phồng, đầm đuôi cá kết hợp kỹ thuật xếp nếp.',
-        banner: '/src/assets/images/about_03.jpg'
+        story: 'Dư âm vương giả — lụa satin, corset tinh tế và sắc hồng tulle cùng xanh Sapphire tôn vinh vẻ đẹp kiêu sa, lộng lẫy như một tiểu thư vương giả.',
+        banner: 'https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/velura_The-Afterglow_cover.png'
       }
     };
+
+    // Fixed display order — only show the 5 official collections, in this exact sequence
+    const DISPLAY_ORDER = ['Soft Ceremony', 'The Urban Rhythm', 'Weekend Escape', 'Midnight Mirage', 'The Afterglow'];
 
     const getMeta = (name) => {
       return COLLECTION_META[name] || {
@@ -460,7 +667,10 @@ export function initHomepage() {
       return;
     }
 
-    collectionsGrid.innerHTML = uniqueColNames.map(colName => {
+    // Render in fixed order — only collections that exist in DB AND are in DISPLAY_ORDER
+    const orderedColNames = DISPLAY_ORDER.filter(name => uniqueColNames.includes(name));
+
+    collectionsGrid.innerHTML = orderedColNames.map(colName => {
       const meta = getMeta(colName);
       return `
         <a href="/src/pages/collections.html?id=${meta.id}" class="collection-card" data-bind="collection.detail_url">
@@ -475,6 +685,127 @@ export function initHomepage() {
         </a>
       `;
     }).join("");
+
+    setupHomepageCarousel(collectionsGrid, {
+      label: "Bộ sưu tập đặc biệt",
+      scrollRatio: 0.9,
+      autoplay: "backward"
+    });
+  }
+
+  function setupHomepageCarousel(track, options = {}) {
+    if (!track) return;
+
+    const section = track.closest("section");
+    if (!section) return;
+
+    section.classList.add("home-carousel");
+    track.classList.add("home-carousel__track");
+    track.setAttribute("tabindex", "0");
+
+    section.querySelectorAll(".home-carousel__arrow, .home-carousel__progress").forEach((el) => el.remove());
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "home-carousel__arrow home-carousel__arrow--prev";
+    prevBtn.setAttribute("aria-label", `Trượt ${options.label || "nội dung"} sang trái`);
+    prevBtn.innerHTML = `<span aria-hidden="true">‹</span>`;
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "home-carousel__arrow home-carousel__arrow--next";
+    nextBtn.setAttribute("aria-label", `Trượt ${options.label || "nội dung"} sang phải`);
+    nextBtn.innerHTML = `<span aria-hidden="true">›</span>`;
+
+    const progress = document.createElement("div");
+    progress.className = "home-carousel__progress";
+    progress.setAttribute("aria-hidden", "true");
+    progress.innerHTML = `<span class="home-carousel__progress-bar"></span>`;
+
+    section.append(prevBtn, nextBtn, progress);
+
+    const getScrollStep = () => Math.max(track.clientWidth * (options.scrollRatio || 0.85), 240);
+
+    const updateState = () => {
+      const maxScroll = Math.max(track.scrollWidth - track.clientWidth, 0);
+      const current = Math.min(Math.max(track.scrollLeft, 0), maxScroll);
+      const hasOverflow = maxScroll > 8;
+      const progressBar = progress.querySelector(".home-carousel__progress-bar");
+      const viewportRatio = hasOverflow ? Math.max(track.clientWidth / track.scrollWidth, 0.18) : 1;
+      const travelRatio = hasOverflow ? current / maxScroll : 0;
+      const maxTranslate = Math.max((1 / viewportRatio - 1) * 100, 0);
+
+      section.classList.toggle("home-carousel--static", !hasOverflow);
+      prevBtn.disabled = !hasOverflow || current <= 4;
+      nextBtn.disabled = !hasOverflow || current >= maxScroll - 4;
+
+      if (progressBar) {
+        progressBar.style.width = `${viewportRatio * 100}%`;
+        progressBar.style.transform = `translateX(${travelRatio * maxTranslate}%)`;
+      }
+    };
+
+    prevBtn.addEventListener("click", () => {
+      track.scrollBy({ left: -getScrollStep(), behavior: "smooth" });
+    });
+
+    nextBtn.addEventListener("click", () => {
+      track.scrollBy({ left: getScrollStep(), behavior: "smooth" });
+    });
+
+    track.addEventListener("scroll", updateState, { passive: true });
+    window.addEventListener("resize", updateState, { passive: true });
+    requestAnimationFrame(updateState);
+    setTimeout(updateState, 250);
+
+    // --- AUTOPLAY LOGIC WITH DIRECTION & PAUSE ON HOVER ---
+    let autoplayInterval = null;
+    let isHovering = false;
+
+    const startAutoplay = () => {
+      if (!options.autoplay) return;
+      stopAutoplay();
+      autoplayInterval = setInterval(() => {
+        if (isHovering) return;
+        const maxScroll = Math.max(track.scrollWidth - track.clientWidth, 0);
+        if (maxScroll <= 8) return;
+
+        const step = getScrollStep();
+        if (options.autoplay === "forward") {
+          // Slide forward: if near the end, go smoothly to beginning, otherwise scroll next
+          if (track.scrollLeft >= maxScroll - 16) {
+            track.scrollTo({ left: 0, behavior: "smooth" });
+          } else {
+            track.scrollBy({ left: step, behavior: "smooth" });
+          }
+        } else if (options.autoplay === "backward") {
+          // Slide backward: if near the beginning, go smoothly to the end, otherwise scroll prev
+          if (track.scrollLeft <= 16) {
+            track.scrollTo({ left: maxScroll, behavior: "smooth" });
+          } else {
+            track.scrollBy({ left: -step, behavior: "smooth" });
+          }
+        }
+      }, 2500);
+    };
+
+    const stopAutoplay = () => {
+      if (autoplayInterval) {
+        clearInterval(autoplayInterval);
+        autoplayInterval = null;
+      }
+    };
+
+    section.addEventListener("mouseenter", () => {
+      isHovering = true;
+    });
+
+    section.addEventListener("mouseleave", () => {
+      isHovering = false;
+    });
+
+    // Start sliding
+    startAutoplay();
   }
 
   loadData();

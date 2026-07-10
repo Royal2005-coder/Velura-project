@@ -1,6 +1,8 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
-import { addToCart } from "./cart.js";
+import { addToCart, getVariantImage } from "./cart.js";
+import { getCurrentRole } from "./auth-session.js";
+import { updateWishlistBadge } from "./wishlist.js";
 
 /**
  * ES6 Module: Product Catalog Controller
@@ -34,8 +36,9 @@ export function initProductCatalog() {
   const itemsPerPage = 12;
   let hasStyleProfile = false;
   let userBodyShape = "";
-  let isSuggestionsEnabled = localStorage.getItem("velura_suggestions_enabled") !== "false";
+  let isSuggestionsEnabled = localStorage.getItem("velura_suggestions_enabled") === "true";
   let quizData = null;
+  const isMember = () => getCurrentRole() === "member";
 
   const CATEGORY_MAP = {
     top: "ao",
@@ -254,7 +257,7 @@ export function initProductCatalog() {
     const fitHelperEl = document.querySelector(".fit-helper");
     const lockOverlay = document.querySelector(".js-body-shape-lock");
     const shapeListContainer = document.querySelector(".js-body-shape-list");
-    const isLoggedIn = !!localStorage.getItem("velura_token");
+    const isLoggedIn = isMember();
 
     if (hasStyleProfile && quizData) {
       if (lockOverlay) lockOverlay.style.display = "none";
@@ -330,6 +333,31 @@ export function initProductCatalog() {
         `;
       }
     }
+
+    applyMemberFeatureGate();
+  }
+
+  function applyMemberFeatureGate() {
+    const group = document.getElementById("body-shape-filter-group");
+    const lockOverlay = document.querySelector(".js-body-shape-lock");
+    const shapeListContainer = document.querySelector(".js-body-shape-list");
+    if (!group || !lockOverlay || !shapeListContainer || isMember()) return;
+
+    shapeListContainer.style.opacity = "0.5";
+    shapeListContainer.style.filter = "blur(2px)";
+    shapeListContainer.style.pointerEvents = "none";
+
+    lockOverlay.style.display = "flex";
+    lockOverlay.style.cursor = "pointer";
+    lockOverlay.innerHTML = `
+      <div class="member-lock-badge">
+        <span aria-hidden="true">🔒</span>
+        Chỉ thành viên. Lọc theo dáng người - đăng ký để mở khóa.
+      </div>
+    `;
+    lockOverlay.addEventListener("click", () => {
+      window.location.href = "/src/pages/auth/signup.html";
+    }, { once: true });
   }
 
   // Initialize
@@ -345,6 +373,11 @@ export function initProductCatalog() {
         const nameLower = (p.name || "").toLowerCase();
         return !nameLower.includes("test") && !nameLower.includes("validation") && !nameLower.includes("commit");
       });
+
+      // Dynamically calculate max price filter based on database product prices early
+      if (allProducts.length > 0) {
+        maxProductPrice = Math.max(...allProducts.map(p => p.sale_price || p.base_price), 5000000);
+      }
 
       // Fetch style profile
       try {
@@ -395,6 +428,11 @@ export function initProductCatalog() {
           specialCheckboxes.forEach(cb => cb.checked = false);
           shapeCheckboxes.forEach(cb => cb.checked = false);
 
+          // Disable AI suggestions when user manually clears filters
+          isSuggestionsEnabled = false;
+          localStorage.setItem("velura_suggestions_enabled", "false");
+          updateFitHelperUI();
+
           applyFiltersAndSort();
           showToast("Đã xóa toàn bộ bộ lọc");
         });
@@ -402,11 +440,18 @@ export function initProductCatalog() {
 
       // Fetch user wishlist to initialize state
       try {
-        const wishlistData = await apiRequest("/api/user/wishlist");
-        const items = wishlistData.items || [];
-        wishlistedProductIds = new Set(items.map(item => item.product_id));
+        const token = localStorage.getItem("velura_token");
+        if (token) {
+          const wishlistData = await apiRequest("/api/user/wishlist");
+          const items = wishlistData.items || [];
+          wishlistedProductIds = new Set(items.map(item => item.product_id));
+          localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+        } else {
+          const guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+          wishlistedProductIds = new Set(guestIds);
+        }
+        updateWishlistBadge();
       } catch (wishlistErr) {
-        // Quietly fail if guest
         wishlistedProductIds = new Set();
       }
       
@@ -414,6 +459,8 @@ export function initProductCatalog() {
       const urlParams = new URLSearchParams(window.location.search);
       const categoryParam = urlParams.get("category");
       const qParam = urlParams.get("q");
+      const specialParam = urlParams.get("special");
+      const sortParam = urlParams.get("sort");
 
       if (categoryParam) {
         categoryCheckboxes.forEach(cb => {
@@ -429,12 +476,25 @@ export function initProductCatalog() {
         }
       }
 
-      // Dynamically calculate and set max price filter based on database product prices
-      if (allProducts.length > 0) {
-        maxProductPrice = Math.max(...allProducts.map(p => p.sale_price || p.base_price), 5000000);
-        // Do not overwrite max value if already set by budget_range
-        if (priceInputs[1] && !hasStyleProfile) {
-          priceInputs[1].value = maxProductPrice;
+      if (specialParam) {
+        const specialVals = specialParam.split(",");
+        const specialCheckboxes = document.querySelectorAll('input[name="special"]');
+        specialCheckboxes.forEach(cb => {
+          if (specialVals.includes(cb.value)) {
+            cb.checked = true;
+          }
+        });
+      }
+
+      if (sortParam && sortSelect) {
+        sortSelect.value = sortParam;
+      }
+
+      // Set max price limit input value if suggestions are not active
+      if (priceInputs[1] && !isSuggestionsEnabled) {
+        priceInputs[1].value = maxProductPrice;
+        if (priceRangeText) {
+          priceRangeText.textContent = `0₫ – ${maxProductPrice.toLocaleString('vi-VN')}₫`;
         }
       }
 
@@ -536,69 +596,23 @@ export function initProductCatalog() {
       p.relevanceScore = score;
       return p;
     }).filter(p => {
-      // Search query filter
-      if (qParam) {
-        const query = qParam.toLowerCase().trim();
-        const tokens = query.split(/\s+/).filter(t => t.length > 0);
-        const matchesAllTokens = tokens.every(token => {
-          const matchesName = (p.name || "").toLowerCase().includes(token);
-          const matchesDesc = (p.description || "").toLowerCase().includes(token);
-          const matchesBrand = (p.brand || "").toLowerCase().includes(token);
-          
-          let matchesCategory = (p.category_slug || "").toLowerCase().includes(token);
-          if (token === "áo" && p.category_slug === "ao") matchesCategory = true;
-          if (token === "quần" && p.category_slug === "quan") matchesCategory = true;
-          if (token === "đầm" && p.category_slug === "dam-vay") matchesCategory = true;
-          if (token === "váy" && p.category_slug === "dam-vay") matchesCategory = true;
-          if (token === "giày" && p.category_slug === "giay-dep") matchesCategory = true;
-          if (token === "dép" && p.category_slug === "giay-dep") matchesCategory = true;
-          if (token === "phụ" && p.category_slug === "phu-kien") matchesCategory = true;
-          if (token === "kiện" && p.category_slug === "phu-kien") matchesCategory = true;
-          if (token === "túi" && p.category_slug === "phu-kien") matchesCategory = true;
-          if (token === "xách" && p.category_slug === "phu-kien") matchesCategory = true;
-
-          const matchesVariants = p.variants?.some(v => {
-            if ((v.size || "").toLowerCase() === token) return true;
-            const cn = (v.color || "").toLowerCase();
-            if (token === "trắng" || token === "white") {
-              return cn.includes("white") || cn.includes("ivory") || cn.includes("cream") || cn.includes("champagne") || cn.includes("sakura white") || cn.includes("off-white");
-            }
-            if (token === "đen" || token === "black") {
-              return cn.includes("black") || cn.includes("onyx") || cn.includes("charcoal") || cn.includes("slate") || cn.includes("midnight");
-            }
-            if (token === "hồng" || token === "pink") {
-              return cn.includes("pink") || cn.includes("rose") || cn.includes("blush") || cn.includes("sakura");
-            }
-            if (token === "xanh" || token === "blue" || token === "green") {
-              return cn.includes("blue") || cn.includes("green") || cn.includes("sage") || cn.includes("mint") || cn.includes("emerald") || cn.includes("slate");
-            }
-            if (token === "vàng" || token === "yellow" || token === "gold") {
-              return cn.includes("yellow") || cn.includes("gold") || cn.includes("butter");
-            }
-            if (token === "nâu" || token === "brown") {
-              return cn.includes("brown") || cn.includes("cocoa") || cn.includes("mocha") || cn.includes("coffee") || cn.includes("espresso") || cn.includes("cinnamon");
-            }
-            if (token === "xám" || token === "gray" || token === "grey") {
-              return cn.includes("gray") || cn.includes("grey") || cn.includes("pewter") || cn.includes("slate") || cn.includes("charcoal");
-            }
-            if (token === "kem" || token === "beige") {
-              return cn.includes("cream") || cn.includes("beige") || cn.includes("buttercream") || cn.includes("sand") || cn.includes("oat");
-            }
-            if (token === "đỏ" || token === "red") {
-              return cn.includes("red") || cn.includes("burgundy") || cn.includes("terracotta") || cn.includes("cinnamon");
-            }
-            return cn.includes(token);
-          });
-
-          return matchesName || matchesDesc || matchesBrand || matchesCategory || matchesVariants;
-        });
-
-        if (!matchesAllTokens) return false;
+      // Search query filter based on computed relevanceScore
+      if (qParam && p.relevanceScore <= 0) {
+        return false;
       }
 
       // Category Filter
       if (checkedCategories.length > 0) {
-        if (!checkedCategories.includes(p.category_slug)) return false;
+        let isCategoryMatch = checkedCategories.includes(p.category_slug);
+        
+        // Bổ sung fallback cho Set đồ: nếu sản phẩm là combo hoặc tên có chữ "set" (đứng độc lập) thì cũng được tính là Set đồ
+        if (!isCategoryMatch && checkedCategories.includes("set-do")) {
+          if (p.is_combo || (p.name && /\\bset\\b/i.test(p.name))) {
+            isCategoryMatch = true;
+          }
+        }
+        
+        if (!isCategoryMatch) return false;
       }
 
       // Brand Filter
@@ -683,7 +697,7 @@ export function initProductCatalog() {
     } else if (sortVal === "price-desc") {
       filtered.sort((a, b) => (b.sale_price || b.base_price) - (a.sale_price || a.base_price));
     } else if (sortVal === "popular") {
-      filtered.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
+      filtered.sort((a, b) => (b.sold_count || 0) - (a.sold_count || 0));
     } else {
       // newest default
       filtered.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
@@ -757,9 +771,20 @@ export function initProductCatalog() {
       const oldPriceVal = product.sale_price && product.base_price > product.sale_price ? product.base_price : null;
 
       const discountPercent = oldPriceVal ? Math.round((1 - priceVal / oldPriceVal) * 100) : 0;
-      const badgeHtml = discountPercent > 0
-        ? `<span class="card__badge card__badge--sale">-${discountPercent}%</span>`
-        : (product.is_featured ? `<span class="card__badge" style="background:#A18265;color:#fff;">HOT</span>` : "");
+      const isOutOfStock = product.status === "out_of_stock";
+      
+      let badgeHtml = "";
+      if (isOutOfStock) {
+        badgeHtml = `<span class="card__badge card__badge--out-of-stock" style="background:#555;color:#fff;">HẾT HÀNG</span>`;
+      } else if (discountPercent > 0) {
+        badgeHtml = `<span class="card__badge card__badge--sale">-${discountPercent}%</span>`;
+      } else if (product.is_combo) {
+        badgeHtml = `<span class="card__badge card__badge--new" style="background:#4A90E2;color:#fff;">COMBO</span>`;
+      } else if ((product.sold_count || 0) > 0) {
+        badgeHtml = `<span class="card__badge card__badge--hot">BÁN CHẠY</span>`;
+      } else if (product.is_featured) {
+        badgeHtml = `<span class="card__badge card__badge--new">NỔI BẬT</span>`;
+      }
 
       // Get unique colors with their hex codes from the variants
       const colorMap = new Map();
@@ -775,13 +800,23 @@ export function initProductCatalog() {
       const isWishlisted = wishlistedProductIds.has(product.product_id);
       const wishlistClass = isWishlisted ? "active" : "";
 
+      const cardStyle = isOutOfStock ? "opacity: 0.6; filter: grayscale(100%); cursor: not-allowed;" : "";
+      const linkTag = isOutOfStock ? "div" : "a";
+      const linkHref = isOutOfStock ? "" : `href="/src/pages/products/detail.html?id=${product.product_id}"`;
+      const hoverHtml = isOutOfStock ? 
+        `<div class="product-card__img-hover" style="cursor: not-allowed;"><span class="btn-detail" style="background:#555; pointer-events:none;">Đã hết hàng</span></div>` :
+        `<div class="product-card__img-hover">
+              <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-detail">Xem chi tiết</a>
+            </div>`;
+
       return `
-        <article class="card card--product" data-detail-url="/src/pages/products/detail.html?id=${product.product_id}">
+        <article class="card card--product" style="${cardStyle}" ${isOutOfStock ? "" : `data-detail-url="/src/pages/products/detail.html?id=${product.product_id}"`}>
           <div class="card__image-container product-card__image-wrapper">
             ${badgeHtml}
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="product-card__img-link">
+            <${linkTag} ${linkHref} class="product-card__img-link">
               <img class="card__img" src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" />
-            </a>
+            </${linkTag}>
+            ${hoverHtml}
             <button class="card__wishlist-btn js-add-wishlist-catalog ${wishlistClass}" type="button" aria-label="Yêu thích" data-id="${product.product_id}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
@@ -795,10 +830,10 @@ export function initProductCatalog() {
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
               </span>
-              <span>4.8</span>
-              <span>(96)</span>
+              <span>${Number(product.rating_value || 0).toFixed(1)}</span>
+              <span>(${product.rating_count || 0})</span>
             </div>
-            <a href="/src/pages/products/detail.html?id=${product.product_id}" class="card__title">${product.name}</a>
+            <${linkTag} ${linkHref} class="card__title">${product.name}</${linkTag}>
             <p class="card__excerpt">${product.description || ""}</p>
             <div class="card__colors">
               ${colorDotsHtml}
@@ -810,10 +845,11 @@ export function initProductCatalog() {
           </div>
           <div class="card__actions">
             <a href="/src/pages/products/detail.html?id=${product.product_id}" class="btn-buy">
-              Mua hàng
+              <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+              <span>Mua ngay</span>
             </a>
-            <button class="card__btn-cart js-add-cart-catalog" type="button" aria-label="Thêm vào giỏ hàng" data-id="${product.product_id}">
-              Thêm vào giỏ hàng
+            <button class="card__btn-cart js-add-cart-catalog" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
+              <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
             </button>
           </div>
         </article>
@@ -850,6 +886,11 @@ export function initProductCatalog() {
       input.value = "";
     });
 
+    // Disable AI suggestions when resetting
+    isSuggestionsEnabled = false;
+    localStorage.setItem("velura_suggestions_enabled", "false");
+    updateFitHelperUI();
+
     applyFiltersAndSort();
   }
 
@@ -870,27 +911,51 @@ export function initProductCatalog() {
         e.stopPropagation();
         const productId = btn.getAttribute("data-id");
         const isActive = btn.classList.contains("active");
+        const token = localStorage.getItem("velura_token");
+
         try {
-          if (isActive) {
-            await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
-            btn.classList.remove("active");
-            wishlistedProductIds.delete(productId);
-            showToast("Đã xóa khỏi danh sách yêu thích");
+          if (token) {
+            if (isActive) {
+              await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              await apiRequest("/api/user/wishlist", {
+                method: "POST",
+                body: { product_id: productId }
+              });
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
           } else {
-            await apiRequest("/api/user/wishlist", {
-              method: "POST",
-              body: { product_id: productId }
-            });
-            btn.classList.add("active");
-            wishlistedProductIds.add(productId);
-            showToast("Đã thêm vào danh sách yêu thích!");
+            let guestIds = [];
+            try {
+              guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+            } catch {
+              guestIds = [];
+            }
+
+            if (isActive) {
+              guestIds = guestIds.filter(id => id !== productId);
+              btn.classList.remove("active");
+              wishlistedProductIds.delete(productId);
+              showToast("Đã xóa khỏi danh sách yêu thích");
+            } else {
+              if (!guestIds.includes(productId)) {
+                guestIds.push(productId);
+              }
+              btn.classList.add("active");
+              wishlistedProductIds.add(productId);
+              showToast("Đã thêm vào danh sách yêu thích!");
+            }
+            localStorage.setItem("velura_guest_wishlist", JSON.stringify(guestIds));
           }
+          updateWishlistBadge();
         } catch (err) {
-          if (err.status === 401) {
-            showToast("Vui lòng đăng nhập để lưu sản phẩm!");
-          } else {
-            showToast(err.message || "Không thể thực hiện thao tác");
-          }
+          showToast(err.message || "Không thể thực hiện thao tác");
         }
       });
     });
@@ -903,12 +968,12 @@ export function initProductCatalog() {
         const productId = btn.getAttribute("data-id");
         const prod = productsList.find(x => x.product_id === productId);
         if (prod && prod.variants && prod.variants.length > 0) {
-          const matchedVariant = prod.variants[0]; // Pick first variant
+          const matchedVariant = prod.variants[0];
           addToCart({
             variant_id: matchedVariant.variant_id,
             product_id: prod.product_id,
             product_name: prod.name,
-            product_image: prod.images?.[0] || "",
+            product_image: getVariantImage(prod, matchedVariant.color || "Mặc định"),
             quantity: 1,
             unit_price: prod.sale_price || prod.base_price,
             color: matchedVariant.color || "Mặc định",

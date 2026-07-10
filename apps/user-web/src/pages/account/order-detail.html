@@ -136,6 +136,9 @@
           </div>
         </div>
 
+        <!-- Return Status Card -->
+        <div id="js-return-status-container" style="display:none;"></div>
+
         <!-- Products Card -->
         <div class="detail-card detail-products-card">
           <h2 class="detail-section-title" id="js-products-count">Sản phẩm (2)</h2>
@@ -226,6 +229,46 @@
         <div class="detail-card detail-action-card" id="js-action-card">
           <h3 class="detail-action-title">Hành động</h3>
           <button class="detail-support-btn" type="button">Liên hệ hỗ trợ</button>
+        </div>
+
+        <!-- Cancel Order Modal -->
+        <div class="review-popup" id="js-cancel-order-modal">
+          <div class="review-popup__overlay js-close-cancel"></div>
+          <div class="review-popup__content" style="max-width: 480px; width: 90%; text-align: left; background: var(--bg-card, #fff); border: 1px solid var(--border); padding: 24px; border-radius: 8px;">
+            <button class="review-popup__close js-close-cancel" type="button" aria-label="Đóng" style="position: absolute; top: 16px; right: 16px; background: transparent; border: none; cursor: pointer;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            <h3 class="review-popup__title" style="margin-bottom: 12px; font-size: 1.25rem; font-family: var(--font-display, serif); color: var(--text-dark);">Hủy đơn hàng</h3>
+            <p style="color: var(--soft); font-size: 0.875rem; margin-bottom: 20px; line-height: 1.5;">Vui lòng chọn lý do hủy đơn hàng của bạn. Hành động này không thể hoàn tác.</p>
+
+            <div style="margin-bottom: 16px;">
+              <label for="js-cancel-reason-select" style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--soft); margin-bottom: 8px;">Lý do hủy *</label>
+              <select id="js-cancel-reason-select" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9375rem; background-color: var(--bg-input, transparent); color: var(--text-dark);">
+                <option value="Thay đổi ý định">Thay đổi ý định</option>
+                <option value="Nhập sai thông tin giao hàng">Nhập sai thông tin giao hàng</option>
+                <option value="Tìm thấy sản phẩm rẻ hơn">Tìm thấy sản phẩm rẻ hơn</option>
+                <option value="Đặt trùng đơn hàng">Đặt trùng đơn hàng</option>
+                <option value="Thời gian giao hàng quá lâu">Thời gian giao hàng quá lâu</option>
+                <option value="Khác">Lý do khác...</option>
+              </select>
+            </div>
+
+            <div id="js-cancel-reason-other-container" style="margin-bottom: 16px; display: none;">
+              <label for="js-cancel-reason-other" style="display: block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--soft); margin-bottom: 8px;">Chi tiết lý do *</label>
+              <textarea id="js-cancel-reason-other" placeholder="Vui lòng nhập lý do khác..." style="width: 100%; height: 80px; padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9375rem; resize: vertical; background-color: var(--bg-input, transparent); color: var(--text-dark);"></textarea>
+            </div>
+
+            <div class="review-popup__actions" style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+              <button class="btn btn--outline js-close-cancel" type="button" style="min-width: 100px; padding: 10px 20px; border-radius: 4px; cursor: pointer; border: 1px solid var(--border); background: transparent;">Bỏ qua</button>
+              <button class="btn btn--primary" id="js-btn-submit-cancel" type="button"
+                style="min-width: 120px; padding: 10px 20px; border-radius: 4px; cursor: pointer; background-color: var(--terracotta); border: 1px solid var(--terracotta); color: white; font-weight: 500;">Xác nhận hủy</button>
+            </div>
+          </div>
         </div>
       </div>
     </main>

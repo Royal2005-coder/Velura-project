@@ -77,23 +77,67 @@ async function initPolicyPage() {
   const content = document.querySelector(".policy-content");
   if (!page || !tabs || !content) return;
 
+  tabs.innerHTML = '<button class="policy-tabs__item is-active" type="button" disabled><span>Đang tải chính sách...</span></button>';
+  content.innerHTML = `
+    <section class="policy-panel js-policy-panel is-active">
+      <h2 class="policy-panel__title">Đang tải chính sách</h2>
+      <p class="policy-panel__intro">Velura đang lấy nội dung chính sách mới nhất từ database.</p>
+    </section>
+  `;
+
   try {
-    const [categoriesResult, policiesResult] = await Promise.all([
-      apiRequest("/api/content/categories?type=policy"),
-      apiRequest("/api/content/policies")
-    ]);
+    const policiesResult = await apiRequest("/api/content/policies");
+    const categoriesResult = await apiRequest("/api/content/categories?type=policy").catch((error) => {
+      console.warn("Policy categories unavailable; deriving tabs from policies.", error);
+      return { rows: [] };
+    });
     const categories = categoriesResult.rows || [];
     const policies = policiesResult.rows || [];
-    if (!policies.length) return;
+    if (!policies.length) {
+      throw new Error("No published policies found");
+    }
 
-    tabs.innerHTML = categories
-      .filter((category) => policies.some((policy) => policy.slug === category.slug))
-      .map((category, index) => renderPolicyTab(category, index === 0))
+    const categorySource = categories.length
+      ? categories
+      : policies.map((policy) => ({
+        slug: policy.slug,
+        name: policy.title,
+        display_order: policy.display_order || 0
+      }));
+
+    // Hỗ trợ nhảy trực tiếp tới tab từ URL (ví dụ: ?tab=faq)
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTabSlug = urlParams.get('tab');
+    let activeIndex = 0;
+    
+    // Lọc lại các danh mục có bài chính sách
+    const activeCategories = categorySource.filter((category) => policies.some((policy) => policy.slug === category.slug));
+
+    if (activeTabSlug) {
+      const foundIndex = activeCategories.findIndex(c => c.slug === activeTabSlug);
+      if (foundIndex !== -1) {
+        activeIndex = foundIndex;
+      }
+    }
+
+    tabs.innerHTML = activeCategories
+      .map((category, index) => renderPolicyTab(category, index === activeIndex))
       .join("");
-    content.innerHTML = policies.map((policy, index) => renderPolicyPanel(policy, index === 0)).join("");
+    content.innerHTML = policies.map((policy) => {
+      // Find the correct index in activeCategories for this policy
+      const catIndex = activeCategories.findIndex(c => c.slug === policy.slug);
+      return renderPolicyPanel(policy, catIndex === activeIndex);
+    }).join("");
     bindPolicyTabs();
   } catch (error) {
-    console.warn("Policy content API unavailable, keeping static content.", error);
+    console.warn("Policy content API unavailable.", error);
+    tabs.innerHTML = "";
+    content.innerHTML = `
+      <section class="policy-panel js-policy-panel is-active">
+        <h2 class="policy-panel__title">Không thể tải chính sách</h2>
+        <p class="policy-panel__intro">Hiện chưa lấy được dữ liệu chính sách từ database. Vui lòng kiểm tra API /api/content/policies hoặc thử lại sau.</p>
+      </section>
+    `;
   }
 }
 

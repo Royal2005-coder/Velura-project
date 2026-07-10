@@ -16,21 +16,38 @@ import { initProductReview } from "./modules/product-review.js";
 import { initCollectionsFilter } from "./modules/collections.js";
 import { initReturnRequest } from "./modules/return-request.js";
 import { initBreadcrumb } from "./modules/breadcrumb.js";
-import { initAuthClient } from "./modules/auth-client.js";
-import { initWishlistPage } from "./modules/wishlist.js";
+import { initAuthClient, updateHeaderAuthUI } from "./modules/auth-client.js";
+import { initWishlistPage, initWishlistBadge } from "./modules/wishlist.js";
 import { initOrderDetail } from "./modules/order-detail.js";
 import { initTrackOrder } from "./modules/track-order.js";
 import { initHomepage } from "./modules/homepage.js";
 import { initCart } from "./modules/cart.js";
 import { initContentPages } from "./modules/content.js";
+import { hasRealAuthSession } from "./modules/auth-session.js";
+import { initAiSuggestions } from "./modules/ai-suggestions.js";
+import { initHotBannerSlider } from "./modules/hot-banner-slider.js";
+import { initNotifications } from "./modules/notifications.js";
+import { initExitIntentPopup } from "./modules/exit-intent.js";
 
 (function () {
   "use strict";
 
+  // ── Run header auth UI update IMMEDIATELY so header never flashes as "Guest"
+  // updateHeaderAuthUI has built-in retry via MutationObserver if header isn't injected yet.
+  updateHeaderAuthUI();
+
   const path = window.location.pathname;
-  if (path.includes("/pages/account/") && !path.includes("track-order.html")) {
+  if (path.includes("/pages/account/") && !path.includes("profile.html") && !path.includes("track-order.html")) {
     const token = localStorage.getItem("velura_token");
-    if (!token) {
+    const rawUser = localStorage.getItem("velura_user");
+    let isLoggedIn = !!token;
+    if (!isLoggedIn && rawUser) {
+      try {
+        const userObj = JSON.parse(rawUser);
+        isLoggedIn = !!userObj.is_dev_mock;
+      } catch (e) {}
+    }
+    if (!isLoggedIn && !hasRealAuthSession()) {
       window.location.href = "/src/pages/auth/signin.html";
       return;
     }
@@ -56,12 +73,18 @@ import { initContentPages } from "./modules/content.js";
   initReturnRequest();
   initBreadcrumb();
   initAuthClient();
+
   initWishlistPage();
+  initWishlistBadge();
   initOrderDetail();
   initTrackOrder();
   initHomepage();
+  initHotBannerSlider();
   initCart();
   initContentPages();
+  initAiSuggestions();
+  initNotifications();
+  initExitIntentPopup();
 
   /* Mobile navigation */
   var menuToggle = document.querySelector(".menu-toggle");
@@ -315,5 +338,19 @@ import { initContentPages } from "./modules/content.js";
       dot.classList.add("is-active");
     });
   });
+
+  /* Sticky Header Scroll Shadow */
+  const siteHeader = document.querySelector(".site-header");
+  if (siteHeader) {
+    const handleScroll = () => {
+      if (window.scrollY > 0) {
+        siteHeader.classList.add("header-scrolled");
+      } else {
+        siteHeader.classList.remove("header-scrolled");
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+  }
 
 })();

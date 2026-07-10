@@ -25,7 +25,12 @@
   padding: 16px;
   border-radius: 12px;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.address-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .address-card input { position: absolute; opacity: 0; pointer-events: none; }
@@ -77,8 +82,17 @@
 
 .address-card__check {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 16px;
+  right: 16px;
+  color: var(--brown);
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.address-card.is-selected .address-card__check {
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* Option card (radio) */
@@ -422,12 +436,14 @@
   background: #ffffff;
 }
 
-.card__wishlist-btn.is-active {
+.card__wishlist-btn.is-active,
+.card__wishlist-btn.active {
   background: var(--terracotta);
   color: #ffffff;
 }
 
-.card__wishlist-btn.is-active svg {
+.card__wishlist-btn.is-active svg,
+.card__wishlist-btn.active svg {
   fill: currentColor;
 }
 
@@ -481,18 +497,19 @@
   transform: scale(1.12);
 }
 
-/* === 🔲  "Xem chi tiết": center ảnh, ẩn; hiện khi hover VÙNG ẢNH === */
+/* === 🔲  "Xem chi tiết": dưới ảnh, ẩn; hiện khi hover VÙNG ẢNH === */
 .card--product .product-card__img-hover {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   background: rgba(0, 0, 0, 0.26);
   z-index: 8;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.3s ease, visibility 0.3s ease;
+  padding-bottom: 20px;
 }
 
 .card--product .product-card__image-wrapper:hover .product-card__img-hover {
@@ -533,66 +550,95 @@
   pointer-events: none;
 }
 
-/* === Actions Row: Mua hàng + Thêm vào giỏ hàng === */
+/* === Actions Row: Mua ngay + Cart icon (luôn hiển thị) === */
 .card--product .card__actions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 12px 0 0;
   margin-top: 12px;
 }
 
-.card--product .card__actions .btn-buy,
-.card--product .card__btn-cart {
-  width: 100%;
-  min-height: 42px;
+.card--product .card__actions .btn-buy {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  background: #F4E4DC;
+  color: var(--terracotta, #C97B63);
+  padding: 11px 16px;
   border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
   border: none;
   cursor: pointer;
   line-height: 1.2;
   text-align: center;
-  white-space: normal;
   transition: background 0.2s ease, color 0.2s ease;
-}
-
-.card--product .card__actions .btn-buy {
-  background: #F4E4DC;
-  color: var(--terracotta, #C97B63);
-  padding: 11px 16px;
+  min-height: 40px;
 }
 
 .card--product .card__actions .btn-buy:hover {
   background: #e8c9be;
   color: var(--terracotta-h, #b36a53);
 }
-.card--product .card__actions .btn-buy svg { display: block; flex-shrink: 0; }
+
+.card--product .card__actions .btn-buy svg {
+  display: block;
+  flex-shrink: 0;
+}
 
 .card--product .card__btn-cart {
-  background: var(--terracotta, #C97B63);
-  color: #ffffff;
-  padding: 11px 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #F4E4DC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--terracotta, #C97B63);
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease;
+  padding: 0;
 }
-.card--product .card__btn-cart svg { display: block; fill: none; stroke: currentColor; stroke-width: 2; }
-.card--product .card__btn-cart:hover { background: var(--terracotta-h, #b36a53); color: #ffffff; }
+
+.card--product .card__btn-cart svg {
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.card--product .card__btn-cart:hover {
+  background: var(--terracotta);
+  color: #ffffff;
+}
 
 .card--product.card--list-view .card__actions {
+  display: flex;
+  flex-direction: column;
   width: 180px;
   padding: 0;
   margin-top: 0;
   flex-shrink: 0;
+  gap: 8px;
+}
+
+.card--product.card--list-view .card__actions .btn-buy {
+  width: 100%;
+}
+
+.card--product.card--list-view .card__btn-cart {
+  width: 100%;
+  border-radius: var(--radius-sm);
 }
 
 /* Final product card alignment for catalog cards */
-.card--product .product-card__img-hover {
-  display: none !important;
-}
 
 .card--product {
   border-radius: 8px;
@@ -621,25 +667,82 @@
   min-height: 28px;
 }
 
-.card--product .card__actions .btn-buy,
-.card--product .card__btn-cart {
-  min-height: 40px;
-  border-radius: 8px;
-  font-size: 0.76rem;
-  white-space: nowrap;
-}
-
-.card--product .card__actions .btn-buy {
-  background: #f2ded5;
-}
-
-.card--product .card__btn-cart {
-  background: var(--terracotta);
-}
 
 @media (max-width: 420px) {
-  .card--product .card__actions .btn-buy,
-  .card--product .card__btn-cart {
+  .card--product .card__actions .btn-buy {
     white-space: normal;
   }
+}
+
+/* ============================================================
+   Voucher Card Component (for Promo Code Modal)
+   ============================================================ */
+.voucher-card {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  position: relative;
+}
+
+.voucher-card:hover:not(.voucher-card--disabled) {
+  border-color: var(--brown);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.voucher-card--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #fcfcfc;
+}
+
+.voucher-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.voucher-card__code {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--terracotta);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.voucher-card__badge {
+  padding: 4px 8px;
+  background: #E8DFD6;
+  color: var(--brown);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border-radius: 4px;
+}
+
+.voucher-card__desc {
+  font-size: 0.875rem;
+  color: var(--text-dark);
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.voucher-card__meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.voucher-card__error {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #D4183D;
+  font-weight: 500;
 }

@@ -156,3 +156,111 @@ test("source tree contains no hard-coded Supabase management or secret key", asy
   assert.doesNotMatch(combined, /sbp_[A-Za-z0-9]{20,}|sb_secret_[A-Za-z0-9_-]{20,}/);
   assert.doesNotMatch(combined, /postgresql:\/\/[^\s]+:[^\s\[]+@/);
 });
+
+test("customer auth redesign preserves the live DOM and API contracts", async () => {
+  const [signin, signup, forgot, client, authCss] = await Promise.all([
+    source("apps/user-web/src/pages/auth/signin.html"),
+    source("apps/user-web/src/pages/auth/signup.html"),
+    source("apps/user-web/src/pages/auth/forgot-password.html"),
+    source("apps/user-web/src/scripts/modules/auth-client.js"),
+    source("apps/user-web/src/styles/pages/_auth-external.css")
+  ]);
+
+  for (const page of [signin, signup, forgot]) {
+    assert.match(page, /class="velura-auth-page"/);
+    assert.match(page, /scripts\/main\.js/);
+    assert.doesNotMatch(page, /auth-external\.js|thành công! \(Demo\)/i);
+  }
+
+  for (const id of [
+    "js-signin-form", "tab-phone", "tab-email", "panel-phone", "panel-email",
+    "phone", "email-login", "password", "password-email", "btn-signin",
+    "error-phone", "error-password", "error-email-login", "error-password-email",
+    "lock-countdown", "lock-timer"
+  ]) {
+    assert.match(signin, new RegExp(`id="${id}"`));
+  }
+
+  for (const id of [
+    "js-signup-form", "fullname", "phone-signup", "email-signup",
+    "password-signup", "password-confirm", "phone-check-icon", "email-check-icon",
+    "password-strength", "strength-fill", "strength-label", "btn-signup",
+    "error-fullname", "error-phone-signup", "error-email-signup",
+    "error-password-signup", "error-confirm"
+  ]) {
+    assert.match(signup, new RegExp(`id="${id}"`));
+  }
+
+  for (const id of ["js-forgot-form", "identity", "error-identity", "btn-forgot"]) {
+    assert.match(forgot, new RegExp(`id="${id}"`));
+  }
+
+  assert.match(client, /\/api\/user\/auth\/signin/);
+  assert.match(client, /\/api\/user\/auth\/signup/);
+  assert.match(client, /\/api\/user\/auth\/otp-send/);
+  assert.match(client, /\/api\/user\/auth\/otp-verify/);
+  assert.doesNotMatch(client, /js-dev-login-phone|js-dev-login-email|dev-quick-login|Test Phone|Test Email/);
+  assert.match(authCss, /\.velura-auth-page/);
+});
+
+test("customer member and guest flows require real auth sessions", async () => {
+  const [client, session, api, cart, main, profile, product, rbac] = await Promise.all([
+    source("apps/user-web/src/scripts/modules/auth-client.js"),
+    source("apps/user-web/src/scripts/modules/auth-session.js"),
+    source("apps/user-web/src/scripts/modules/api.js"),
+    source("apps/user-web/src/scripts/modules/cart.js"),
+    source("apps/user-web/src/scripts/main.js"),
+    source("apps/user-web/src/scripts/modules/account-profile.js"),
+    source("apps/user-web/src/scripts/modules/product-catalog.js"),
+    source("apps/api/src/rbac.js")
+  ]);
+
+  assert.doesNotMatch(client, /createDevMemberSession|import\.meta\.env\.DEV|js-dev-login|Test Phone|Test Email/);
+  assert.doesNotMatch(session, /createDevMemberSession|DEV_MEMBER_ID|is_dev_mock|member\.test@velura\.local|0901234567/);
+
+  assert.match(session, /if \(!token\)/);
+  assert.match(session, /hasRealAuthSession\s*\(/);
+  assert.match(session, /getStoredUser\(\)\?\.user_id/);
+  assert.match(session, /getCurrentRole\s*\(/);
+  assert.match(session, /localStorage\.setItem\(STORAGE_KEYS\.role,\s*normalizedUser\.role\)/);
+  assert.match(session, /localStorage\.setItem\(STORAGE_KEYS\.userId,\s*String\(normalizedUser\.user_id\)\)/);
+
+  assert.match(api, /const isSafeAccountPage/);
+  assert.match(api, /currentPath\.includes\("profile\.html"\)/);
+  assert.match(api, /currentPath\.includes\("track-order\.html"\)/);
+  assert.doesNotMatch(api, /localStorage\.removeItem\("velura_token"\)/);
+  assert.match(cart, /body:\s*JSON\.stringify\(\{\s*phone,\s*password\s*\}\)/);
+  assert.match(cart, /storeAuthSession\(authRes\)/);
+  assert.doesNotMatch(cart, /login_id:\s*phone/);
+  assert.match(cart, /renderCheckoutLayout\(getCurrentRole\(\)\)/);
+  assert.match(cart, /showGuestOrderConfirmModal\(shipping/);
+  assert.match(cart, /hasRealAuthSession\(\)/);
+
+  assert.match(main, /profile\.html/);
+  assert.match(profile, /renderGuestProfileState\(\)/);
+  assert.match(profile, /showGuestLoginModal\(\)/);
+  assert.match(profile, /err\.status === 401 && !hasRealAuthSession\(\)/);
+  assert.match(product, /member-lock-badge/);
+  assert.match(product, /\/src\/pages\/auth\/signup\.html/);
+
+  assert.match(rbac, /import \{ verifyJwt \} from "\.\/auth-helper\.js"/);
+  assert.match(rbac, /const decoded = verifyJwt\(token\)/);
+  assert.match(rbac, /authUser:\s*\{\s*id:\s*profile\.user_id/);
+});
+
+test("customer wishlist uses users.wishlist JSON and not a dedicated wishlist table", async () => {
+  const [wishlistRoute, legacyWishlistRoute, schema] = await Promise.all([
+    source("apps/api/src/user/wishlist.js"),
+    source("apps/api/src/v1-wishlist-routes.js"),
+    source("database/database_user/schema.sql")
+  ]);
+
+  const combinedRoutes = `${wishlistRoute}\n${legacyWishlistRoute}`;
+  assert.match(wishlistRoute, /selectOne\("users"/);
+  assert.match(wishlistRoute, /updateRows\("users"/);
+  assert.match(wishlistRoute, /wishlist:\s*normalizeWishlist/);
+  assert.doesNotMatch(combinedRoutes, /["']Wishlists["']/);
+  assert.doesNotMatch(combinedRoutes, /insertRow\(|deleteRows\(/);
+  assert.match(schema, /wishlist\s+JSONB\s+NOT NULL DEFAULT '\[\]'/i);
+  assert.doesNotMatch(schema, /CREATE TABLE\s+Wishlists/i);
+});

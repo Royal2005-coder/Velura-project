@@ -143,7 +143,11 @@
 }
 
 .quiz-popup__logo {
-  z-index: 5;
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
 }
 
 .quiz-popup__logo img {
@@ -151,29 +155,13 @@
   height: auto;
 }
 
-/* Dual Botanical leaves decoration: shadow + crisp line art */
+/* Dual Botanical leaves decoration (removed from HTML) */
 .quiz-popup__leaves-shadow {
-  position: absolute;
-  left: -30px;
-  bottom: 20px;
-  width: 110px;
-  height: auto;
-  opacity: 0.15;
-  filter: blur(8px);
-  transform: rotate(-10deg);
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
 .quiz-popup__leaves-line {
-  position: absolute;
-  left: -20px;
-  bottom: 30px;
-  width: 100px;
-  height: auto;
-  opacity: 0.28;
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
 /* CSS absolute circle behind models */
@@ -184,7 +172,8 @@
   background-color: #EFE7DD; /* Beige circle */
   border-radius: 50%;
   bottom: -40px;
-  left: -20px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1;
   pointer-events: none;
 }
@@ -407,10 +396,6 @@
     align-items: center;
   }
   
-  .quiz-popup__logo {
-    display: none; /* Hide top left logo inside popup on tablet/mobile */
-  }
-
   .quiz-popup__leaves-shadow,
   .quiz-popup__leaves-line {
     display: none; /* Hide complex drawings on mobile/tablets */

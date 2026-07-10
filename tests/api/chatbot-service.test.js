@@ -27,13 +27,13 @@ test("policy query fallback explains return policy rules", async () => {
       return {
         rows: [{
           title: "Chính sách đổi trả",
-          summary: "Đổi trả trong 7 ngày cho sản phẩm nguyên giá đủ điều kiện.",
+          summary: "Khách hàng gửi yêu cầu đổi trả trong vòng 48 giờ kể từ khi đơn hàng được giao thành công.",
           content: [
             {
-              heading: "Thời gian đổi trả",
+              heading: "Thời hạn nghiêm ngặt",
               items: [
-                "7 ngày kể từ ngày nhận hàng đối với sản phẩm nguyên giá.",
-                "3 ngày đối với sản phẩm giảm giá trên 30%."
+                "Khách hàng phải gửi yêu cầu trong vòng tối đa 2 ngày (48 giờ) kể từ lúc trạng thái đơn hàng cập nhật thành Đã giao thành công.",
+                "Sau 48 giờ, hệ thống tự động khóa tính năng gửi yêu cầu đổi trả cho đơn hàng đó."
               ]
             }
           ]
@@ -42,8 +42,8 @@ test("policy query fallback explains return policy rules", async () => {
     }
   };
   const reply = await getFallbackReply("Chính sách đổi trả", [], mockRepository);
-  assert.match(reply, /7 ngày kể từ ngày nhận hàng đối với sản phẩm nguyên giá/);
-  assert.match(reply, /3 ngày đối với sản phẩm giảm giá trên 30%/);
+  assert.match(reply, /48 giờ/);
+  assert.match(reply, /Đã giao thành công/);
 });
 
 test("handoff detection handles CSKH escalation triggers correctly", () => {
@@ -51,4 +51,3 @@ test("handoff detection handles CSKH escalation triggers correctly", () => {
   assert.equal(detectHandoffIntent("gặp nhân viên hỗ trợ"), true);
   assert.equal(detectHandoffIntent("tôi muốn mua váy"), false);
 });
-

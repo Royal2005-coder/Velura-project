@@ -1,6 +1,6 @@
 import { HttpError } from "./http.js";
-import { getAuthUser, selectOne } from "./supabase.js";
 import { verifyJwt } from "./auth-helper.js";
+import { getAuthUser, selectOne } from "./supabase.js";
 
 export const rolePages = {
   super_admin: ["dashboard", "accounts", "products", "orders", "reviews", "returns-cskh", "pricing", "promotions", "logs"],
@@ -30,57 +30,64 @@ export async function buildAuthContext(req) {
   const token = getToken(req);
   if (!token) return buildGuestContext();
 
-  let authUser = null;
-  let profile = null;
+  const accountSelect = [
+    "user_id", "auth_user_id", "email", "phone", "full_name", "avatar",
+    "role", "admin_role", "is_active", "is_verified", "created_at",
+    "last_login_at", "version", "updated_at", "saved_addresses"
+  ].join(",");
+  const dbOptions = { useAnonKey: true }; // Use anon key fallback for token validation too
 
-  const localPayload = verifyJwt(token);
-  if (localPayload) {
-    const accountSelect = [
-      "user_id", "auth_user_id", "email", "phone", "full_name", "avatar",
-      "role", "admin_role", "is_active", "is_verified", "created_at",
-      "last_login_at", "version", "updated_at"
-    ].join(",");
-    try {
-      profile = await selectOne("users", {
-        select: accountSelect,
-        user_id: `eq.${localPayload.user_id}`
-      }, { useAnonKey: false });
-      if (profile) {
-        authUser = {
-          id: profile.auth_user_id || profile.user_id,
-          email: profile.email,
-          phone: profile.phone
-        };
-      }
-    } catch {
-      profile = null;
-    }
+  // Try Supabase Auth first
+  let authUser = null;
+  try {
+    authUser = await getAuthUser(token);
+  } catch (err) {
+    // Ignore error and fall back to local custom JWT
   }
 
-  if (!profile) {
-    authUser = await getAuthUser(token);
-    if (!authUser?.id) return buildGuestContext();
+  const decoded = verifyJwt(token);
 
-    const accountSelect = [
-      "user_id", "auth_user_id", "email", "phone", "full_name", "avatar",
-      "role", "admin_role", "is_active", "is_verified", "created_at",
-      "last_login_at", "version", "updated_at"
-    ].join(",");
-    const dbOptions = { useAnonKey: false };
+  if (decoded && !authUser?.id) {
+    let profile = null;
     try {
       profile = await selectOne("users", {
         select: accountSelect,
-        auth_user_id: `eq.${authUser.id}`
+        user_id: `eq.${decoded.user_id}`
       }, dbOptions);
-      if (!profile) {
-        profile = await selectOne("users", {
-          select: accountSelect,
-          email: `eq.${authUser.email}`
-        }, dbOptions);
-      }
     } catch {
       profile = null;
     }
+
+    if (!profile) return buildGuestContext();
+
+    const roleCode = profile.role === "admin" ? profile.admin_role : profile.role || "member";
+    return {
+      authUser: { id: profile.user_id, email: profile.email },
+      profile,
+      roleCode,
+      roleName: roleNames[roleCode] || "Member",
+      isAdmin: profile.role === "admin",
+      allowedPages: rolePages[roleCode] || rolePages.member,
+      accessToken: token
+    };
+  }
+
+  if (!authUser?.id) return buildGuestContext();
+
+  let profile = null;
+  try {
+    profile = await selectOne("users", {
+      select: accountSelect,
+      auth_user_id: `eq.${authUser.id}`
+    }, dbOptions);
+    if (!profile) {
+      profile = await selectOne("users", {
+        select: accountSelect,
+        email: `eq.${authUser.email}`
+      }, dbOptions);
+    }
+  } catch {
+    profile = null;
   }
 
   if (!profile) {

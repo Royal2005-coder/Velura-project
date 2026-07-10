@@ -1,6 +1,10 @@
 import { apiRequest } from "./api.js";
 import { showToast } from "./account-profile.js";
 import { mergeCartOnLogin } from "./cart.js";
+import {
+  clearAuthSession,
+  storeAuthSession
+} from "./auth-session.js";
 import { syncFavoriteOutfitsOnLogin } from "./chatbot.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -21,6 +25,21 @@ function setLoading(btn, loading, label = "Đang xử lý...") {
 
 function validatePassword(pw) {
   return pw && pw.length >= 8 && /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /[\d\W]/.test(pw);
+}
+
+function completeAuthentication(
+  data,
+  {
+    mergeCart = true,
+    message = "Đăng nhập thành công!",
+    redirectDelay = 1200
+  } = {}
+) {
+  storeAuthSession(data);
+  migrateStyleQuizOnLogin().catch(console.error);
+  if (mergeCart) mergeCartOnLogin();
+  showToast(message);
+  setTimeout(() => { window.location.href = "/index.html"; }, redirectDelay);
 }
 
 function bindPasswordToggle(inputId) {
@@ -84,9 +103,66 @@ async function checkDuplicate(type, value, errorId, iconId) {
   } catch { /* silent */ }
 }
 
+// ─── Style Quiz Migration ───────────────────────────────────────────────────
+
+export async function migrateStyleQuizOnLogin() {
+  const guestSessionId = localStorage.getItem("velura_guest_session_id");
+  
+  // Construct fallback payload from sessionStorage if present
+  const height_cm = sessionStorage.getItem("quiz-height");
+  const weight_kg = sessionStorage.getItem("quiz-weight");
+  const chest_cm = sessionStorage.getItem("quiz-vong1");
+  const waist_cm = sessionStorage.getItem("quiz-vong2");
+  const hip_cm = sessionStorage.getItem("quiz-vong3");
+  const body_shape = sessionStorage.getItem("quiz-body-shape");
+  const styleStr = sessionStorage.getItem("quiz-main-style");
+  const context = sessionStorage.getItem("quiz-context");
+  const budget = sessionStorage.getItem("quiz-budget");
+  
+  let style_tags = null;
+  if (styleStr) {
+    try {
+      style_tags = JSON.parse(styleStr);
+    } catch (e) {
+      style_tags = [styleStr];
+    }
+  }
+  
+  const payload = {};
+  if (height_cm) payload.height_cm = parseInt(height_cm, 10);
+  if (weight_kg) payload.weight_kg = parseInt(weight_kg, 10);
+  if (chest_cm) payload.chest_cm = parseInt(chest_cm, 10);
+  if (waist_cm) payload.waist_cm = parseInt(waist_cm, 10);
+  if (hip_cm) payload.hip_cm = parseInt(hip_cm, 10);
+  if (body_shape) payload.body_shape = body_shape;
+  if (style_tags) payload.style_tags = style_tags;
+  if (context) payload.preferred_occasions = [context];
+  if (budget) payload.budget_range = budget;
+  
+  try {
+    const res = await apiRequest("/api/user/style-quiz/migrate", {
+      method: "POST",
+      body: payload
+    });
+    if (res.success && res.migrated) {
+      console.log("Style Quiz migrated successfully on login!");
+      localStorage.setItem("velura_guest_quiz_completed", "true");
+    }
+  } catch (err) {
+    console.error("Failed to migrate Style Quiz on login:", err);
+  } finally {
+    // Clean up local storage and session storage style quiz items
+    const keysToRemove = [
+      "quiz-height", "quiz-weight", "quiz-vong1", "quiz-vong2", "quiz-vong3",
+      "quiz-body-shape", "quiz-main-style", "quiz-context", "quiz-colors", "quiz-budget"
+    ];
+    keysToRemove.forEach(key => sessionStorage.removeItem(key));
+  }
+}
+
 // ─── OTP Modal ──────────────────────────────────────────────────────────────
 
-function showOtpModal(identity, onSuccess, onResend) {
+function showOtpModal(identity, onSuccess, onResend, purpose = "") {
   const existing = document.querySelector(".otp-modal-container");
   if (existing) existing.remove();
 
@@ -188,7 +264,7 @@ function showOtpModal(identity, onSuccess, onResend) {
     verifyBtn.textContent = "Đang xác minh..."; verifyBtn.disabled = true;
     try {
       const data = await apiRequest("/api/user/auth/otp-verify", {
-        method: "POST", body: JSON.stringify({ identity, otp_code: otp })
+        method: "POST", body: JSON.stringify({ identity, otp_code: otp, purpose })
       });
       clearInterval(timerInterval); clearInterval(resendInterval);
       modal.remove();
@@ -230,57 +306,6 @@ function bindSignin() {
   const form = document.getElementById("js-signin-form");
   if (!form) return;
 
-  /* DEV MODE ONLY - REMOVE BEFORE PRODUCTION */
-  if (import.meta.env.DEV) {
-    const signupPara = document.querySelector(".signup");
-    if (signupPara && !document.querySelector(".dev-quick-login")) {
-      const devContainer = document.createElement("div");
-      devContainer.className = "dev-quick-login";
-      devContainer.style.cssText = "margin-top: 16px; display: flex; justify-content: center; gap: 10px;";
-      devContainer.innerHTML = `
-        <button type="button" id="js-dev-login-phone" style="background: rgba(107, 99, 93, 0.1); border: 1px dashed #6B635D; padding: 4px 8px; font-size: 11px; border-radius: 4px; color: #6B635D; cursor: pointer; transition: all 0.2s;">Test Phone</button>
-        <button type="button" id="js-dev-login-email" style="background: rgba(107, 99, 93, 0.1); border: 1px dashed #6B635D; padding: 4px 8px; font-size: 11px; border-radius: 4px; color: #6B635D; cursor: pointer; transition: all 0.2s;">Test Email</button>
-      `;
-      signupPara.after(devContainer);
-
-      const tabPhone = document.getElementById("tab-phone");
-      const tabEmail = document.getElementById("tab-email");
-      const panelPhone = document.getElementById("panel-phone");
-      const panelEmail = document.getElementById("panel-email");
-
-      document.getElementById("js-dev-login-phone").addEventListener("click", () => {
-        if (tabPhone && tabEmail && panelPhone && panelEmail) {
-          tabPhone.classList.add("tab--active");
-          tabPhone.setAttribute("aria-selected", "true");
-          tabEmail.classList.remove("tab--active");
-          tabEmail.setAttribute("aria-selected", "false");
-          panelPhone.classList.add("is-active");
-          panelEmail.classList.remove("is-active");
-        }
-        const phoneInput = document.getElementById("phone");
-        const passInput = document.getElementById("password");
-        if (phoneInput) phoneInput.value = "0912345678";
-        if (passInput) passInput.value = "123456";
-      });
-
-      document.getElementById("js-dev-login-email").addEventListener("click", () => {
-        if (tabPhone && tabEmail && panelPhone && panelEmail) {
-          tabEmail.classList.add("tab--active");
-          tabEmail.setAttribute("aria-selected", "true");
-          tabPhone.classList.remove("tab--active");
-          tabPhone.setAttribute("aria-selected", "false");
-          panelEmail.classList.add("is-active");
-          panelPhone.classList.remove("is-active");
-        }
-        const emailInput = document.getElementById("email-login");
-        const passInput = document.getElementById("password-email");
-        if (emailInput) emailInput.value = "user@velura.vn";
-        if (passInput) passInput.value = "123456";
-      });
-    }
-  }
-  /* END DEV MODE ONLY */
-
   // Store original button label
   const btn = document.getElementById("btn-signin");
   if (btn) btn.dataset.label = btn.textContent;
@@ -317,8 +342,8 @@ function bindSignin() {
       if (data.otp_required) {
         setLoading(btn, false);
         showOtpModal(identity, (d) => {
-          localStorage.setItem("velura_token", d.token);
-          localStorage.setItem("velura_user", JSON.stringify(d.user));
+          storeAuthSession(d);
+          migrateStyleQuizOnLogin().catch(console.error);
           mergeCartOnLogin();
           syncFavoriteOutfitsOnLogin().catch(console.error);
           showToast("Đăng nhập thành công!");
@@ -327,8 +352,8 @@ function bindSignin() {
         return;
       }
 
-      localStorage.setItem("velura_token", data.token);
-      localStorage.setItem("velura_user", JSON.stringify(data.user));
+      storeAuthSession(data);
+      migrateStyleQuizOnLogin().catch(console.error);
       mergeCartOnLogin();
       syncFavoriteOutfitsOnLogin().catch(console.error);
       showToast("Đăng nhập thành công!");
@@ -450,8 +475,8 @@ function bindSignup() {
       setLoading(btn, false);
       if (data.otp_required) {
         showOtpModal(identity, (d) => {
-          localStorage.setItem("velura_token", d.token);
-          localStorage.setItem("velura_user", JSON.stringify(d.user));
+          storeAuthSession(d);
+          migrateStyleQuizOnLogin().catch(console.error);
           mergeCartOnLogin();
           syncFavoriteOutfitsOnLogin().catch(console.error);
           showToast("Đăng ký tài khoản thành công! Chào mừng bạn đến với Velura 🎉");
@@ -494,7 +519,7 @@ function bindForgotPassword() {
         sessionStorage.setItem("velura_reset_otp", d._otp_used || "");
         showToast("Xác minh thành công! Tạo mật khẩu mới ngay.");
         setTimeout(() => { window.location.href = "/src/pages/auth/reset-password.html"; }, 1200);
-      }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }));
+      }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }), "reset-password");
     } catch (err) {
       setLoading(btn, false);
       setError("error-identity", err.message || "Không tìm thấy tài khoản.");
@@ -568,43 +593,168 @@ function bindResetPassword() {
 
 // ─── Header Auth UI ───────────────────────────────────────────────────────────
 
-function updateHeaderAuthUI() {
+function applyHeaderAuthUI() {
+  const token = localStorage.getItem("velura_token");
   const raw = localStorage.getItem("velura_user");
-  if (!raw) return;
-  try {
-    const user = JSON.parse(raw);
-    // Update all signin links to profile
-    document.querySelectorAll("a[href*='signin.html']").forEach(link => {
-      link.href = "/src/pages/account/profile.html";
-      const name = (user.full_name || "").split(" ").pop() || "Tài khoản";
-      link.innerHTML = `<span style="font-weight:500;font-size:0.875rem;">${name}</span>`;
-    });
 
-    // Add logout button to header if nav exists
-    const nav = document.querySelector(".site-header__nav-actions, .site-header__actions");
-    if (nav && !nav.querySelector(".js-logout-btn")) {
-      const logoutBtn = document.createElement("button");
-      logoutBtn.className = "js-logout-btn";
-      logoutBtn.setAttribute("title", "Đăng xuất");
-      logoutBtn.style.cssText = "background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:4px 8px;";
-      logoutBtn.textContent = "Đăng xuất";
-      logoutBtn.addEventListener("click", () => {
-        localStorage.removeItem("velura_token");
-        localStorage.removeItem("velura_user");
-        showToast("Đã đăng xuất thành công.");
-        setTimeout(() => { window.location.reload(); }, 1000);
-      });
-      nav.appendChild(logoutBtn);
+  const signinBtns = document.querySelectorAll(".js-menu-signin-btn");
+  const signupBtns = document.querySelectorAll(".js-menu-signup-btn");
+  const profileBtns = document.querySelectorAll(".js-menu-profile-btn");
+  const logoutBtns = document.querySelectorAll(".js-menu-logout-btn");
+
+  // If header hasn't been injected yet, return false so caller can retry
+  if (signinBtns.length === 0 && profileBtns.length === 0) {
+    return false;
+  }
+
+  const isLoggedIn = raw && (() => {
+    try {
+      const user = JSON.parse(raw);
+      return !!(token || user.is_dev_mock);
+    } catch {
+      return false;
     }
-  } catch { /* silent */ }
+  })();
+
+  if (isLoggedIn) {
+    try {
+      const user = JSON.parse(raw);
+
+      // Update dropdown visibility
+      signinBtns.forEach(btn => btn.style.display = "none");
+      signupBtns.forEach(btn => btn.style.display = "none");
+      profileBtns.forEach(btn => btn.style.display = "block");
+      logoutBtns.forEach(btn => btn.style.display = "block");
+
+      const notifEl = document.getElementById("js-header-notifications");
+      if (notifEl) {
+        notifEl.style.display = "inline-flex";
+        import("./notifications.js").then(({ updateNotificationsUI }) => {
+          updateNotificationsUI().catch(console.error);
+        });
+      }
+
+      // Fallback: Update legacy signin links if any exist outside dropdown
+      document.querySelectorAll("a[href*='signin.html']").forEach(link => {
+        if (!link.classList.contains("user-dropdown-item")) {
+          link.href = "/src/pages/account/profile.html";
+          const name = (user.full_name || "").split(" ").pop() || "Tài khoản";
+          link.innerHTML = `<span style="font-weight:500;font-size:0.875rem;">${name}</span>`;
+        }
+      });
+    } catch (e) {
+      console.error("Lỗi parse thông tin user:", e);
+    }
+  } else {
+    // Not logged in
+    signinBtns.forEach(btn => btn.style.display = "block");
+    signupBtns.forEach(btn => btn.style.display = "block");
+    profileBtns.forEach(btn => btn.style.display = "none");
+    logoutBtns.forEach(btn => btn.style.display = "none");
+
+    const notifEl = document.getElementById("js-header-notifications");
+    if (notifEl) notifEl.style.display = "none";
+  }
+
+  // Bind logout listener
+  logoutBtns.forEach(btn => {
+    if (btn.dataset.listenerBound === "true") return;
+    btn.dataset.listenerBound = "true";
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      clearAuthSession();
+      showToast("Đã đăng xuất thành công.");
+      setTimeout(() => {
+        window.location.href = "/index.html";
+      }, 1000);
+    });
+  });
+
+  return true;
+}
+
+/**
+ * Update header auth UI. If header is not yet in the DOM (happens when the
+ * vite-plugin-html-inject hasn't finished), retry with a MutationObserver.
+ * Exported so other modules (e.g. after a successful login) can call it.
+ */
+export function updateHeaderAuthUI() {
+  // Try immediately
+  if (applyHeaderAuthUI()) return;
+
+  // Header not ready yet — observe DOM and retry when it appears
+  const observer = new MutationObserver(() => {
+    if (applyHeaderAuthUI()) {
+      observer.disconnect();
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Safety timeout — give up after 3 seconds to avoid memory leaks
+  setTimeout(() => {
+    observer.disconnect();
+    applyHeaderAuthUI(); // One final attempt
+  }, 3000);
 }
 
 // ─── Main entry ──────────────────────────────────────────────────────────────
 
 export function initAuthClient() {
+  // Enforce strict guest session (clear localStorage if new browser session)
+  const token = localStorage.getItem("velura_token");
+  if (!token) {
+    const hasSessionCookie = document.cookie.includes("velura_session_active=1");
+    if (!hasSessionCookie) {
+      localStorage.removeItem("velura_cart");
+      localStorage.removeItem("velura_guest_wishlist");
+      localStorage.removeItem("velura_guest_session_id");
+      localStorage.removeItem("velura_quiz_answers");
+      localStorage.removeItem("velura_style_profile_results");
+      localStorage.removeItem("velura_guest_quiz_completed");
+      document.cookie = "velura_session_active=1; path=/";
+    }
+  }
+
   bindSignin();
   bindSignup();
   bindForgotPassword();
   bindResetPassword();
   updateHeaderAuthUI();
+
+  // Bind Account Dropdown Item Listeners
+  const logoutBtn = document.querySelector(".js-dropdown-logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      clearAuthSession();
+      showToast("Đăng xuất thành công!");
+      setTimeout(() => {
+        window.location.href = "/src/pages/auth/signin.html";
+      }, 1000);
+    });
+  }
+
+  const dropdownTrigger = document.querySelector(".header-account-dropdown .btn-icon-wrapper");
+  if (dropdownTrigger) {
+    dropdownTrigger.addEventListener("click", (e) => {
+      // Toggle dropdown behavior on mobile devices / fallback
+      const hasSession = localStorage.getItem("velura_token");
+      if (!hasSession) {
+        window.location.href = "/src/pages/auth/signin.html";
+      } else if (window.innerWidth <= 768) {
+        // Toggle active class on mobile for click events
+        const menu = document.querySelector(".account-dropdown-menu");
+        if (menu) {
+          const isVisible = menu.style.visibility === "visible";
+          menu.style.opacity = isVisible ? "0" : "1";
+          menu.style.visibility = isVisible ? "hidden" : "visible";
+          menu.style.pointerEvents = isVisible ? "none" : "auto";
+        }
+      } else {
+        window.location.href = "/src/pages/account/profile.html";
+      }
+    });
+  }
 }

@@ -19,29 +19,38 @@
 
     <main class="blog-page">
       <div class="container">
-        <!-- Blog Header — centered per Figma -->
-        <header class="blog-intro">
-          <span class="blog-intro__journal">VELURA JOURNAL</span>
-          <h1 class="blog-intro__title">Tạp chí phong cách</h1>
-          <p class="blog-intro__desc">Câu chuyện thời trang, phỏng vấn nghệ nhân và những bài viết truyền cảm hứng phong cách</p>
-        </header>
+        <!-- Breadcrumbs -->
+        <load src="/src/components/breadcrumb.html" />
 
-        <!-- Featured Post — image left, content right per Figma -->
+        <!-- Blog Header -->
+        <div class="blog-intro">
+          <div class="blog-intro__copy">
+            <span class="blog-intro__journal">VELURA JOURNAL</span>
+            <h1 class="blog-intro__title">Tạp chí phong cách</h1>
+            <p class="blog-intro__desc">Câu chuyện thời trang, phỏng vấn nghệ nhân và những bài viết truyền cảm hứng phong cách.</p>
+          </div>
+          <figure class="blog-intro__media" aria-label="Không gian thời trang Velura Journal">
+            <img src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=900&auto=format&fit=crop"
+              alt="Người mẫu trong áo khoác xanh tại quảng trường thời trang" />
+          </figure>
+        </div>
+
+        <!-- Featured Post Section -->
         <section class="featured-post">
           <div class="featured-post__image">
-            <img src="https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1200&h=800&q=80"
-              alt="Bảng màu mùa thu 2026: Sắc nâu cognac và hồng phấn" loading="eager" />
+            <img src="https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=1400&auto=format&fit=crop"
+              alt="Xu hướng màu sắc hè 2026" />
           </div>
           <div class="featured-post__content">
             <span class="blog-badge">Xu hướng</span>
-            <h2 class="featured-post__title">Bảng màu mùa thu 2026: Sắc nâu cognac và hồng phấn lên ngôi</h2>
+            <h2 class="featured-post__title">Xu hướng màu sắc hè 2026: Bảng màu cho tủ đồ mới</h2>
             <p class="featured-post__excerpt">
-              Năm nay, các nhà mốt lớn đồng loạt giới thiệu bảng màu ấm áp xoay quanh nâu cognac, hồng phấn dịu nhẹ và xanh sage. Velura mách bạn cách phối ba sắc màu chủ đạo để có tủ đồ mùa thu hoàn hảo.
+              Sage, cocoa, ivory và hồng phấn - những gam màu đang chiếm lĩnh mùa hè năm nay. Khám phá cách phối chúng trong tủ đồ Velura.
             </p>
             <div class="post-meta">
               <span class="post-meta__author">Nguyễn Thu Hà</span>
               <span class="post-meta__dot">&middot;</span>
-              <span class="post-meta__date">02 tháng 06, 2026</span>
+              <span class="post-meta__date">05 tháng 07, 2026</span>
               <span class="post-meta__dot">&middot;</span>
               <span class="post-meta__read-time">
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -51,16 +60,17 @@
                 8 phút đọc
               </span>
             </div>
-            <a href="/src/pages/blog/blog-detail.html?slug=bang-mau-mua-thu-2026" class="btn-read-more">
+            <a href="/src/pages/blog/blog-detail.html?slug=xu-huong-mau-sac-he-2026" class="btn-read-more">
               Đọc tiếp
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="9 6 15 12 9 18"></polyline>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
               </svg>
             </a>
           </div>
         </section>
 
-        <!-- Category Tabs — centered pills per Figma -->
+        <!-- Category Tabs -->
         <div class="category-tabs">
           <button type="button" class="category-tab is-active" data-category="all">Tất cả</button>
           <button type="button" class="category-tab" data-category="trend">Xu hướng</button>
@@ -70,201 +80,253 @@
           <button type="button" class="category-tab" data-category="event">Sự kiện</button>
         </div>
 
-        <!-- Articles Grid — 3-column cards per Figma -->
+        <!-- Articles Grid -->
         <div class="articles-grid" id="articlesGrid">
-          <!-- Card 1: Sự kiện — Địch Lệ Nhiệt Ba -->
-          <article class="article-card" data-category="event">
-            <div class="article-card__image">
-              <img src="https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&h=600&q=80" alt="Địch Lệ Nhiệt Ba mặc thiết kế Phan Huy" loading="lazy" />
-            </div>
-            <div class="article-card__content">
-              <span class="blog-badge">Sự kiện</span>
-              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=dich-le-nhiet-ba-phan-huy">Địch Lệ Nhiệt Ba mặc thiết kế Phan Huy trên bìa tạp chí</a></h3>
-              <p class="article-card__excerpt">Mỹ nữ Tân Cương Địch Lệ Nhiệt Ba diện đầm Haute Couture 'Cành vàng lá ngọc' của NTK trẻ Phan Huy trên bìa ấn phẩm Marie Claire Trung Quốc.</p>
-              <div class="post-meta">
-                <span class="post-meta__author">Lê Minh Châu</span>
-                <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__date">28 tháng 05, 2026</span>
-                <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__read-time">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><path d="M8 4v4l2.5 1.5" /></svg>
-                  6 phút
-                </span>
-              </div>
-            </div>
-          </article>
-
-          <!-- Card 2: Sự kiện — Hề Mộng Dao -->
-          <article class="article-card" data-category="event">
-            <div class="article-card__image">
-              <img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&h=600&q=80" alt="Hề Mộng Dao diện đầm nhà mốt Việt" loading="lazy" />
-            </div>
-            <div class="article-card__content">
-              <span class="blog-badge">Sự kiện</span>
-              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=he-mong-dao-dam-viet">Hề Mộng Dao diện đầm của nhà mốt Việt trong ảnh cưới</a></h3>
-              <p class="article-card__excerpt">Siêu mẫu Hề Mộng Dao chọn đầm ren thêu tinh xảo của local brand Việt trong loạt ảnh pre-wedding cùng doanh nhân Hà Du Quân.</p>
-              <div class="post-meta">
-                <span class="post-meta__author">Trần Bảo Ngọc</span>
-                <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__date">25 tháng 05, 2026</span>
-                <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__read-time">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><path d="M8 4v4l2.5 1.5" /></svg>
-                  12 phút
-                </span>
-              </div>
-            </div>
-          </article>
-
-          <!-- Card 3: Bền vững — Ba thương hiệu Việt London FW -->
-          <article class="article-card" data-category="sustainable">
-            <div class="article-card__image">
-              <img src="https://images.unsplash.com/photo-1539008885828-946985c009a6?auto=format&fit=crop&w=800&h=600&q=80" alt="Ba thương hiệu Việt tại London Fashion Week" loading="lazy" />
-            </div>
-            <div class="article-card__content">
-              <span class="blog-badge">Bền vững</span>
-              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=ba-thuong-hieu-viet-london-fw-2026">Ba thương hiệu Việt tại London Fashion Week Spring 2026</a></h3>
-              <p class="article-card__excerpt">Lần đầu tiên, ba thương hiệu Việt cùng xuất hiện trong lịch trình chính thức tại London Fashion Week.</p>
-              <div class="post-meta">
-                <span class="post-meta__author">Phạm Hoàng Linh</span>
-                <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__date">20 tháng 05, 2026</span>
-                <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__read-time">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><path d="M8 4v4l2.5 1.5" /></svg>
-                  10 phút
-                </span>
-              </div>
-            </div>
-          </article>
-
-          <!-- Card 4: Xu hướng — Quiet luxury -->
+          <!-- Article 1: Xu hướng -->
           <article class="article-card" data-category="trend">
             <div class="article-card__image">
-              <img src="https://images.unsplash.com/photo-1485462537746-965f33f7f6a7?auto=format&fit=crop&w=800&h=600&q=80" alt="Quiet luxury phong cách sang trọng thầm lặng" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1496747611176-843222e1e57c?q=80&w=600&auto=format&fit=crop" alt="Xu hướng màu sắc hè 2026" />
             </div>
             <div class="article-card__content">
               <span class="blog-badge">Xu hướng</span>
-              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=quiet-luxury-phai-dep-viet">Quiet luxury: Vì sao phái đẹp Việt đang chuộng vẻ đẹp sang</a></h3>
-              <p class="article-card__excerpt">Sự trở lại của những thiết kế tối giản, chất liệu cao cấp không logo đang định nghĩa lại khái niệm sang trọng.</p>
+              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=xu-huong-mau-sac-he-2026">Xu hướng màu sắc hè 2026: Bảng màu cho tủ đồ mới</a></h3>
+              <p class="article-card__excerpt">Sage, cocoa, ivory và hồng phấn - những gam màu đang chiếm lĩnh mùa hè năm nay.</p>
               <div class="post-meta">
                 <span class="post-meta__author">Nguyễn Thu Hà</span>
                 <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__date">18 tháng 05, 2026</span>
+                <span class="post-meta__date">05/07/2026</span>
                 <span class="post-meta__dot">&middot;</span>
                 <span class="post-meta__read-time">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><path d="M8 4v4l2.5 1.5" /></svg>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4v4l2.5 1.5" />
+                  </svg>
+                  8 phút
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Article 2: Phối đồ -->
+          <article class="article-card" data-category="style">
+            <div class="article-card__image">
+              <img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?q=80&w=600&auto=format&fit=crop" alt="Công thức phối đồ resort" />
+            </div>
+            <div class="article-card__content">
+              <span class="blog-badge">Phối đồ</span>
+              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=cong-thuc-phoi-do-resort-he-2026">Công thức phối đồ resort hè 2026</a></h3>
+              <p class="article-card__excerpt">Vali 3 ngày với 5 món đồ linh hoạt từ sân bay đến bữa tối ven biển.</p>
+              <div class="post-meta">
+                <span class="post-meta__author">Lê Minh Châu</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__date">03/07/2026</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__read-time">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4v4l2.5 1.5" />
+                  </svg>
                   7 phút
                 </span>
               </div>
             </div>
           </article>
 
-          <!-- Card 5: Phối đồ — Blazer linen -->
-          <article class="article-card" data-category="style">
-            <div class="article-card__image">
-              <img src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=800&h=600&q=80" alt="Cách phối blazer linen mùa hè" loading="lazy" />
-            </div>
-            <div class="article-card__content">
-              <span class="blog-badge">Phối đồ</span>
-              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=cach-phoi-blazer-linen-mua-he">Cách phối blazer linen cho mùa hè nhiệt đới</a></h3>
-              <p class="article-card__excerpt">Blazer không còn là độc quyền của mùa thu. Khám phá 4 công thức phối đồ thoáng mát mà vẫn thanh lịch.</p>
-              <div class="post-meta">
-                <span class="post-meta__author">Lê Minh Châu</span>
-                <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__date">14 tháng 05, 2026</span>
-                <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__read-time">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><path d="M8 4v4l2.5 1.5" /></svg>
-                  5 phút
-                </span>
-              </div>
-            </div>
-          </article>
-
-          <!-- Card 6: Sự kiện — Á khôi Thanh Hương -->
-          <article class="article-card" data-category="event">
-            <div class="article-card__image">
-              <img src="https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&h=600&q=80" alt="Á khôi Thanh Hương áo dài cổ yếm" loading="lazy" />
-            </div>
-            <div class="article-card__content">
-              <span class="blog-badge">Sự kiện</span>
-              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=a-khoi-thanh-huong-ao-dai-co-yem">Á khôi Thanh Hương gợi ý diện mốt áo dài cổ yếm hot trend</a></h3>
-              <p class="article-card__excerpt">Nhiều sao Việt như hoa hậu Thanh Thủy, á hậu Phương Anh cũng chọn áo dài cổ yếm để xuống phố hay đi sự kiện.</p>
-              <div class="post-meta">
-                <span class="post-meta__author">Trần Bảo Ngọc</span>
-                <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__date">10 tháng 05, 2026</span>
-                <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__read-time">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><path d="M8 4v4l2.5 1.5" /></svg>
-                  4 phút
-                </span>
-              </div>
-            </div>
-          </article>
-
-          <!-- Card 7: Phỏng vấn — Đặng Mỹ Linh -->
+          <!-- Article 3: Phỏng vấn -->
           <article class="article-card" data-category="interview">
             <div class="article-card__image">
-              <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&h=600&q=80" alt="Đặng Mỹ Linh phỏng vấn thời trang" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=600&auto=format&fit=crop" alt="Phỏng vấn stylist" />
             </div>
             <div class="article-card__content">
               <span class="blog-badge">Phỏng vấn</span>
-              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=dang-my-linh-thoi-trang-nhat-ky">Đặng Mỹ Linh: 'Thời trang là cách tôi viết nhật ký'</a></h3>
-              <p class="article-card__excerpt">Nữ doanh nhân trẻ chia sẻ về hành trình xây dựng phong cách cá nhân và bộ sưu tập áo dài hiện đại.</p>
+              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=phong-cach-toi-gian-stylist-mai-anh">Phỏng vấn stylist Mai Anh: Tối giản là biết đủ</a></h3>
+              <p class="article-card__excerpt">Một cuộc trò chuyện về chiếc áo mặc lại nhiều lần và cách mua ít hơn mà vẫn đẹp.</p>
               <div class="post-meta">
-                <span class="post-meta__author">Nguyễn Thu Hà</span>
+                <span class="post-meta__author">Trần Bảo Ngọc</span>
                 <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__date">06 tháng 05, 2026</span>
+                <span class="post-meta__date">01/07/2026</span>
                 <span class="post-meta__dot">&middot;</span>
                 <span class="post-meta__read-time">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><path d="M8 4v4l2.5 1.5" /></svg>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4v4l2.5 1.5" />
+                  </svg>
                   9 phút
                 </span>
               </div>
             </div>
           </article>
 
-          <!-- Card 8: Bền vững — Hành trình váy linen -->
+          <!-- Article 4: Bền vững -->
           <article class="article-card" data-category="sustainable">
             <div class="article-card__image">
-              <img src="https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&h=600&q=80" alt="Hành trình váy linen tại xưởng Velura" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=600&auto=format&fit=crop" alt="Chất liệu tự nhiên" />
             </div>
             <div class="article-card__content">
               <span class="blog-badge">Bền vững</span>
-              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=hanh-trinh-vay-linen-xuong-velura">Hành trình của một chiếc váy linen tại xưởng Velura</a></h3>
-              <p class="article-card__excerpt">Từ cánh đồng lanh ở Normandie đến tay người mặc — câu chuyện về sự tỉ mỉ và tình yêu với chất liệu tự nhiên.</p>
+              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=chat-lieu-tu-nhien-mua-he">Chất liệu tự nhiên mùa hè: Linen, lụa và cotton pha</a></h3>
+              <p class="article-card__excerpt">Bền vững bắt đầu từ câu hỏi: Món đồ này có được mặc lại không và có còn đẹp sau nhiều lần sử dụng?</p>
               <div class="post-meta">
                 <span class="post-meta__author">Phạm Hoàng Linh</span>
                 <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__date">02 tháng 05, 2026</span>
+                <span class="post-meta__date">29/06/2026</span>
                 <span class="post-meta__dot">&middot;</span>
                 <span class="post-meta__read-time">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><path d="M8 4v4l2.5 1.5" /></svg>
-                  11 phút
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4v4l2.5 1.5" />
+                  </svg>
+                  10 phút
                 </span>
               </div>
             </div>
           </article>
 
-          <!-- Card 9: Phối đồ — Công thức resort -->
-          <article class="article-card" data-category="style">
+          <!-- Article 5: Sự kiện -->
+          <article class="article-card" data-category="event">
             <div class="article-card__image">
-              <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=800&h=600&q=80" alt="Công thức phối đồ resort hè 2026" loading="lazy" />
+              <img src="https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=600&auto=format&fit=crop" alt="Velura Summer Salon" />
             </div>
             <div class="article-card__content">
-              <span class="blog-badge">Phối đồ</span>
-              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=cong-thuc-phoi-do-resort-he-2026">Công thức phối đồ resort hè 2026: Từ sân bay đến bữa tối</a></h3>
-              <p class="article-card__excerpt">Vali 3 ngày với 5 món đồ linh hoạt. Cách phối set linen, đầm maxi và phụ kiện cho chuyến đi biển hoàn hảo.</p>
+              <span class="blog-badge">Sự kiện</span>
+              <h3 class="article-card__title"><a href="/src/pages/blog/blog-detail.html?slug=velura-summer-salon-2026">Velura Summer Salon 2026: Buổi thử đồ riêng tư</a></h3>
+              <p class="article-card__excerpt">Sự kiện giới thiệu các set resort, dạ tiệc nhẹ và phụ kiện cho mùa du lịch mới.</p>
+              <div class="post-meta">
+                <span class="post-meta__author">Minh Anh</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__date">27/06/2026</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__read-time">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4v4l2.5 1.5" />
+                  </svg>
+                  6 phút
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Article 6: Existing - Sự kiện -->
+          <article class="article-card" data-category="event">
+            <div class="article-card__image">
+              <img src="https://images.unsplash.com/photo-1566174053879-31528523f8ae?q=80&w=600&auto=format&fit=crop" alt="Địch Lệ Nhiệt Ba" />
+            </div>
+            <div class="article-card__content">
+              <span class="blog-badge">Sự kiện</span>
+              <h3 class="article-card__title"><a href="#">Địch Lệ Nhiệt Ba mặc thiết kế Phan Huy trên bìa tạp chí</a></h3>
+              <p class="article-card__excerpt">Mỹ nữ Tân Cương Địch Lệ Nhiệt Ba diện đầm Haute Couture 'Cành vàng lá ngọc' của NTK trẻ Phan Huy trên bìa ấn phẩm Marie Claire Trung Quốc.</p>
               <div class="post-meta">
                 <span class="post-meta__author">Lê Minh Châu</span>
                 <span class="post-meta__dot">&middot;</span>
-                <span class="post-meta__date">28 tháng 04, 2026</span>
+                <span class="post-meta__date">28/05/2026</span>
                 <span class="post-meta__dot">&middot;</span>
                 <span class="post-meta__read-time">
-                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6" /><path d="M8 4v4l2.5 1.5" /></svg>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4v4l2.5 1.5" />
+                  </svg>
+                  6 phút
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Article 7: Existing - Sự kiện -->
+          <article class="article-card" data-category="event">
+            <div class="article-card__image">
+              <img src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=600&auto=format&fit=crop" alt="Hề Mộng Dao" />
+            </div>
+            <div class="article-card__content">
+              <span class="blog-badge">Sự kiện</span>
+              <h3 class="article-card__title"><a href="#">Hề Mộng Dao diện đầm của nhà mốt Việt trong ảnh cưới</a></h3>
+              <p class="article-card__excerpt">Siêu mẫu Hề Mộng Dao chọn đầm ren thêu tinh xảo của local brand Việt trong loạt ảnh pre-wedding cùng doanh nhân Hà Du Quân.</p>
+              <div class="post-meta">
+                <span class="post-meta__author">Trần Bảo Ngọc</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__date">25/05/2026</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__read-time">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4v4l2.5 1.5" />
+                  </svg>
+                  12 phút
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Article 8: Existing - Bền vững -->
+          <article class="article-card" data-category="sustainable">
+            <div class="article-card__image">
+              <img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?q=80&w=600&auto=format&fit=crop" alt="London Fashion Week" />
+            </div>
+            <div class="article-card__content">
+              <span class="blog-badge">Bền vững</span>
+              <h3 class="article-card__title"><a href="#">Ba thương hiệu Việt tại London Fashion Week Spring 2026</a></h3>
+              <p class="article-card__excerpt">Lần đầu tiên, ba thương hiệu Việt cùng xuất hiện trong lịch trình chính thức tại London Fashion Week.</p>
+              <div class="post-meta">
+                <span class="post-meta__author">Phạm Hoàng Linh</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__date">20/05/2026</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__read-time">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4v4l2.5 1.5" />
+                  </svg>
+                  10 phút
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Article 9: Existing - Xu hướng -->
+          <article class="article-card" data-category="trend">
+            <div class="article-card__image">
+              <img src="https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=600&auto=format&fit=crop" alt="Quiet luxury" />
+            </div>
+            <div class="article-card__content">
+              <span class="blog-badge">Xu hướng</span>
+              <h3 class="article-card__title"><a href="#">Quiet luxury: Vì sao phái đẹp Việt đang chuộng vẻ đẹp sang</a></h3>
+              <p class="article-card__excerpt">Sự trở lại của những thiết kế tối giản, chất liệu cao cấp không logo đang định nghĩa lại khái niệm sang trọng.</p>
+              <div class="post-meta">
+                <span class="post-meta__author">Nguyễn Thu Hà</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__date">18/05/2026</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__read-time">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4v4l2.5 1.5" />
+                  </svg>
                   7 phút
+                </span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Article 10: Existing - Phối đồ -->
+          <article class="article-card" data-category="style">
+            <div class="article-card__image">
+              <img src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=600&auto=format&fit=crop" alt="Blazer linen" />
+            </div>
+            <div class="article-card__content">
+              <span class="blog-badge">Phối đồ</span>
+              <h3 class="article-card__title"><a href="#">Cách phối blazer linen cho mùa hè nhiệt đới</a></h3>
+              <p class="article-card__excerpt">Blazer không còn là độc quyền của mùa thu. Khám phá 4 công thức phối đồ thoáng mát mà vẫn thanh lịch.</p>
+              <div class="post-meta">
+                <span class="post-meta__author">Lê Minh Châu</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__date">14/05/2026</span>
+                <span class="post-meta__dot">&middot;</span>
+                <span class="post-meta__read-time">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="8" cy="8" r="6" />
+                    <path d="M8 4v4l2.5 1.5" />
+                  </svg>
+                  5 phút
                 </span>
               </div>
             </div>

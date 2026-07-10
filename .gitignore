@@ -18,5 +18,19 @@ Velura-project (1)/
 Thumbs.db
 desktop.ini
 coverage/
+
+# Environment variables — KHÔNG BAO GIỜ commit file này lên Git
 .env
-.codex/
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.staging
+*.env
+
+# Scratch / debug scripts — có thể chứa credentials, không commit
+scratch_*.mjs
+scratch_*.js
+scratch_*.cjs
+test.jpg
+scratch_screenshot*.png

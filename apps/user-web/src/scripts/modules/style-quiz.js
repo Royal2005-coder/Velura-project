@@ -9,7 +9,7 @@ export function initStyleQuiz() {
   if (!container) return;
 
   let currentStep = 1;
-  const maxSteps = 7;
+  const maxSteps = 8;
   let isSummaryScreen = false;
 
   const steps = container.querySelectorAll(".quiz-step-content");
@@ -59,6 +59,34 @@ export function initStyleQuiz() {
 
   // Load any previously cached data from sessionStorage
   prefillQuizData();
+
+  if (isEditMode) {
+    import("./api.js").then(({ apiRequest }) => {
+      apiRequest("/api/user/style-quiz")
+        .then(res => {
+          if (res.success && res.quiz) {
+            const q = res.quiz;
+            if (q.height_cm) sessionStorage.setItem("quiz-height", q.height_cm);
+            if (q.weight_kg) sessionStorage.setItem("quiz-weight", q.weight_kg);
+            if (q.chest_cm) sessionStorage.setItem("quiz-vong1", q.chest_cm);
+            if (q.waist_cm) sessionStorage.setItem("quiz-vong2", q.waist_cm);
+            if (q.hip_cm) sessionStorage.setItem("quiz-vong3", q.hip_cm);
+            if (q.body_shape) sessionStorage.setItem("quiz-body-shape", q.body_shape);
+            if (q.style_tags) sessionStorage.setItem("quiz-main-style", JSON.stringify(q.style_tags));
+            if (q.preferred_occasions && q.preferred_occasions.length) {
+              sessionStorage.setItem("quiz-context", q.preferred_occasions[0]);
+            }
+            if (q.skin_tone) sessionStorage.setItem("quiz-skin-tone", q.skin_tone);
+            if (q.budget_range) sessionStorage.setItem("quiz-budget", q.budget_range);
+            
+            // Re-run prefill
+            prefillQuizData();
+            updateQuizUI();
+          }
+        })
+        .catch(err => console.error("Failed to load existing profile for editing:", err));
+    });
+  }
 
   // Selection logic for choices
   container.addEventListener("click", (e) => {
@@ -134,6 +162,30 @@ export function initStyleQuiz() {
       }
     });
   }
+
+  // Handle leaving page warning for guest users
+  const skipBtn = container.querySelector(".quiz-progress__skip");
+  if (skipBtn) {
+    skipBtn.addEventListener("click", (e) => {
+      const hasToken = localStorage.getItem("velura_token");
+      if (!hasToken) {
+        e.preventDefault();
+        showGuestLeavingWarningModal(skipBtn.getAttribute("href"));
+      }
+    });
+  }
+
+  // Bind beforeunload warning for Guests when quiz inputs exist
+  window.addEventListener("beforeunload", (e) => {
+    const hasToken = localStorage.getItem("velura_token");
+    const hasQuizState = sessionStorage.getItem("quiz-context") || sessionStorage.getItem("quiz-height");
+    if (!hasToken && hasQuizState && !window.quizSubmittedRedirect) {
+      // Standard browser prompt (custom message text might be ignored by modern browsers, but it triggers confirmation modal)
+      e.preventDefault();
+      e.returnValue = "Nếu bạn thoát mà không đăng nhập, các thông tin Style Quiz và Wishlist tạm thời sẽ bị mất sau khi phiên làm việc kết thúc.";
+      return e.returnValue;
+    }
+  });
 
   // Initial UI sync
   updateQuizUI();
@@ -271,6 +323,14 @@ export function initStyleQuiz() {
         return true;
 
       case 5:
+        const toneSelected = container.querySelector('[data-group="skin-tone"] .is-selected');
+        if (!toneSelected) {
+          showToast("Vui lòng chọn sắc tố da của bạn.");
+          return false;
+        }
+        return true;
+
+      case 6:
         const styleSelected = container.querySelector('[data-group="main-style"] .is-selected');
         if (!styleSelected) {
           showToast("Vui lòng chọn phong cách chủ đạo.");
@@ -278,7 +338,7 @@ export function initStyleQuiz() {
         }
         return true;
 
-      case 6:
+      case 7:
         const colorsSelected = container.querySelectorAll('.js-quiz-color-option.is-selected');
         if (colorsSelected.length === 0) {
           showToast("Vui lòng chọn ít nhất 1 màu sắc yêu thích.");
@@ -286,7 +346,7 @@ export function initStyleQuiz() {
         }
         return true;
 
-      case 7:
+      case 8:
         const budgetSelected = container.querySelector('.quiz-budget-card.is-selected');
         if (!budgetSelected) {
           showToast("Vui lòng chọn mức ngân sách mong muốn.");
@@ -320,12 +380,15 @@ export function initStyleQuiz() {
       const shape = container.querySelector('[data-group="body-shape"] .is-selected')?.getAttribute("data-value");
       if (shape) sessionStorage.setItem("quiz-body-shape", shape);
 
+      const skinTone = container.querySelector('[data-group="skin-tone"] .is-selected')?.getAttribute("data-value");
+      if (skinTone) sessionStorage.setItem("quiz-skin-tone", skinTone);
+
       const selectedStyles = container.querySelectorAll('[data-group="main-style"] .is-selected');
       const styles = Array.from(selectedStyles).map(btn => btn.getAttribute("data-value"));
       sessionStorage.setItem("quiz-main-style", JSON.stringify(styles));
 
       const selectedColors = container.querySelectorAll('.js-quiz-color-option.is-selected');
-      const colors = Array.from(selectedColors).map(btn => btn.getAttribute("data-value"));
+      const colors = Array.from(selectedColors).map(btn => `${btn.getAttribute("data-value")}|${btn.getAttribute("data-color-hex")}`);
       sessionStorage.setItem("quiz-colors", JSON.stringify(colors));
 
       const budget = container.querySelector('.quiz-budget-card.is-selected')?.getAttribute("data-value");
@@ -390,6 +453,17 @@ export function initStyleQuiz() {
         btns.forEach(btn => {
           const val = btn.getAttribute("data-quiz-value") || btn.getAttribute("data-value");
           btn.classList.toggle("is-selected", val === shape);
+        });
+      }
+
+      // 5.5. Skin Tone
+      const skinTone = sessionStorage.getItem("quiz-skin-tone");
+      if (skinTone) {
+        const cards = container.querySelectorAll('[data-group="skin-tone"] .quiz-budget-card');
+        cards.forEach(card => card.classList.remove("is-selected"));
+        cards.forEach(card => {
+          const val = card.getAttribute("data-quiz-value") || card.getAttribute("data-value");
+          card.classList.toggle("is-selected", val === skinTone);
         });
       }
 
@@ -482,6 +556,14 @@ export function initStyleQuiz() {
       bodyShapeDisplay.textContent = bodyShapeName;
     }
 
+    // 4.5. Skin tone
+    const skinToneCard = container.querySelector('[data-group="skin-tone"] .is-selected');
+    const skinToneName = skinToneCard ? skinToneCard.querySelector(".quiz-budget-card__title")?.textContent.trim() || skinToneCard.getAttribute("data-value") : "-";
+    const skinToneDisplay = document.getElementById("summary-skin-tone");
+    if (skinToneDisplay) {
+      skinToneDisplay.textContent = skinToneName;
+    }
+
     // 5. Main style
     const selectedStyleItems = container.querySelectorAll('[data-group="main-style"] .is-selected');
     const mainStyleNames = Array.from(selectedStyleItems).map(item => {
@@ -513,7 +595,7 @@ export function initStyleQuiz() {
     }
 
     // 7. Budget
-    const budgetCard = container.querySelector('.quiz-budget-card.is-selected');
+    const budgetCard = container.querySelector('[data-group="budget"] .quiz-budget-card.is-selected');
     const budgetTitle = budgetCard ? budgetCard.querySelector(".quiz-budget-card__title")?.textContent.trim() : "-";
     const budgetDisplay = document.getElementById("summary-budget");
     if (budgetDisplay) {
@@ -558,11 +640,18 @@ export function initStyleQuiz() {
     else if (rawShape.toLowerCase().includes("rectangle") || rawShape.toLowerCase().includes("chu-nhat")) body_shape = "Rectangle";
     else if (rawShape.toLowerCase().includes("triangle") || rawShape.toLowerCase().includes("tam-giac")) body_shape = "Inverted Triangle";
 
-    // Styles & Colors
+    // Styles
     let style_tags = [];
     try {
       const parsedStyles = JSON.parse(sessionStorage.getItem("quiz-main-style") || "[]");
       style_tags = Array.isArray(parsedStyles) ? parsedStyles : [parsedStyles];
+    } catch(e) {}
+    
+    const age = sessionStorage.getItem("quiz-age") || null;
+    let colors = [];
+    try {
+      const parsedColors = JSON.parse(sessionStorage.getItem("quiz-colors") || "[]");
+      colors = Array.isArray(parsedColors) ? parsedColors : [];
     } catch(e) {}
 
     const occasions = sessionStorage.getItem("quiz-context") ? [sessionStorage.getItem("quiz-context")] : [];
@@ -575,41 +664,83 @@ export function initStyleQuiz() {
       else budget_range = "700k_1.5m";
     }
 
-    import("./api.js").then(({ apiRequest }) => {
-      apiRequest("/api/user/style-quiz", {
+    window.quizSubmittedRedirect = true;
+    
+    // 1. Submit quiz data to API
+    const apiPromise = import("./api.js").then(({ apiRequest }) => {
+      return apiRequest("/api/user/style-quiz", {
         method: "POST",
-        body: JSON.stringify({
+        body: {
           height_cm,
           weight_kg,
           chest_cm,
           waist_cm,
           hip_cm,
           body_shape,
-          skin_tone: "Neutral",
+          skin_tone: sessionStorage.getItem("quiz-skin-tone") || "Neutral",
           style_tags,
           preferred_occasions: occasions,
           favorite_brands: ["Velura"],
-          budget_range
-        })
-      })
-      .then(() => {
-        console.log("Style Profile saved successfully to database!");
-      })
-      .catch(err => {
-        console.error("Failed to save style profile:", err);
+          budget_range,
+          age_group: age,
+          favorite_colors: colors
+        }
       });
+    }).then((res) => {
+      console.log("Style Profile saved successfully!");
+      localStorage.setItem("velura_guest_quiz_completed", "true");
+      return res;
     });
 
+    // 2. AI loading text simulation (minimum 2.4s)
     simulationSteps.forEach(step => {
       setTimeout(() => {
         loadingMsg.textContent = step.text;
       }, step.delay);
     });
+    const delayPromise = new Promise(resolve => setTimeout(resolve, 2400));
 
-    // Final redirection after 2.4s
-    setTimeout(() => {
-      document.body.style.overflow = "";
-      window.location.href = "/src/pages/ai/suggestions.html?isNewQuiz=true";
-    }, 2400);
+    // 3. Navigate only when both the save operation and loading simulation finish
+    Promise.all([apiPromise, delayPromise])
+      .then(() => {
+        document.body.style.overflow = "";
+        window.location.href = "/src/pages/ai/suggestions.html?isNewQuiz=true";
+      })
+      .catch(err => {
+        console.error("Failed to save style profile:", err);
+        // Fallback: redirect anyway so user isn't stuck, and let frontend auto-sync trigger
+        document.body.style.overflow = "";
+        window.location.href = "/src/pages/ai/suggestions.html?isNewQuiz=true";
+      });
   }
+}
+
+function showGuestLeavingWarningModal(targetHref) {
+  if (document.querySelector(".account-login-required-modal")) return;
+
+  const modal = document.createElement("div");
+  modal.className = "account-login-required-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.innerHTML = `
+    <div class="account-login-required-modal__card" style="max-width: 480px; padding: 32px; border-radius: 16px; background: white; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.12);">
+      <div style="font-size: 44px; margin-bottom: 16px;">⚠️</div>
+      <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: #1a1a1a; margin-bottom: 12px; font-weight: 600;">LƯU Ý QUAN TRỌNG CHO BẠN</h2>
+      <p style="font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: #555; line-height: 1.6; margin-bottom: 24px;">
+        Bạn đang tham gia với tư cách <strong>Khách (Guest)</strong>. Nếu bạn rời khỏi trang, các dữ liệu tạm thời như kết quả Style Quiz và sản phẩm yêu thích (Wishlist) sẽ <strong>không được lưu lại vĩnh viễn</strong>.
+      </p>
+      <div class="account-login-required-modal__actions" style="display: flex; gap: 12px; justify-content: center;">
+        <a class="btn btn--primary" href="/src/pages/auth/signin.html" style="padding: 12px 24px; text-decoration: none; font-size: 0.9rem;">Đăng nhập để lưu</a>
+        <button class="btn btn--outline js-modal-exit-anyway-btn" type="button" style="padding: 12px 24px; font-size: 0.9rem;">Thoát &amp; Chấp nhận xóa</button>
+      </div>
+    </div>
+  `;
+
+  modal.querySelector(".js-modal-exit-anyway-btn").addEventListener("click", () => {
+    // Prevent beforeunload warning triggers
+    window.quizSubmittedRedirect = true;
+    window.location.href = targetHref || "/index.html";
+  });
+
+  document.body.appendChild(modal);
 }

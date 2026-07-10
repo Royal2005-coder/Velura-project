@@ -32,7 +32,7 @@ NGUYÊN TẮC DỮ LIỆU VÀ TOOL:
 
 THÔNG TIN CHÍNH SÁCH CỐ ĐỊNH:
 - Bảng size: S(eo 62-66cm, ngực 80-84cm), M(eo 66-70cm, ngực 84-88cm), L(eo 70-74cm, ngực 88-92cm), XL(eo 74-78cm, ngực 92-96cm).
-- Với bất kỳ câu hỏi nào về chính sách đổi trả, hoàn tiền, vận chuyển, giao nhận hoặc điều khoản thành viên, bạn BẮT BUỘC phải sử dụng tool search_policies để lấy thông tin chính xác nhất từ database trước khi trả lời. Nếu tool không trả về kết quả, hãy dùng chính sách mặc định: Miễn phí vận chuyển cho đơn từ 500.000đ (dưới 500.000đ phí ship 30.000đ); đổi trả sản phẩm nguyên giá trong 7 ngày và sản phẩm sale >30% trong 3 ngày (yêu cầu chưa sử dụng, còn tem mác).
+- Với bất kỳ câu hỏi nào về chính sách đổi trả, hoàn tiền, vận chuyển, giao nhận hoặc điều khoản thành viên, bạn BẮT BUỘC phải sử dụng tool search_policies hoặc get_policies để lấy thông tin chính xác nhất từ database trước khi trả lời. Database là nguồn đúng duy nhất. Nếu tool không trả về kết quả, hãy nói rõ rằng hiện chưa tải được chính sách mới nhất từ database và đề nghị khách liên hệ CSKH; tuyệt đối không tự dùng chính sách mặc định hoặc dữ liệu cũ.
 
 GIỚI HẠN:
 - Không bịa đặt sản phẩm, giá, tồn kho, mã giảm giá hoặc trạng thái đơn hàng.
@@ -82,6 +82,15 @@ const GEMINI_TOOLS = [
   },
   {
     type: "function",
+    name: "get_policies",
+    description: "Lấy toàn bộ chính sách công khai của Velura từ database: đổi trả, bảo mật, vận chuyển, điều khoản sử dụng, FAQ và thành viên.",
+    parameters: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    type: "function",
     name: "get_order_status",
     description: "Kiểm tra trạng thái đơn hàng của khách hàng theo mã đơn hàng (UUID) hoặc số điện thoại.",
     parameters: {
@@ -107,6 +116,21 @@ const GEMINI_TOOLS = [
         body_shape: { type: "string", description: "Dáng người (pear, hourglass, rectangle, apple, inverted_triangle)" },
         skin_tone: { type: "string", description: "Tông da (fair, medium, dark)" }
       }
+    }
+  },
+  {
+    type: "function",
+    name: "create_support_ticket",
+    description: "Tạo một ticket hỗ trợ mới khi người dùng gặp sự cố phức tạp, lỗi hệ thống, khiếu nại hoặc cần người liên hệ.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Tiêu đề của ticket hỗ trợ (VD: Lỗi giao hàng, Hỗ trợ size đầm dạ hội)" },
+        description: { type: "string", description: "Mô tả chi tiết sự cố hoặc yêu cầu hỗ trợ" },
+        email: { type: "string", description: "Email liên hệ của khách hàng" },
+        phone: { type: "string", description: "Số điện thoại liên hệ của khách hàng" }
+      },
+      required: ["title", "description"]
     }
   },
   {
@@ -175,7 +199,12 @@ async function callMistralChat(messages, repository, contextProducts = [], style
     ? `\n\nSản phẩm có sẵn trong database:\n${contextProducts.map(p => `- ID: ${p.product_id}, Tên: ${p.name}, Giá: ${(p.sale_price || p.base_price).toLocaleString('vi-VN')}đ, SKU: ${p.sku}`).join('\n')}`
     : "";
 
-  const systemContent = SYSTEM_PROMPT + styleContext + productContext;
+  const policyInstruction = `\n\nNGUỒN CHÍNH SÁCH:
+- Khi khách hỏi về chính sách, đổi trả, hoàn tiền, vận chuyển, phí ship, bảo mật, thành viên, FAQ hoặc điều khoản sử dụng, PHẢI dùng tool get_policies hoặc search_policies để lấy dữ liệu mới nhất từ database.
+- Database là nguồn đúng duy nhất cho nội dung chính sách. Không trả lời theo thông tin hardcode nếu dữ liệu database khác prompt.
+- Khi trả lời chính sách, hãy tóm tắt ngắn gọn, đúng mốc thời gian và số tiền trong database.`;
+
+  const systemContent = SYSTEM_PROMPT + policyInstruction + styleContext + productContext;
 
   const apiMessages = [
     { role: "system", content: systemContent }
@@ -231,6 +260,7 @@ async function callMistralChat(messages, repository, contextProducts = [], style
     let allProductIds = [];
     let allBlogIds = [];
     let usedTools = [];
+    let createdTicket = null;
 
     if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
       console.log("[LLM] Tool calls found:", assistantMessage.tool_calls.length);
@@ -241,8 +271,8 @@ async function callMistralChat(messages, repository, contextProducts = [], style
         const name = toolCall.function.name;
         let args = {};
         try {
-          args = typeof toolCall.function.arguments === "string" 
-          ? JSON.parse(toolCall.function.arguments) 
+          args = typeof toolCall.function.arguments === "string"
+          ? JSON.parse(toolCall.function.arguments)
           : (toolCall.function.arguments || {});
         } catch (e) {
           console.error("[LLM] Failed to parse arguments for tool", name, e);
@@ -257,6 +287,9 @@ async function callMistralChat(messages, repository, contextProducts = [], style
         }
         if (toolResult.blogs) {
           allBlogIds.push(...toolResult.blogs.map(b => b.blog_id));
+        }
+        if (name === "create_support_ticket" && toolResult.ticket) {
+          createdTicket = toolResult.ticket;
         }
         apiMessages.push({
           role: "tool",
@@ -299,6 +332,7 @@ async function callMistralChat(messages, repository, contextProducts = [], style
       used: true,
       intent: detectIntent(usedTools, messages),
       interactionId: data.id,
+      createdTicket,
       metadata: { tools_used: usedTools, model: config.mistralModel || "mistral-large-latest" }
     };
   } catch (error) {
@@ -387,6 +421,16 @@ async function executeToolCall(name, args, repository, userId = null) {
         summary: `Đã cập nhật hồ sơ phong cách thành công với các thông số: ${Object.entries(args).map(([k, v]) => `${k}: ${v}`).join(', ')}.`
       };
     }
+    case "get_policies": {
+      const result = await repository.listPolicies?.() || { rows: [] };
+      const policies = result.rows || [];
+      return {
+        policies,
+        summary: policies.length
+          ? policies.map(formatPolicyForTool).join("\n\n")
+          : "Chưa có dữ liệu chính sách được công bố trong database."
+      };
+    }
     case "search_policies": {
       const result = await repository.searchPolicies(args.query || "");
       const policies = result.rows || [];
@@ -395,8 +439,8 @@ async function executeToolCall(name, args, repository, userId = null) {
         if (Array.isArray(p.content)) {
           contentStr = p.content.map(section => {
             const heading = section.heading ? `**${section.heading}**\n` : "";
-            const items = Array.isArray(section.items) 
-              ? section.items.map(item => `- ${item}`).join('\n') 
+            const items = Array.isArray(section.items)
+              ? section.items.map(item => `- ${item}`).join('\n')
               : section.text || "";
             return heading + items;
           }).join('\n\n');
@@ -422,9 +466,38 @@ async function executeToolCall(name, args, repository, userId = null) {
         summary: blogs.length ? formatted : "Không tìm thấy bài viết blog phù hợp"
       };
     }
+    case "create_support_ticket": {
+      const ticket = await repository.createSupportTicket({
+        profileUserId: userId || null,
+        guestEmail: args.email || null,
+        guestPhone: args.phone || null,
+        title: args.title,
+        description: args.description,
+        priority: "high"
+      });
+      return {
+        ticket,
+        summary: `Tạo ticket thành công. Mã ticket hỗ trợ của bạn là: ${ticket.ticket_id}. CSKH của Velura đã được thông báo và sẽ phản hồi trong thời gian sớm nhất.`
+      };
+    }
     default:
       return { error: `Unknown tool: ${name}` };
   }
+}
+
+function formatPolicyForTool(policy) {
+  const sections = Array.isArray(policy.content)
+    ? policy.content.map((section) => {
+      const heading = section.heading ? `**${section.heading}**\n` : "";
+      const body = Array.isArray(section.items)
+        ? section.items.map((item) => `- ${item}`).join("\n")
+        : section.text || "";
+      return `${heading}${body}`.trim();
+    }).filter(Boolean).join("\n")
+    : typeof policy.content === "string"
+      ? policy.content
+      : JSON.stringify(policy.content || {});
+  return `=== ${policy.title} ===\nTóm tắt: ${policy.summary || ""}\nChi tiết:\n${sections}`;
 }
 
 function detectIntent(tools, messages) {
@@ -432,8 +505,10 @@ function detectIntent(tools, messages) {
   if (tools.includes("get_order_status")) return "order_query";
   if (tools.includes("search_products")) return "product_search";
   if (tools.includes("get_categories")) return "category_browse";
+  if (tools.includes("get_policies") || tools.includes("search_policies")) return "policy_query";
   if (tools.includes("get_product_detail")) return "product_detail";
   if (tools.includes("update_style_profile")) return "style_update";
+  if (tools.includes("create_support_ticket")) return "ticket_creation";
   if (/(đơn hàng|order|tracking)/.test(last)) return "order_query";
   if (/(size|kích cỡ)/.test(last)) return "size_query";
   if (/(chính sách|đổi trả|bảo hành)/.test(last)) return "policy_query";

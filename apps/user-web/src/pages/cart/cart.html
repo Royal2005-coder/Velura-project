@@ -39,46 +39,7 @@
             </div>
 
             <div class="cart-items">
-              <!-- cart-items Template -->
-              <div class="cart-item" data-bind="cart.item" style="display: flex; align-items: center;">
-                <div class="cart-item__select" style="display: flex; align-items: center; justify-content: center; padding: 0 8px 0 16px;">
-                  <input type="checkbox" class="js-cart-item-checkbox" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--terracotta);" checked />
-                </div>
-                <div class="cart-item__image">
-                  <img src="../../assets/images/phu-kien_khan-trum-dau-vien-ren-vintage_05.jpg"
-                    alt="Đầm linen tay phồng" data-bind="cart.image_url" />
-                </div>
-                <div class="cart-item__details">
-                  <div class="cart-item__header-row">
-                    <h3 class="cart-item__name" data-bind="cart.name">{{Tên sản phẩm}}</h3>
-                    <button class="cart-item__delete" type="button" aria-label="Xóa sản phẩm" data-bind="cart.delete_btn">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.5">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        <line x1="10" y1="11" x2="10" y2="17" />
-                        <line x1="14" y1="11" x2="14" y2="17" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div class="cart-item__tags" data-bind="cart.tags_list">
-                    <span class="cart-item__tag">Size: M</span>
-                    <span class="cart-item__tag">Màu: Hồng phấn</span>
-                  </div>
-                  <div class="cart-item__footer-row">
-                    <div class="qty-selector">
-                      <button class="qty-selector__btn" type="button" aria-label="Giảm số lượng" data-bind="cart.decrease_btn">-</button>
-                      <span class="qty-selector__value" data-bind="cart.quantity">1</span>
-                      <button class="qty-selector__btn" type="button" aria-label="Tăng số lượng" data-bind="cart.increase_btn">+</button>
-                    </div>
-                    <div class="cart-item__price-block">
-                      <span class="cart-item__old-price" data-bind="cart.old_price" style="display: none;">{{Giá cũ}}</span>
-                      <span class="cart-item__price" data-bind="cart.price">{{Giá}}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- /cart-items Template -->
+              <!-- Cart items will be loaded dynamically by JavaScript -->
             </div>
 
             <!-- Guarantee Banner -->
@@ -88,7 +49,7 @@
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 <path d="M9 11l2 2 4-4" />
               </svg>
-              <p class="cart-guarantee__text">Đảm bảo hoàn tiền 100% trong vòng 7 ngày nếu sản phẩm không vừa ý</p>
+              <p class="cart-guarantee__text">Yêu cầu đổi trả trong 48 giờ sau khi đơn được giao thành công; hoàn tiền trong 4 - 5 ngày làm việc sau khi hàng đạt kiểm tra.</p>
             </div>
           </div>
 
@@ -97,21 +58,7 @@
             <div class="summary-card">
               <h2 class="summary-card__title">Tóm tắt đơn hàng</h2>
 
-              <!-- Coupon Code -->
-              <div class="coupon-section">
-                <label class="coupon-label" for="couponCode">Mã giảm giá</label>
-                <div class="coupon-form">
-                  <div class="coupon-input-wrapper">
-                    <svg class="coupon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="1.5">
-                      <path
-                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                    </svg>
-                    <input type="text" id="couponCode" placeholder="Nhập mã" aria-label="Nhập mã giảm giá" />
-                  </div>
-                  <button class="coupon-btn" type="button">Áp dụng</button>
-                </div>
-              </div>
+              <div class="cart-summary-products" style="margin-top: 16px; margin-bottom: 16px; max-height: 300px; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 12px;"></div>
 
               <hr class="summary-card__divider" />
 
@@ -120,19 +67,6 @@
                 <div class="summary-line">
                   <span class="summary-line__label">Tạm tính</span>
                   <span class="summary-line__value">9.050.000₫</span>
-                </div>
-                <div class="summary-line">
-                  <span class="summary-line__label">
-                    <svg class="shipping-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                      stroke="currentColor" stroke-width="1.5">
-                      <rect x="1" y="3" width="15" height="13" />
-                      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-                      <circle cx="5.5" cy="18.5" r="2.5" />
-                      <circle cx="18.5" cy="18.5" r="2.5" />
-                    </svg>
-                    Vận chuyển
-                  </span>
-                  <span class="summary-line__value summary-line__value--free">Miễn phí</span>
                 </div>
               </div>
 

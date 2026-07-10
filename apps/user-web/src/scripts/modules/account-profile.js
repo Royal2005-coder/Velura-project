@@ -2,7 +2,8 @@
  * Velura — Consolidated Account & Profile Logic
  */
 import { apiRequest } from "./api.js";
-import { addToCart } from "./cart.js";
+import { addToCart, getVariantImage } from "./cart.js";
+import { getCurrentRole, hasRealAuthSession } from "./auth-session.js";
 
 // Mock data for location dropdowns
 const locationData = {
@@ -48,8 +49,16 @@ const locationData = {
 };
 
 export function initProfileForm() {
+  if (!document.querySelector(".profile-page")) return;
+
   // 1. Tab Switching System
   initAccountTabs();
+
+  if (document.querySelector(".profile-page") && !hasRealAuthSession()) {
+    renderGuestProfileState();
+    showGuestLoginModal();
+    return;
+  }
 
   // 2. Profile Details Form
   initProfileFormValidation();
@@ -65,6 +74,71 @@ export function initProfileForm() {
 
   // 6. Settings & Style Profile Actions
   initSettingsAndStyleActions();
+}
+
+function renderGuestProfileState() {
+  const dash = "-";
+
+  document.querySelectorAll(".account-sidebar__name, .profile-avatar-name").forEach((el) => {
+    el.textContent = dash;
+  });
+
+  document.querySelectorAll(".profile-form input, .profile-form select, .profile-form textarea").forEach((field) => {
+    if (field.type === "radio" || field.type === "checkbox") {
+      field.checked = false;
+    } else {
+      field.value = dash;
+    }
+    field.disabled = true;
+  });
+
+  document.querySelectorAll(
+    ".profile-form button, .js-btn-add-address, .js-btn-save-settings, .style-profile__update-btn, .js-remove-wishlist, .js-add-cart-fast"
+  ).forEach((btn) => {
+    btn.disabled = true;
+    btn.setAttribute("aria-disabled", "true");
+  });
+
+  const addressList = document.querySelector(".address-list");
+  if (addressList) addressList.innerHTML = `<p class="account-guest-empty">-</p>`;
+
+  const ordersList = document.querySelector(".orders-list");
+  if (ordersList) ordersList.innerHTML = `<p class="account-guest-empty">-</p>`;
+
+  const wishlistGrid = document.getElementById("wishlist-product-grid");
+  if (wishlistGrid) wishlistGrid.innerHTML = `<p class="account-guest-empty">-</p>`;
+
+  const styleMetrics = document.querySelector(".style-profile__metrics");
+  if (styleMetrics) {
+    styleMetrics.querySelectorAll(".style-profile__metric-value").forEach((el) => {
+      el.textContent = dash;
+    });
+  }
+}
+
+function showGuestLoginModal() {
+  if (hasRealAuthSession() || document.querySelector(".account-login-required-modal")) return;
+
+  const modal = document.createElement("div");
+  modal.className = "account-login-required-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.innerHTML = `
+    <div class="account-login-required-modal__card">
+      <h2>BẠN CHƯA ĐĂNG NHẬP TRANG WEB</h2>
+      <p>Đăng nhập để tiếp tục?</p>
+      <div class="account-login-required-modal__actions">
+        <a class="account-login-required-modal__btn account-login-required-modal__btn--primary" href="/src/pages/auth/signin.html">Đăng nhập</a>
+        <button class="account-login-required-modal__btn account-login-required-modal__btn--secondary" type="button">Thoát</button>
+      </div>
+    </div>
+  `;
+
+  modal.querySelector("button").addEventListener("click", () => {
+    window.location.href = "/index.html";
+  });
+
+  document.body.appendChild(modal);
 }
 
 /**
@@ -127,6 +201,7 @@ function loadProfileData(form) {
       const phoneInput = form.querySelector('input[name="phone"]');
       const emailInput = form.querySelector('input[name="email"]');
       const dobInput = form.querySelector('input[name="dob"]');
+      const avatarInput = form.querySelector('input[name="avatar"]');
       
       if (nameInput) nameInput.value = profile.full_name || "";
       if (phoneInput) {
@@ -142,6 +217,9 @@ function loadProfileData(form) {
         if (parts.length === 3) {
           dobInput.value = `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
+      }
+      if (avatarInput) {
+        avatarInput.value = profile.avatar || "";
       }
 
       if (profile.gender) {
@@ -159,10 +237,174 @@ function loadProfileData(form) {
       if (largeName && profile.full_name) {
         largeName.textContent = profile.full_name;
       }
+      
+      const avatarMeta = document.querySelector(".profile-avatar-meta");
+      if (avatarMeta) {
+        if (profile.created_at) {
+          const date = new Date(profile.created_at);
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const year = date.getFullYear();
+          avatarMeta.textContent = `Thành viên từ tháng ${month}/${year} · 0 điểm tích lũy`;
+        } else {
+          avatarMeta.textContent = `Thành viên mới · 0 điểm tích lũy`;
+        }
+      }
+
+      // Render user avatar (initials fallback or custom URL)
+      renderUserAvatar(profile.avatar, profile.full_name);
     })
     .catch(err => {
       console.error("Failed to load profile:", err);
+      if (err.status === 401 && !hasRealAuthSession()) {
+        renderGuestProfileState();
+        showGuestLoginModal();
+      } else {
+        // Fallback: load details from local storage user
+        const rawUser = localStorage.getItem("velura_user");
+        if (rawUser) {
+          try {
+            const profile = JSON.parse(rawUser);
+            const nameInput = form.querySelector('input[name="fullname"]');
+            const phoneInput = form.querySelector('input[name="phone"]');
+            const emailInput = form.querySelector('input[name="email"]');
+            const avatarInput = form.querySelector('input[name="avatar"]');
+            
+            if (nameInput) nameInput.value = profile.full_name || "";
+            if (phoneInput) {
+              phoneInput.value = profile.phone || "";
+              phoneInput.readOnly = true;
+            }
+            if (emailInput) {
+              emailInput.value = profile.email || "";
+              emailInput.readOnly = true;
+            }
+            if (avatarInput) {
+              avatarInput.value = profile.avatar || "";
+            }
+
+            // Update names on UI
+            const sidebarName = document.querySelector(".account-sidebar__name");
+            if (sidebarName && profile.full_name) {
+              const nameParts = profile.full_name.split(" ");
+              sidebarName.textContent = nameParts.length >= 2 ? (nameParts[nameParts.length - 1] + " " + nameParts[0]) : profile.full_name;
+            }
+            const largeName = document.querySelector(".profile-avatar-name");
+            if (largeName && profile.full_name) {
+              largeName.textContent = profile.full_name;
+            }
+            
+            const avatarMeta = document.querySelector(".profile-avatar-meta");
+            if (avatarMeta) {
+              if (profile.created_at) {
+                const date = new Date(profile.created_at);
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                avatarMeta.textContent = `Thành viên từ tháng ${month}/${year} · 0 điểm tích lũy`;
+              } else {
+                avatarMeta.textContent = `Thành viên mới · 0 điểm tích lũy`;
+              }
+            }
+
+            // Render user avatar (initials fallback or custom URL)
+            renderUserAvatar(profile.avatar, profile.full_name);
+          } catch (e) {
+            console.error("Failed to parse fallback user profile:", e);
+          }
+        } else {
+          showToast("Không thể tải thông tin hồ sơ. Vui lòng thử lại sau.");
+        }
+      }
     });
+}
+
+/**
+ * Avatar Initials Fallback and Image Rendering Helpers
+ */
+function getInitials(name) {
+  if (!name) return "U";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function renderUserAvatar(avatarUrl, fullName) {
+  const sidebarAvatar = document.querySelector(".account-sidebar__avatar");
+  const profileAvatar = document.querySelector(".profile-avatar-img");
+  const avatarWrapper = document.querySelector(".profile-avatar-wrapper");
+  const sidebarWrapper = document.querySelector(".account-sidebar__avatar-wrapper");
+
+  const initials = getInitials(fullName);
+
+  if (avatarUrl && avatarUrl.trim() !== "") {
+    if (sidebarAvatar) {
+      sidebarAvatar.src = avatarUrl;
+      sidebarAvatar.style.display = "block";
+    }
+    if (profileAvatar) {
+      profileAvatar.src = avatarUrl;
+      profileAvatar.style.display = "block";
+    }
+    
+    // Clean up initials placeholders if they exist
+    const existingSidebarPlaceholder = sidebarWrapper?.querySelector(".avatar-placeholder");
+    if (existingSidebarPlaceholder) existingSidebarPlaceholder.remove();
+    
+    const existingProfilePlaceholder = avatarWrapper?.querySelector(".avatar-placeholder");
+    if (existingProfilePlaceholder) existingProfilePlaceholder.remove();
+  } else {
+    if (sidebarAvatar) sidebarAvatar.style.display = "none";
+    if (profileAvatar) profileAvatar.style.display = "none";
+
+    // Draw initials placeholder in sidebar
+    if (sidebarWrapper) {
+      let sidebarPlaceholder = sidebarWrapper.querySelector(".avatar-placeholder");
+      if (!sidebarPlaceholder) {
+        sidebarPlaceholder = document.createElement("div");
+        sidebarPlaceholder.className = "avatar-placeholder sidebar-avatar-placeholder";
+        sidebarWrapper.insertBefore(sidebarPlaceholder, sidebarAvatar);
+      }
+      sidebarPlaceholder.textContent = initials;
+    }
+
+    // Draw initials placeholder in profile top
+    if (avatarWrapper) {
+      let profilePlaceholder = avatarWrapper.querySelector(".avatar-placeholder");
+      if (!profilePlaceholder) {
+        profilePlaceholder = document.createElement("div");
+        profilePlaceholder.className = "avatar-placeholder profile-avatar-placeholder";
+        avatarWrapper.insertBefore(profilePlaceholder, profileAvatar);
+      }
+      profilePlaceholder.textContent = initials;
+    }
+  }
+}
+
+function setupAvatarUploadBtn(form) {
+  const uploadBtn = document.querySelector(".profile-avatar-upload-btn");
+  if (!uploadBtn) return;
+
+  // Prevent multiple bindings
+  if (uploadBtn.dataset.bound === "true") return;
+  uploadBtn.dataset.bound = "true";
+
+  uploadBtn.addEventListener("click", function(e) {
+    e.preventDefault();
+    const avatarInput = form.querySelector('input[name="avatar"]');
+    const nameInput = form.querySelector('input[name="fullname"]');
+    const currentVal = avatarInput ? avatarInput.value.trim() : "";
+    const fullName = nameInput ? nameInput.value.trim() : "User";
+
+    const newUrl = prompt("Nhập đường dẫn ảnh đại diện mới (URL):", currentVal);
+    if (newUrl !== null) {
+      const trimmed = newUrl.trim();
+      if (avatarInput) {
+        avatarInput.value = trimmed;
+      }
+      // Update preview immediately
+      renderUserAvatar(trimmed, fullName);
+      showToast("Đã cập nhật ảnh xem trước. Nhấn 'Cập nhật' ở dưới để lưu thay đổi.");
+    }
+  });
 }
 
 function initProfileFormValidation() {
@@ -171,6 +413,9 @@ function initProfileFormValidation() {
 
   // Load live data from backend
   loadProfileData(form);
+
+  // Hook up camera upload button to prompt for URL
+  setupAvatarUploadBtn(form);
 
   const cancelBtn = form.querySelector(".js-btn-cancel");
   if (cancelBtn) {
@@ -246,12 +491,16 @@ function initProfileFormValidation() {
       const genderInput = form.querySelector('input[name="gender"]:checked');
       const gender = genderInput ? genderInput.value : null;
 
+      const avatarInput = form.querySelector('input[name="avatar"]');
+      const avatar = avatarInput ? avatarInput.value.trim() : "";
+
       apiRequest("/api/user/profile", {
         method: "PATCH",
         body: JSON.stringify({
           full_name: fullname,
           date_of_birth,
-          gender
+          gender,
+          avatar
         })
       })
       .then(updated => {
@@ -262,6 +511,7 @@ function initProfileFormValidation() {
         if (localUser) {
           const parsed = JSON.parse(localUser);
           parsed.full_name = updated.full_name;
+          parsed.avatar = updated.avatar; // Sync avatar to local storage
           localStorage.setItem("velura_user", JSON.stringify(parsed));
         }
 
@@ -284,6 +534,9 @@ function initProfileFormValidation() {
         if (largeName) {
           largeName.textContent = updatedName;
         }
+
+        // Update avatar on UI dynamically
+        renderUserAvatar(updated.avatar, updated.full_name);
       })
       .catch(err => {
         showToast(`Cập nhật thất bại: ${err.message}`);
@@ -861,31 +1114,136 @@ function initWishlistActions() {
           const priceFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.sale_price || product.base_price);
           return `
             <div class="product-card" data-product-id="${product.product_id}">
-              <div class="product-card__image-container">
-                <img class="product-card__image" src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" />
-                <button class="product-card__wishlist-btn js-remove-wishlist" type="button" aria-label="Xóa khỏi yêu thích">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <div class="product-card__img-wrapper">
+                <img class="product-card__img" src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" />
+                <button class="btn-icon product-card__btn-wishlist js-remove-wishlist active" type="button" aria-label="Xóa khỏi yêu thích">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                   </svg>
                 </button>
               </div>
-              <div class="product-card__details">
-                <h3 class="product-card__name"><a href="/src/pages/products/detail.html?id=${product.product_id}" style="text-decoration:none; color:inherit;">${product.name}</a></h3>
-                <div class="product-card__price-row">
-                  <span class="product-card__price">${priceFormatted}</span>
+              <div class="product-card__info" style="padding: 14px;">
+                <h3 class="product-card__title" style="margin: 0; font-size: 0.875rem; font-weight: 500; height: 38px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4;"><a href="/src/pages/products/detail.html?id=${product.product_id}" style="text-decoration:none; color:inherit;">${product.name}</a></h3>
+                <div class="product-card__price-row" style="margin-top: 8px;">
+                  <span class="product-card__price" style="font-family: 'DM Sans', sans-serif; font-weight: 700; color: var(--terracotta);">${priceFormatted}</span>
                 </div>
-                <button class="btn btn--primary product-card__cart-btn js-add-cart-fast" type="button">
+              </div>
+              <div class="product-card__actions" style="padding: 0 14px 14px; margin-top: auto;">
+                <button class="btn btn--primary product-card__cart-btn js-add-cart-fast" type="button" style="width: 100%; padding: 8px 0; font-size: 0.8125rem;">
                   Thêm vào giỏ nhanh
                 </button>
               </div>
             </div>
           `;
         }).join("");
+
+        setupWishlistCarousel(grid);
       })
       .catch(err => {
         grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 24px 0; color: #d9534f;">Không thể tải danh sách yêu thích: ${err.message}</div>`;
       });
+  }
+
+  function setupWishlistCarousel(gridEl) {
+    if (!gridEl) return;
+    const parent = gridEl.parentNode;
+    
+    // Clean up existing arrows
+    parent.querySelectorAll(".wishlist-carousel-arrow").forEach(el => el.remove());
+    
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "wishlist-carousel-arrow wishlist-carousel-arrow--prev";
+    prevBtn.innerHTML = "‹";
+    prevBtn.style.cssText = `
+      position: absolute;
+      top: calc(50% + 20px);
+      left: -18px;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid #FAF6F2;
+      box-shadow: 0 4px 12px rgba(42,37,34,0.08);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      z-index: 10;
+      color: #7D562D;
+      transition: all 0.2s ease;
+      line-height: 1;
+    `;
+    
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "wishlist-carousel-arrow wishlist-carousel-arrow--next";
+    nextBtn.innerHTML = "›";
+    nextBtn.style.cssText = `
+      position: absolute;
+      top: calc(50% + 20px);
+      right: -18px;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid #FAF6F2;
+      box-shadow: 0 4px 12px rgba(42,37,34,0.08);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      z-index: 10;
+      color: #7D562D;
+      transition: all 0.2s ease;
+      line-height: 1;
+    `;
+    
+    parent.style.position = "relative";
+    
+    prevBtn.addEventListener("click", () => {
+      gridEl.scrollBy({ left: -gridEl.clientWidth * 0.8, behavior: "smooth" });
+    });
+    
+    nextBtn.addEventListener("click", () => {
+      gridEl.scrollBy({ left: gridEl.clientWidth * 0.8, behavior: "smooth" });
+    });
+    
+    // Hover styling
+    const addHoverEffect = (btn) => {
+      btn.addEventListener("mouseenter", () => {
+        btn.style.background = "#FAF6F2";
+        btn.style.color = "#C97B63";
+      });
+      btn.addEventListener("mouseleave", () => {
+        btn.style.background = "#fff";
+        btn.style.color = "#7D562D";
+      });
+    };
+    addHoverEffect(prevBtn);
+    addHoverEffect(nextBtn);
+    
+    parent.appendChild(prevBtn);
+    parent.appendChild(nextBtn);
+    
+    const updateArrows = () => {
+      const hasOverflow = gridEl.scrollWidth > gridEl.clientWidth + 8;
+      prevBtn.style.display = hasOverflow ? "flex" : "none";
+      nextBtn.style.display = hasOverflow ? "flex" : "none";
+      
+      prevBtn.disabled = gridEl.scrollLeft <= 4;
+      nextBtn.disabled = gridEl.scrollLeft >= (gridEl.scrollWidth - gridEl.clientWidth - 4);
+      prevBtn.style.opacity = prevBtn.disabled ? "0.4" : "1";
+      nextBtn.style.opacity = nextBtn.disabled ? "0.4" : "1";
+    };
+    
+    gridEl.addEventListener("scroll", updateArrows);
+    window.addEventListener("resize", updateArrows);
+    setTimeout(updateArrows, 200);
   }
 
   // Delegate clicks on grid
@@ -938,7 +1296,7 @@ function initWishlistActions() {
             variant_id: matchedVariant.variant_id,
             product_id: product.product_id,
             product_name: product.name,
-            product_image: product.images?.[0] || "",
+            product_image: getVariantImage(product, matchedVariant.color || "Mặc định"),
             quantity: 1,
             unit_price: product.sale_price || product.base_price,
             color: matchedVariant.color || "Mặc định",
@@ -985,37 +1343,104 @@ function initSettingsAndStyleActions() {
   }
 
   // Load Style Profile details
-  const metricsContainer = document.querySelector(".style-profile__metrics");
-  if (metricsContainer) {
+  const emptyContainer = document.getElementById("js-style-profile-empty");
+  const filledContainer = document.getElementById("js-style-profile-filled");
+
+  if (emptyContainer && filledContainer) {
     apiRequest("/api/user/style-quiz")
       .then(res => {
-        if (res.success && res.quiz) {
+        if (res.success && res.quiz && Object.keys(res.quiz).length > 0) {
           const q = res.quiz;
-          const heading = document.querySelector(".style-profile__heading");
+          
+          // Show filled state, hide empty state
+          emptyContainer.style.display = "none";
+          filledContainer.style.display = "flex"; // style-profile-container is a flex container (based on CSS usually, or block)
+          
+          // Fallback if flex is broken
+          if (getComputedStyle(filledContainer).display === 'none') {
+             filledContainer.style.display = "block";
+          }
+
+          const heading = document.getElementById("js-style-heading");
           if (heading && q.style_tags) {
             heading.textContent = Array.isArray(q.style_tags) ? q.style_tags.join(", ") : q.style_tags;
           }
-          metricsContainer.innerHTML = `
-            <div class="style-profile__metric-row">
-              <span class="style-profile__metric-label">Chiều cao</span>
-              <span class="style-profile__metric-value">${q.height_cm ? q.height_cm + 'cm' : 'Chưa cập nhật'}</span>
-            </div>
-            <div class="style-profile__metric-row">
-              <span class="style-profile__metric-label">Cân nặng</span>
-              <span class="style-profile__metric-value">${q.weight_kg ? q.weight_kg + 'kg' : 'Chưa cập nhật'}</span>
-            </div>
-            <div class="style-profile__metric-row">
-              <span class="style-profile__metric-label">Dáng người</span>
-              <span class="style-profile__metric-value">${q.body_shape || 'Chưa cập nhật'}</span>
-            </div>
-            <div class="style-profile__metric-row">
-              <span class="style-profile__metric-label">Tông màu da / Yêu thích</span>
-              <span class="style-profile__metric-value">${q.skin_tone || 'Chưa cập nhật'}</span>
-            </div>
-          `;
+          
+          const ageEl = document.getElementById("js-style-age");
+          if (ageEl) ageEl.textContent = q.age_group ? `Nhóm tuổi ${q.age_group}` : 'Chưa cập nhật';
+          
+          const colorsEl = document.getElementById("js-style-colors");
+          if (colorsEl) {
+            if (q.favorite_colors && Array.isArray(q.favorite_colors) && q.favorite_colors.length > 0) {
+              const fallbackColorMap = {
+                "Kem": "#E6D9CD", "Phấn": "#F5E1D3", "Hồng đào": "#E8C3B9", 
+                "Hồng đất": "#C97B63", "Xanh ô liu": "#A0AF9C", "Onyx": "#2C2A29", 
+                "Xám ấm": "#8F8A85", "Xanh khói": "#5B6C7A", "Camel": "#D3A273", "Đỏ rượu": "#732C2B"
+              };
+              colorsEl.innerHTML = q.favorite_colors.map(c => {
+                const parts = c.split("|");
+                let colorHex = parts.length > 1 ? parts[1] : parts[0];
+                const colorName = parts[0];
+                if (parts.length === 1 && fallbackColorMap[colorName]) {
+                  colorHex = fallbackColorMap[colorName];
+                }
+                return `<span style="display:inline-block; width:20px; height:20px; border-radius:50%; background-color:${colorHex}; border: 1px solid #e0e0e0;" title="${colorName}"></span>`;
+              }).join("");
+            } else {
+              colorsEl.textContent = 'Chưa cập nhật';
+            }
+          }
+          
+          const heightEl = document.getElementById("js-style-height");
+          if (heightEl) heightEl.textContent = q.height_cm ? q.height_cm + 'cm' : 'Chưa cập nhật';
+
+          const weightEl = document.getElementById("js-style-weight");
+          if (weightEl) weightEl.textContent = q.weight_kg ? q.weight_kg + 'kg' : 'Chưa cập nhật';
+
+          const shapeEl = document.getElementById("js-style-shape");
+          if (shapeEl) shapeEl.textContent = q.body_shape || 'Chưa cập nhật';
+
+          const toneEl = document.getElementById("js-style-tone");
+          if (toneEl) toneEl.textContent = q.skin_tone || 'Chưa cập nhật';
+          
+          const chestEl = document.getElementById("js-style-chest");
+          if (chestEl) chestEl.textContent = q.chest_cm ? q.chest_cm + 'cm' : 'Chưa cập nhật';
+          
+          const waistEl = document.getElementById("js-style-waist");
+          if (waistEl) waistEl.textContent = q.waist_cm ? q.waist_cm + 'cm' : 'Chưa cập nhật';
+          
+          const hipEl = document.getElementById("js-style-hip");
+          if (hipEl) hipEl.textContent = q.hip_cm ? q.hip_cm + 'cm' : 'Chưa cập nhật';
+
+          const occasionsEl = document.getElementById("js-style-occasions");
+          if (occasionsEl) {
+             const occ = Array.isArray(q.preferred_occasions) ? q.preferred_occasions.join(", ") : q.preferred_occasions;
+             occasionsEl.textContent = occ || 'Chưa cập nhật';
+          }
+          
+          const brandsEl = document.getElementById("js-style-brands");
+          if (brandsEl) {
+             const b = Array.isArray(q.favorite_brands) ? q.favorite_brands.join(", ") : q.favorite_brands;
+             brandsEl.textContent = b || 'Chưa cập nhật';
+          }
+          
+          const budgetEl = document.getElementById("js-style-budget");
+          if (budgetEl) budgetEl.textContent = q.budget_range || 'Chưa cập nhật';
+
+        } else {
+          // Show empty state, hide filled state
+          emptyContainer.style.display = "block";
+          filledContainer.style.display = "none";
         }
       })
-      .catch(err => console.error("Failed to load style profile:", err));
+      .catch(err => {
+        console.error("Failed to load style profile:", err);
+        // On error, we'll assume no profile and show empty state so user isn't stuck
+        if (emptyContainer && filledContainer) {
+          emptyContainer.style.display = "block";
+          filledContainer.style.display = "none";
+        }
+      });
   }
 }
 

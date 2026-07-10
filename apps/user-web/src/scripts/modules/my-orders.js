@@ -15,26 +15,119 @@ export function initMyOrders() {
   const goReviewBtn = document.querySelector(".js-btn-go-review");
 
   let allOrders = [];
+  let userReviews = [];
   let currentTab = "all";
   let searchQuery = "";
   let activeConfirmOrderId = null;
 
-  // Load orders from API
+  // Load orders and user reviews from API
   function loadOrders() {
     if (orderListContainer) {
       orderListContainer.innerHTML = `<div style="text-align: center; padding: 48px 0; color: var(--soft);">Đang tải danh sách đơn hàng...</div>`;
     }
 
-    apiRequest("/api/user/orders")
+    apiRequest("/api/user/reviews")
+      .then(reviewData => {
+        userReviews = reviewData.reviews || [];
+        return apiRequest("/api/user/orders");
+      })
       .then(data => {
         allOrders = data.orders || [];
+        renderNotifications();
         renderAndFilter();
       })
       .catch(err => {
-        if (orderListContainer) {
-          orderListContainer.innerHTML = `<div style="text-align: center; padding: 48px 0; color: #d9534f;">Không thể tải danh sách đơn hàng: ${err.message}</div>`;
-        }
+        // Fallback if reviews API fails, still load orders
+        apiRequest("/api/user/orders")
+          .then(data => {
+            allOrders = data.orders || [];
+            renderAndFilter();
+          })
+          .catch(orderErr => {
+            if (orderListContainer) {
+              orderListContainer.innerHTML = `<div style="text-align: center; padding: 48px 0; color: #d9534f;">Không thể tải danh sách đơn hàng: ${orderErr.message}</div>`;
+            }
+          });
       });
+  }
+
+  // Render notification banners for rejected reviews
+  function renderNotifications() {
+    const container = document.getElementById("js-notifications-container");
+    if (!container) return;
+
+    const rejectedReviews = userReviews.filter(r => r.status === "rejected");
+    if (rejectedReviews.length === 0) {
+      container.innerHTML = "";
+      return;
+    }
+
+    let html = "";
+    rejectedReviews.forEach(review => {
+      const order = allOrders.find(o => o.order_id === review.order_id);
+      const trackingCode = order ? (order.tracking_code || order.order_id.slice(0, 8).toUpperCase()) : "N/A";
+      
+      html += `
+        <div class="review-notification-banner" style="
+          background-color: #FFF2F2;
+          border: 1px solid #FFCCD2;
+          border-radius: 8px;
+          padding: 16px;
+          margin-bottom: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          box-shadow: 0 2px 8px rgba(220, 53, 69, 0.08);
+        ">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <span style="font-size: 1.25rem; margin-top: -2px;">⚠️</span>
+            <div>
+              <h4 style="margin: 0 0 4px; font-size: 0.9375rem; color: #DC3545; font-weight: 600;">Đánh giá bị từ chối kiểm duyệt</h4>
+              <p style="margin: 0; font-size: 0.875rem; color: #555; line-height: 1.4;">
+                Đánh giá của bạn cho đơn hàng <strong>#${trackingCode}</strong> không đạt tiêu chuẩn kiểm duyệt.
+                <br>Lý do: <span style="color: #DC3545; font-weight: 500;">${review.rejection_reason || "Nội dung hoặc hình ảnh không phù hợp"}</span>.
+              </p>
+            </div>
+          </div>
+          <button class="btn btn--primary js-btn-re-review" data-order-id="${review.order_id}" style="
+            background-color: #DC3545;
+            border-color: #DC3545;
+            color: #fff;
+            padding: 8px 16px;
+            font-size: 0.8125rem;
+            white-space: nowrap;
+            border-radius: 6px;
+            cursor: pointer;
+          ">Đánh giá lại</button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+
+    container.querySelectorAll(".js-btn-re-review").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const oId = btn.getAttribute("data-order-id");
+        window.location.href = `/src/pages/account/product-review.html?id=${oId}`;
+      });
+    });
+  }
+
+  function getTabForStatus(status) {
+    if (["pending", "confirmed", "preparing"].includes(status)) {
+      return "pending";
+    }
+    if (status === "shipping") {
+      return "shipping";
+    }
+    if (["delivered", "completed"].includes(status)) {
+      return "delivered";
+    }
+    if (["cancelled", "failed_delivery"].includes(status)) {
+      return "cancelled";
+    }
+    return "all";
   }
 
   function renderAndFilter() {
@@ -52,7 +145,8 @@ export function initMyOrders() {
         status = "delivered";
       }
 
-      const matchesTab = (currentTab === "all" || status === currentTab);
+      const tabForStatus = getTabForStatus(status);
+      const matchesTab = (currentTab === "all" || tabForStatus === currentTab);
       const matchesSearch = (searchQuery === "" || trackingCode.includes(searchQuery) || orderId.toLowerCase().includes(searchQuery));
 
       return matchesTab && matchesSearch;
@@ -74,9 +168,13 @@ export function initMyOrders() {
 
     const statusLabels = {
       pending: "Chờ xác nhận",
+      confirmed: "Đã xác nhận",
+      preparing: "Đang đóng gói",
       shipping: "Đang giao",
-      delivered: "Hoàn thành",
-      cancelled: "Đã hủy"
+      delivered: "Đã giao hàng",
+      completed: "Hoàn thành",
+      cancelled: "Đã hủy",
+      failed_delivery: "Giao thất bại"
     };
 
     orderListContainer.innerHTML = filtered.map(order => {
@@ -93,6 +191,16 @@ export function initMyOrders() {
       }
 
       const statusLabel = statusLabels[status] || status;
+
+      // Determine CSS class for status badge
+      let badgeClass = status;
+      if (["pending", "confirmed", "preparing"].includes(status)) {
+        badgeClass = "pending";
+      } else if (["delivered", "completed"].includes(status)) {
+        badgeClass = "delivered";
+      } else if (status === "failed_delivery") {
+        badgeClass = "cancelled";
+      }
 
       // Format price
       const totalFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(order.total_amount);
@@ -112,12 +220,25 @@ export function initMyOrders() {
           <button class="btn btn--success js-btn-confirm-delivery" data-id="${orderId}" type="button">Xác nhận giao thành công</button>
           <a href="/src/pages/account/order-detail.html?id=${orderId}" class="btn btn--primary btn-detail-action">Chi tiết &gt;</a>
         `;
-      } else if (status === "delivered") {
-        const isReviewed = localState === "reviewed" || sessionStorage.getItem(`order_reviewed_${orderId}`) === "true";
+      } else if (status === "delivered" || status === "completed") {
+        // Check if there is an existing review for this order
+        const orderReview = userReviews.find(r => r.order_id === orderId);
+        
+        let reviewBtnHtml = "";
+        if (orderReview) {
+          if (orderReview.status === "rejected") {
+            reviewBtnHtml = `<button class="btn js-btn-review-trigger" data-id="${orderId}" type="button" style="background-color: #DC3545; border-color: #DC3545; color: #fff;">Đánh giá lại &gt;</button>`;
+          } else if (orderReview.status === "pending") {
+            reviewBtnHtml = `<button class="btn btn--outline" disabled type="button">Đang duyệt...</button>`;
+          } else {
+            reviewBtnHtml = `<button class="btn btn--outline" disabled type="button">Đã đánh giá</button>`;
+          }
+        } else {
+          reviewBtnHtml = `<button class="btn btn--primary js-btn-review-trigger" data-id="${orderId}" type="button">Đánh giá &gt;</button>`;
+        }
+
         actionsHtml = `
-          ${isReviewed 
-            ? `<button class="btn btn--outline" disabled type="button">Đã đánh giá</button>` 
-            : `<button class="btn btn--primary js-btn-review-trigger" data-id="${orderId}" type="button">Đánh giá &gt;</button>`}
+          ${reviewBtnHtml}
           <a href="/src/pages/account/return-request.html?orderId=${orderId}" class="btn btn--outline js-btn-return">Đổi/Trả</a>
           <a href="/src/pages/account/order-detail.html?id=${orderId}" class="btn btn--primary btn-detail-action">Chi tiết &gt;</a>
         `;
@@ -136,7 +257,7 @@ export function initMyOrders() {
               <span class="order-card__id">#${trackingCode}</span>
               <span class="order-card__date">${formattedDate}</span>
             </div>
-            <span class="order-card__status-badge order-card__status-badge--${status}">${statusLabel}</span>
+            <span class="order-card__status-badge order-card__status-badge--${badgeClass}">${statusLabel}</span>
           </div>
 
           <div class="order-card__products">
@@ -201,22 +322,34 @@ export function initMyOrders() {
     });
 
     if (skipConfirmBtn) {
-      skipConfirmBtn.addEventListener("click", () => {
+      skipConfirmBtn.addEventListener("click", async () => {
         if (activeConfirmOrderId) {
-          sessionStorage.setItem(`order_status_${activeConfirmOrderId}`, "delivered_not_reviewed");
-          renderAndFilter();
-          createToast("Đã xác nhận nhận hàng thành công!");
+          try {
+            await apiRequest("/api/user/orders", { method: "PATCH", body: JSON.stringify({ order_id: activeConfirmOrderId, status: "delivered" }) });
+            sessionStorage.setItem(`order_status_${activeConfirmOrderId}`, "delivered_not_reviewed");
+            createToast("Đã xác nhận nhận hàng thành công!");
+            loadOrders();
+          } catch (err) {
+            createToast("Lỗi: " + err.message);
+          }
         }
         closeConfirmReceiptModal();
       });
     }
 
     if (goReviewBtn) {
-      goReviewBtn.addEventListener("click", () => {
+      goReviewBtn.addEventListener("click", async () => {
         if (activeConfirmOrderId) {
           const orderId = activeConfirmOrderId;
-          closeConfirmReceiptModal();
-          window.location.href = `/src/pages/account/product-review.html?id=${orderId}`;
+          try {
+            await apiRequest("/api/user/orders", { method: "PATCH", body: JSON.stringify({ order_id: orderId, status: "delivered" }) });
+            sessionStorage.setItem(`order_status_${orderId}`, "delivered_not_reviewed");
+            closeConfirmReceiptModal();
+            window.location.href = `/src/pages/account/product-review.html?id=${orderId}`;
+          } catch (err) {
+            createToast("Lỗi: " + err.message);
+            closeConfirmReceiptModal();
+          }
         }
       });
     }

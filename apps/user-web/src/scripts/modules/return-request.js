@@ -157,12 +157,81 @@ export function initReturnRequest() {
   }
 
   // ──────────────────────────────────────────────────
-  // 2. PRODUCT SELECTION RENDERING
+  // 2. PRODUCT SELECTION RENDERING & ELIGIBILITY CHECK (RET-01)
   // ──────────────────────────────────────────────────
 
-  function renderProductsForOrder(order) {
+  function checkReturnEligibility(order) {
+    const errorNoticeId = "js-return-eligibility-error";
+    const existingNotice = document.getElementById(errorNoticeId);
+    if (existingNotice) existingNotice.remove();
+
+    // Enable all form elements by default
+    toggleFormElements(true);
+
+    if (!order) return true;
+
+    // Check RET-01: 2-day return policy
+    const deliveryDate = order.delivered_at ? new Date(order.delivered_at) : new Date(order.updated_at);
+    const now = new Date();
+    const diffMs = now - deliveryDate;
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    if (diffHours > 48) {
+      // Create a warning notice banner
+      const notice = document.createElement("div");
+      notice.id = errorNoticeId;
+      notice.className = "return-notice return-notice--warning";
+      notice.style.cssText = "margin-bottom: 24px; padding: 16px; background-color: #fdf2f2; border: 1px solid #f8b4b4; border-radius: 6px; color: #9b1c1c; display: flex; align-items: center; gap: 12px; font-size: 0.9375rem;";
+      notice.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span><strong>Không đủ điều kiện đổi trả:</strong> Đơn hàng này đã được giao hơn 2 ngày (vào lúc ${deliveryDate.toLocaleString("vi-VN")}). Theo chính sách của Velura, yêu cầu đổi/trả chỉ được chấp nhận trong vòng 2 ngày kể từ khi nhận hàng.</span>
+      `;
+
+      // Insert at the top of Section 2 or product selection area
+      if (productSelectionList) {
+        productSelectionList.parentNode.insertBefore(notice, productSelectionList);
+      }
+
+      // Disable all form elements
+      toggleFormElements(false);
+      return false;
+    }
+
+    return true;
+  }
+
+  function toggleFormElements(enabled) {
+    if (!returnForm) return;
+    const inputs = returnForm.querySelectorAll("input, select, textarea, button:not(.btn-cancel):not(#btn-back-orders)");
+    inputs.forEach(el => {
+      if (enabled) {
+        el.removeAttribute("disabled");
+      } else {
+        el.setAttribute("disabled", "true");
+      }
+    });
+
+    const submitBtn = returnForm.querySelector(".btn-submit");
+    if (submitBtn) {
+      if (enabled) {
+        submitBtn.style.opacity = "1";
+        submitBtn.style.cursor = "pointer";
+      } else {
+        submitBtn.style.opacity = "0.5";
+        submitBtn.style.cursor = "not-allowed";
+      }
+    }
+  }
+
+  async function renderProductsForOrder(order) {
     if (!productSelectionList) return;
-    productSelectionList.innerHTML = "";
+    productSelectionList.innerHTML = `<div style="padding: 16px 0; color: var(--soft);">Đang kiểm tra thông tin sản phẩm...</div>`;
+
+    const isEligible = checkReturnEligibility(order);
 
     const items = order.items || [];
     if (items.length === 0) {
@@ -170,11 +239,44 @@ export function initReturnRequest() {
       return;
     }
 
+    // Fetch existing returns for this order to disable already returned items
+    let existingReturns = [];
+    try {
+      const returnData = await apiRequest(`/api/user/returns?order_id=${order.order_id}`);
+      if (returnData && returnData.returns) {
+        existingReturns = returnData.returns.filter(r => r.status !== "rejected");
+      }
+    } catch (err) {
+      console.warn("Could not fetch existing returns:", err);
+    }
+
+    productSelectionList.innerHTML = "";
+
     items.forEach((item, index) => {
+      // Calculate how many have already been returned
+      let returnedQty = 0;
+      existingReturns.forEach(r => {
+        const matchedItem = (r.items || []).find(ri => ri.order_item_id === item.item_id);
+        if (matchedItem) {
+          returnedQty += matchedItem.quantity;
+        }
+      });
+
+      const remainingQty = item.quantity - returnedQty;
+      const isAlreadyReturned = remainingQty <= 0;
+
       const priceFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(item.unit_price);
+      const isRestricted = item.category_name === "Phụ kiện";
+      
+      const isDisabled = isRestricted || isAlreadyReturned || !isEligible;
 
       const card = document.createElement("div");
-      card.className = "selection-card" + (index === 0 ? " is-selected" : "");
+      card.className = "selection-card" + (index === 0 && !isDisabled ? " is-selected" : "");
+      if (isDisabled) {
+        card.className += " selection-card--disabled";
+        card.style.opacity = "0.6";
+        card.style.cursor = "not-allowed";
+      }
       card.setAttribute("data-type", "product");
       card.innerHTML = `
         <div class="selection-card__product-info">
@@ -183,17 +285,23 @@ export function initReturnRequest() {
           </div>
           <div class="product-details">
             <strong>${item.product_name}</strong>
-            <span>Số lượng trong đơn: ${item.quantity}</span>
+            ${isRestricted ? `<span style="color: #c92a2a; font-weight: bold; font-size: 0.8125rem; display: block; margin-top: 4px;">(Danh mục hạn chế đổi trả)</span>` : ""}
+            ${isAlreadyReturned ? `<span style="color: #b56727; font-weight: bold; font-size: 0.8125rem; display: block; margin-top: 4px;">(Đang trong quá trình xử lý Đổi/Trả)</span>` : ""}
+            <span>Số lượng có thể đổi/trả: ${remainingQty} / ${item.quantity}</span>
             <span class="product-price">${priceFormatted}</span>
           </div>
         </div>
+        ${!isDisabled ? `
         <div class="checkbox-indicator">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
             stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </div>
-        <input type="checkbox" name="product_select" value="${item.item_id}" data-qty="${item.quantity}" ${index === 0 ? "checked" : ""} style="display:none;" />
+        <input type="checkbox" name="product_select" value="${item.item_id}" data-qty="${remainingQty}" ${index === 0 && !isDisabled ? "checked" : ""} style="display:none;" />
+        ` : `
+        <input type="checkbox" name="product_select" value="${item.item_id}" data-qty="0" disabled style="display:none;" />
+        `}
       `;
       productSelectionList.appendChild(card);
     });
@@ -210,6 +318,7 @@ export function initReturnRequest() {
     cards.forEach(card => {
       card.addEventListener("click", () => {
         const input = card.querySelector("input");
+        if (input && input.disabled) return; // Prevent interaction if disabled
 
         if (type === "order" || type === "method") {
           // Radio behavior
@@ -249,6 +358,46 @@ export function initReturnRequest() {
   // ──────────────────────────────────────────────────
   // 4. IMAGE UPLOAD HANDLING
   // ──────────────────────────────────────────────────
+
+  /**
+   * Upload evidence image files to Supabase Storage via the backend proxy.
+   * Returns an array of public URLs.
+   */
+  async function uploadEvidenceImages(files) {
+    const token = localStorage.getItem("velura_token");
+    const urls = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const formData = new FormData();
+      formData.append("file", file, file.name);
+
+      const headers = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+
+      const response = await fetch("http://localhost:8787/api/user/upload/evidence", {
+        method: "POST",
+        headers,
+        body: formData
+      });
+
+      if (!response.ok) {
+        let errMsg = `Lỗi tải ảnh ${i + 1}/${files.length}`;
+        try {
+          const errData = await response.json();
+          errMsg = errData?.error?.message || errData?.message || errMsg;
+        } catch {}
+        throw new Error(errMsg);
+      }
+
+      const data = await response.json().catch(() => ({}));
+      if (!data.url) throw new Error(`Ảnh ${i + 1}: Server không trả về URL`);
+      urls.push(data.url);
+    }
+
+    return urls;
+  }
+
 
   const uploadBtn = document.querySelector(".btn-upload");
   if (uploadBtn && fileInput) {
@@ -339,7 +488,7 @@ export function initReturnRequest() {
   // ──────────────────────────────────────────────────
 
   if (returnForm) {
-    returnForm.addEventListener("submit", function (e) {
+    returnForm.addEventListener("submit", async function (e) {
       e.preventDefault();
 
       // Validate selections
@@ -378,8 +527,23 @@ export function initReturnRequest() {
       const submitBtn = returnForm.querySelector(".btn-submit");
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.textContent = "Đang gửi...";
+        submitBtn.textContent = "Đang tải ảnh...";
       }
+
+      // Upload evidence images to storage first
+      let evidenceUrls = [];
+      try {
+        evidenceUrls = await uploadEvidenceImages(uploadedFiles);
+      } catch (uploadErr) {
+        createToast(`Lỗi tải ảnh lên: ${uploadErr.message}`, "warning");
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Gửi yêu cầu";
+        }
+        return;
+      }
+
+      if (submitBtn) submitBtn.textContent = "Đang gửi...";
 
       // Map return items
       const itemsPayload = Array.from(selectedProducts).map(input => {
@@ -393,7 +557,7 @@ export function initReturnRequest() {
         order_id: selectedOrder,
         return_type: selectedMethod.value, // "refund" or "exchange"
         description: `${selectedReason.options[selectedReason.selectedIndex].text}. Chi tiết: ${returnDesc ? returnDesc.value : ""}`,
-        evidence_images: [], // evidence images normally uploaded to cloud storage
+        evidence_images: evidenceUrls,
         items: itemsPayload
       };
 

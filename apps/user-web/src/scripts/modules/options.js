@@ -1,5 +1,6 @@
 import { apiRequest } from "./api.js";
-import { showToast, addToCart } from "./cart.js";
+import { showToast, addToCart, getVariantImage } from "./cart.js";
+import { updateWishlistBadge } from "./wishlist.js";
 
 /**
  * ES6 Module: Product Detail Page Options Controller
@@ -53,6 +54,11 @@ export async function initOptions() {
       
       // Bind basic info
       titleEl.textContent = product.name;
+      document.title = `${product.name} — Velura`;
+      const breadcrumbTitleEl = document.querySelector(".js-breadcrumb-title");
+      if (breadcrumbTitleEl) {
+        breadcrumbTitleEl.textContent = product.name;
+      }
       
       const formatVND = (val) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(val);
       priceCurrentEl.textContent = formatVND(product.sale_price || product.base_price);
@@ -117,8 +123,10 @@ export async function initOptions() {
             badgesHtml += `<span class="product-badge product-badge--sale" style="background: #E05A47; color: #fff; text-transform: uppercase;">-${discountPct}%</span>`;
           }
         }
-        if (product.is_featured) {
+        if ((product.sold_count || 0) > 0) {
           badgesHtml += `<span class="product-badge product-badge--hot">Bán chạy</span>`;
+        } else if (product.is_featured) {
+          badgesHtml += `<span class="product-badge product-badge--new" style="background:#89A894;color:#fff;">Nổi bật</span>`;
         }
         if (product.is_combo) {
           badgesHtml += `<span class="product-badge product-badge--combo" style="background: #4A90E2; color: #fff; text-transform: uppercase;">Combo Set</span>`;
@@ -337,9 +345,46 @@ export async function initOptions() {
         btn.addEventListener("click", () => {
           colorBtns.forEach(b => b.classList.remove("is-selected"));
           btn.classList.add("is-selected");
+          const selectedColor = btn.getAttribute("data-color");
           if (colorNameLabel) {
-            colorNameLabel.textContent = btn.getAttribute("data-color");
+            colorNameLabel.textContent = selectedColor;
           }
+          
+          // Switch main image to match selected color if found in image URLs
+          if (selectedColor && images.length > 0) {
+            const colorSlug = selectedColor.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+            const tokens = colorSlug.split("-").filter(t => t.length >= 3);
+            
+            let bestIdx = -1;
+            let maxScore = 0;
+            
+            images.forEach((img, idx) => {
+              const urlLower = img.toLowerCase();
+              let score = 0;
+              
+              // Exact slug match (highest priority)
+              if (urlLower.includes(colorSlug) || urlLower.includes(colorSlug.replace("-", ""))) {
+                score += 10;
+              }
+              
+              // Partial token match (e.g. "beige" in "Champagne Beige", or "terracotta" in "Terracotta Rose")
+              tokens.forEach(tok => {
+                if (urlLower.includes(tok)) {
+                  score += 5;
+                }
+              });
+              
+              if (score > maxScore) {
+                maxScore = score;
+                bestIdx = idx;
+              }
+            });
+            
+            if (bestIdx > -1 && maxScore > 0) {
+              setActiveImage(bestIdx);
+            }
+          }
+
           updateStockDisplay();
         });
       });
@@ -364,13 +409,69 @@ export async function initOptions() {
       // Load related products dynamically
       loadRelatedProducts(product);
 
+      // Render product reviews
+      renderReviews(product.reviews || []);
+
       // Cart binding in product details
       const detailCartBtn = document.querySelector(".js-add-cart");
-      if (detailCartBtn) {
-        detailCartBtn.removeAttribute("onclick"); // Clear fallback inline redirect
-        detailCartBtn.addEventListener("click", (e) => {
+      const buyNowBtn = document.querySelector(".js-buy-now");
+      
+      const isOutOfStock = product.status === "out_of_stock";
+
+      if (isOutOfStock) {
+        if (detailCartBtn) {
+          detailCartBtn.textContent = "SẢN PHẨM HẾT HÀNG";
+          detailCartBtn.style.backgroundColor = "#555";
+          detailCartBtn.style.cursor = "not-allowed";
+          detailCartBtn.disabled = true;
+          detailCartBtn.removeAttribute("onclick");
+        }
+        if (buyNowBtn) {
+          buyNowBtn.style.display = "none";
+        }
+      } else {
+        if (detailCartBtn) {
+          detailCartBtn.removeAttribute("onclick"); // Clear fallback inline redirect
+          detailCartBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            
+            const selectedColorBtn = document.querySelector(".js-color-btn.is-selected");
+            const selectedSizeBtn = document.querySelector(".js-size-btn.is-selected");
+            const qtyInputEl = document.querySelector(".js-qty-input");
+            const qty = qtyInputEl ? parseInt(qtyInputEl.value, 10) || 1 : 1;
+
+            if (!selectedColorBtn || !selectedSizeBtn) {
+              showToast("Vui lòng chọn màu sắc và kích cỡ sản phẩm!");
+              return;
+            }
+
+            const color = selectedColorBtn.getAttribute("data-color");
+            const size = selectedSizeBtn.getAttribute("data-size");
+
+            const matchedVariant = (product.variants || []).find(v => v.color === color && v.size === size);
+            if (!matchedVariant) {
+              showToast("Sản phẩm tùy chọn này hiện không khả dụng!");
+              return;
+            }
+
+            addToCart({
+              variant_id: matchedVariant.variant_id,
+              product_id: product.product_id,
+              product_name: product.name,
+              product_image: getVariantImage(product, color),
+              quantity: qty,
+              unit_price: product.sale_price || product.base_price,
+              color: color,
+              size: size
+            });
+          });
+        }
+
+        // Buy Now binding in product details
+        if (buyNowBtn) {
+        buyNowBtn.addEventListener("click", async (e) => {
           e.preventDefault();
-          
+
           const selectedColorBtn = document.querySelector(".js-color-btn.is-selected");
           const selectedSizeBtn = document.querySelector(".js-size-btn.is-selected");
           const qtyInputEl = document.querySelector(".js-qty-input");
@@ -390,57 +491,33 @@ export async function initOptions() {
             return;
           }
 
-          addToCart({
+          const checkoutItem = {
             variant_id: matchedVariant.variant_id,
             product_id: product.product_id,
             product_name: product.name,
-            product_image: product.images?.[0] || "",
+            product_image: getVariantImage(product, color),
             quantity: qty,
             unit_price: product.sale_price || product.base_price,
             color: color,
             size: size
-          });
+          };
+
+          await addToCart(checkoutItem);
+          
+          sessionStorage.setItem("checkout_items", JSON.stringify([checkoutItem]));
+          
+          // Clear any old checkout session data
+          localStorage.removeItem("checkout_discount");
+          localStorage.removeItem("checkout_voucher_id");
+          localStorage.removeItem("checkout_voucher_code");
+
+          if (localStorage.getItem("velura_token")) {
+            window.location.href = "/src/pages/checkout/payment-user.html";
+          } else {
+            window.location.href = "/src/pages/checkout/payment-guest.html";
+          }
         });
       }
-
-      // Buy Now binding in product details
-      const buyNowBtn = document.querySelector(".js-buy-now");
-      if (buyNowBtn) {
-        buyNowBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-
-          const selectedColorBtn = document.querySelector(".js-color-btn.is-selected");
-          const selectedSizeBtn = document.querySelector(".js-size-btn.is-selected");
-          const qtyInputEl = document.querySelector(".js-qty-input");
-          const qty = qtyInputEl ? parseInt(qtyInputEl.value, 10) || 1 : 1;
-
-          if (!selectedColorBtn || !selectedSizeBtn) {
-            showToast("Vui lòng chọn màu sắc và kích cỡ sản phẩm!");
-            return;
-          }
-
-          const color = selectedColorBtn.getAttribute("data-color");
-          const size = selectedSizeBtn.getAttribute("data-size");
-
-          const matchedVariant = (product.variants || []).find(v => v.color === color && v.size === size);
-          if (!matchedVariant) {
-            showToast("Sản phẩm tùy chọn này hiện không khả dụng!");
-            return;
-          }
-
-          addToCart({
-            variant_id: matchedVariant.variant_id,
-            product_id: product.product_id,
-            product_name: product.name,
-            product_image: product.images?.[0] || "",
-            quantity: qty,
-            unit_price: product.sale_price || product.base_price,
-            color: color,
-            size: size
-          });
-
-          window.location.href = "/src/pages/checkout/shipping-payment.html";
-        });
       }
 
     } catch (err) {
@@ -463,6 +540,9 @@ export async function initOptions() {
           await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
           wishlistBtn.classList.remove("is-wishlist-active");
           showToast("Đã xóa khỏi danh sách yêu thích");
+          const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+          localStorage.setItem("velura_wishlist_count", Math.max(0, currentCount - 1));
+          updateWishlistBadge();
         } else {
           await apiRequest("/api/user/wishlist", {
             method: "POST",
@@ -470,6 +550,9 @@ export async function initOptions() {
           });
           wishlistBtn.classList.add("is-wishlist-active");
           showToast("Đã thêm vào danh sách yêu thích!");
+          const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+          localStorage.setItem("velura_wishlist_count", currentCount + 1);
+          updateWishlistBadge();
         }
       } catch (err) {
         if (err.status === 401) {
@@ -488,6 +571,8 @@ async function checkWishlistStatus(productId) {
   try {
     const data = await apiRequest("/api/user/wishlist");
     const items = data.items || [];
+    localStorage.setItem("velura_wishlist_count", items.length);
+    updateWishlistBadge();
     const isSaved = items.some(item => item.product_id === productId);
     if (isSaved) {
       wishlistBtn.classList.add("is-wishlist-active");
@@ -553,9 +638,13 @@ async function loadRelatedProducts(product) {
           const rpOldPrice = rp.sale_price && rp.base_price > rp.sale_price ? rp.base_price : null;
           const rpDiscount = rpOldPrice ? Math.round((1 - rpPrice / rpOldPrice) * 100) : 0;
           
-          const badgeHtml = rpDiscount > 0 
-            ? `<span class="card__badge card__badge--sale">-${rpDiscount}%</span>` 
-            : (rp.is_featured ? `<span class="card__badge" style="background:#A18265;color:#fff;">HOT</span>` : "");
+          const isOutOfStock = rp.status === "out_of_stock";
+
+          const badgeHtml = isOutOfStock
+            ? `<span class="card__badge card__badge--out-of-stock" style="background:#555;color:#fff;">HẾT HÀNG</span>`
+            : (rpDiscount > 0 
+              ? `<span class="card__badge card__badge--sale">-${rpDiscount}%</span>` 
+              : (rp.is_featured ? `<span class="card__badge" style="background:#A18265;color:#fff;">HOT</span>` : ""));
             
           const colorMap = new Map();
           rp.variants?.forEach(v => {
@@ -567,13 +656,21 @@ async function loadRelatedProducts(product) {
             return `<span class="card__color-dot" style="background-color: ${hex}; border: 1px solid #ddd;" title="${name}"></span>`;
           }).join("");
           
+          const cardStyle = isOutOfStock ? "opacity: 0.6; filter: grayscale(100%); cursor: not-allowed;" : "";
+          const linkTag = isOutOfStock ? "div" : "a";
+          const linkHref = isOutOfStock ? "" : `href="/src/pages/products/detail.html?id=${rp.product_id}"`;
+
+          const actionsHtml = isOutOfStock 
+            ? `<div style="text-align:center; padding:12px; color:#555; font-weight:bold; border-top:1px solid #eee;">HẾT HÀNG</div>`
+            : `<button class="btn btn--primary card__add-btn js-add-cart-related" type="button" data-id="${rp.product_id}">Thêm giỏ</button>`;
+
           return `
-            <article class="card card--product">
+            <article class="card card--product" style="${cardStyle}">
               <div class="card__image-container">
                 ${badgeHtml}
-                <a href="/src/pages/products/detail.html?id=${rp.product_id}">
+                <${linkTag} ${linkHref}>
                   <img class="card__img" src="${rp.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${rp.name}" loading="lazy" />
-                </a>
+                </${linkTag}>
                 <button class="card__wishlist-btn js-add-wishlist-related" type="button" aria-label="Yêu thích" data-id="${rp.product_id}">
                   <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67">
                     <path d="M10 17.5l-5.83-5.83a4.17 4.17 0 115.83-5.83 4.17 4.17 0 115.83 5.83L10 17.5z" />
@@ -581,7 +678,7 @@ async function loadRelatedProducts(product) {
                 </button>
               </div>
               <div class="card__info">
-                <a href="/src/pages/products/detail.html?id=${rp.product_id}" class="card__title">${rp.name}</a>
+                <${linkTag} ${linkHref} class="card__title">${rp.name}</${linkTag}>
                 <div class="card__colors">
                   ${colorDotsHtml}
                 </div>
@@ -590,7 +687,7 @@ async function loadRelatedProducts(product) {
                   ${rpOldPrice ? `<span class="card__price-old" style="text-decoration: line-through; color: var(--soft); margin-left: 8px;">${formatVND(rpOldPrice)}</span>` : ""}
                 </div>
               </div>
-              <button class="btn btn--primary card__add-btn js-add-cart-related" type="button" data-id="${rp.product_id}">Thêm giỏ</button>
+              ${actionsHtml}
             </article>
           `;
         }).join("");
@@ -636,7 +733,7 @@ async function loadRelatedProducts(product) {
                 variant_id: matchedVariant.variant_id,
                 product_id: rp.product_id,
                 product_name: rp.name,
-                product_image: rp.images?.[0] || "",
+                product_image: getVariantImage(rp, matchedVariant.color || "Mặc định"),
                 quantity: 1,
                 unit_price: rp.sale_price || rp.base_price,
                 color: matchedVariant.color || "Mặc định",
@@ -669,4 +766,139 @@ async function loadRelatedProducts(product) {
   } catch (err) {
     console.error("Failed to load related products:", err);
   }
+}
+
+function renderReviews(reviews) {
+  const reviewsListEl = document.querySelector(".reviews-list");
+  if (!reviewsListEl) return;
+
+  const count = reviews.length;
+  let avgRating = 5.0;
+  
+  // Calculate average rating
+  if (count > 0) {
+    const totalRating = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
+    avgRating = (totalRating / count).toFixed(1);
+  }
+
+  // Helper to generate stars
+  const getStarsHtml = (rating, size = 14) => {
+    let html = "";
+    const rounded = Math.round(rating);
+    for (let i = 1; i <= 5; i++) {
+      if (i <= rounded) {
+        html += `
+          <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="#C97B63" style="margin-right: 2px;">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          </svg>
+        `;
+      } else {
+        html += `
+          <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#C97B63" stroke-width="2" style="margin-right: 2px;">
+            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+          </svg>
+        `;
+      }
+    }
+    return html;
+  };
+
+  // 1. Update top product-info__rating
+  const topRatingStars = document.querySelector(".product-info__rating .rating-stars");
+  const topRatingCount = document.querySelector(".product-info__rating .rating-count");
+  if (topRatingStars) {
+    topRatingStars.innerHTML = getStarsHtml(avgRating, 14);
+  }
+  if (topRatingCount) {
+    topRatingCount.innerHTML = `${avgRating} &nbsp;·&nbsp; ${count} Đánh giá từ khách hàng`;
+  }
+
+  // 2. Update reviews-summary__left
+  const summaryLeftTitle = document.querySelector(".reviews-summary__left .reviews-summary__title");
+  const summaryLeftStars = document.querySelector(".reviews-summary__left .rating-stars");
+  const summaryLeftSubtitle = document.querySelector(".reviews-summary__left .reviews-summary__subtitle");
+  
+  if (summaryLeftTitle) {
+    summaryLeftTitle.textContent = avgRating;
+  }
+  if (summaryLeftStars) {
+    summaryLeftStars.innerHTML = getStarsHtml(avgRating, 18);
+  }
+  if (summaryLeftSubtitle) {
+    summaryLeftSubtitle.textContent = `Tổng số ${count} đánh giá`;
+  }
+
+  // 3. Update reviews-summary__right (Rating Bars)
+  const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  reviews.forEach(r => {
+    const star = Math.max(1, Math.min(5, Math.round(r.rating || 5)));
+    starCounts[star] = (starCounts[star] || 0) + 1;
+  });
+
+  const summaryRight = document.querySelector(".reviews-summary__right");
+  if (summaryRight) {
+    summaryRight.innerHTML = [5, 4, 3, 2, 1].map(star => {
+      const starCount = starCounts[star] || 0;
+      const percent = count > 0 ? Math.round((starCount / count) * 100) : 0;
+      return `
+        <div class="rating-bar-item">
+          <span class="rating-bar__label">${star} ★</span>
+          <div class="rating-bar__track">
+            <div class="rating-bar__fill" style="width: ${percent}%;"></div>
+          </div>
+          <span class="rating-bar__value">${starCount}</span>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // 4. Render Reviews List
+  if (count === 0) {
+    reviewsListEl.innerHTML = `
+      <div style="text-align: center; padding: 48px 0; color: var(--soft);">
+        <p style="margin: 0; font-size: 1rem; color: var(--text-dark); font-weight: 500;">Sản phẩm chưa có đánh giá nào.</p>
+        <p style="margin: 4px 0 0 0; font-size: 0.85rem;">Hãy mua hàng và trở thành người đầu tiên chia sẻ cảm nhận!</p>
+      </div>
+    `;
+    return;
+  }
+
+  reviewsListEl.innerHTML = reviews.map(r => {
+    const formattedDate = r.submitted_at || r.created_at
+      ? new Date(r.submitted_at || r.created_at).toLocaleDateString("vi-VN")
+      : "Đang cập nhật";
+
+    const tagsHtml = r.review_tags && r.review_tags.length > 0
+      ? `<div class="review-item__tags" style="display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap;">
+          ${r.review_tags.map(tag => `<span class="review-tag" style="background: #f7f5f2; border: 1px solid #e5dfd8; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; color: #8A6D3B; font-weight: 500;">${tag}</span>`).join("")}
+         </div>`
+      : "";
+
+    const validImages = Array.isArray(r.images)
+      ? r.images.filter(img => typeof img === "string" && img.startsWith("http"))
+      : [];
+    const imagesHtml = validImages.length > 0
+      ? `<div class="review-item__gallery" style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+          ${validImages.map(img => {
+            const safeUrl = encodeURI(img);
+            return `<img src="${safeUrl}" alt="Ảnh đánh giá" loading="lazy" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #e5dfd8; cursor: pointer;" onclick="window.open('${safeUrl}', '_blank')" onerror="this.style.display='none'" />`;
+          }).join("")}
+         </div>`
+      : "";
+
+    return `
+      <article class="review-item" style="border-bottom: 1px solid #f0edf0; padding: 24px 0;">
+        <div class="review-item__head" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <span class="review-item__author" style="font-weight: 600; color: var(--text-dark);">${r.user_full_name}</span>
+          <span class="review-item__date" style="font-size: 0.85rem; color: var(--soft);">${formattedDate}</span>
+        </div>
+        <div class="rating-stars" style="margin-bottom: 8px;">
+          ${getStarsHtml(r.rating, 12)}
+        </div>
+        ${tagsHtml}
+        <p class="review-item__text" style="color: var(--text-dark); margin: 0; line-height: 1.6;">${r.comment || "Không có nhận xét chi tiết."}</p>
+        ${imagesHtml}
+      </article>
+    `;
+  }).join("");
 }

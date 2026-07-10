@@ -1,8 +1,36 @@
 import { randomUUID } from "node:crypto";
 import { HttpError } from "../http.js";
-import { insertRow, selectOne, selectRows, updateRows, callRpc } from "../supabase.js";
+import {
+  callRpc as supabaseCallRpc,
+  insertRow as supabaseInsertRow,
+  selectOne as supabaseSelectOne,
+  selectRows as supabaseSelectRows,
+  updateRows as supabaseUpdateRows
+} from "../supabase.js";
 import { config } from "../config.js";
 import { CHAT_MESSAGE_SELECT, CHAT_PRODUCT_SELECT, CHAT_SESSION_SELECT } from "./chatbot-constants.js";
+
+const CHAT_DB_OPTIONS = Object.freeze({ useAnonKey: false });
+
+function selectRows(table, query) {
+  return supabaseSelectRows(table, query, CHAT_DB_OPTIONS);
+}
+
+function selectOne(table, query) {
+  return supabaseSelectOne(table, query, CHAT_DB_OPTIONS);
+}
+
+function insertRow(table, payload) {
+  return supabaseInsertRow(table, payload, CHAT_DB_OPTIONS);
+}
+
+function updateRows(table, query, payload) {
+  return supabaseUpdateRows(table, query, payload, CHAT_DB_OPTIONS);
+}
+
+function callRpc(name, payload) {
+  return supabaseCallRpc(name, payload, CHAT_DB_OPTIONS);
+}
 
 async function getEmbedding(text) {
   const apiKey = config.geminiApiKey;
@@ -30,7 +58,6 @@ async function getEmbedding(text) {
     return null;
   }
 }
-
 
 export function createChatbotRepository() {
   return {
@@ -229,6 +256,30 @@ export function createChatbotRepository() {
         order: "name.asc",
         limit: 50
       }));
+    },
+
+    async listPolicies() {
+      return withChatError(async () => {
+        const result = await selectRows("policy", {
+          select: "policy_id,slug,title,summary,content,display_order,status,updated_at",
+          status: "eq.published",
+          order: "display_order.asc,title.asc",
+          limit: 20
+        });
+
+        return {
+          rows: (result.rows || []).map((row) => ({
+            policy_id: row.policy_id,
+            slug: row.slug,
+            title: row.title,
+            summary: row.summary || "",
+            content: normalizePolicyContent(row.content),
+            display_order: row.display_order,
+            updated_at: row.updated_at
+          })),
+          count: result.count
+        };
+      });
     },
 
     async getProductById(productId) {
@@ -458,10 +509,31 @@ function isUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
+function normalizePolicyContent(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 async function withChatError(operation) {
   try {
     return await operation();
   } catch (error) {
+    if (error instanceof HttpError && error.code === "SERVICE_ROLE_REQUIRED") {
+      throw new HttpError(
+        503,
+        "CHAT_SERVICE_UNAVAILABLE",
+        "Chat service database credentials are not configured"
+      );
+    }
     if (error instanceof HttpError && error.code === "SUPABASE_ERROR") {
       const databaseCode = error.details?.message || error.details?.code || "CHATBOT_DATABASE_ERROR";
       const status = error.status >= 400 && error.status < 500 ? error.status : 502;

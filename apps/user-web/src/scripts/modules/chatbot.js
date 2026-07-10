@@ -26,10 +26,10 @@ export function initChatbot() {
 
   const state = {
     guestId: getOrCreateGuestId(),
-    mode: localStorage.getItem(MODE_KEY) || "guest",
+    mode: localStorage.getItem("velura_token") ? "user" : "guest",
     sessionId: localStorage.getItem(SESSION_ID_KEY) || "",
     sessions: [],
-    messages: [],
+    messages: [localGreeting()],
     productsById: new Map(),
     loading: false,
     handoffActive: false
@@ -109,6 +109,20 @@ function bindChatContainer(container, state) {
       renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state);
     });
   }
+
+  const menuBtn = container.querySelector(".js-menu-chatbot-trigger");
+  const historyPanel = container.querySelector(".chatbot-history-panel");
+  menuBtn?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (historyPanel) {
+      const isVisible = historyPanel.style.display === "flex";
+      historyPanel.style.display = isVisible ? "none" : "flex";
+      if (!isVisible) {
+        renderSessions(state);
+      }
+    }
+  });
 
   attachBtn?.addEventListener("click", () => imgInput?.click());
 
@@ -325,6 +339,10 @@ function renderAll(containers, state, smooth = false) {
 }
 
 function renderContainer(container, state, smooth) {
+  const historyPanel = container.querySelector(".chatbot-history-panel");
+  if (historyPanel) {
+    historyPanel.style.display = "none";
+  }
   const messagesContainer = container.querySelector(".chatbot-messages");
   if (!messagesContainer) return;
   messagesContainer.innerHTML = state.messages.map((message) => renderMessage(message, state)).join("");
@@ -346,9 +364,9 @@ function renderContainer(container, state, smooth) {
   if (input) {
     input.disabled = false;
     if (state.handoffActive) {
-      input.placeholder = "Nhân viên CSKH sẽ phản hồi tin nhắn của bạn...";
+      input.placeholder = "Nhân viên CSKH đang hỗ trợ...";
     } else {
-      input.placeholder = "Nhập tin nhắn tư vấn thời trang...";
+      input.placeholder = "Hỏi Velura Stylist...";
     }
   }
   if (submitBtn) {
@@ -433,8 +451,10 @@ function renderMessage(message, state) {
     `;
   }
 
+  const hasRichContentClass = productCards || blogCards ? " chatbot-message--has-rich-content" : "";
+
   return `
-    <div class="chatbot-message ${senderClass}${typingClass}${agentClass}${systemClass}">
+    <div class="chatbot-message ${senderClass}${typingClass}${agentClass}${systemClass}${hasRichContentClass}">
       ${message.sender === "agent" ? '<span class="chatbot-message__sender">CSKH</span>' : ""}
       <div class="chatbot-message__text">${formattedText}</div>
       ${productCards ? `
@@ -520,40 +540,41 @@ function renderHandoffBanner() {
 }
 
 function renderSessions(state) {
-  const sessionsContainer = document.querySelector(".js-chatbot-sessions");
-  if (!sessionsContainer) return;
-  if (!state.sessions.length) {
-    sessionsContainer.innerHTML = '<p class="history-list__empty">Chưa có lịch sử trò chuyện</p>';
-    return;
-  }
-  sessionsContainer.innerHTML = state.sessions.map((session) => {
-    const isActive = session.session_id === state.sessionId;
-    const handoffBadge = session.handoff_status === "requested" || session.handoff_status === "assigned"
-      ? '<span class="chatbot-session-item__badge">CSKH</span>'
-      : "";
-    return `
-      <div class="chatbot-session-item ${isActive ? "is-active" : ""}" data-id="${escapeHtml(session.session_id)}">
-        <div class="chatbot-session-item__left">
-          <span class="chatbot-session-item__icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+  const containers = document.querySelectorAll(".js-chatbot-sessions");
+  containers.forEach((sessionsContainer) => {
+    if (!state.sessions.length) {
+      sessionsContainer.innerHTML = '<p class="history-list__empty">Chưa có lịch sử trò chuyện</p>';
+      return;
+    }
+    sessionsContainer.innerHTML = state.sessions.map((session) => {
+      const isActive = session.session_id === state.sessionId;
+      const handoffBadge = session.handoff_status === "requested" || session.handoff_status === "assigned"
+        ? '<span class="chatbot-session-item__badge">CSKH</span>'
+        : "";
+      return `
+        <div class="chatbot-session-item ${isActive ? "is-active" : ""}" data-id="${escapeHtml(session.session_id)}">
+          <div class="chatbot-session-item__left">
+            <span class="chatbot-session-item__icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </span>
+            <span class="chatbot-session-item__title" title="${escapeHtml(session.title)}">
+              ${escapeHtml(session.title)}
+              ${handoffBadge}
+              <small>${escapeHtml(formatSessionDate(session.updated_at))}</small>
+            </span>
+          </div>
+          <button class="chatbot-session-item__delete js-delete-session" type="button" aria-label="Xóa phiên" data-id="${escapeHtml(session.session_id)}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
-          </span>
-          <span class="chatbot-session-item__title" title="${escapeHtml(session.title)}">
-            ${escapeHtml(session.title)}
-            ${handoffBadge}
-            <small>${escapeHtml(formatSessionDate(session.updated_at))}</small>
-          </span>
+          </button>
         </div>
-        <button class="chatbot-session-item__delete js-delete-session" type="button" aria-label="Xóa phiên" data-id="${escapeHtml(session.session_id)}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          </svg>
-        </button>
-      </div>
-    `;
-  }).join("");
+      `;
+    }).join("");
+  });
 }
 
 function addProductToCart(product) {
@@ -746,7 +767,7 @@ function escapeHtml(text) {
 function formatBotText(text) {
   if (!text) return "";
   let html = escapeHtml(text);
-  
+
   const lines = html.split("\n");
   const processedLines = lines.map(line => {
     let trimmed = line.trim();
@@ -768,7 +789,7 @@ function formatBotText(text) {
     }
     return line;
   });
-  
+
   html = processedLines.join("\n");
   html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/__(.*?)__/g, "<strong>$1</strong>");
@@ -875,13 +896,3 @@ function showGuestWarningModal() {
     modal.style.display = "flex";
   }
 }
-
-// Bắt sự kiện beforeunload trên trình duyệt
-window.addEventListener("beforeunload", (e) => {
-  const tempFavorites = sessionStorage.getItem("velura_temporary_favorites");
-  if (tempFavorites && JSON.parse(tempFavorites).length > 0) {
-    e.preventDefault();
-    e.returnValue = "Bạn đang trải nghiệm dưới quyền Khách vãng lai. Lịch sử phối đồ yêu thích tạm thời sẽ bị mất nếu bạn tải lại hoặc đóng trang!";
-    return e.returnValue;
-  }
-});

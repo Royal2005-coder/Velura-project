@@ -16,6 +16,7 @@ export default defineConfig({
         productDetail: resolve(__dirname, "src/pages/products/detail.html"),
         chatbot: resolve(__dirname, "src/pages/chatbot.html"),
         policies: resolve(__dirname, "src/pages/policies.html"),
+        offers: resolve(__dirname, "src/pages/offers.html"),
         contact: resolve(__dirname, "src/pages/contact.html"),
         signin: resolve(__dirname, "src/pages/auth/signin.html"),
         signup: resolve(__dirname, "src/pages/auth/signup.html"),

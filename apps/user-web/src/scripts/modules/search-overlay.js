@@ -36,17 +36,38 @@ export function initSearchOverlay() {
     }
   }
 
+  // Load recent searches from localStorage
+  let currentRecentSearches = [];
+  try {
+    const saved = localStorage.getItem("velura_recent_searches");
+    if (saved) {
+      currentRecentSearches = JSON.parse(saved);
+    } else {
+      currentRecentSearches = [...recentSearches]; // fallback to mock
+    }
+  } catch (e) {
+    currentRecentSearches = [...recentSearches];
+  }
+
+  function saveRecentSearches() {
+    localStorage.setItem("velura_recent_searches", JSON.stringify(currentRecentSearches));
+  }
+
   // Render mock data into the overlay (and dynamic categories)
   function renderSearchData() {
     // 1. Render Recent Searches with close buttons
     var recentContainer = overlay.querySelector(".js-recent-searches");
     if (recentContainer) {
-      recentContainer.innerHTML = recentSearches.map(function (keyword) {
-        return '<span class="search-pill">' + 
-          '<span class="js-search-pill-keyword" style="cursor:pointer;">' + escapeHtml(keyword) + '</span>' +
-          '<button type="button" class="js-delete-recent" data-val="' + escapeHtml(keyword) + '" aria-label="Xóa">✕</button>' +
-        '</span>';
-      }).join("");
+      if (currentRecentSearches.length === 0) {
+         recentContainer.innerHTML = '<p style="color: #9e9e9e; font-size: 0.9rem;">Chưa có tìm kiếm gần đây</p>';
+      } else {
+         recentContainer.innerHTML = currentRecentSearches.map(function (keyword) {
+           return '<span class="search-pill">' + 
+             '<span class="js-search-pill-keyword" style="cursor:pointer;">' + escapeHtml(keyword) + '</span>' +
+             '<button type="button" class="js-delete-recent" data-val="' + escapeHtml(keyword) + '" aria-label="Xóa">✕</button>' +
+           '</span>';
+         }).join("");
+      }
 
       // Bind dynamic delete events
       var deleteBtns = recentContainer.querySelectorAll(".js-delete-recent");
@@ -59,9 +80,13 @@ export function initSearchOverlay() {
           if (pill) {
             pill.remove();
           }
-          var index = recentSearches.indexOf(val);
+          var index = currentRecentSearches.indexOf(val);
           if (index > -1) {
-            recentSearches.splice(index, 1);
+            currentRecentSearches.splice(index, 1);
+            saveRecentSearches();
+          }
+          if (currentRecentSearches.length === 0) {
+             recentContainer.innerHTML = '<p style="color: #9e9e9e; font-size: 0.9rem;">Chưa có tìm kiếm gần đây</p>';
           }
         });
       });
@@ -96,13 +121,13 @@ export function initSearchOverlay() {
     try {
       const categories = await apiRequest("/api/user/categories");
       const categoryImageMap = {
-        "ao": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/ao/ao_ao-blouse-lua-co-do-anh-champagne_white_01.jpg",
-        "quan": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/quan/quan_quan-short-linen-cap-cao-day-trang_ivory-white_1.jpg",
-        "dam-vay": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/dam-vay/dam-vay_dam-tweed-hai-day-that-no_emerald_01.png",
-        "ao-khoac": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/ao-khoac/ao-khoac_trench-coat-dang-dai_warm-beige_01.png",
-        "set-do": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/set-do/set-do_set-nau-cocoa-thanh-lich-du-tiec_01.png",
-        "phu-kien": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/main/categories/phu-kien/phu-kien_ly-giu-nhiet-matte-black_onyx_01.png",
-        "giay-dep": "https://raw.githubusercontent.com/khai0335814880-create/Velura-Images/refs/heads/main/categories/giay-dep/giay-dep_giay-sandals-quai-ngang-de-thap_matte-black_01.png"
+        "ao": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/ao/ao_ao-blouse-lua-co-do-anh-champagne_white_01.jpg",
+        "quan": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/quan/quan_quan-short-linen-cap-cao-day-trang_ivory-white_1.jpg",
+        "dam-vay": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/dam-vay/dam-vay_dam-tweed-hai-day-that-no_emerald_01.png",
+        "ao-khoac": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/ao-khoac/ao-khoac_trench-coat-dang-dai_warm-beige_01.png",
+        "set-do": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/set-do/set-do_set-nau-cocoa-thanh-lich-du-tiec_01.png",
+        "phu-kien": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/phu-kien/phu-kien_ly-giu-nhiet-matte-black_onyx_01.png",
+        "giay-dep": "https://cdn.jsdelivr.net/gh/khai0335814880-create/Velura-Images@main/categories/giay-dep/giay-dep_giay-sandals-quai-ngang-de-thap_matte-black_01.png"
       };
 
       const displayedCats = categories.slice(0, 4);
@@ -177,9 +202,10 @@ export function initSearchOverlay() {
         e.preventDefault();
         var val = overlayInput.value.trim();
         if (val) {
-          if (!recentSearches.includes(val)) {
-            recentSearches.unshift(val);
-            if (recentSearches.length > 5) recentSearches.pop();
+          if (!currentRecentSearches.includes(val)) {
+            currentRecentSearches.unshift(val);
+            if (currentRecentSearches.length > 5) currentRecentSearches.pop();
+            saveRecentSearches();
           }
           window.location.href = "/src/pages/products/list.html?q=" + encodeURIComponent(val);
         }

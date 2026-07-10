@@ -34,11 +34,10 @@
 .about-title {
   margin: 0 0 20px;
   color: var(--ink, #2a2522);
-  font-family: "Outfit", sans-serif;
+  font-family: "Playfair Display", Georgia, serif;
   font-size: clamp(1.8rem, 4vw, 2.5rem);
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  font-weight: 500;
+  line-height: 1.25;
 }
 
 .about-desc {
@@ -60,7 +59,7 @@
 .about-hero {
   position: relative;
   width: 100%;
-  height: clamp(320px, 42vw, 560px);
+  height: clamp(380px, 46vw, 560px);
   margin-bottom: 80px;
   overflow: hidden;
 }
@@ -71,6 +70,68 @@
   height: 100%;
   object-fit: cover;
   filter: saturate(0.95) contrast(1.02);
+}
+
+.about-hero__content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 24px;
+  background: linear-gradient(rgba(42, 37, 34, 0.25), rgba(42, 37, 34, 0.55));
+  color: #ffffff;
+  text-align: center;
+  z-index: 2;
+}
+
+.about-hero__content .about-badge {
+  color: #f4e4dc;
+}
+
+.about-hero__content h1 {
+  margin: 12px 0 16px;
+  color: #ffffff;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 500;
+  line-height: 1.15;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.about-hero__content p {
+  max-width: 640px;
+  margin: 0 0 32px;
+  color: rgba(255, 255, 255, 0.95);
+  font-family: "DM Sans", sans-serif;
+  font-size: clamp(1rem, 1.2vw, 1.15rem);
+  line-height: 1.6;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+}
+
+.about-hero__content a {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 32px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink, #2a2522);
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.about-hero__content a:hover {
+  background: var(--terracotta, #c97b63);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(201, 123, 99, 0.35);
 }
 
 /* ============================================================
@@ -261,10 +322,9 @@
 .team-card__name {
   margin: 0 0 4px;
   color: var(--ink, #2a2522);
-  font-family: "Outfit", sans-serif;
-  font-size: 1.15rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 500;
 }
 
 .team-card__role {

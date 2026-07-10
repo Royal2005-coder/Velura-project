@@ -1,4 +1,4 @@
-﻿/* Form group + input */
+/* Form group + input */
 .form-group { margin-bottom: 16px; }
 
 .form-group label {
@@ -13,6 +13,18 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+.form-row--three {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .form-row--three {
+    grid-template-columns: 1fr;
+  }
 }
 
 .form-input,
