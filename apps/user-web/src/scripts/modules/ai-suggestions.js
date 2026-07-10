@@ -67,6 +67,18 @@ export function initAiSuggestions() {
   apiRequest("/api/user/recommendations/style-profile")
     .then(res => {
       const quiz = res.quiz;
+
+      // Parse PostgreSQL array strings to JS arrays
+      if (quiz) {
+        ["style_tags", "preferred_occasions", "favorite_brands", "favorite_colors"].forEach(key => {
+          if (quiz[key] && typeof quiz[key] === "string" && quiz[key].startsWith("{")) {
+            try {
+              quiz[key] = quiz[key].replace(/^{|}$/g, "").split(",").map(s => s.trim().replace(/^"|"$/g, ""));
+            } catch (e) { /* keep as-is */ }
+          }
+        });
+      }
+
       if (quiz && (quiz.body_shape || quiz.style_tags)) {
         // User has already completed the style profile quiz!
         emptyState.style.display = "none";

@@ -84,8 +84,8 @@ export function initHomepage() {
       if (personalizedSection && personalizedGrid && products.length > 0) {
         try {
           const profileRes = await apiRequest("/api/user/style-quiz");
-          if (profileRes && profileRes.profile) {
-            const bodyShape = profileRes.profile.body_shape;
+          if (profileRes && (profileRes.quiz || profileRes.profile)) {
+            const bodyShape = (profileRes.quiz || profileRes.profile).body_shape;
             if (bodyShape) {
               const matchedProds = products.filter(p => {
                 const suitable = Array.isArray(p.suitable_body_shapes)

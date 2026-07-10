@@ -30,6 +30,16 @@ export async function initOptions() {
     const profileRes = await apiRequest("/api/user/style-quiz");
     if (profileRes && (profileRes.quiz || profileRes.profile)) {
       styleProfile = profileRes.quiz || profileRes.profile;
+
+      // Parse PostgreSQL array strings to JS arrays
+      ["style_tags", "preferred_occasions", "favorite_brands", "favorite_colors"].forEach(key => {
+        if (styleProfile[key] && typeof styleProfile[key] === "string" && styleProfile[key].startsWith("{")) {
+          try {
+            styleProfile[key] = styleProfile[key].replace(/^{|}$/g, "").split(",").map(s => s.trim().replace(/^"|"$/g, ""));
+          } catch (e) { /* keep as-is */ }
+        }
+      });
+
       const { chest_cm, waist_cm, hip_cm, weight_kg, skin_tone, favorite_colors } = styleProfile;
       if (chest_cm || waist_cm || hip_cm || weight_kg) {
         if (chest_cm <= 80 && waist_cm <= 64 && hip_cm <= 86 && (weight_kg || 0) <= 45) {

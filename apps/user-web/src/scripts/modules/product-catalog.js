@@ -387,6 +387,15 @@ export function initProductCatalog() {
           userBodyShape = profileRes.quiz.body_shape || "";
           quizData = profileRes.quiz;
 
+          // Parse PostgreSQL array strings to JS arrays
+          ["style_tags", "preferred_occasions", "favorite_brands", "favorite_colors"].forEach(key => {
+            if (quizData[key] && typeof quizData[key] === "string" && quizData[key].startsWith("{")) {
+              try {
+                quizData[key] = quizData[key].replace(/^{|}$/g, "").split(",").map(s => s.trim().replace(/^"|"$/g, ""));
+              } catch (e) { /* keep as-is */ }
+            }
+          });
+
           // Default suggestions to enabled on first visit when quiz exists
           if (localStorage.getItem("velura_suggestions_enabled") === null) {
             isSuggestionsEnabled = true;
