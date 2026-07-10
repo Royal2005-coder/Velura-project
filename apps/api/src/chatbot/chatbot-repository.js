@@ -169,7 +169,8 @@ export function createChatbotRepository() {
           const matchRows = await callRpc("match_products", {
             query_embedding: embedding,
             match_threshold: 0.15,
-            match_count: limit
+            match_count: limit,
+            filter_size: null
           });
           if (matchRows && matchRows.length > 0) {
             return { rows: matchRows };
