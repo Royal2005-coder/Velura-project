@@ -132,10 +132,6 @@ export async function createExchangeOrder(ret, exchangeVariantId) {
   return exchangeOrder;
 }
 
-// Auto-progress return status based on elapsed time since creation (disabled, now requires admin manual approval)
-export async function autoProgressReturn(ret) {
-  return ret;
-}
 
 export async function handleReturnsRoute(req, res, action, corsHeaders, context) {
   const profile = requireUserAuth(context);
@@ -157,8 +153,7 @@ export async function handleReturnsRoute(req, res, action, corsHeaders, context)
     }
 
     // Check current status
-    const processedRet = await autoProgressReturn(ret);
-    if (!["pending", "approved"].includes(processedRet.status)) {
+    if (!["pending", "approved"].includes(ret.status)) {
       throw new HttpError(400, "BAD_REQUEST", "Chỉ có thể hủy yêu cầu khi đang ở trạng thái Chờ xác nhận hoặc Đã duyệt hồ sơ (chưa gửi hàng)");
     }
 
@@ -283,10 +278,9 @@ export async function handleReturnsRoute(req, res, action, corsHeaders, context)
 
     const { rows: returns } = await selectRows("return_exchange", queryParams);
     
-    // Auto-progress and populate items
+    // Populate items
     const populatedReturns = [];
-    for (let ret of returns) {
-      ret = await autoProgressReturn(ret);
+    for (const ret of returns) {
       const { rows: rItems } = await selectRows("return_item", { return_id: `eq.${ret.return_id}` });
       
       const itemsWithDetails = [];

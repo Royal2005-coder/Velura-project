@@ -50,6 +50,8 @@ async function sendDirectEmail(to, subject, text, html) {
 
 // Auto-progress order statuses based on time elapsed since creation
 export async function autoProgressOrder(order) {
+  return order;
+
   if (!order || ["cancelled", "completed", "failed_delivery"].includes(order.status)) {
     return order;
   }
@@ -262,7 +264,11 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
 
       // GET /api/user/orders/:id (Action contains the ID if present)
       if (action) {
-        let order = await selectOne("orders", { order_id: `eq.${action}` });
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        let order = null;
+        if (uuidRegex.test(action)) {
+          order = await selectOne("orders", { order_id: `eq.${action}` });
+        }
         if (!order) {
           order = await selectOne("orders", { tracking_code: `eq.${action}` });
         }
@@ -613,7 +619,7 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
       const savedAddresses = [{
         name: shipping_name,
         phone: phone,
-        address: shipping_address,
+        detail: shipping_address,
         is_default: true
       }];
       

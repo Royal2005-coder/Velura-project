@@ -1,4 +1,5 @@
 import { apiRequest } from "./api.js";
+import { showToast } from "./account-profile.js";
 
 export function initProductReview() {
   const container = document.querySelector(".product-review-page");
@@ -273,7 +274,7 @@ export function initProductReview() {
 
       files.forEach(file => {
         if (selectedFiles.length >= 6) {
-          alert("Bạn chỉ có thể tải lên tối đa 5 hình ảnh và 1 video!");
+          showToast("Bạn chỉ có thể tải lên tối đa 5 hình ảnh và 1 video!");
           return;
         }
 
@@ -312,7 +313,7 @@ export function initProductReview() {
 
     submitBtn.addEventListener("click", async () => {
       if (ratingValue === 0) {
-        alert("Vui lòng chọn số sao đánh giá sản phẩm!");
+        showToast("Vui lòng chọn số sao đánh giá sản phẩm!");
         return;
       }
 

@@ -27,6 +27,52 @@ export function storeAuthSession({ token, user }) {
 
 export function clearAuthSession() {
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+  
+  // Clear cart, wishlist, and quiz data from localStorage on logout/expiry
+  const keysToRemove = [
+    "velura_cart",
+    "velura_guest_wishlist",
+    "velura_guest_session_id",
+    "velura_quiz_answers",
+    "velura_style_profile_results",
+    "velura_guest_quiz_completed",
+    "velura_guest_quiz_data",
+    "velura_wishlist_count",
+    "checkout_discount",
+    "checkout_voucher_id",
+    "checkout_voucher_code",
+    "checkout_shipping",
+    "checkout_methods",
+    "guest_temp_password",
+    "created_order",
+    "velura_suggestions_enabled",
+    "cart_merged"
+  ];
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
+  
+  // Also clear sessionStorage to remove selected items / checkout items
+  sessionStorage.clear();
+
+  // Instantly update badge counters in DOM if present to avoid layout flash
+  try {
+    const badges = document.querySelectorAll(".cart-badge");
+    badges.forEach(badge => {
+      badge.textContent = "0";
+      badge.style.display = "none";
+    });
+    const wishlistBadges = document.querySelectorAll(".wishlist-badge");
+    wishlistBadges.forEach(badge => {
+      badge.textContent = "0";
+      badge.style.display = "none";
+    });
+    const notificationsBadge = document.getElementById("js-notifications-badge");
+    if (notificationsBadge) {
+      notificationsBadge.textContent = "0";
+      notificationsBadge.style.display = "none";
+    }
+  } catch (e) {
+    /* silent catch */
+  }
 }
 
 export function isTokenExpired(token) {

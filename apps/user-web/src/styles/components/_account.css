@@ -532,6 +532,57 @@ select.profile-form__input {
   margin: 0;
 }
 
+/* ---------- Confirm Modal ---------- */
+.confirm-modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.confirm-modal-overlay.is-visible {
+  opacity: 1;
+}
+
+.confirm-modal {
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 28px 32px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  transform: translateY(8px);
+  transition: transform 0.2s ease;
+}
+
+.confirm-modal-overlay.is-visible .confirm-modal {
+  transform: translateY(0);
+}
+
+.confirm-modal__message {
+  font-size: 0.9375rem;
+  color: var(--text-dark);
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.confirm-modal__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.confirm-modal__btn {
+  min-width: 80px;
+}
+
 /* ============================================================
    Velura — Additional Tab Styles (Addresses, Orders, Style Profile, Settings)
    ============================================================ */
@@ -778,6 +829,69 @@ select.profile-form__input {
 
 .profile-form__row-grid--three {
   grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* Gender Radio Buttons */
+.profile-form__radio-group {
+  display: flex;
+  gap: 24px;
+}
+
+.profile-form__radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.profile-form__radio {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.profile-form__radio-custom {
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.profile-form__radio-custom::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--terracotta);
+  transition: transform 0.2s ease;
+}
+
+.profile-form__radio:checked + .profile-form__radio-custom {
+  border-color: var(--terracotta);
+}
+
+.profile-form__radio:checked + .profile-form__radio-custom::after {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.profile-form__radio:focus + .profile-form__radio-custom {
+  box-shadow: 0 0 0 3px rgba(169, 130, 101, 0.15);
+}
+
+.profile-form__radio-text {
+  font-size: 0.875rem;
+  color: var(--text-dark);
+  font-weight: 500;
 }
 
 .d-none {

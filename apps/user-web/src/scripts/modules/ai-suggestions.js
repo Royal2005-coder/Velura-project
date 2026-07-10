@@ -137,7 +137,7 @@ export function initAiSuggestions() {
             // Bind style preferences summary text
             if (userDescEl) {
               const shapeText = translateBodyShape(quiz.body_shape);
-              const firstStyle = quiz.style_tags && quiz.style_tags.length ? quiz.style_tags[0] : "Tối giản";
+              const firstStyle = quiz.style_tags && quiz.style_tags.length ? translateStyleTag(quiz.style_tags[0]) : "Tối giản";
               userDescEl.textContent = `Dáng người: ${shapeText} • Phong cách: ${firstStyle}`;
             }
           }
@@ -146,11 +146,12 @@ export function initAiSuggestions() {
         // Dynamically update section header subtext
         const profileHeaderSubtitle = document.querySelector(".ai-section__subtitle");
         if (profileHeaderSubtitle && quiz.style_tags && quiz.style_tags.length) {
+          const styleText = translateStyleTag(quiz.style_tags[0]);
           profileHeaderSubtitle.innerHTML = `
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align: middle; margin-right: 4px;">
               <path d="M8 1.7l1.1 3.2 3.2 1.1-3.2 1.1L8 10.3 6.9 7.1 3.7 6l3.2-1.1L8 1.7z" fill="#C97B63" />
             </svg>
-            Dựa trên phong cách ${quiz.style_tags[0]} của bạn
+            Dựa trên phong cách ${styleText} của bạn
           `;
         }
 
@@ -206,11 +207,7 @@ export function initAiSuggestions() {
                 const combo = window.aiCombos[idx];
                 if (combo && combo.products) {
                   addComboProductsToCart(combo).then(() => {
-                    if (typeof showToast === "function") {
-                      showToast(`Đã thêm set đồ ${combo.name} vào giỏ hàng!`);
-                    } else {
-                      alert(`Đã thêm set đồ ${combo.name} vào giỏ hàng!`);
-                    }
+                    showToast(`Đã thêm set đồ ${combo.name} vào giỏ hàng!`);
                   });
                 }
                 return;
@@ -362,6 +359,28 @@ export function initAiSuggestions() {
           });
         }
       } else {
+        // No quiz completed on server, check if guest has completed it locally
+        const localQuizStr = localStorage.getItem("velura_guest_quiz_data");
+        if (localQuizStr && !hasRealAuthSession()) {
+          try {
+            const localQuiz = JSON.parse(localQuizStr);
+            console.log("Restoring local guest quiz to server...", localQuiz);
+            apiRequest("/api/user/style-quiz", {
+              method: "POST",
+              body: localQuiz
+            }).then(() => {
+              // Reload suggestions now that the server is synced
+              initAiSuggestions();
+            }).catch(e => {
+              console.error("Failed to sync guest quiz to server:", e);
+              emptyState.style.display = "block";
+            });
+            return;
+          } catch (e) {
+            console.error("Failed to parse local guest quiz data:", e);
+          }
+        }
+        
         // No quiz completed yet
         emptyState.style.display = "block";
       }
@@ -381,6 +400,20 @@ function translateBodyShape(shape) {
     "Inverted Triangle": "Tam giác ngược"
   };
   return shapes[shape] || shape || "Cân đối";
+}
+
+function translateStyleTag(tag) {
+  const styles = {
+    "Minimalist": "Tối giản",
+    "Classic": "Cổ điển",
+    "Romantic": "Lãng mạn",
+    "Elegant": "Thanh lịch",
+    "Boho": "Phóng khoáng",
+    "Street": "Đường phố",
+    "Sporty": "Thể thao",
+    "Smart Casual": "Lịch sự năng động"
+  };
+  return styles[tag] || tag || "Tối giản";
 }
 
 function openComboModal(combo) {
@@ -479,11 +512,7 @@ function openComboModal(combo) {
     addBtn.addEventListener("click", () => {
       if (combo.products) {
         addComboProductsToCart(combo).then(() => {
-          if (typeof showToast === "function") {
-            showToast(`Đã thêm set đồ ${combo.name} vào giỏ hàng!`);
-          } else {
-            alert(`Đã thêm set đồ ${combo.name} vào giỏ hàng!`);
-          }
+          showToast(`Đã thêm set đồ ${combo.name} vào giỏ hàng!`);
         });
       }
       closeModal();
@@ -507,11 +536,7 @@ async function addComboProductsToCart(combo) {
   }
 
   if (cart.length + newItemsCount > 50) {
-    if (typeof showToast === "function") {
-      showToast("Giỏ hàng của bạn đã đầy (tối đa 50 sản phẩm). Vui lòng thanh toán hoặc xóa bớt.");
-    } else {
-      alert("Giỏ hàng của bạn đã đầy (tối đa 50 sản phẩm). Vui lòng thanh toán hoặc xóa bớt.");
-    }
+    showToast("Giỏ hàng của bạn đã đầy (tối đa 50 sản phẩm). Vui lòng thanh toán hoặc xóa bớt.");
     return;
   }
 

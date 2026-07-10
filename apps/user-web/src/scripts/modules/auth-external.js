@@ -8,6 +8,18 @@
  */
 document.addEventListener('DOMContentLoaded', function () {
 
+  function showToast(msg) {
+    let c = document.querySelector(".toast-container");
+    if (!c) { c = document.createElement("div"); c.className = "toast-container"; document.body.appendChild(c); }
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.innerHTML = '<svg class="toast__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><div class="toast__content"><p class="toast__message">' + msg + '</p></div>';
+    c.appendChild(t);
+    void t.offsetWidth;
+    t.classList.add("toast--show");
+    setTimeout(() => { t.classList.remove("toast--show"); setTimeout(() => { t.remove(); if (!c.children.length) c.remove(); }, 400); }, 4000);
+  }
+
   /* ---- Tab Switcher (Đăng nhập) ---- */
   window.switchTab = function (type) {
     const tabs = document.querySelectorAll('.velura-auth-page .tab-btn');
@@ -101,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (loginForm) {
     loginForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      alert('Đăng nhập thành công! (Demo)');
+      showToast('Đăng nhập thành công! (Demo)');
     });
   }
 
@@ -109,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (registerForm) {
     registerForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      alert('Đăng ký thành công! (Demo)');
+      showToast('Đăng ký thành công! (Demo)');
     });
   }
 
@@ -117,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (forgotForm) {
     forgotForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      alert('Mã xác nhận đã được gửi! (Demo)');
+      showToast('Mã xác nhận đã được gửi! (Demo)');
     });
   }
 

@@ -3,8 +3,60 @@ import { selectOne, selectRows, insertRow, updateRows, deleteRows } from "../sup
 import { requireUserAuth } from "./auth.js";
 import { createNotification } from "./notifications.js";
 
-export async function handleReviewsRoute(req, res, corsHeaders, context) {
+export async function handleReviewsRoute(req, res, action, parts, corsHeaders, context) {
   const profile = requireUserAuth(context);
+
+  // POST /api/user/reviews/:id/reply
+  if (action && parts[4] === "reply" && req.method === "POST") {
+    const body = await readJson(req);
+    const { reply_text } = body;
+
+    if (!reply_text || !reply_text.trim()) {
+      throw new HttpError(400, "BAD_REQUEST", "Nội dung phản hồi không được để trống");
+    }
+
+    const review = await selectOne("review", { review_id: `eq.${action}` });
+    if (!review) {
+      throw new HttpError(404, "NOT_FOUND", "Không tìm thấy đánh giá");
+    }
+
+    let replies = [];
+    if (review.admin_reply) {
+      try {
+        replies = JSON.parse(review.admin_reply);
+        if (!Array.isArray(replies)) {
+          replies = [{
+            user_name: "Admin",
+            role: "admin",
+            reply_text: review.admin_reply,
+            created_at: review.moderated_at || review.updated_at || new Date().toISOString()
+          }];
+        }
+      } catch (e) {
+        replies = [{
+          user_name: "Admin",
+          role: "admin",
+          reply_text: review.admin_reply,
+          created_at: review.moderated_at || review.updated_at || new Date().toISOString()
+        }];
+      }
+    }
+
+    replies.push({
+      user_name: profile.full_name || "Khách hàng",
+      role: "customer",
+      reply_text: reply_text.trim(),
+      created_at: new Date().toISOString()
+    });
+
+    const updated = await updateRows(
+      "review",
+      { review_id: `eq.${action}` },
+      { admin_reply: JSON.stringify(replies) }
+    );
+
+    return sendJson(res, 200, { success: true, review: updated[0] }, corsHeaders);
+  }
 
   // GET /api/user/reviews
   if (req.method === "GET") {

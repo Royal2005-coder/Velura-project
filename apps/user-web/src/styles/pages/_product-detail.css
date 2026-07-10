@@ -519,6 +519,150 @@
   flex-shrink: 0;
 }
 
+/* ---------- Combo Components Section ---------- */
+.combo-components {
+  background: #faf7f4;
+  border: 1px dashed #d4c4b7;
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.combo-components__title {
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dark);
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.combo-components__title svg {
+  color: var(--terracotta);
+}
+
+.combo-components__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.combo-component-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid rgba(212, 196, 183, 0.35);
+  transition: background 0.2s ease, padding-left 0.2s ease;
+  border-radius: 4px;
+}
+
+.combo-component-item:last-child {
+  border-bottom: none;
+}
+
+.combo-component-item:hover {
+  background: rgba(212, 196, 183, 0.15);
+  padding-left: 8px;
+}
+
+.combo-component-item__img {
+  width: 64px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid rgba(212, 196, 183, 0.4);
+  background: #f4e4dc;
+  flex-shrink: 0;
+}
+
+.combo-component-item__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.combo-component-item__category {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--terracotta);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.combo-component-item__name {
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-dark);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.combo-component-item__price {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #8c857e;
+  margin-top: 2px;
+}
+
+.combo-component-item__arrow {
+  flex-shrink: 0;
+  color: var(--line);
+  transition: color 0.2s, transform 0.2s;
+}
+
+.combo-component-item:hover .combo-component-item__arrow {
+  color: var(--terracotta);
+  transform: translateX(2px);
+}
+
+.combo-components__summary {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(212, 196, 183, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.combo-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+}
+
+.combo-summary__label {
+  color: #8c857e;
+  font-weight: 500;
+}
+
+.combo-summary__old-price {
+  color: #8c857e;
+  text-decoration: line-through;
+}
+
+.combo-summary-row--savings {
+  margin-top: 4px;
+}
+
+.combo-summary__savings {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--terracotta);
+}
+
 /* ---------- Tabs Content area ---------- */
 .product-detail__description {
   margin-top: 80px;
