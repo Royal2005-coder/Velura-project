@@ -23,7 +23,7 @@ export const config = {
   n8nChatWebhookToken: process.env.N8N_CHAT_WEBHOOK_TOKEN || "",
   geminiApiKey: process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || "",
   geminiEmbeddingModel: process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-2",
-  geminiEmbeddingDimensions: Number(process.env.GEMINI_EMBEDDING_DIMENSIONS || 3072),
+  geminiEmbeddingDimensions: Number(process.env.GEMINI_EMBEDDING_DIMENSIONS || 1536),
   geminiStylistModel: process.env.GEMINI_STYLIST_MODEL || "gemini-3.5-flash",
   recommendationMatchThreshold: Number(process.env.RECOMMENDATION_MATCH_THRESHOLD || 0.45),
   recommendationMatchCount: Number(process.env.RECOMMENDATION_MATCH_COUNT || 20),

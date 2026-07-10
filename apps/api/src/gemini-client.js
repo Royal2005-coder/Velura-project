@@ -20,13 +20,17 @@ export async function generateGeminiEmbedding(text, options = {}) {
 
   const data = await geminiRequest(`/models/${encodeURIComponent(model)}:embedContent`, payload);
   const values = data?.embedding?.values || data?.embeddings?.[0]?.values;
-  if (!Array.isArray(values) || values.length !== dimensions) {
+  if (!Array.isArray(values)) {
+    throw new HttpError(502, "GEMINI_EMBEDDING_INVALID", "Gemini embedding response is invalid");
+  }
+  const slicedValues = values.slice(0, dimensions);
+  if (slicedValues.length !== dimensions) {
     throw new HttpError(502, "GEMINI_EMBEDDING_INVALID", "Gemini embedding response is invalid", {
       expectedDimensions: dimensions,
-      actualDimensions: Array.isArray(values) ? values.length : 0
+      actualDimensions: slicedValues.length
     });
   }
-  return values.map(Number);
+  return slicedValues.map(Number);
 }
 
 export async function generateGeminiJson(prompt, schema, options = {}) {
