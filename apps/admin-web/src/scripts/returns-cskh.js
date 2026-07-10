@@ -843,10 +843,10 @@ function renderChatMessages() {
     if (isUser) { senderClass = "admin-chat-msg--user"; senderLabel = "KH"; }
     if (isAgent) { senderClass = "admin-chat-msg--agent"; senderLabel = "CSKH"; }
 
-    const productIds = [
+    const productIds = Array.from(new Set([
       ...(Array.isArray(msg.product_ids) ? msg.product_ids : []),
       ...(Array.isArray(msg.metadata?.product_ids) ? msg.metadata.product_ids : [])
-    ];
+    ]));
     const productCards = productIds
       .map((id) => productsMap.get(id))
       .filter(Boolean)
