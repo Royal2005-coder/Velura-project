@@ -130,7 +130,7 @@
 .admin-state-panel .admin-line-icon { width:32px; height:32px; color:var(--terracotta); }
 .admin-state-panel strong { color:var(--text-body); font-weight:500; }
 /* Toast notifications */
-.admin-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:9999; padding:12px 24px; border-radius:var(--radius-md); color:#fff; font-family:"Playfair Display", Georgia, serif; font-size:.875rem; font-weight:500; box-shadow:0 4px 20px rgba(0,0,0,.18); animation:toastSlideUp .3s ease; pointer-events:none; }
+.admin-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:9999; padding:12px 24px; border-radius:var(--radius-md); color:#fff; font-family:"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size:.875rem; font-weight:500; box-shadow:0 4px 20px rgba(0,0,0,.18); animation:toastSlideUp .3s ease; pointer-events:none; }
 .admin-toast--success { background:var(--success,#27ae60); }
 .admin-toast--error { background:var(--error,#e74c3c); }
 .admin-toast[hidden] { display:none; }

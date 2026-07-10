@@ -513,8 +513,6 @@ input:checked + .admin-sim-slider:before {
 }
 
 /* Monospace formatting for technical numbers and codes */
-.admin-table td:nth-child(5), /* Last login date */
-.admin-table td:first-child strong, /* User ID / Name */
 .admin-product-code,
 .admin-table-note,
 .admin-form-helper[data-word-counter] {
