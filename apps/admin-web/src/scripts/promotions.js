@@ -160,7 +160,7 @@ function render() {
   else if (state.view === "bundles") {
     const b = bundleRows();
     const footer = `<div class="admin-card__footer"><p class="admin-table-note">Hiển thị ${b.start + 1} - ${b.end} / ${b.total} combo</p>${renderPagination(b.total, state.comboPage, state.comboPerPage, "combo-page")}</div>`;
-    panel.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><h3 style="margin:0;font-family:'Playfair Display',Georgia,serif;font-size:1.125rem;font-weight:500;">Danh sách Combo</h3><button class="admin-btn admin-btn--secondary admin-btn--sm" data-promo-modal="combo">${icon("plus")} Tạo Combo mới</button></div>` + tableWrap(["Combo", "Giá gốc", "Giá bán", "Thành phần", "Trạng thái", "Thao tác"], b.rows, "Chưa có combo trong danh sách sản phẩm", footer);
+    panel.innerHTML = `<div class="admin-section__header"><h3 class="admin-section__title" style="margin:0;font-size:1.125rem;font-weight:500;">Danh sách Combo</h3><button class="admin-btn admin-btn--secondary admin-btn--sm" data-promo-modal="combo">${icon("plus")} Tạo Combo mới</button></div>` + tableWrap(["Combo", "Giá gốc", "Giá bán", "Thành phần", "Trạng thái", "Thao tác"], b.rows, "Chưa có combo trong danh sách sản phẩm", footer);
   }
   else if (state.view === "logs") panel.innerHTML = tableWrap(["Thời gian", "Người thực hiện", "Nhóm", "Đối tượng", "Hành động", "Dữ liệu mới"], logRows(), "Chưa có nhật ký");
   else panel.innerHTML = tableWrap(["Chiến dịch", "Loại", "Thời gian", "Ngân sách", "Trạng thái", "Thao tác"], campaignRows(), "Chưa có chiến dịch");
@@ -267,7 +267,7 @@ function detail(type, id) {
       </dl>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;">
         <h3 class="admin-drawer__section" style="margin:0;">Thành phần combo (${cachedItems.length})</h3>
-        <button class="admin-btn admin-btn--secondary admin-btn--sm" data-combo-add-item="${comboId}">${icon("plus")}Thêm thành phần</button>
+        <button class="admin-btn admin-btn--secondary admin-btn--sm" data-combo-add-item="${comboId}">${icon("plus")} Thêm thành phần</button>
       </div>
       <div id="combo-items-list" style="margin-top:10px;">${cachedItems.length ? "" : "Đang tải thông tin thành phần..."}</div>
     `;
