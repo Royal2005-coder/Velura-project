@@ -1,4 +1,28 @@
-# CSKH & Returns Workflow — Walkthrough
+# CSKH, Chatbot & Database Workflow — Walkthrough
+
+## Latest Enhancements (Session Gia_dev_2 Updates)
+
+### 1. Image Search & AI Multimodal Vision Analysis
+- **Multimodal Visual Analysis**: Implemented full support for uploading and analyzing images within the user and guest chatbots.
+  - **Dynamic Preview**: Dynamically inserts and manages an image preview thumbnail area (with filename and removal button) above the chat input field inside [chatbot.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/user-web/src/scripts/modules/chatbot.js).
+  - **Base64 Encoding**: Automatically reads and base64-encodes selected image files to transmit them as JSON payloads.
+  - **Bubble Attachment**: Renders attached user images inline in the chat history bubbles.
+  - **Gemini Vision Analysis**: Added `analyzeImageWithGemini` inside [gemini-client.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/gemini-client.js) querying the active `gemini-3.5-flash` model. It extracts styling, style profiles, and product context from uploaded outfits, passing the detailed description back to Mistral and product search keyword queries.
+  - **Increased Request Body Limit**: Changed `maxBodyBytes` default to `15728640` (15MB) in both [config.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/config.js) and [.env](file:///c:/Users/ADMIN/Downloads/Velura-Images/.env) to support base64 image data transmission safely.
+- **Supabase Vector Dimension Synchronization**: Increased `geminiEmbeddingDimensions` to 3072 in [config.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/config.js) and [.env](file:///c:/Users/ADMIN/Downloads/Velura-Images/.env) to align with Supabase's `match_products` column requirement (3072 dimensions), resolving vector shape mismatch errors.
+
+### 2. Wishlist & Favorite Outfit Synchronization
+- **Instant Product Syncing**: Updated `handleSaveOutfit` inside [chatbot.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/user-web/src/scripts/modules/chatbot.js) so that when a logged-in user saves a recommended outfit, all products in that outfit are added directly to their personal wishlist (`/api/user/wishlist`).
+- **Post-Login Synchronization**: Enhanced `syncFavoriteOutfitsOnLogin` to extract recommended product IDs from guest outfits cached in `sessionStorage` and sync them to the logged-in user's database wishlist, updating the header wishlist badge count dynamically.
+
+### 3. Guest Exit & Concurrent Session Purge
+- **Purge All Guest Sessions**: Modified exit/close event hooks to purge **all** guest chat sessions concurrently via the REST API before clearing storage keys.
+- **Modern Warnings Modal**: Replaced warning emojis with a styled vector alert-triangle icon in the modal wrapper.
+
+### 4. Admin Role Escalation Fix
+- **Optimistic Locking Resolution**: Modified `public.admin_review_role_request` in the Supabase PostgreSQL database to check the target user's profile against their current version (`v_target.version`) during approval, preventing conflicts when users change profiles or log in after requests are made.
+
+---
 
 ## Completed Enhancements
 
