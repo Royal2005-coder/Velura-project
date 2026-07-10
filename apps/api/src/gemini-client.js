@@ -89,7 +89,7 @@ async function geminiRequest(path, payload) {
 
 export async function analyzeImageWithGemini(base64Data, mimeType, userPrompt) {
   requireGeminiKey();
-  const model = "gemini-1.5-flash"; 
+  const model = "gemini-3.5-flash"; 
   const cleanBase64 = base64Data.replace(/^data:image\/[a-zA-Z+.-]+;base64,/, "");
 
   const payload = {
