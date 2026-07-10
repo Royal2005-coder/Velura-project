@@ -681,6 +681,26 @@ import { productApi } from "./product-api.js";
     }
   }
 
+  function updateKpis() {
+    const kpiCards = document.querySelectorAll(".admin-product-kpis .admin-kpi-card__value");
+    if (kpiCards.length >= 5) {
+      const total = state.products.length;
+      const onSale = state.products.filter(p => p.status === "on_sale").length;
+      const hidden = state.products.filter(p => p.status === "hidden").length;
+      const outOfStock = state.products.filter(p => p.status === "out_of_stock" || stockOf(p) === 0).length;
+      const lowStock = state.products.filter(p => {
+        const stock = stockOf(p);
+        return stock > 0 && variantsOf(p).some((v) => Number(v.stock_quantity) <= Number(v.low_stock_threshold));
+      }).length;
+
+      kpiCards[0].textContent = String(total);
+      kpiCards[1].textContent = String(onSale);
+      kpiCards[2].textContent = String(hidden);
+      kpiCards[3].textContent = String(outOfStock);
+      kpiCards[4].textContent = String(lowStock);
+    }
+  }
+
   async function loadState() {
     tableBody.innerHTML = `<tr><td colspan="8"><div class="admin-empty-state"><strong>Đang tải dữ liệu Supabase...</strong></div></td></tr>`;
     const [products, categories, lowStock] = await Promise.all([
@@ -691,6 +711,7 @@ import { productApi } from "./product-api.js";
     state.categories = categories?.data?.rows || categories?.data || [];
     state.lowStock = lowStock?.data || [];
     renderCategories();
+    updateKpis();
     renderProducts();
   }
 

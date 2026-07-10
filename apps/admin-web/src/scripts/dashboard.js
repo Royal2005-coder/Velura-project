@@ -53,6 +53,12 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
         kpis[4].querySelector("small").textContent = fmtNum(data.operations.urgentReviews) + " đánh giá tiêu cực";
       }
 
+      var alertCountBtn = opsPanel.querySelector("[data-dashboard-drawer='alerts']");
+      if (alertCountBtn) {
+        var totalAlerts = data.operations.openReturns + data.operations.paymentErrors + data.operations.lowStockProducts + data.operations.openSupportTickets;
+        alertCountBtn.textContent = "Xem tất cả " + totalAlerts;
+      }
+
       // Update alerts list on operations panel
       var alertList = opsPanel.querySelector(".dashboard-alert-list");
       if (alertList) {
