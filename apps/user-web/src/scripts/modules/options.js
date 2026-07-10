@@ -28,8 +28,8 @@ export async function initOptions() {
   let recommendedColors = [];
   try {
     const profileRes = await apiRequest("/api/user/style-quiz");
-    if (profileRes && profileRes.profile) {
-      styleProfile = profileRes.profile;
+    if (profileRes && (profileRes.quiz || profileRes.profile)) {
+      styleProfile = profileRes.quiz || profileRes.profile;
       const { chest_cm, waist_cm, hip_cm, weight_kg, skin_tone, favorite_colors } = styleProfile;
       if (chest_cm || waist_cm || hip_cm || weight_kg) {
         if (chest_cm <= 80 && waist_cm <= 64 && hip_cm <= 86 && (weight_kg || 0) <= 45) {
@@ -568,16 +568,6 @@ export async function initOptions() {
           }
         }
 
-        if (recommendedColors.length > 0 && uniqueColors.length > 0) {
-          const matchedRecColors = uniqueColors.filter(c => 
-            recommendedColors.some(rc => c.name.toLowerCase().includes(rc.toLowerCase()) || rc.toLowerCase().includes(c.name.toLowerCase()))
-          );
-          if (matchedRecColors.length > 0) {
-            const colorNames = matchedRecColors.map(c => c.name).join(", ");
-            recommendationText += `<div style="font-weight: 600; color: #8A6D3B; margin-top: 4px;">Màu phù hợp với bạn: ${colorNames}</div>`;
-          }
-        }
-
         if (shapes.length > 0 && tone) {
           fitText = `Dành cho dáng người ${shapes.join(", ")} & tông da ${tone}`;
         } else if (shapes.length > 0) {
@@ -703,6 +693,24 @@ export async function initOptions() {
       });
       const uniqueColors = Array.from(colorMap.entries()).map(([name, hex]) => ({ name, hex }));
       const uniqueSizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
+
+      // Show color recommendations from style profile in fit helper
+      if (styleProfile && recommendedColors.length > 0 && uniqueColors.length > 0) {
+        const matchedRecColors = uniqueColors.filter(c =>
+          recommendedColors.some(rc => c.name.toLowerCase().includes(rc.toLowerCase()) || rc.toLowerCase().includes(c.name.toLowerCase()))
+        );
+        if (matchedRecColors.length > 0) {
+          const fitHelperEl2 = document.querySelector(".product-fit-helper");
+          if (fitHelperEl2) {
+            const colorNames = matchedRecColors.map(c => c.name).join(", ");
+            const recDiv = document.createElement("div");
+            recDiv.style.cssText = "font-weight: 600; color: #8A6D3B; margin-top: 4px;";
+            recDiv.textContent = `Màu phù hợp với bạn: ${colorNames}`;
+            const innerDiv = fitHelperEl2.querySelector("div > div");
+            if (innerDiv) innerDiv.appendChild(recDiv);
+          }
+        }
+      }
 
       // Hide size selection if there are no size variants or it is an accessory
       const optionSizeEl = document.querySelector(".option-size");

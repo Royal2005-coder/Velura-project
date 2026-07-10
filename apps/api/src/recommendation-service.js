@@ -54,8 +54,16 @@ const COMBO_SCHEMA = {
 };
 
 export async function buildStyleProfileRecommendations(context, req) {
-  const quiz = await getStyleProfile(context, req);
-  const fallbackData = await buildRuleBasedRecommendations(quiz);
+  let quiz = null;
+  let fallbackData = { success: true, quiz: null, combos: [], categories: [] };
+
+  try {
+    quiz = await getStyleProfile(context, req);
+    fallbackData = await buildRuleBasedRecommendations(quiz);
+  } catch (dbError) {
+    console.error("[RECOMMENDATION DB ERROR]:", sanitizeAiError(dbError));
+    return { success: true, quiz: null, combos: [], categories: [], source: "db_error" };
+  }
 
   if (!quiz || !hasStyleSignal(quiz) || !isGeminiConfigured()) {
     return { ...fallbackData, source: isGeminiConfigured() ? "rule_fallback" : "rule_fallback_no_gemini_key" };

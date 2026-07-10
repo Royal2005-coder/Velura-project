@@ -38,7 +38,7 @@ export async function handleQuizRoute(req, res, corsHeaders, context) {
     const {
       height_cm, weight_kg, chest_cm, waist_cm, hip_cm,
       body_shape, skin_tone, style_tags, preferred_occasions,
-      favorite_brands, budget_range
+      favorite_brands, budget_range, age_group, favorite_colors
     } = quizData;
 
     const payload = {
@@ -54,6 +54,8 @@ export async function handleQuizRoute(req, res, corsHeaders, context) {
       preferred_occasions: preferred_occasions || null,
       favorite_brands: favorite_brands || null,
       budget_range: budget_range || null,
+      age_group: age_group || null,
+      favorite_colors: favorite_colors || null,
       quiz_completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

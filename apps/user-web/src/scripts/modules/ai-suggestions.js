@@ -387,6 +387,19 @@ export function initAiSuggestions() {
     })
     .catch(err => {
       console.error("Failed to load style quiz recommendations:", err);
+      const isAuthError = err?.message?.includes("401") || err?.message?.includes("UNAUTHORIZED");
+      if (isAuthError) {
+        emptyState.innerHTML = `
+          <div style="font-size: 40px; margin-bottom: 16px;">🔒</div>
+          <h2 style="font-family: 'Playfair Display', serif; font-size: 1.75rem; color: #1a1a1a; margin-bottom: 12px;">Phiên đăng nhập đã hết hạn</h2>
+          <p style="font-family: 'DM Sans', sans-serif; color: #666; max-width: 480px; margin: 0 auto 24px; line-height: 1.6;">
+            Vui lòng đăng nhập lại để xem gợi ý AI cá nhân hóa.
+          </p>
+          <a href="/src/pages/auth/signin.html" class="btn btn--primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; text-decoration: none;">
+            Đăng nhập lại
+          </a>
+        `;
+      }
       emptyState.style.display = "block";
     });
 }

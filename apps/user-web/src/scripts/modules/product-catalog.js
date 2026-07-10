@@ -274,7 +274,7 @@ export function initProductCatalog() {
           "rectangle": "Dáng chữ nhật",
           "inverted triangle": "Dáng tam giác ngược"
         };
-        const translatedShape = bodyShapeTranslations[userBodyShape.toLowerCase()] || userBodyShape;
+        const translatedShape = userBodyShape ? (bodyShapeTranslations[userBodyShape.toLowerCase()] || userBodyShape) : "";
 
         if (isSuggestionsEnabled) {
           fitHelperEl.innerHTML = `
@@ -384,8 +384,14 @@ export function initProductCatalog() {
         const profileRes = await apiRequest("/api/user/style-quiz");
         if (profileRes && profileRes.quiz) {
           hasStyleProfile = true;
-          userBodyShape = profileRes.quiz.body_shape;
+          userBodyShape = profileRes.quiz.body_shape || "";
           quizData = profileRes.quiz;
+
+          // Default suggestions to enabled on first visit when quiz exists
+          if (localStorage.getItem("velura_suggestions_enabled") === null) {
+            isSuggestionsEnabled = true;
+            localStorage.setItem("velura_suggestions_enabled", "true");
+          }
         }
       } catch (quizErr) {
         hasStyleProfile = false;
