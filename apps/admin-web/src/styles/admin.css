@@ -263,7 +263,6 @@ body.admin-page textarea {
 
 [data-review-filter] .admin-form-label { display:none; }
 .admin-filter-bar { flex-wrap: nowrap; }
-.admin-filter-bar .admin-search-field,
 .admin-filter-bar .admin-form-group,
 .admin-filter-bar > :not(.admin-search-field) { flex: 0 0 auto; }
 .admin-filter-bar > .admin-form-control { flex: 0 0 auto; width: auto; }
