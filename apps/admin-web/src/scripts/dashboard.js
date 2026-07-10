@@ -286,6 +286,36 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
           <div><small>Voucher dùng nhiều</small><strong>${escapeHtml(data.business.mostUsedVoucher)}</strong></div>
         `;
       }
+
+      // Update chart dynamically
+      var chartContainer = busPanel.querySelector(".dashboard-chart__bars");
+      var gridContainer = busPanel.querySelector(".dashboard-chart__grid");
+      if (chartContainer && data.business.revenueTrend && data.business.revenueTrend.length > 0) {
+        var trend = data.business.revenueTrend;
+        var maxRevenue = Math.max.apply(null, trend.map(function(p) { return p.revenue; })) || 1;
+        var maxOrders = Math.max.apply(null, trend.map(function(p) { return p.orderCount; })) || 1;
+
+        chartContainer.innerHTML = trend.map(function(p) {
+          var pctBar = Math.round((p.revenue / maxRevenue) * 90) + 10;
+          var pctOrders = Math.round((p.orderCount / maxOrders) * 90) + 10;
+          return `
+            <div style="--bar: ${pctBar}%; --orders: ${pctOrders}%;">
+              <i title="Doanh thu: ${fmtMoney(p.revenue)}"></i>
+              <b title="Số đơn: ${p.orderCount} đơn"></b>
+              <span>${escapeHtml(p.dateStr)}</span>
+            </div>
+          `;
+        }).join("");
+
+        if (gridContainer) {
+          gridContainer.innerHTML = `
+            <span>${fmtMoney(maxRevenue)}</span>
+            <span>${fmtMoney(maxRevenue * 2 / 3)}</span>
+            <span>${fmtMoney(maxRevenue / 3)}</span>
+            <span>0</span>
+          `;
+        }
+      }
     }
   }
 
