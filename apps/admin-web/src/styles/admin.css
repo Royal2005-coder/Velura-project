@@ -28,15 +28,15 @@ html:has(.admin-page)::-webkit-scrollbar-thumb,
 body.admin-page::-webkit-scrollbar-thumb { background: var(--brown-light); border: 2px solid var(--checkout-bg); border-radius: 999px; }
 html:has(.admin-page)::-webkit-scrollbar-thumb:hover,
 body.admin-page::-webkit-scrollbar-thumb:hover { background: var(--terracotta); }
-.admin-page { font-size: 17px; }
-.admin-page h1,
-.admin-page h2,
-.admin-page h3,
-.admin-page h4,
-.admin-page h5,
-.admin-page h6 {
-  font-family: "Playfair Display", Georgia, serif;
+body.admin-page,
+body.admin-page *,
+body.admin-page input,
+body.admin-page button,
+body.admin-page select,
+body.admin-page textarea {
+  font-family: "Playfair Display", Georgia, serif !important;
 }
+.admin-page { font-size: 17px; }
 .admin-topbar__title { color: var(--text-dark); font-family: "Playfair Display", Georgia, serif; font-size: 1.25rem; font-weight: 600; }
 .admin-content { padding-top: 28px; }
 .admin-page-header { display: none; }
