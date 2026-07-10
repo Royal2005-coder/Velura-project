@@ -25,5 +25,17 @@ export function initTabs() {
         }
       });
     });
+
+    var sizeGuideLink = document.querySelector(".size-guide-link");
+    if (sizeGuideLink) {
+      sizeGuideLink.addEventListener("click", function (e) {
+        e.preventDefault();
+        var tabSizeBtn = document.getElementById("tab-size");
+        if (tabSizeBtn) {
+          tabSizeBtn.click();
+          tabSizeBtn.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    }
   }
 }

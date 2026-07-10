@@ -1114,31 +1114,136 @@ function initWishlistActions() {
           const priceFormatted = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(product.sale_price || product.base_price);
           return `
             <div class="product-card" data-product-id="${product.product_id}">
-              <div class="product-card__image-container">
-                <img class="product-card__image" src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" />
-                <button class="product-card__wishlist-btn js-remove-wishlist" type="button" aria-label="Xóa khỏi yêu thích">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              <div class="product-card__img-wrapper">
+                <img class="product-card__img" src="${product.images?.[0] || '/src/assets/images/placeholder.jpg'}" alt="${product.name}" />
+                <button class="btn-icon product-card__btn-wishlist js-remove-wishlist active" type="button" aria-label="Xóa khỏi yêu thích">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                   </svg>
                 </button>
               </div>
-              <div class="product-card__details">
-                <h3 class="product-card__name"><a href="/src/pages/products/detail.html?id=${product.product_id}" style="text-decoration:none; color:inherit;">${product.name}</a></h3>
-                <div class="product-card__price-row">
-                  <span class="product-card__price">${priceFormatted}</span>
+              <div class="product-card__info" style="padding: 14px;">
+                <h3 class="product-card__title" style="margin: 0; font-size: 0.875rem; font-weight: 500; height: 38px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.4;"><a href="/src/pages/products/detail.html?id=${product.product_id}" style="text-decoration:none; color:inherit;">${product.name}</a></h3>
+                <div class="product-card__price-row" style="margin-top: 8px;">
+                  <span class="product-card__price" style="font-family: 'DM Sans', sans-serif; font-weight: 700; color: var(--terracotta);">${priceFormatted}</span>
                 </div>
-                <button class="btn btn--primary product-card__cart-btn js-add-cart-fast" type="button">
+              </div>
+              <div class="product-card__actions" style="padding: 0 14px 14px; margin-top: auto;">
+                <button class="btn btn--primary product-card__cart-btn js-add-cart-fast" type="button" style="width: 100%; padding: 8px 0; font-size: 0.8125rem;">
                   Thêm vào giỏ nhanh
                 </button>
               </div>
             </div>
           `;
         }).join("");
+
+        setupWishlistCarousel(grid);
       })
       .catch(err => {
         grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 24px 0; color: #d9534f;">Không thể tải danh sách yêu thích: ${err.message}</div>`;
       });
+  }
+
+  function setupWishlistCarousel(gridEl) {
+    if (!gridEl) return;
+    const parent = gridEl.parentNode;
+    
+    // Clean up existing arrows
+    parent.querySelectorAll(".wishlist-carousel-arrow").forEach(el => el.remove());
+    
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "wishlist-carousel-arrow wishlist-carousel-arrow--prev";
+    prevBtn.innerHTML = "‹";
+    prevBtn.style.cssText = `
+      position: absolute;
+      top: calc(50% + 20px);
+      left: -18px;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid #FAF6F2;
+      box-shadow: 0 4px 12px rgba(42,37,34,0.08);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      z-index: 10;
+      color: #7D562D;
+      transition: all 0.2s ease;
+      line-height: 1;
+    `;
+    
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "wishlist-carousel-arrow wishlist-carousel-arrow--next";
+    nextBtn.innerHTML = "›";
+    nextBtn.style.cssText = `
+      position: absolute;
+      top: calc(50% + 20px);
+      right: -18px;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid #FAF6F2;
+      box-shadow: 0 4px 12px rgba(42,37,34,0.08);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      z-index: 10;
+      color: #7D562D;
+      transition: all 0.2s ease;
+      line-height: 1;
+    `;
+    
+    parent.style.position = "relative";
+    
+    prevBtn.addEventListener("click", () => {
+      gridEl.scrollBy({ left: -gridEl.clientWidth * 0.8, behavior: "smooth" });
+    });
+    
+    nextBtn.addEventListener("click", () => {
+      gridEl.scrollBy({ left: gridEl.clientWidth * 0.8, behavior: "smooth" });
+    });
+    
+    // Hover styling
+    const addHoverEffect = (btn) => {
+      btn.addEventListener("mouseenter", () => {
+        btn.style.background = "#FAF6F2";
+        btn.style.color = "#C97B63";
+      });
+      btn.addEventListener("mouseleave", () => {
+        btn.style.background = "#fff";
+        btn.style.color = "#7D562D";
+      });
+    };
+    addHoverEffect(prevBtn);
+    addHoverEffect(nextBtn);
+    
+    parent.appendChild(prevBtn);
+    parent.appendChild(nextBtn);
+    
+    const updateArrows = () => {
+      const hasOverflow = gridEl.scrollWidth > gridEl.clientWidth + 8;
+      prevBtn.style.display = hasOverflow ? "flex" : "none";
+      nextBtn.style.display = hasOverflow ? "flex" : "none";
+      
+      prevBtn.disabled = gridEl.scrollLeft <= 4;
+      nextBtn.disabled = gridEl.scrollLeft >= (gridEl.scrollWidth - gridEl.clientWidth - 4);
+      prevBtn.style.opacity = prevBtn.disabled ? "0.4" : "1";
+      nextBtn.style.opacity = nextBtn.disabled ? "0.4" : "1";
+    };
+    
+    gridEl.addEventListener("scroll", updateArrows);
+    window.addEventListener("resize", updateArrows);
+    setTimeout(updateArrows, 200);
   }
 
   // Delegate clicks on grid

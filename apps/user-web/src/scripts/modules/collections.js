@@ -1,4 +1,7 @@
 import { apiRequest } from "./api.js";
+import { addToCart, getVariantImage } from "./cart.js";
+import { showToast } from "./account-profile.js";
+import { updateWishlistBadge } from "./wishlist.js";
 
 /**
  * Collections Module — Velura
@@ -110,7 +113,30 @@ export function initCollectionsFilter() {
     return new Intl.NumberFormat("vi-VN").format(Number(value || 0)) + " đ";
   };
 
-  apiRequest("/api/user/products")
+  let wishlistedProductIds = new Set();
+  const token = localStorage.getItem("velura_token");
+  
+  const loadWishlist = async () => {
+    if (token) {
+      try {
+        const wishlistData = await apiRequest("/api/user/wishlist");
+        const items = wishlistData.items || [];
+        wishlistedProductIds = new Set(items.map(item => item.product_id));
+      } catch (err) {
+        console.error("Failed to load wishlist in collections:", err);
+      }
+    } else {
+      try {
+        const guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+        wishlistedProductIds = new Set(guestIds);
+      } catch {
+        wishlistedProductIds = new Set();
+      }
+    }
+  };
+
+  loadWishlist()
+    .then(() => apiRequest("/api/user/products"))
     .then(rawProducts => {
       const products = rawProducts.filter(p => {
         const nameLower = (p.name || "").toLowerCase();
@@ -140,7 +166,7 @@ export function initCollectionsFilter() {
       listContainer.innerHTML = orderedColNames.map((colName, index) => {
         const meta = getMeta(colName);
         const colProducts = comboProducts.filter(p => p.collection === colName);
-        return renderCollectionBlock(meta, colProducts, formatVND, index);
+        return renderCollectionBlock(meta, colProducts, formatVND, index, wishlistedProductIds);
       }).join("");
 
       const tabs = tabsContainer.querySelectorAll(".collections-tab");
@@ -164,6 +190,92 @@ export function initCollectionsFilter() {
       const urlParams = new URLSearchParams(window.location.search);
       const urlId = urlParams.get("id");
       if (urlId) applyFilter(urlId);
+
+      // Bind wishlist and cart events
+      const bindCollectionEvents = (products) => {
+        const wishlistBtns = listContainer.querySelectorAll(".js-add-wishlist-collection");
+        wishlistBtns.forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const productId = btn.getAttribute("data-id");
+            const isActive = btn.classList.contains("active");
+            const token = localStorage.getItem("velura_token");
+
+            try {
+              if (token) {
+                if (isActive) {
+                  await apiRequest(`/api/user/wishlist?product_id=${productId}`, { method: "DELETE" });
+                  btn.classList.remove("active");
+                  wishlistedProductIds.delete(productId);
+                  showToast("Đã xóa khỏi danh sách yêu thích");
+                } else {
+                  await apiRequest("/api/user/wishlist", {
+                    method: "POST",
+                    body: { product_id: productId }
+                  });
+                  btn.classList.add("active");
+                  wishlistedProductIds.add(productId);
+                  showToast("Đã thêm vào danh sách yêu thích!");
+                }
+                localStorage.setItem("velura_wishlist_count", wishlistedProductIds.size);
+              } else {
+                let guestIds = [];
+                try {
+                  guestIds = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
+                } catch {
+                  guestIds = [];
+                }
+
+                if (isActive) {
+                  guestIds = guestIds.filter(id => id !== productId);
+                  btn.classList.remove("active");
+                  wishlistedProductIds.delete(productId);
+                  showToast("Đã xóa khỏi danh sách yêu thích");
+                } else {
+                  if (!guestIds.includes(productId)) {
+                    guestIds.push(productId);
+                  }
+                  btn.classList.add("active");
+                  wishlistedProductIds.add(productId);
+                  showToast("Đã thêm vào danh sách yêu thích!");
+                }
+                localStorage.setItem("velura_guest_wishlist", JSON.stringify(guestIds));
+              }
+              updateWishlistBadge();
+            } catch (err) {
+              showToast(err.message || "Không thể lưu sản phẩm");
+            }
+          });
+        });
+
+        const cartBtns = listContainer.querySelectorAll(".js-add-cart-collection");
+        cartBtns.forEach(btn => {
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const productId = btn.getAttribute("data-id");
+            const prod = products.find(x => x.product_id === productId);
+            if (prod && prod.variants && prod.variants.length > 0) {
+              const matchedVariant = prod.variants[0];
+              addToCart({
+                variant_id: matchedVariant.variant_id,
+                product_id: prod.product_id,
+                product_name: prod.name,
+                product_image: getVariantImage ? getVariantImage(prod, matchedVariant.color || "Mặc định") : (prod.images?.[0] || ""),
+                quantity: 1,
+                unit_price: prod.sale_price || prod.base_price,
+                color: matchedVariant.color || "Mặc định",
+                size: matchedVariant.size || "M"
+              });
+            } else {
+              showToast("Sản phẩm không có biến thể sẵn có.");
+            }
+          });
+        });
+      };
+
+      bindCollectionEvents(products);
     })
     .catch(err => {
       console.error("[Collections Dynamic Load Error]:", err);
@@ -171,10 +283,10 @@ export function initCollectionsFilter() {
     });
 }
 
-function renderCollectionBlock(meta, products, formatVND, index) {
+function renderCollectionBlock(meta, products, formatVND, index, wishlistedProductIds) {
   const countClass = `collection-detail__products-grid--count-${Math.min(products.length, 6)}`;
   const cardsHtml = products.length
-    ? products.map((product, idx) => renderOutfitCard(product, idx, formatVND)).join("")
+    ? products.map((product, idx) => renderOutfitCard(product, idx, formatVND, wishlistedProductIds)).join("")
     : `<div class="collections-state">Bộ sưu tập này chưa có set đồ đang bán.</div>`;
 
   const isReverse = index % 2 === 1;
@@ -222,21 +334,43 @@ function renderCollectionBlock(meta, products, formatVND, index) {
   `;
 }
 
-function renderOutfitCard(product, index, formatVND) {
-  const price = product.sale_price || product.base_price || 0;
+function renderOutfitCard(product, index, formatVND, wishlistedProductIds) {
+  const priceVal = product.sale_price || product.base_price || 0;
   const image = product.images?.[0] || "/src/assets/images/placeholder.jpg";
   const displayIndex = String(index + 1).padStart(2, "0");
+  const isWishlisted = wishlistedProductIds.has(product.product_id);
+  const wishlistClass = isWishlisted ? "active" : "";
+  const detailUrl = `/src/pages/products/detail.html?id=${encodeURIComponent(product.product_id)}`;
+
   return `
-    <a href="/src/pages/products/detail.html?id=${encodeURIComponent(product.product_id)}" class="collection-product-card">
-      <span class="collection-product-card__badge">${displayIndex}</span>
+    <article class="collection-product-card" data-detail-url="${detailUrl}">
       <div class="collection-product-card__media">
-        <img src="${escapeAttribute(image)}" alt="${escapeAttribute(product.name || "Set đồ Velura")}" class="collection-product-card__img" loading="lazy" />
+        <span class="collection-product-card__badge">${displayIndex}</span>
+        <a href="${detailUrl}" class="collection-product-card__img-link">
+          <img src="${escapeAttribute(image)}" alt="${escapeAttribute(product.name || "Set đồ Velura")}" class="collection-product-card__img" loading="lazy" />
+        </a>
+        <button class="btn-icon collection-product-card__btn-wishlist card__wishlist-btn js-add-wishlist-collection ${wishlistClass}" type="button" title="Thêm vào Wishlist" data-id="${product.product_id}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+        </button>
       </div>
       <div class="collection-product-card__info">
-        <h4 class="collection-product-card__name">${escapeHtml(product.name || "Set đồ Velura")}</h4>
-        <span class="collection-product-card__price">${escapeHtml(formatVND(price))}</span>
+        <a href="${detailUrl}" class="collection-product-card__name-link">
+          <h4 class="collection-product-card__name">${escapeHtml(product.name || "Set đồ Velura")}</h4>
+        </a>
+        <span class="collection-product-card__price">${escapeHtml(formatVND(priceVal))}</span>
       </div>
-    </a>
+      <div class="collection-product-card__actions">
+        <a href="${detailUrl}" class="btn-buy">
+          <svg class="icon" width="16" height="16" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-bag"></use></svg>
+          <span>Mua ngay</span>
+        </a>
+        <button class="collection-product-card__btn-cart js-add-cart-collection" type="button" title="Thêm vào giỏ hàng" data-id="${product.product_id}">
+          <svg class="icon" width="18" height="18" style="fill: none; stroke: currentColor; stroke-width: 2;"><use href="#icon-cart"></use></svg>
+        </button>
+      </div>
+    </article>
   `;
 }
 

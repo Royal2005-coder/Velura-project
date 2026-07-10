@@ -327,7 +327,8 @@ export function initHomepage() {
     bindHomeEvents(products);
     setupHomepageCarousel(productsGrid, {
       label: "Sản phẩm nổi bật",
-      scrollRatio: 0.95
+      scrollRatio: 0.95,
+      autoplay: "forward"
     });
   }
 
@@ -687,7 +688,8 @@ export function initHomepage() {
 
     setupHomepageCarousel(collectionsGrid, {
       label: "Bộ sưu tập đặc biệt",
-      scrollRatio: 0.9
+      scrollRatio: 0.9,
+      autoplay: "backward"
     });
   }
 
@@ -755,6 +757,55 @@ export function initHomepage() {
     window.addEventListener("resize", updateState, { passive: true });
     requestAnimationFrame(updateState);
     setTimeout(updateState, 250);
+
+    // --- AUTOPLAY LOGIC WITH DIRECTION & PAUSE ON HOVER ---
+    let autoplayInterval = null;
+    let isHovering = false;
+
+    const startAutoplay = () => {
+      if (!options.autoplay) return;
+      stopAutoplay();
+      autoplayInterval = setInterval(() => {
+        if (isHovering) return;
+        const maxScroll = Math.max(track.scrollWidth - track.clientWidth, 0);
+        if (maxScroll <= 8) return;
+
+        const step = getScrollStep();
+        if (options.autoplay === "forward") {
+          // Slide forward: if near the end, go smoothly to beginning, otherwise scroll next
+          if (track.scrollLeft >= maxScroll - 16) {
+            track.scrollTo({ left: 0, behavior: "smooth" });
+          } else {
+            track.scrollBy({ left: step, behavior: "smooth" });
+          }
+        } else if (options.autoplay === "backward") {
+          // Slide backward: if near the beginning, go smoothly to the end, otherwise scroll prev
+          if (track.scrollLeft <= 16) {
+            track.scrollTo({ left: maxScroll, behavior: "smooth" });
+          } else {
+            track.scrollBy({ left: -step, behavior: "smooth" });
+          }
+        }
+      }, 2500);
+    };
+
+    const stopAutoplay = () => {
+      if (autoplayInterval) {
+        clearInterval(autoplayInterval);
+        autoplayInterval = null;
+      }
+    };
+
+    section.addEventListener("mouseenter", () => {
+      isHovering = true;
+    });
+
+    section.addEventListener("mouseleave", () => {
+      isHovering = false;
+    });
+
+    // Start sliding
+    startAutoplay();
   }
 
   loadData();

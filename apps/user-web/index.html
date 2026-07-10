@@ -313,12 +313,7 @@
 
         <!-- BỔ SUNG: KHU VỰC CHỨA SELECT MODE VÀ NÚT 3 GẠCH -->
         <div style="display: flex; align-items: center; gap: 8px;">
-          <div class="chatbot-state-switcher">
-            <select class="js-chatbot-state-select" aria-label="Chọn trạng thái kiểm thử">
-              <option value="guest">Guest Mode</option>
-              <option value="user">User Mode</option>
-            </select>
-          </div>
+
 
           <!-- NÚT 3 GẠCH -->
           <button class="js-menu-chatbot-trigger" type="button" aria-label="Lịch sử trò chuyện"
@@ -358,6 +353,17 @@
         </div>
       </div>
 
+      <!-- LỊCH SỬ CHAT TRÊN WIDGET -->
+      <div class="chatbot-history-panel" style="display: none;">
+        <div class="chatbot-history-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--line, #ebdacf); padding-bottom: 8px;">
+          <span style="font-weight: 700; color: var(--text-dark, #2a2522); font-size: 0.875rem;">Lịch sử trò chuyện</span>
+          <button class="js-new-chat" type="button" style="background: var(--terracotta, #c97b63); border: none; color: #fff; border-radius: 4px; padding: 4px 8px; font-size: 0.75rem; cursor: pointer; font-weight: 600;">+ Trò chuyện mới</button>
+        </div>
+        <div class="js-chatbot-sessions" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <!-- Sessions load dynamically -->
+        </div>
+      </div>
+
       <form class="chatbot-input-area js-chatbot-form" data-prevent-submit>
         <!-- BỔ SUNG: NÚT ĐÍNH KÈM ẢNH -->
         <button class="chatbot-attach-btn" type="button" aria-label="Đính kèm ảnh">
@@ -383,8 +389,6 @@
       </form>
     </div>
   </div>
-
-  <load src="/src/components/search-overlay.html" />
 
   <!-- STYLE QUIZ AUTO POPUP BANNER -->
   <div class="quiz-popup" id="js-quiz-popup">
