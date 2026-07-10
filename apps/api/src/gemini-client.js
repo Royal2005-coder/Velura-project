@@ -87,6 +87,34 @@ async function geminiRequest(path, payload) {
   return data;
 }
 
+export async function analyzeImageWithGemini(base64Data, mimeType, userPrompt) {
+  requireGeminiKey();
+  const model = "gemini-1.5-flash"; 
+  const cleanBase64 = base64Data.replace(/^data:image\/[a-zA-Z+.-]+;base64,/, "");
+
+  const payload = {
+    contents: [
+      {
+        parts: [
+          {
+            inlineData: {
+              mimeType: mimeType || "image/jpeg",
+              data: cleanBase64
+            }
+          },
+          {
+            text: userPrompt || "Hãy mô tả chi tiết hình ảnh này, đặc biệt là phom dáng, màu sắc, phong cách thời trang, và chất liệu nếu có."
+          }
+        ]
+      }
+    ]
+  };
+
+  const data = await geminiRequest(`/models/${encodeURIComponent(model)}:generateContent`, payload);
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  return text;
+}
+
 function requireGeminiKey() {
   if (!config.geminiApiKey) {
     throw new HttpError(503, "GEMINI_API_KEY_REQUIRED", "Gemini API key is not configured");

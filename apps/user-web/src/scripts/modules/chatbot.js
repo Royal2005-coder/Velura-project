@@ -1,5 +1,6 @@
 import { apiRequest } from "./api.js";
 import { addToCart, showToast } from "./cart.js";
+import { updateWishlistBadge } from "./wishlist.js";
 
 const GUEST_ID_KEY = "velura_chat_guest_id";
 const SESSION_ID_KEY = "velura_chat_session_id";
@@ -157,6 +158,66 @@ function bindChatContainer(container, state) {
     }
   });
 
+  // Dynamic creation of preview elements if they don't exist yet
+  let previewArea = container.querySelector(".chatbot-image-preview-area");
+  if (!previewArea && form) {
+    previewArea = document.createElement("div");
+    previewArea.className = "chatbot-image-preview-area";
+    previewArea.style.display = "none";
+    previewArea.style.padding = "8px 16px";
+    previewArea.style.background = "#faf9f6";
+    previewArea.style.borderTop = "1px solid var(--line, #e6dfd9)";
+    previewArea.style.alignItems = "center";
+    previewArea.style.gap = "8px";
+    previewArea.innerHTML = `
+      <div style="position: relative; display: inline-block;">
+        <img class="chatbot-image-preview-img" src="" style="max-height: 60px; max-width: 100px; border-radius: 4px; object-fit: cover; border: 1px solid var(--line, #e6dfd9);" />
+        <button type="button" class="chatbot-image-preview-remove" style="position: absolute; top: -6px; right: -6px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+      </div>
+      <span class="chatbot-image-preview-filename" style="font-size: 0.75rem; color: var(--text-secondary, #8c857e);"></span>
+    `;
+    form.parentNode.insertBefore(previewArea, form);
+  }
+
+  let selectedFile = null;
+
+  imgInput?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        showToast("Chỉ hỗ trợ đính kèm tệp tin hình ảnh.");
+        imgInput.value = "";
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        showToast("Kích thước ảnh không được vượt quá 10MB.");
+        imgInput.value = "";
+        return;
+      }
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const previewImg = previewArea?.querySelector(".chatbot-image-preview-img");
+        const filenameSpan = previewArea?.querySelector(".chatbot-image-preview-filename");
+        if (previewImg && filenameSpan && previewArea) {
+          previewImg.src = evt.target.result;
+          filenameSpan.textContent = file.name;
+          previewArea.style.display = "flex";
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  const removeBtn = previewArea?.querySelector(".chatbot-image-preview-remove");
+  removeBtn?.addEventListener("click", () => {
+    selectedFile = null;
+    if (imgInput) imgInput.value = "";
+    if (previewArea) previewArea.style.display = "none";
+    const previewImg = previewArea?.querySelector(".chatbot-image-preview-img");
+    if (previewImg) previewImg.src = "";
+  });
+
   attachBtn?.addEventListener("click", () => imgInput?.click());
 
   newChatBtn?.addEventListener("click", async () => {
@@ -171,9 +232,16 @@ function bindChatContainer(container, state) {
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const text = input?.value.trim();
-    if (!text || state.loading) return;
-    input.value = "";
-    await sendChatMessage(state, text);
+    if (!text && !selectedFile) return;
+    if (state.loading) return;
+
+    if (input) input.value = "";
+    const fileToSend = selectedFile;
+    selectedFile = null;
+    if (imgInput) imgInput.value = "";
+    if (previewArea) previewArea.style.display = "none";
+
+    await sendChatMessage(state, text, fileToSend);
   });
 
   container.addEventListener("click", async (event) => {
@@ -275,14 +343,38 @@ async function loadMessages(state, sessionId, reloadSessions = true) {
   renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
 }
 
-async function sendChatMessage(state, text) {
+async function sendChatMessage(state, text, file) {
   state.loading = true;
+
+  let attachmentPayload = null;
+  if (file) {
+    try {
+      attachmentPayload = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve({
+            type: "image",
+            data: e.target.result,
+            filename: file.name,
+            mimeType: file.type
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    } catch (err) {
+      console.error("Failed to read attached file:", err);
+    }
+  }
+
   const tempUser = {
     message_id: `tmp-user-${Date.now()}`,
     sender: "user",
-    text,
+    text: text || (attachmentPayload ? "Gửi hình ảnh đính kèm" : ""),
     created_at: new Date().toISOString(),
-    metadata: {}
+    metadata: {
+      attachment: attachmentPayload
+    }
   };
   const typing = {
     message_id: "typing",
@@ -300,7 +392,8 @@ async function sendChatMessage(state, text) {
       sessionId: state.sessionId || undefined,
       guestId: state.guestId,
       mode: state.mode,
-      message: text
+      message: text || (attachmentPayload ? "Gửi hình ảnh đính kèm" : ""),
+      attachment: attachmentPayload
     };
     const data = await apiRequest("/api/v1/chat/messages", {
       method: "POST",
@@ -508,11 +601,15 @@ function renderMessage(message, state) {
   }
 
   const hasRichContentClass = productCards || blogCards ? " chatbot-message--has-rich-content" : "";
+  const attachmentMarkup = message.metadata?.attachment?.data
+    ? `<div class="chatbot-message__attachment" style="margin-top: 8px;"><img src="${escapeHtml(message.metadata.attachment.data)}" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid rgba(115,71,36,0.15); object-fit: cover;" /></div>`
+    : "";
 
   return `
     <div class="chatbot-message ${senderClass}${typingClass}${agentClass}${systemClass}${hasRichContentClass}">
       ${message.sender === "agent" ? '<span class="chatbot-message__sender">CSKH</span>' : ""}
       <div class="chatbot-message__text">${formattedText}</div>
+      ${attachmentMarkup}
       ${productCards ? `
         <div class="chat-product-list">${productCards}</div>
         <div style="margin-top: 10px; text-align: left;">
@@ -878,10 +975,38 @@ export async function syncFavoriteOutfitsOnLogin() {
   if (favorites.length === 0) return;
 
   try {
+    // 1. Sync to chat favorites
     await apiRequest("/api/v1/chat/favorites/sync", {
       method: "POST",
       body: { favorites }
     });
+
+    // 2. Add each product ID to the user's wishlist
+    const allProductIds = new Set();
+    for (const fav of favorites) {
+      if (Array.isArray(fav.product_ids)) {
+        fav.product_ids.forEach((id) => allProductIds.add(id));
+      }
+    }
+    if (allProductIds.size > 0) {
+      for (const productId of allProductIds) {
+        try {
+          await apiRequest("/api/user/wishlist", {
+            method: "POST",
+            body: { product_id: productId }
+          });
+        } catch (e) {
+          console.error("Error syncing product to wishlist on login:", productId, e);
+        }
+      }
+      // Update badge
+      const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+      localStorage.setItem("velura_wishlist_count", currentCount + allProductIds.size);
+      if (typeof updateWishlistBadge === "function") {
+        updateWishlistBadge();
+      }
+    }
+
     sessionStorage.removeItem("velura_temporary_favorites");
   } catch (err) {
     console.error("Failed to sync favorite outfits on login:", err);
@@ -891,10 +1016,32 @@ export async function syncFavoriteOutfitsOnLogin() {
 async function handleSaveOutfit(state, messageId, sessionId) {
   if (state.mode === "user") {
     try {
+      const message = state.messages.find(m => m.message_id === messageId);
+      const productIds = message ? collectProductIds(message) : [];
+
       await apiRequest("/api/v1/chat/favorites", {
         method: "POST",
         body: { messageId, sessionId }
       });
+
+      if (productIds.length > 0) {
+        for (const productId of productIds) {
+          try {
+            await apiRequest("/api/user/wishlist", {
+              method: "POST",
+              body: { product_id: productId }
+            });
+          } catch (e) {
+            console.error("Failed to add product to wishlist:", productId, e);
+          }
+        }
+        // Update badge
+        const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+        localStorage.setItem("velura_wishlist_count", currentCount + productIds.length);
+        if (typeof updateWishlistBadge === "function") {
+          updateWishlistBadge();
+        }
+      }
       showToast("Đã lưu phối đồ vĩnh viễn vào tủ đồ cá nhân!");
     } catch (err) {
       showToast(err.message || "Không thể lưu phối đồ.");

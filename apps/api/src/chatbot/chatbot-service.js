@@ -1,4 +1,5 @@
 import { config } from "../config.js";
+import { analyzeImageWithGemini } from "../gemini-client.js";
 import { HttpError } from "../http.js";
 import { CHAT_SUPPORT_ROLES, DEFAULT_ASSISTANT_GREETING, HANDOFF_REPLY } from "./chatbot-constants.js";
 import { createLLMService } from "./llm-service.js";
@@ -93,13 +94,29 @@ export function createChatbotService({ repository }) {
         });
       }
 
+      let imageDescription = "";
+      if (input.attachment && input.attachment.data) {
+        try {
+          console.log("[CHATBOT] Analyzing attached image with Gemini...");
+          imageDescription = await analyzeImageWithGemini(
+            input.attachment.data,
+            input.attachment.mimeType || "image/jpeg",
+            input.message
+          );
+          console.log("[CHATBOT] Gemini analyzed image result:", imageDescription);
+        } catch (err) {
+          console.error("[CHATBOT] Image analysis error:", err);
+        }
+      }
+
       const userMessage = await repository.insertMessage({
         sessionId: session.session_id,
         sender: "user",
         text: input.message,
         metadata: {
           mode: input.mode,
-          source: "web"
+          source: "web",
+          attachment: input.attachment || null
         },
         productIds: []
       });
@@ -124,7 +141,8 @@ export function createChatbotService({ repository }) {
       }
 
       const recent = await repository.listMessages(session.session_id, 16);
-      const productSearch = await repository.searchProducts(input.message, 8);
+      const searchQuery = imageDescription ? `${input.message} ${imageDescription}` : input.message;
+      const productSearch = await repository.searchProducts(searchQuery, 8);
       let candidateProducts = productSearch.rows || [];
 
       const isOrderOrSupport = /(đơn hàng|order|mã đơn|tracking|vận chuyển|giao hàng|đổi trả|bảo hành|chính sách|phí ship|miễn phí|size|kích cỡ|xin chào|chào|hello)/i.test(input.message);
@@ -189,7 +207,7 @@ export function createChatbotService({ repository }) {
         const previousInteractionId = session.metadata?.previous_interaction_id || null;
 
         const chatResult = await llm.chat(
-          [...conversationHistory, { sender: "user", text: input.message }],
+          [...conversationHistory, { sender: "user", text: searchQuery }],
           candidateProducts,
           previousInteractionId,
           styleProfile,
@@ -619,7 +637,9 @@ async function hydrateProductsForMessages(repository, messages) {
 }
 
 export function validateChatInput(body = {}) {
-  const message = normalizeText(body.message ?? body.text, 1, 1000, "message");
+  const hasAttachment = !!(body.attachment || body.attachments);
+  const minLength = hasAttachment ? 0 : 1;
+  const message = normalizeText(body.message ?? body.text ?? "", minLength, 1000, "message");
   const sessionId = body.sessionId || body.session_id || "";
   if (sessionId) requireUuid(sessionId, "sessionId");
   return {
@@ -628,7 +648,8 @@ export function validateChatInput(body = {}) {
     guestEmail: cleanEmail(body.guestEmail || body.guest_email),
     guestPhone: cleanPhone(body.guestPhone || body.guest_phone),
     mode: ["guest", "user"].includes(body.mode) ? body.mode : "guest",
-    message
+    message: message || (hasAttachment ? "Gửi hình ảnh đính kèm" : ""),
+    attachment: body.attachment || null
   };
 }
 
