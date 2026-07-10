@@ -51,8 +51,10 @@
               <select class="admin-form-control" data-product-category><option value="">Tất cả danh mục</option><option>Áo</option><option>Đầm váy</option><option>Áo khoác</option></select>
               <select class="admin-form-control" data-product-status><option value="">Tất cả trạng thái</option><option value="on_sale">Đang bán</option><option value="hidden">Tạm ẩn</option><option value="out_of_stock">Hết hàng</option><option value="discontinued">Ngừng bán</option></select>
               <select class="admin-form-control" data-product-stock><option value="">Tất cả tồn kho</option><option value="low">Tồn kho thấp</option><option value="out">Hết hàng</option></select>
-              <button class="admin-btn admin-btn--filter admin-btn--sm" type="submit" data-product-filter-apply>Lọc</button>
-              <button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button>
+              <div class="admin-filter-bar__actions">
+                <button class="admin-btn admin-btn--filter admin-btn--sm" type="submit" data-product-filter-apply>Lọc</button>
+                <button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button>
+              </div>
             </form>
             <div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Sản phẩm</th><th>SKU</th><th>Danh mục</th><th>Giá bán</th><th>Tồn kho</th><th>Trạng thái</th><th>Cập nhật</th><th>Thao tác</th></tr></thead><tbody id="product-list"></tbody></table></div>
             <div class="admin-card__footer"><p class="admin-table-note">Hiển thị 5 / 48 sản phẩm</p><nav class="admin-pagination"><button type="button">←</button><button class="is-active" type="button">1</button><button type="button">2</button><button type="button">→</button></nav></div>
