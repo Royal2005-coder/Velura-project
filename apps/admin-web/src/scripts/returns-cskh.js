@@ -678,14 +678,14 @@ function updateKpis() {
   }
 
   // Also update tab badges
-  const returnsTabBadge = document.querySelector('[data-zone="returns"] .admin-badge');
+  const returnsTabBadge = document.querySelector('[data-zone="returns"] span');
   if (returnsTabBadge) {
-    returnsTabBadge.textContent = String(state.returns.length);
+    returnsTabBadge.textContent = String(state.returns.filter(r => r.status === "pending").length);
   }
 
-  const supportTabBadge = document.querySelector('[data-zone="support"] .admin-badge');
+  const supportTabBadge = document.querySelector('[data-zone="support"] span');
   if (supportTabBadge) {
-    supportTabBadge.textContent = String(state.tickets.length);
+    supportTabBadge.textContent = String(state.tickets.filter(t => !["resolved", "closed"].includes(t.status)).length);
   }
 }
 

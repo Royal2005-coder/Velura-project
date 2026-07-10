@@ -287,7 +287,7 @@ export async function buildDashboardSummary(searchParams) {
       paymentErrors,
       lowStockProducts: variantRows.filter((row) => Number(row.stock_quantity) <= Number(row.low_stock_threshold || 0)).length,
       urgentReviews: reviewRows.filter((row) => Number(row.rating) <= 2).length,
-      openReturns: returnRows.filter((row) => ["pending", "processing"].includes(row.status)).length,
+      openReturns: returnRows.filter((row) => row.status === "pending").length,
       openSupportTickets: ticketRows.filter((row) => !["resolved", "closed"].includes(row.status)).length
     },
     business: {

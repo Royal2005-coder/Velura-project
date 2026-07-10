@@ -76,6 +76,91 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
         `;
       }
 
+      // Update health list cards dynamically
+      var healthList = opsPanel.querySelector(".dashboard-health-list");
+      if (healthList) {
+        var ordersStatus = (data.operations.pendingOrders > 0 || data.operations.paymentErrors > 0) ? "warning" : "success";
+        var ordersStatusLabel = ordersStatus === "warning" ? "Cần chú ý" : "Tốt";
+        
+        var productsStatus = data.operations.lowStockProducts > 0 ? "danger" : "success";
+        var productsStatusLabel = productsStatus === "danger" ? "Rủi ro" : "Tốt";
+        
+        var reviewsStatus = data.business.pendingReviews > 0 ? "warning" : "success";
+        var reviewsStatusLabel = reviewsStatus === "warning" ? "Cần chú ý" : "Tốt";
+        
+        var returnsStatus = (data.operations.openReturns > 0 || data.operations.openSupportTickets > 0) ? "warning" : "success";
+        var returnsStatusLabel = returnsStatus === "warning" ? "Cần chú ý" : "Tốt";
+
+        healthList.innerHTML = `
+          <a class="dashboard-health-card" href="./orders.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("cart")}</i>
+              <span class="admin-badge admin-badge--${ordersStatus}">${ordersStatusLabel}</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--${ordersStatus}"></span>
+              <strong>Đơn hàng</strong>
+            </div>
+            <small>${fmtNum(data.operations.pendingOrders)} cần xử lý · ${fmtNum(data.operations.paymentErrors)} thanh toán lỗi</small>
+          </a>
+          <a class="dashboard-health-card" href="./products.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("box")}</i>
+              <span class="admin-badge admin-badge--${productsStatus}">${productsStatusLabel}</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--${productsStatus}"></span>
+              <strong>Sản phẩm &amp; tồn kho</strong>
+            </div>
+            <small>${fmtNum(data.operations.lowStockProducts)} dưới tồn tối thiểu</small>
+          </a>
+          <a class="dashboard-health-card" href="./reviews.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("star")}</i>
+              <span class="admin-badge admin-badge--${reviewsStatus}">${reviewsStatusLabel}</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--${reviewsStatus}"></span>
+              <strong>Đánh giá</strong>
+            </div>
+            <small>${fmtNum(data.business.pendingReviews)} chờ duyệt</small>
+          </a>
+          <a class="dashboard-health-card" href="./returns-cskh.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("support")}</i>
+              <span class="admin-badge admin-badge--${returnsStatus}">${returnsStatusLabel}</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--${returnsStatus}"></span>
+              <strong>Đổi trả &amp; CSKH</strong>
+            </div>
+            <small>${fmtNum(data.operations.openReturns)} phiếu còn hạn · ${fmtNum(data.operations.openSupportTickets)} ticket chờ</small>
+          </a>
+          <a class="dashboard-health-card" href="./promotions.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("tag")}</i>
+              <span class="admin-badge admin-badge--success">Tốt</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--success"></span>
+              <strong>Giá &amp; khuyến mãi</strong>
+            </div>
+            <small>Hoạt động bình thường</small>
+          </a>
+          <a class="dashboard-health-card" href="./accounts.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("users")}</i>
+              <span class="admin-badge admin-badge--success">Tốt</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--success"></span>
+              <strong>Tài khoản &amp; hệ thống</strong>
+            </div>
+            <small>Không có cảnh báo bảo mật mới</small>
+          </a>
+        `;
+      }
+
       // Update dynamic tasks list
       var taskList = opsPanel.querySelector(".dashboard-task-list");
       var taskCount = opsPanel.querySelector(".dashboard-action-queue .dashboard-section__count");
