@@ -62,10 +62,33 @@
                 <label for="guest-password" style="color: var(--terracotta); font-weight: 600; display: block; margin-bottom: 6px;">Mật khẩu Thành viên</label>
                 <input class="form-input" type="password" id="guest-password" placeholder="Nhập mật khẩu của bạn để đăng nhập" style="border-color: var(--terracotta); width: 100%;" />
               </div>
+              <div class="form-row form-row--three">
+                <div class="form-group">
+                  <label for="address-province">Tỉnh/Thành phố *</label>
+                  <select class="form-input" id="address-province" required>
+                    <option value="" disabled selected>Chọn Tỉnh/Thành phố</option>
+                    <option value="HCM">TP. Hồ Chí Minh</option>
+                    <option value="HN">TP. Hà Nội</option>
+                    <option value="DN">TP. Đà Nẵng</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="address-district">Quận/Huyện *</label>
+                  <select class="form-input" id="address-district" required disabled>
+                    <option value="" disabled selected>Chọn Quận/Huyện</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="address-ward">Phường/Xã *</label>
+                  <select class="form-input" id="address-ward" required disabled>
+                    <option value="" disabled selected>Chọn Phường/Xã</option>
+                  </select>
+                </div>
+              </div>
               <div class="form-group">
-                <label for="guest-address">Địa chỉ giao hàng</label>
-                <input class="form-input" type="text" id="guest-address"
-                  placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố" required />
+                <label for="guest-address-detail">Địa chỉ cụ thể *</label>
+                <input class="form-input" type="text" id="guest-address-detail"
+                  placeholder="Số nhà, tên đường" required />
               </div>
               <div class="form-group">
                 <label for="guest-note">Ghi chú (tùy chọn)</label>

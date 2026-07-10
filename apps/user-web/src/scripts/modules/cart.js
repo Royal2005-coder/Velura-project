@@ -1085,6 +1085,48 @@ export function initVoucherModal() {
   });
 }
 
+const locationData = {
+  HCM: {
+    name: "TP. Hồ Chí Minh",
+    districts: {
+      Q1: {
+        name: "Quận 1",
+        wards: ["Phường Bến Nghé", "Phường Bến Thành", "Phường Phạm Ngũ Lão"]
+      },
+      Q7: {
+        name: "Quận 7",
+        wards: ["Phường Tân Phong", "Phường Tân Kiểng", "Phường Tân Quy"]
+      },
+      QBT: {
+        name: "Quận Bình Thạnh",
+        wards: ["Phường 25", "Phường 26", "Phường 27"]
+      }
+    }
+  },
+  HN: {
+    name: "TP. Hà Nội",
+    districts: {
+      QHK: {
+        name: "Quận Hoàn Kiếm",
+        wards: ["Phường Hàng Bài", "Phường Tràng Tiền", "Phường Lý Thái Tổ"]
+      },
+      QBD: {
+        name: "Quận Ba Đình",
+        wards: ["Phường Điện Biên", "Phường Quán Thánh", "Phường Ngọc Hà"]
+      }
+    }
+  },
+  DN: {
+    name: "TP. Đà Nẵng",
+    districts: {
+      QHC: {
+        name: "Quận Hải Châu",
+        wards: ["Phường Hòa Cường Bắc", "Phường Hòa Cường Nam", "Phường Thạch Thang"]
+      }
+    }
+  }
+};
+
 let paymentUserListenersBound = false;
 let checkoutAddresses = [];
 let checkoutUserObj = {};
@@ -1182,48 +1224,6 @@ async function initPaymentUserPage() {
   const provinceSelect = document.getElementById("address-province");
   const districtSelect = document.getElementById("address-district");
   const wardSelect = document.getElementById("address-ward");
-
-  const locationData = {
-    HCM: {
-      name: "TP. Hồ Chí Minh",
-      districts: {
-        Q1: {
-          name: "Quận 1",
-          wards: ["Phường Bến Nghé", "Phường Bến Thành", "Phường Phạm Ngũ Lão"]
-        },
-        Q7: {
-          name: "Quận 7",
-          wards: ["Phường Tân Phong", "Phường Tân Kiểng", "Phường Tân Quy"]
-        },
-        QBT: {
-          name: "Quận Bình Thạnh",
-          wards: ["Phường 25", "Phường 26", "Phường 27"]
-        }
-      }
-    },
-    HN: {
-      name: "TP. Hà Nội",
-      districts: {
-        QHK: {
-          name: "Quận Hoàn Kiếm",
-          wards: ["Phường Hàng Bài", "Phường Tràng Tiền", "Phường Lý Thái Tổ"]
-        },
-        QBD: {
-          name: "Quận Ba Đình",
-          wards: ["Phường Điện Biên", "Phường Quán Thánh", "Phường Ngọc Hà"]
-        }
-      }
-    },
-    DN: {
-      name: "TP. Đà Nẵng",
-      districts: {
-        QHC: {
-          name: "Quận Hải Châu",
-          wards: ["Phường Hòa Cường Bắc", "Phường Hòa Cường Nam", "Phường Thạch Thang"]
-        }
-      }
-    }
-  };
 
   const closeModal = () => {
     if (modal) {
@@ -1475,6 +1475,50 @@ function initPaymentGuestPage() {
     });
   }
 
+  // Address Dropdown Setup for Guest Page
+  const provinceSelect = document.getElementById("address-province");
+  const districtSelect = document.getElementById("address-district");
+  const wardSelect = document.getElementById("address-ward");
+
+  if (provinceSelect) {
+    provinceSelect.addEventListener("change", (e) => {
+      const provinceKey = e.target.value;
+      if (districtSelect && locationData[provinceKey]) {
+        districtSelect.innerHTML = '<option value="" disabled selected>Chọn Quận/Huyện</option>';
+        districtSelect.disabled = false;
+        if (wardSelect) {
+          wardSelect.innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
+          wardSelect.disabled = true;
+        }
+        const districts = locationData[provinceKey].districts;
+        for (const key in districts) {
+          const option = document.createElement("option");
+          option.value = key;
+          option.textContent = districts[key].name;
+          districtSelect.appendChild(option);
+        }
+      }
+    });
+  }
+
+  if (districtSelect) {
+    districtSelect.addEventListener("change", (e) => {
+      const provinceKey = provinceSelect?.value;
+      const districtKey = e.target.value;
+      if (wardSelect && locationData[provinceKey] && locationData[provinceKey].districts[districtKey]) {
+        wardSelect.innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
+        wardSelect.disabled = false;
+        const wards = locationData[provinceKey].districts[districtKey].wards;
+        wards.forEach(ward => {
+          const option = document.createElement("option");
+          option.value = ward;
+          option.textContent = ward;
+          wardSelect.appendChild(option);
+        });
+      }
+    });
+  }
+
   const continueBtn = document.querySelector(".checkout-actions .btn--primary");
   if (continueBtn) {
     continueBtn.addEventListener("click", async (e) => {
@@ -1483,13 +1527,21 @@ function initPaymentGuestPage() {
       const name = document.getElementById("fullname")?.value.trim();
       const phone = phoneInput?.value.trim();
       const email = document.getElementById("guest-email")?.value.trim();
-      const address = document.getElementById("guest-address")?.value.trim();
+      
+      const provVal = provinceSelect?.value;
+      const distVal = districtSelect?.value;
+      const wardVal = wardSelect?.value;
+      const detailVal = document.getElementById("guest-address-detail")?.value.trim();
       const note = document.getElementById("guest-note")?.value.trim();
 
-      if (!name || !phone || !address) {
-        showToast("Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ!");
+      if (!name || !phone || !provVal || !distVal || !wardVal || !detailVal) {
+        showToast("Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng!");
         return;
       }
+
+      const provText = provinceSelect.options[provinceSelect.selectedIndex].text;
+      const distText = districtSelect.options[districtSelect.selectedIndex].text;
+      const address = `${detailVal}, ${wardVal}, ${distText}, ${provText}`;
 
       const passwordInput = document.getElementById("guest-password");
       if (passwordGroup && passwordGroup.style.display === "block") {
