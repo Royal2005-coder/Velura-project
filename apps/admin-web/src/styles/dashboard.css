@@ -160,7 +160,7 @@
 .dashboard-drawer-metric strong { color: var(--brown); font-size: 1rem; font-weight: 600; }
 .dashboard-drawer .admin-drawer__header { align-items: center; padding: 22px 24px; }
 .dashboard-drawer .admin-drawer__header > div { display: grid; gap: 4px; }
-.dashboard-drawer .admin-drawer__header small { color: var(--soft); font-family: "DM Sans", Arial, sans-serif; font-size: .6875rem; font-weight: 600; letter-spacing: .08em; line-height: 1.4; }
+.dashboard-drawer .admin-drawer__header small { color: var(--soft); font-family: "Playfair Display", Georgia, serif; font-size: .6875rem; font-weight: 600; letter-spacing: .08em; line-height: 1.4; }
 .dashboard-drawer .admin-drawer__header h2 { margin: 0; color: var(--text-dark); font-family: "Playfair Display", Georgia, serif; font-size: 1.5rem; font-weight: 600; line-height: 1.25; letter-spacing: 0; }
 .dashboard-drawer .admin-drawer__body { color: var(--text-body); font-size: .875rem; font-weight: 400; line-height: 1.6; }
 .dashboard-drawer .admin-note { padding: 14px 16px; font-size: .875rem; font-weight: 400; line-height: 1.55; }

@@ -500,7 +500,7 @@ input:checked + .admin-sim-slider:before {
 .admin-table,
 .admin-modal,
 .admin-drawer {
-  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-family: "Playfair Display", Georgia, serif !important;
 }
 
 /* Monospace formatting for technical numbers and codes */

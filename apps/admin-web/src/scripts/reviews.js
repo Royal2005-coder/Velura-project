@@ -41,7 +41,6 @@ function filters() {
     <label class="admin-search-field">${icon("search")}<input class="admin-form-control" name="q" type="search" placeholder="Nội dung hoặc sản phẩm..." data-review-search /></label>
     <label class="admin-form-group"><select class="admin-form-control" name="rating" data-review-stars aria-label="Số sao"><option value="">Tất cả số sao</option>${[5,4,3,2,1].map((value) => `<option value="${value}">${value} sao</option>`).join("")}</select></label>
     <label class="admin-form-group"><select class="admin-form-control" name="status" data-review-status aria-label="Trạng thái"><option value="">Tất cả trạng thái</option><option value="pending">Chờ duyệt</option><option value="approved">Đã duyệt</option><option value="rejected">Đã ẩn</option></select></label>
-    <label class="admin-form-group"><select class="admin-form-control" name="alert" data-review-alert aria-label="Cảnh báo"><option value="">Tất cả cảnh báo</option><option value="urgent">Khẩn cấp</option><option value="normal">Bình thường</option></select></label>
     <div class="admin-filter-bar__actions"><button class="admin-btn admin-btn--filter admin-btn--sm" type="submit">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button></div>
   </form>`;
 }
@@ -100,11 +99,10 @@ function table() {
   const pagedRows = activeRows.slice(start, end);
 
   if (!pagedRows.length) return `<div class="admin-order-empty">${icon("star")}<strong>Không có đánh giá phù hợp</strong><span>Dữ liệu được tải trực tiếp từ Supabase.</span></div>`;
-  return `<div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Đánh giá</th><th>Sản phẩm</th><th>Khách hàng</th><th>Cảnh báo</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>${pagedRows.map((row) => `<tr>
+  return `<div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Đánh giá</th><th>Sản phẩm</th><th>Khách hàng</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>${pagedRows.map((row) => `<tr>
     <td><div class="admin-review-snippet">${stars(row.rating)}<p>${escapeReviewHtml(row.comment || "—")}</p></div></td>
     <td><div class="admin-review-product"><strong>${escapeReviewHtml(row.product?.name || "—")}</strong><small>${escapeReviewHtml(row.product?.sku || row.product_id)}</small></div></td>
     <td><span class="admin-order-code">${escapeReviewHtml(row.user_id)}</span></td>
-    <td>${row.is_flagged_urgent ? '<span class="admin-badge admin-badge--danger">Khẩn cấp</span>' : '<span class="admin-badge admin-badge--neutral">Bình thường</span>'}</td>
     <td>${statusBadge(row.status)}</td><td>${escapeReviewHtml(formatDate(row.submitted_at))}</td><td>${actions(row)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
