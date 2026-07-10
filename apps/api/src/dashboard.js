@@ -79,14 +79,12 @@ export async function buildDashboardSummary(searchParams) {
     safeSelect("return_exchange", {
       select: "return_id,status,created_at",
       limit: 1000,
-      order: "created_at.desc",
-      ...dateFilter
+      order: "created_at.desc"
     }),
     safeSelect("support_ticket", {
       select: "ticket_id,status,priority,created_at",
       limit: 1000,
-      order: "created_at.desc",
-      ...dateFilter
+      order: "created_at.desc"
     }),
     safeSelect("promotion", {
       select: "promo_id,promo_name,is_active,budget_limit,updated_at",
@@ -287,7 +285,11 @@ export async function buildDashboardSummary(searchParams) {
       paymentErrors,
       lowStockProducts: variantRows.filter((row) => Number(row.stock_quantity) <= Number(row.low_stock_threshold || 0)).length,
       urgentReviews: reviewRows.filter((row) => Number(row.rating) <= 2).length,
-      openReturns: returnRows.filter((row) => row.status === "pending").length,
+      openReturns: returnRows.filter((row) => {
+        if (row.status !== "pending") return false;
+        const ageInHours = (new Date() - new Date(row.created_at)) / (60 * 60 * 1000);
+        return ageInHours <= 48;
+      }).length,
       openSupportTickets: ticketRows.filter((row) => !["resolved", "closed"].includes(row.status)).length
     },
     business: {
