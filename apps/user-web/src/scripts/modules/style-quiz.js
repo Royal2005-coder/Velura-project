@@ -149,28 +149,28 @@ export function initStyleQuiz() {
       if (isSummaryScreen) {
         runAILoadingSimulation();
       } else {
-        if (validateStep(currentStep)) {
-          if (currentStep === maxSteps) {
-            gatherQuizResults();
-            isSummaryScreen = true;
-            updateQuizUI();
-          } else {
-            currentStep++;
-            updateQuizUI();
-          }
+        saveStepToSessionStorage();
+        if (currentStep === maxSteps) {
+          gatherQuizResults();
+          isSummaryScreen = true;
+          updateQuizUI();
+        } else {
+          currentStep++;
+          updateQuizUI();
         }
       }
     });
   }
 
-  // Handle leaving page warning for guest users
+  // Handle "Bỏ qua" skip link — skip current step and jump to next
   const skipBtn = container.querySelector(".quiz-progress__skip");
   if (skipBtn) {
     skipBtn.addEventListener("click", (e) => {
-      const hasToken = localStorage.getItem("velura_token");
-      if (!hasToken) {
-        e.preventDefault();
-        showGuestLeavingWarningModal(skipBtn.getAttribute("href"));
+      e.preventDefault();
+      if (isSummaryScreen) return;
+      if (currentStep < maxSteps) {
+        currentStep++;
+        updateQuizUI();
       }
     });
   }

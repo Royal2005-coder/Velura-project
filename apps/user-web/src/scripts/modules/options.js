@@ -25,11 +25,12 @@ export async function initOptions() {
 
   let styleProfile = null;
   let predictedSize = "";
+  let recommendedColors = [];
   try {
     const profileRes = await apiRequest("/api/user/style-quiz");
     if (profileRes && profileRes.profile) {
       styleProfile = profileRes.profile;
-      const { chest_cm, waist_cm, hip_cm, weight_kg } = styleProfile;
+      const { chest_cm, waist_cm, hip_cm, weight_kg, skin_tone, favorite_colors } = styleProfile;
       if (chest_cm || waist_cm || hip_cm || weight_kg) {
         if (chest_cm <= 80 && waist_cm <= 64 && hip_cm <= 86 && (weight_kg || 0) <= 45) {
           predictedSize = "XS";
@@ -42,6 +43,25 @@ export async function initOptions() {
         } else {
           predictedSize = "XL";
         }
+      }
+
+      const skinToneColorMap = {
+        "warm": ["Beige", "Camel", "Terracotta", "Coral", "Đỏ", "Nâu", "Kem", "Vàng", "Cam", "Caramel"],
+        "cool": ["Đen", "Trắng", "Xanh dương", "Navy", "Bạc", "Hồng nhạt", "Tím nhạt", "Xám", "Xanh lam"],
+        "neutral": ["Kem", "Xám", "Xanh rêu", "Be", "Nâu nhạt", "Trắng kem", "Đỏ sẫm", "Xanh olive"]
+      };
+
+      if (skin_tone) {
+        const toneLower = skin_tone.toLowerCase();
+        recommendedColors = skinToneColorMap[toneLower] || [];
+      }
+
+      if (favorite_colors && Array.isArray(favorite_colors) && favorite_colors.length > 0) {
+        const quizColors = favorite_colors.map(c => {
+          if (typeof c === "string" && c.includes("|")) return c.split("|")[0].trim();
+          return c;
+        }).filter(Boolean);
+        recommendedColors = [...quizColors, ...recommendedColors];
       }
     }
   } catch (quizErr) {
@@ -122,37 +142,340 @@ export async function initOptions() {
         if (comboSection && comboListEl) {
           comboSection.style.display = "";
 
-          comboListEl.innerHTML = product.combo_components.map(comp => {
-            const img = comp.images && comp.images.length > 0 ? comp.images[0] : "/src/assets/images/placeholder.jpg";
-            const priceStr = formatVND(comp.base_price);
-            return `
-              <a href="/src/pages/products/detail.html?id=${comp.product_id}" class="combo-component-item" title="Xem ${comp.name}">
-                <img src="${img}" alt="${comp.name}" class="combo-component-item__img" loading="lazy" />
-                <div class="combo-component-item__info">
-                  <span class="combo-component-item__category">${comp.category_name}</span>
-                  <span class="combo-component-item__name">${comp.name}</span>
-                  <span class="combo-component-item__price">${priceStr}</span>
-                </div>
-                <svg class="combo-component-item__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </a>
-            `;
-          }).join("");
+          // State to track selected variants for each component
+          const comboState = {
+            components: product.combo_components.map(comp => ({
+              product_id: comp.product_id,
+              name: comp.name,
+              selectedVariant: comp.variants && comp.variants.length > 0 ? comp.variants[0] : null,
+              quantity: comp.quantity || 1
+            }))
+          };
 
-          if (comboSummaryEl && product.total_original_price > 0) {
-            const savingsPct = Math.round(((product.total_original_price - (product.sale_price || product.base_price)) / product.total_original_price) * 100);
-            const savingsAmt = product.total_original_price - (product.sale_price || product.base_price);
+          // Helper to get available colors for a component
+          const getComponentColors = (comp) => {
+            if (!comp.variants) return [];
+            const colorMap = new Map();
+            comp.variants.forEach(v => {
+              if (v.color && !colorMap.has(v.color)) {
+                colorMap.set(v.color, v.color_hex || "#CCCCCC");
+              }
+            });
+            return Array.from(colorMap.entries()).map(([name, hex]) => ({ name, hex }));
+          };
+
+          // Helper to get available sizes for a component given a color
+          const getComponentSizes = (comp, color) => {
+            if (!comp.variants) return [];
+            return [...new Set(
+              comp.variants
+                .filter(v => !color || v.color === color)
+                .map(v => v.size)
+                .filter(Boolean)
+            )];
+          };
+
+          // Helper to get stock for a specific variant
+          const getVariantStock = (comp, color, size) => {
+            if (!comp.variants) return 0;
+            const variant = comp.variants.find(v => v.color === color && v.size === size);
+            if (!variant) return 0;
+            return Math.max(0, (variant.stock_quantity || 0) - (variant.reserved_quantity || 0));
+          };
+
+          // Render a single component item
+          const renderComponentItem = (comp, idx) => {
+            const img = comp.images && comp.images.length > 0 ? comp.images[0] : "/src/assets/images/placeholder.jpg";
+            const colors = getComponentColors(comp);
+            const stateItem = comboState.components[idx];
+            const selectedColor = stateItem.selectedVariant?.color || (colors[0]?.name || "");
+            const sizes = getComponentSizes(comp, selectedColor);
+            const selectedSize = stateItem.selectedVariant?.size || (sizes[0] || "");
+            // Always show base_price (retail price) for "Tổng nếu mua lẻ" comparison
+            const currentPrice = comp.base_price;
+
+            return `
+              <div class="combo-component-item" data-index="${idx}">
+                <div class="combo-component-item__header">
+                  <img src="${img}" alt="${comp.name}" class="combo-component-item__img" loading="lazy" />
+                  <div class="combo-component-item__info">
+                    <span class="combo-component-item__category">${comp.category_name}</span>
+                    <span class="combo-component-item__name">${comp.name}</span>
+                    <span class="combo-component-item__price" data-price-idx="${idx}">${formatVND(currentPrice)}</span>
+                    ${comp.quantity > 1 ? `<span class="combo-component-item__qty">x${comp.quantity}</span>` : ''}
+                  </div>
+                  <button type="button" class="combo-component-item__toggle js-combo-toggle" data-index="${idx}" aria-expanded="false" aria-label="Chọn tùy chọn cho ${comp.name}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+                </div>
+                <div class="combo-component-item__options js-combo-options" data-options-idx="${idx}" style="display: none;">
+                  <div class="combo-options__colors">
+                    <span class="combo-options__label">Màu:</span>
+                    <div class="combo-options__list">
+                      ${colors.map((col, cIdx) => `
+                        <button type="button" class="combo-color-btn js-combo-color ${selectedColor === col.name ? 'is-selected' : ''}" 
+                          data-comp-idx="${idx}" data-color="${col.name}" 
+                          style="background: ${col.hex}; border: 1px solid #ddd;" 
+                          title="${col.name}"></button>
+                      `).join("")}
+                    </div>
+                  </div>
+                  ${sizes.length > 0 ? `
+                    <div class="combo-options__sizes">
+                      <span class="combo-options__label">Size:</span>
+                      <div class="combo-options__list">
+                        ${sizes.map((size, sIdx) => `
+                          <button type="button" class="combo-size-btn js-combo-size ${selectedSize === size ? 'is-selected' : ''}" 
+                            data-comp-idx="${idx}" data-size="${size}">${size}</button>
+                        `).join("")}
+                      </div>
+                    </div>
+                  ` : ''}
+                  <div class="combo-options__stock" data-stock-idx="${idx}">
+                    ${getVariantStock(comp, selectedColor, selectedSize) > 0 
+                      ? `<span class="combo-stock--available">Còn ${getVariantStock(comp, selectedColor, selectedSize)} sản phẩm</span>`
+                      : '<span class="combo-stock--unavailable">Hết hàng</span>'}
+                  </div>
+                </div>
+              </div>
+            `;
+          };
+
+          // Render all components
+          comboListEl.innerHTML = product.combo_components.map((comp, idx) => renderComponentItem(comp, idx)).join("");
+
+          // Update summary based on selected variants
+          const updateComboSummary = () => {
+            if (!comboSummaryEl) return;
+            
+            let totalOriginal = 0;
+            let allSelected = true;
+            
+            comboState.components.forEach((stateItem, idx) => {
+              const comp = product.combo_components[idx];
+              // "Tổng nếu mua lẻ" always uses base_price (retail price) for comparison
+              const retailPrice = comp.base_price;
+              totalOriginal += retailPrice * stateItem.quantity;
+              
+              // Update individual component price display to show retail price
+              const priceEl = comboListEl.querySelector(`[data-price-idx="${idx}"]`);
+              if (priceEl) priceEl.textContent = formatVND(retailPrice);
+              
+              if (!stateItem.selectedVariant) allSelected = false;
+            });
+
+            const comboPrice = product.sale_price || product.base_price;
+            const savings = Math.max(0, totalOriginal - comboPrice);
+            const savingsPct = totalOriginal > 0 ? Math.round((savings / totalOriginal) * 100) : 0;
+
             comboSummaryEl.innerHTML = `
               <div class="combo-summary-row">
                 <span class="combo-summary__label">Tổng nếu mua lẻ:</span>
-                <span class="combo-summary__old-price">${formatVND(product.total_original_price)}</span>
+                <span class="combo-summary__old-price">${formatVND(totalOriginal)}</span>
               </div>
               <div class="combo-summary-row combo-summary-row--savings">
                 <span class="combo-summary__label">Tiết kiệm khi mua set:</span>
-                <span class="combo-summary__savings">-${formatVND(savingsAmt)} (${savingsPct}%)</span>
+                <span class="combo-summary__savings">-${formatVND(savings)} (${savingsPct}%)</span>
+              </div>
+              <div class="combo-summary-row combo-summary-row--total">
+                <span class="combo-summary__label">Giá set:</span>
+                <span class="combo-summary__total">${formatVND(comboPrice)}</span>
               </div>
             `;
+          };
+
+          // Initial summary render
+          updateComboSummary();
+
+          // Event delegation for combo component interactions
+          comboListEl.addEventListener("click", (e) => {
+            // Toggle expand/collapse
+            const toggleBtn = e.target.closest(".js-combo-toggle");
+            if (toggleBtn) {
+              const idx = parseInt(toggleBtn.dataset.index);
+              const optionsPanel = comboListEl.querySelector(`[data-options-idx="${idx}"]`);
+              if (optionsPanel) {
+                const isExpanded = optionsPanel.style.display !== "none";
+                optionsPanel.style.display = isExpanded ? "none" : "flex";
+                toggleBtn.setAttribute("aria-expanded", !isExpanded);
+                toggleBtn.classList.toggle("is-expanded", !isExpanded);
+              }
+              return;
+            }
+
+            // Color selection
+            const colorBtn = e.target.closest(".js-combo-color");
+            if (colorBtn) {
+              const compIdx = parseInt(colorBtn.dataset.compIdx);
+              const color = colorBtn.dataset.color;
+              const comp = product.combo_components[compIdx];
+              
+              // Update selected state
+              colorBtn.closest(".combo-options__list").querySelectorAll(".js-combo-color").forEach(b => b.classList.remove("is-selected"));
+              colorBtn.classList.add("is-selected");
+              
+              // Update state
+              const sizes = getComponentSizes(comp, color);
+              const firstSize = sizes[0] || "";
+              const variant = comp.variants.find(v => v.color === color && v.size === firstSize);
+              comboState.components[compIdx].selectedVariant = variant || null;
+              
+              // Re-render sizes
+              const sizeContainer = colorBtn.closest(".combo-component-item__options").querySelector(".combo-options__sizes .combo-options__list");
+              if (sizeContainer) {
+                sizeContainer.innerHTML = sizes.map((size, sIdx) => `
+                  <button type="button" class="combo-size-btn js-combo-size ${sIdx === 0 ? 'is-selected' : ''}" 
+                    data-comp-idx="${compIdx}" data-size="${size}">${size}</button>
+                `).join("");
+              }
+              
+              // Update stock display
+              const stockEl = comboListEl.querySelector(`[data-stock-idx="${compIdx}"]`);
+              if (stockEl) {
+                const stock = getVariantStock(comp, color, firstSize);
+                stockEl.innerHTML = stock > 0 
+                  ? `<span class="combo-stock--available">Còn ${stock} sản phẩm</span>`
+                  : '<span class="combo-stock--unavailable">Hết hàng</span>';
+              }
+              
+              updateComboSummary();
+              return;
+            }
+
+            // Size selection
+            const sizeBtn = e.target.closest(".js-combo-size");
+            if (sizeBtn) {
+              const compIdx = parseInt(sizeBtn.dataset.compIdx);
+              const size = sizeBtn.dataset.size;
+              const comp = product.combo_components[compIdx];
+              
+              // Update selected state
+              sizeBtn.closest(".combo-options__list").querySelectorAll(".js-combo-size").forEach(b => b.classList.remove("is-selected"));
+              sizeBtn.classList.add("is-selected");
+              
+              // Find selected color
+              const colorBtns = comboListEl.querySelectorAll(`.js-combo-color[data-comp-idx="${compIdx}"]`);
+              let selectedColor = "";
+              colorBtns.forEach(b => { if (b.classList.contains("is-selected")) selectedColor = b.dataset.color; });
+              
+              // Update state
+              const variant = comp.variants.find(v => v.color === selectedColor && v.size === size);
+              comboState.components[compIdx].selectedVariant = variant || null;
+              
+              // Update stock display
+              const stockEl = comboListEl.querySelector(`[data-stock-idx="${compIdx}"]`);
+              if (stockEl) {
+                const stock = getVariantStock(comp, selectedColor, size);
+                stockEl.innerHTML = stock > 0 
+                  ? `<span class="combo-stock--available">Còn ${stock} sản phẩm</span>`
+                  : '<span class="combo-stock--unavailable">Hết hàng</span>';
+              }
+              
+              updateComboSummary();
+              return;
+            }
+          });
+
+          // Add combo action buttons after summary
+          const comboActionsHtml = `
+            <div class="combo-actions">
+              <button type="button" class="btn btn--outline combo-add-cart js-combo-add-cart">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                  <circle cx="9" cy="21" r="1"></circle>
+                  <circle cx="20" cy="21" r="1"></circle>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                </svg>
+                Thêm set vào giỏ
+              </button>
+              <button type="button" class="btn btn--primary combo-buy-now js-combo-buy-now">Mua ngay set này</button>
+            </div>
+          `;
+          comboSummaryEl.insertAdjacentHTML("afterend", comboActionsHtml);
+
+          // Combo Add to Cart handler
+          const comboCartBtn = comboSection.querySelector(".js-combo-add-cart");
+          if (comboCartBtn) {
+            comboCartBtn.addEventListener("click", async () => {
+              // Check all components have selected variants
+              const missingSelections = comboState.components.filter(c => !c.selectedVariant);
+              if (missingSelections.length > 0) {
+                showToast(`Vui lòng chọn màu sắc và kích cỡ cho: ${missingSelections.map(c => c.name).join(", ")}`);
+                return;
+              }
+
+              // Add each component to cart as part of the combo
+              const comboId = `combo-${product.product_id}-${Date.now()}`;
+              for (const stateItem of comboState.components) {
+                const comp = product.combo_components.find(c => c.product_id === stateItem.product_id);
+                if (comp && stateItem.selectedVariant) {
+                  await addToCart({
+                    variant_id: stateItem.selectedVariant.variant_id,
+                    product_id: stateItem.product_id,
+                    product_name: comp.name,
+                    product_image: comp.images?.[0] || "/src/assets/images/placeholder.jpg",
+                    quantity: stateItem.quantity,
+                    unit_price: comp.sale_price || comp.base_price,
+                    color: stateItem.selectedVariant.color,
+                    size: stateItem.selectedVariant.size,
+                    combo_id: comboId,
+                    combo_name: product.name,
+                    combo_price: product.sale_price || product.base_price
+                  });
+                }
+              }
+              showToast("Đã thêm set sản phẩm vào giỏ hàng!");
+            });
+          }
+
+          // Combo Buy Now handler
+          const comboBuyBtn = comboSection.querySelector(".js-combo-buy-now");
+          if (comboBuyBtn) {
+            comboBuyBtn.addEventListener("click", async () => {
+              // Check all components have selected variants
+              const missingSelections = comboState.components.filter(c => !c.selectedVariant);
+              if (missingSelections.length > 0) {
+                showToast(`Vui lòng chọn màu sắc và kích cỡ cho: ${missingSelections.map(c => c.name).join(", ")}`);
+                return;
+              }
+
+              // Add each component to cart as part of the combo
+              const comboId = `combo-${product.product_id}-${Date.now()}`;
+              const checkoutItems = [];
+              for (const stateItem of comboState.components) {
+                const comp = product.combo_components.find(c => c.product_id === stateItem.product_id);
+                if (comp && stateItem.selectedVariant) {
+                  const item = {
+                    variant_id: stateItem.selectedVariant.variant_id,
+                    product_id: stateItem.product_id,
+                    product_name: comp.name,
+                    product_image: comp.images?.[0] || "/src/assets/images/placeholder.jpg",
+                    quantity: stateItem.quantity,
+                    unit_price: comp.sale_price || comp.base_price,
+                    color: stateItem.selectedVariant.color,
+                    size: stateItem.selectedVariant.size,
+                    combo_id: comboId,
+                    combo_name: product.name,
+                    combo_price: product.sale_price || product.base_price
+                  };
+                  await addToCart(item);
+                  checkoutItems.push(item);
+                }
+              }
+
+              sessionStorage.setItem("checkout_items", JSON.stringify(checkoutItems));
+              localStorage.removeItem("checkout_discount");
+              localStorage.removeItem("checkout_voucher_id");
+              localStorage.removeItem("checkout_voucher_code");
+
+              if (localStorage.getItem("velura_token")) {
+                window.location.href = "/src/pages/checkout/payment-user.html";
+              } else {
+                window.location.href = "/src/pages/checkout/payment-guest.html";
+              }
+            });
           }
         }
       }
@@ -239,9 +562,19 @@ export async function initOptions() {
         let recommendationText = "";
         if (productType === "clothing") {
           if (predictedSize) {
-            recommendationText = `<div style="font-weight: 700; color: #8A6D3B; margin-top: 4px;">Gợi ý kích cỡ: Size ${predictedSize} vừa vặn nhất với bạn dựa trên Style Profile.</div>`;
+            recommendationText += `<div style="font-weight: 700; color: #8A6D3B; margin-top: 4px;">Gợi ý kích cỡ: Size ${predictedSize} vừa vặn nhất với bạn dựa trên Style Profile.</div>`;
           } else {
-            recommendationText = `<div style="margin-top: 4px;"><a href="/src/pages/ai/style-quiz.html" class="btn btn--sm btn--primary" style="text-decoration:none; padding: 4px 8px; font-size:0.75rem; border-radius: 4px; display:inline-block;">Làm Style Quiz để nhận gợi ý size chính xác</a></div>`;
+            recommendationText += `<div style="margin-top: 4px;"><a href="/src/pages/ai/style-quiz.html" class="btn btn--sm btn--primary" style="text-decoration:none; padding: 4px 8px; font-size:0.75rem; border-radius: 4px; display:inline-block;">Làm Style Quiz để nhận gợi ý size chính xác</a></div>`;
+          }
+        }
+
+        if (recommendedColors.length > 0 && uniqueColors.length > 0) {
+          const matchedRecColors = uniqueColors.filter(c => 
+            recommendedColors.some(rc => c.name.toLowerCase().includes(rc.toLowerCase()) || rc.toLowerCase().includes(c.name.toLowerCase()))
+          );
+          if (matchedRecColors.length > 0) {
+            const colorNames = matchedRecColors.map(c => c.name).join(", ");
+            recommendationText += `<div style="font-weight: 600; color: #8A6D3B; margin-top: 4px;">Màu phù hợp với bạn: ${colorNames}</div>`;
           }
         }
 
@@ -511,14 +844,22 @@ export async function initOptions() {
       }
 
       if (colorListEl) {
+        let recColorIndex = 0;
+        if (recommendedColors.length > 0 && uniqueColors.length > 0) {
+          const matchedIdx = uniqueColors.findIndex(c => 
+            recommendedColors.some(rc => c.name.toLowerCase().includes(rc.toLowerCase()) || rc.toLowerCase().includes(c.name.toLowerCase()))
+          );
+          if (matchedIdx > -1) recColorIndex = matchedIdx;
+        }
+
         colorListEl.innerHTML = uniqueColors.map((col, idx) => {
           return `
-            <button type="button" class="color-btn js-color-btn ${idx === 0 ? 'is-selected' : ''}" data-color="${col.name}" style="background: ${col.hex}; border: 1px solid #ddd;" title="${col.name}"></button>
+            <button type="button" class="color-btn js-color-btn ${idx === recColorIndex ? 'is-selected' : ''}" data-color="${col.name}" style="background: ${col.hex}; border: 1px solid #ddd;" title="${col.name}"></button>
           `;
         }).join("");
 
-        if (colorNameLabel && uniqueColors[0]) {
-          colorNameLabel.textContent = uniqueColors[0].name;
+        if (colorNameLabel && uniqueColors[recColorIndex]) {
+          colorNameLabel.textContent = uniqueColors[recColorIndex].name;
         }
       }
 

@@ -147,17 +147,7 @@ export function initProductCatalog() {
     if (!hasStyleProfile || !quizData) return;
 
     if (enable) {
-      // 1. Brand
-      if (quizData.favorite_brands && Array.isArray(quizData.favorite_brands)) {
-        const brandCheckboxes = document.querySelectorAll('input[name="brand"]');
-        brandCheckboxes.forEach(cb => {
-          if (quizData.favorite_brands.includes(cb.value)) {
-            cb.checked = true;
-          }
-        });
-      }
-
-      // 2. Budget
+      // 1. Budget
       if (quizData.budget_range && priceInputs.length === 2) {
         const br = quizData.budget_range;
         let minPrice = 0;
@@ -174,34 +164,47 @@ export function initProductCatalog() {
         }
       }
 
-      // 3. Skin tone
+      // 2. Skin tone + favorite_colors → best matching catalog color filter
+      let targetColor = "";
       if (quizData.skin_tone) {
         const tone = quizData.skin_tone.toLowerCase();
-        let targetColor = "";
-        if (tone === "warm") targetColor = "Terracotta";
-        else if (tone === "cool") targetColor = "Trắng";
-        else if (tone === "neutral") targetColor = "Xanh rêu";
-
-        if (targetColor) {
-          colorOptions.forEach(btn => {
-            if (btn.getAttribute("title") === targetColor) {
-              btn.classList.add("is-selected");
-              selectedColor = targetColor;
-            } else {
-              btn.classList.remove("is-selected");
-            }
-          });
-        }
+        const toneColorMap = {
+          "warm": "Terracotta",
+          "cool": "Trắng",
+          "neutral": "Kem"
+        };
+        targetColor = toneColorMap[tone] || "";
       }
 
-      // 4. Waist size
-      if (quizData.waist_cm) {
-        const waist = quizData.waist_cm;
+      if (quizData.favorite_colors && Array.isArray(quizData.favorite_colors) && quizData.favorite_colors.length > 0) {
+        const firstColor = quizData.favorite_colors[0];
+        const colorName = typeof firstColor === "string" && firstColor.includes("|") ? firstColor.split("|")[0].trim() : firstColor;
+        if (colorName) targetColor = colorName;
+      }
+
+      if (targetColor) {
+        colorOptions.forEach(btn => {
+          const btnTitle = (btn.getAttribute("title") || "").toLowerCase();
+          const targetLower = targetColor.toLowerCase();
+          if (btnTitle === targetLower || btnTitle.includes(targetLower) || targetLower.includes(btnTitle)) {
+            btn.classList.add("is-selected");
+            selectedColor = btn.getAttribute("title") || targetColor;
+          } else {
+            btn.classList.remove("is-selected");
+          }
+        });
+      }
+
+      // 3. Body measurements → Size (using chest + waist for better accuracy)
+      if (quizData.chest_cm || quizData.waist_cm) {
+        const chest = quizData.chest_cm || 0;
+        const waist = quizData.waist_cm || 0;
+        const hip = quizData.hip_cm || 0;
         let recommendedSize = "";
-        if (waist < 64) recommendedSize = "XS";
-        else if (waist <= 68) recommendedSize = "S";
-        else if (waist <= 72) recommendedSize = "M";
-        else if (waist <= 76) recommendedSize = "L";
+        if (chest <= 80 && waist <= 64 && hip <= 86) recommendedSize = "XS";
+        else if (chest <= 84 && waist <= 68 && hip <= 90) recommendedSize = "S";
+        else if (chest <= 88 && waist <= 72 && hip <= 94) recommendedSize = "M";
+        else if (chest <= 92 && waist <= 76 && hip <= 98) recommendedSize = "L";
         else recommendedSize = "XL";
 
         if (recommendedSize) {
@@ -217,7 +220,7 @@ export function initProductCatalog() {
         }
       }
 
-      // 5. Body shape
+      // 4. Body shape
       const shapeCheckboxes = document.querySelectorAll('input[name="body_shape"]');
       if (userBodyShape) {
         shapeCheckboxes.forEach(cb => {
@@ -228,9 +231,6 @@ export function initProductCatalog() {
       }
     } else {
       // Clear profile-based filters
-      const brandCheckboxes = document.querySelectorAll('input[name="brand"]');
-      brandCheckboxes.forEach(cb => cb.checked = false);
-
       if (priceInputs.length === 2) {
         priceInputs[0].value = 0;
         priceInputs[1].value = maxProductPrice;
