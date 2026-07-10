@@ -147,7 +147,7 @@ export function initProductCatalog() {
     if (!hasStyleProfile || !quizData) return;
 
     if (enable) {
-      // 1. Budget
+      // 1. Budget → Price range
       if (quizData.budget_range && priceInputs.length === 2) {
         const br = quizData.budget_range;
         let minPrice = 0;
@@ -162,6 +162,127 @@ export function initProductCatalog() {
         if (priceRangeText) {
           priceRangeText.textContent = `${minPrice.toLocaleString('vi-VN')}₫ – ${maxPrice.toLocaleString('vi-VN')}₫`;
         }
+      }
+
+      // 2. favorite_colors → Catalog color filter
+      // Quiz colors format: "Beige|#E8DFD6" or just "Beige"
+      // Catalog colors: Đen, Trắng, Terracotta, Kem, Xanh rêu, Xanh lam
+      const quizColorNameMap = {
+        "đen": "Đen", "black": "Đen", "charcoal": "Đen", "slate": "Đen", "midnight": "Đen", "onyx": "Đen",
+        "trắng": "Trắng", "white": "Trắng", "ivory": "Trắng", "cream": "Kem", "champagne": "Trắng", "off-white": "Trắng",
+        "terracotta": "Terracotta", "cinnamon": "Terracotta", "red": "Terracotta", "burgundy": "Terracotta",
+        "đỏ": "Terracotta", "hồng đỏ": "Terracotta", "coral": "Terracotta",
+        "kem": "Kem", "beige": "Kem", "buttercream": "Kem", "sand": "Kem", "oat": "Kem", "brown": "Kem",
+        "caramel": "Kem", "camel": "Kem", "cocoa": "Kem",
+        "xanh rêu": "Xanh rêu", "green": "Xanh rêu", "sage": "Xanh rêu", "mint": "Xanh rêu",
+        "emerald": "Xanh rêu", "olive": "Xanh rêu", "teal": "Xanh rêu", "khaki": "Xanh rêu",
+        "xanh lam": "Xanh lam", "blue": "Xanh lam", "navy": "Xanh lam", "sapphire": "Xanh lam",
+        "xanh dương": "Xanh lam", "ice blue": "Xanh lam", "baby blue": "Xanh lam"
+      };
+
+      let targetColor = "";
+      if (quizData.favorite_colors && Array.isArray(quizData.favorite_colors) && quizData.favorite_colors.length > 0) {
+        for (const raw of quizData.favorite_colors) {
+          const colorName = typeof raw === "string" ? raw.split("|")[0].trim().toLowerCase() : "";
+          if (colorName && quizColorNameMap[colorName]) {
+            targetColor = quizColorNameMap[colorName];
+            break;
+          }
+        }
+      }
+
+      // Fallback: skin tone → color
+      if (!targetColor && quizData.skin_tone) {
+        const tone = quizData.skin_tone.toLowerCase();
+        const toneColorMap = { "warm": "Terracotta", "cool": "Trắng", "neutral": "Kem" };
+        targetColor = toneColorMap[tone] || "";
+      }
+
+      if (targetColor) {
+        colorOptions.forEach(btn => {
+          const btnTitle = (btn.getAttribute("title") || "").toLowerCase();
+          if (btnTitle === targetColor.toLowerCase()) {
+            btn.classList.add("is-selected");
+            selectedColor = btn.getAttribute("title") || targetColor;
+          } else {
+            btn.classList.remove("is-selected");
+          }
+        });
+      }
+
+      // 3. Body measurements → Size
+      if (quizData.chest_cm || quizData.waist_cm) {
+        const chest = quizData.chest_cm || 0;
+        const waist = quizData.waist_cm || 0;
+        const hip = quizData.hip_cm || 0;
+        let recommendedSize = "";
+        if (chest <= 80 && waist <= 64 && hip <= 86) recommendedSize = "XS";
+        else if (chest <= 84 && waist <= 68 && hip <= 90) recommendedSize = "S";
+        else if (chest <= 88 && waist <= 72 && hip <= 94) recommendedSize = "M";
+        else if (chest <= 92 && waist <= 76 && hip <= 98) recommendedSize = "L";
+        else recommendedSize = "XL";
+
+        if (recommendedSize) {
+          const sizeOptionsList = document.querySelectorAll(".size-option");
+          sizeOptionsList.forEach(opt => {
+            if (opt.textContent.trim() === recommendedSize) {
+              opt.classList.add("is-active");
+              selectedSize = recommendedSize;
+            } else {
+              opt.classList.remove("is-active");
+            }
+          });
+        }
+      }
+
+      // 4. Body shape → checkbox
+      const shapeCheckboxes = document.querySelectorAll('input[name="body_shape"]');
+      if (userBodyShape) {
+        shapeCheckboxes.forEach(cb => {
+          if (cb.value.toLowerCase() === userBodyShape.toLowerCase()) {
+            cb.checked = true;
+          }
+        });
+      }
+
+      // 5. Preferred occasions → Category checkboxes
+      if (quizData.preferred_occasions && Array.isArray(quizData.preferred_occasions)) {
+        const occasionCategoryMap = {
+          "office": "top", "casual": "top", "party": "dress",
+          "school": "top", "sport": "top", "travel": "jacket", "home": "top"
+        };
+        const categoryCheckboxes = document.querySelectorAll('input[name="category"]');
+        const matchedCategories = new Set();
+        quizData.preferred_occasions.forEach(occ => {
+          const cat = occasionCategoryMap[occ.toLowerCase()];
+          if (cat) matchedCategories.add(cat);
+        });
+        // Don't tick categories — just don't filter them out (let all show)
+        // Instead, keep no category checked so all products are visible
+      }
+    } else {
+      // Clear profile-based filters
+      if (priceInputs.length === 2) {
+        priceInputs[0].value = 0;
+        priceInputs[1].value = maxProductPrice;
+        if (priceRangeText) {
+          priceRangeText.textContent = `0₫ – ${maxProductPrice.toLocaleString('vi-VN')}₫`;
+        }
+      }
+
+      colorOptions.forEach(btn => btn.classList.remove("is-selected"));
+      selectedColor = "";
+
+      const sizeSelectorBtns = document.querySelectorAll(".size-selector .size-option");
+      sizeSelectorBtns.forEach(btn => btn.classList.remove("is-active"));
+      selectedSize = "";
+
+      const shapeCheckboxes = document.querySelectorAll('input[name="body_shape"]');
+      shapeCheckboxes.forEach(cb => cb.checked = false);
+    }
+
+    applyFiltersAndSort();
+  }
       }
 
       // 2. Skin tone + favorite_colors → best matching catalog color filter
