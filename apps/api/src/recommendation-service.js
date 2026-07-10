@@ -525,9 +525,12 @@ function isPriceInsideBudget(product, budget) {
   if (!price) return false;
   if (budget === "under_300k") return price <= 300000;
   if (budget === "under_500k") return price <= 500000;
-  if (budget === "300k_700k" || budget === "500k_1.5m") return price >= 300000 && price <= 1500000;
-  if (budget === "700k_1.5m" || budget === "700k_1_5m" || budget === "700k_1.5" || budget === "700k_1_5" || budget === "1.5m_3m") return price >= 700000 && price <= 3000000;
-  if (budget === "above_1.5m" || budget === "above_1_5m" || budget === "above_1.5" || budget === "above_1_5" || budget === "above_3m") return price >= 1500000;
+  if (budget === "300k_700k") return price >= 300000 && price <= 700000;
+  if (budget === "500k_1.5m") return price >= 500000 && price <= 1500000;
+  if (budget === "700k_1.5m" || budget === "700k_1_5m" || budget === "700k_1.5" || budget === "700k_1_5") return price >= 700000 && price <= 1500000;
+  if (budget === "1.5m_3m") return price >= 1500000 && price <= 3000000;
+  if (budget === "above_1.5m" || budget === "above_1_5m" || budget === "above_1.5" || budget === "above_1_5") return price >= 1500000;
+  if (budget === "above_3m") return price >= 3000000;
   return false;
 }
 

@@ -154,9 +154,12 @@ export function initProductCatalog() {
         let maxPrice = maxProductPrice;
         if (br === "under_300k") { minPrice = 0; maxPrice = 300000; }
         else if (br === "under_500k") { minPrice = 0; maxPrice = 500000; }
-        else if (br === "300k_700k" || br === "500k_1.5m") { minPrice = 300000; maxPrice = 1500000; }
-        else if (br === "700k_1.5m" || br === "1.5m_3m") { minPrice = 700000; maxPrice = 3000000; }
-        else if (br === "above_1.5m" || br === "above_3m") { minPrice = 1500000; maxPrice = maxProductPrice; }
+        else if (br === "300k_700k") { minPrice = 300000; maxPrice = 700000; }
+        else if (br === "500k_1.5m") { minPrice = 500000; maxPrice = 1500000; }
+        else if (br === "700k_1.5m") { minPrice = 700000; maxPrice = 1500000; }
+        else if (br === "1.5m_3m") { minPrice = 1500000; maxPrice = 3000000; }
+        else if (br === "above_1.5m") { minPrice = 1500000; maxPrice = maxProductPrice; }
+        else if (br === "above_3m") { minPrice = 3000000; maxPrice = maxProductPrice; }
 
         priceInputs[0].value = minPrice;
         priceInputs[1].value = maxPrice;
