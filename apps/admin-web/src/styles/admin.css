@@ -29,28 +29,11 @@ body.admin-page::-webkit-scrollbar-thumb { background: var(--brown-light); borde
 html:has(.admin-page)::-webkit-scrollbar-thumb:hover,
 body.admin-page::-webkit-scrollbar-thumb:hover { background: var(--terracotta); }
 body.admin-page,
+body.admin-page *,
 body.admin-page input,
 body.admin-page button,
 body.admin-page select,
 body.admin-page textarea {
-  font-family: "DM Sans", sans-serif !important;
-}
-
-body.admin-page h1,
-body.admin-page h2,
-body.admin-page h3,
-body.admin-page h4,
-body.admin-page h5,
-body.admin-page h6,
-.admin-topbar__title,
-.admin-page-header__title,
-.admin-card__title,
-.admin-modal__header h2,
-.admin-kpi-card__value,
-.admin-member-profile h2,
-.admin-product-form__section h3,
-.admin-log-empty strong,
-.admin-log-drawer__heading h2 {
   font-family: "Playfair Display", Georgia, serif !important;
 }
 .admin-page { font-size: 17px; }
