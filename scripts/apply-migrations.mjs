@@ -55,6 +55,60 @@ async function main() {
     }
   }
 
+  // Step 5: Apply migration 014_recommendation_rag_pgvector
+  const migrationRagPath = path.join(__dirname, '../database/migrations/014_recommendation_rag_pgvector.sql');
+  if (fs.existsSync(migrationRagPath)) {
+    console.log('Reading 014_recommendation_rag_pgvector...');
+    const sql = fs.readFileSync(migrationRagPath, 'utf8');
+    await client.query(sql);
+    console.log('Successfully applied 014_recommendation_rag_pgvector.');
+  }
+
+  // Step 6: Apply migration 015_deactivate_vouchers_on_promo_pause
+  const migrationPromoPath = path.join(__dirname, '../database/migrations/015_deactivate_vouchers_on_promo_pause.sql');
+  if (fs.existsSync(migrationPromoPath)) {
+    console.log('Reading 015_deactivate_vouchers_on_promo_pause...');
+    const sql = fs.readFileSync(migrationPromoPath, 'utf8');
+    await client.query(sql);
+    console.log('Successfully applied 015_deactivate_vouchers_on_promo_pause.');
+  }
+
+  // Step 7: Apply migration 015_notifications_table
+  const migrationNotifPath = path.join(__dirname, '../database/migrations/015_notifications_table.sql');
+  if (fs.existsSync(migrationNotifPath)) {
+    console.log('Reading 015_notifications_table...');
+    const sql = fs.readFileSync(migrationNotifPath, 'utf8');
+    await client.query(sql);
+    console.log('Successfully applied 015_notifications_table.');
+  }
+
+  // Step 8: Apply migration 015_policy_knowledge_content
+  const migrationPolicyPath = path.join(__dirname, '../database/migrations/015_policy_knowledge_content.sql');
+  if (fs.existsSync(migrationPolicyPath)) {
+    console.log('Reading 015_policy_knowledge_content...');
+    const sql = fs.readFileSync(migrationPolicyPath, 'utf8');
+    await client.query(sql);
+    console.log('Successfully applied 015_policy_knowledge_content.');
+  }
+
+  // Step 9: Apply migration 016_fix_evidence_images_type
+  const migrationFixImagesPath = path.join(__dirname, '../database/migrations/016_fix_evidence_images_type.sql');
+  if (fs.existsSync(migrationFixImagesPath)) {
+    console.log('Reading 016_fix_evidence_images_type...');
+    const sql = fs.readFileSync(migrationFixImagesPath, 'utf8');
+    await client.query(sql);
+    console.log('Successfully applied 016_fix_evidence_images_type.');
+  }
+
+  // Step 10: Apply migration 017_create_return_evidence_bucket
+  const migrationBucketPath = path.join(__dirname, '../database/migrations/017_create_return_evidence_bucket.sql');
+  if (fs.existsSync(migrationBucketPath)) {
+    console.log('Reading 017_create_return_evidence_bucket...');
+    const sql = fs.readFileSync(migrationBucketPath, 'utf8');
+    await client.query(sql);
+    console.log('Successfully applied 017_create_return_evidence_bucket.');
+  }
+
   await client.end();
   console.log('All migrations applied successfully.');
 }
