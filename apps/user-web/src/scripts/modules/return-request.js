@@ -353,7 +353,49 @@ export function initReturnRequest() {
   const methodList = document.querySelector(".method-selection-list");
   if (methodList) {
     bindSelectionCards(methodList, "method");
+    
+    // Add logic for exchange options
+    const exchangeOptionsContainer = document.getElementById("exchange-options-container");
+    if (exchangeOptionsContainer) {
+      const methodCards = methodList.querySelectorAll(".selection-card[data-type='method']");
+      methodCards.forEach(card => {
+        card.addEventListener("click", () => {
+          const input = card.querySelector("input");
+          if (input && input.value === "exchange") {
+            exchangeOptionsContainer.style.display = "block";
+          } else {
+            exchangeOptionsContainer.style.display = "none";
+          }
+        });
+      });
+      
+      // Also check initial state
+      const initialMethod = methodList.querySelector("input:checked");
+      if (initialMethod && initialMethod.value === "exchange") {
+        exchangeOptionsContainer.style.display = "block";
+      }
+    }
   }
+
+  // Handle exchange needs checkboxes
+  const exchangeCheckboxes = document.querySelectorAll('input[name="exchange_needs"]');
+  exchangeCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener("change", (e) => {
+      const val = e.target.value;
+      const isChecked = e.target.checked;
+      
+      if (val === "size") {
+        const group = document.getElementById("exchange-size-group");
+        if (group) group.style.display = isChecked ? "block" : "none";
+      } else if (val === "color") {
+        const group = document.getElementById("exchange-color-group");
+        if (group) group.style.display = isChecked ? "block" : "none";
+      } else if (val === "model") {
+        const group = document.getElementById("exchange-model-group");
+        if (group) group.style.display = isChecked ? "block" : "none";
+      }
+    });
+  });
 
   // ──────────────────────────────────────────────────
   // 4. IMAGE UPLOAD HANDLING
@@ -553,10 +595,37 @@ export function initReturnRequest() {
         };
       });
 
+      let exchangeDetailsStr = "";
+      if (selectedMethod.value === "exchange") {
+        const checkedNeeds = Array.from(returnForm.querySelectorAll('input[name="exchange_needs"]:checked')).map(el => el.value);
+        if (checkedNeeds.length > 0) {
+          exchangeDetailsStr = " | Nhu cầu đổi: ";
+          const detailsList = [];
+          
+          if (checkedNeeds.includes("size")) {
+            const sizeVal = document.getElementById("exchange-size-input")?.value || "Không rõ";
+            detailsList.push(`Đổi size (${sizeVal})`);
+          }
+          if (checkedNeeds.includes("color")) {
+            const colorVal = document.getElementById("exchange-color-input")?.value || "Không rõ";
+            detailsList.push(`Đổi màu (${colorVal})`);
+          }
+          if (checkedNeeds.includes("model")) {
+            const modelVal = document.getElementById("exchange-model-input")?.value || "Không rõ";
+            detailsList.push(`Đổi mẫu khác (${modelVal})`);
+          }
+          if (checkedNeeds.includes("defective")) {
+            detailsList.push("Đổi sản phẩm cùng loại do lỗi");
+          }
+          
+          exchangeDetailsStr += detailsList.join(", ");
+        }
+      }
+
       const payload = {
         order_id: selectedOrder,
         return_type: selectedMethod.value, // "refund" or "exchange"
-        description: `${selectedReason.options[selectedReason.selectedIndex].text}. Chi tiết: ${returnDesc ? returnDesc.value : ""}`,
+        description: `${selectedReason.options[selectedReason.selectedIndex].text}. Chi tiết: ${returnDesc ? returnDesc.value : ""}${exchangeDetailsStr}`,
         evidence_images: evidenceUrls,
         items: itemsPayload
       };

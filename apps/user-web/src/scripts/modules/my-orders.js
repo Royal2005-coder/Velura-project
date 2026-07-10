@@ -16,39 +16,36 @@ export function initMyOrders() {
 
   let allOrders = [];
   let userReviews = [];
+  let userReturns = [];
   let currentTab = "all";
   let searchQuery = "";
   let activeConfirmOrderId = null;
 
-  // Load orders and user reviews from API
+  // Load orders, reviews, and returns from API
   function loadOrders() {
     if (orderListContainer) {
       orderListContainer.innerHTML = `<div style="text-align: center; padding: 48px 0; color: var(--soft);">Đang tải danh sách đơn hàng...</div>`;
     }
 
-    apiRequest("/api/user/reviews")
-      .then(reviewData => {
-        userReviews = reviewData.reviews || [];
-        return apiRequest("/api/user/orders");
-      })
-      .then(data => {
-        allOrders = data.orders || [];
-        renderNotifications();
-        renderAndFilter();
-      })
-      .catch(err => {
-        // Fallback if reviews API fails, still load orders
-        apiRequest("/api/user/orders")
-          .then(data => {
-            allOrders = data.orders || [];
-            renderAndFilter();
-          })
-          .catch(orderErr => {
-            if (orderListContainer) {
-              orderListContainer.innerHTML = `<div style="text-align: center; padding: 48px 0; color: #d9534f;">Không thể tải danh sách đơn hàng: ${orderErr.message}</div>`;
-            }
-          });
-      });
+    Promise.all([
+      apiRequest("/api/user/reviews").catch(() => ({ reviews: [] })),
+      apiRequest("/api/user/orders").catch(() => ({ orders: [] })),
+      apiRequest("/api/user/returns").catch(() => ({ returns: [] }))
+    ]).then(([reviewData, orderData, returnData]) => {
+      userReviews = reviewData.reviews || [];
+      allOrders = orderData.orders || [];
+      userReturns = returnData.returns || [];
+
+      if (allOrders.length === 0 && !orderData.orders) {
+        if (orderListContainer) {
+          orderListContainer.innerHTML = `<div style="text-align: center; padding: 48px 0; color: #d9534f;">Không thể tải danh sách đơn hàng.</div>`;
+        }
+        return;
+      }
+
+      renderNotifications();
+      renderAndFilter();
+    });
   }
 
   // Render notification banners for rejected reviews
@@ -237,9 +234,18 @@ export function initMyOrders() {
           reviewBtnHtml = `<button class="btn btn--primary js-btn-review-trigger" data-id="${orderId}" type="button">Đánh giá &gt;</button>`;
         }
 
+        // Check if there is an existing return for this order
+        const orderReturn = userReturns.find(r => r.order_id === orderId);
+        let returnBtnHtml = "";
+        if (orderReturn) {
+          returnBtnHtml = `<a href="/src/pages/account/order-detail.html?id=${orderId}" class="btn btn--outline js-btn-return">Theo dõi Đổi/Trả</a>`;
+        } else {
+          returnBtnHtml = `<a href="/src/pages/account/return-request.html?orderId=${orderId}" class="btn btn--primary js-btn-return">Đổi/Trả</a>`;
+        }
+
         actionsHtml = `
           ${reviewBtnHtml}
-          <a href="/src/pages/account/return-request.html?orderId=${orderId}" class="btn btn--outline js-btn-return">Đổi/Trả</a>
+          ${returnBtnHtml}
           <a href="/src/pages/account/order-detail.html?id=${orderId}" class="btn btn--primary btn-detail-action">Chi tiết &gt;</a>
         `;
       } else {
