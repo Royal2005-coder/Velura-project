@@ -42,6 +42,30 @@ export function initChatbot() {
     renderAll(containers, state);
   });
   startChatPolling(state);
+
+  // Warn guest users before unloading/navigating away from the website completely
+  window.addEventListener("beforeunload", (event) => {
+    if (state.mode === "guest" && state.sessionId) {
+      event.preventDefault();
+      event.returnValue = "Lịch sử trò chuyện của Guest sẽ bị xóa khi thoát trang.";
+      return event.returnValue;
+    }
+  });
+
+  // Intercept navigation links on standalone chatbot page
+  if (document.querySelector(".chatbot-page")) {
+    window.addEventListener("click", (event) => {
+      const anchor = event.target.closest("a");
+      if (anchor && anchor.href && !anchor.href.includes("chatbot.html") && !anchor.target) {
+        if (state.mode === "guest" && state.sessionId) {
+          event.preventDefault();
+          showGuestCloseWarning(() => {
+            window.location.href = anchor.href;
+          });
+        }
+      }
+    });
+  }
 }
 
 function isChatVisible() {
@@ -93,10 +117,17 @@ function bindChatContainer(container, state) {
   togglers.forEach((toggle) => {
     toggle.addEventListener("click", (event) => {
       event.stopPropagation();
-      container.classList.toggle("chatbot-widget--open");
-      if (container.classList.contains("chatbot-widget--open")) {
-        setTimeout(() => input?.focus(), 250);
-        scrollMessages(container, false);
+      const isClosing = container.classList.contains("chatbot-widget--open");
+      if (isClosing && state.mode === "guest" && state.sessionId) {
+        showGuestCloseWarning(() => {
+          container.classList.remove("chatbot-widget--open");
+        });
+      } else {
+        container.classList.toggle("chatbot-widget--open");
+        if (container.classList.contains("chatbot-widget--open")) {
+          setTimeout(() => input?.focus(), 250);
+          scrollMessages(container, false);
+        }
       }
     });
   });
@@ -868,31 +899,61 @@ function showGuestWarningModal() {
   if (!modal) {
     modal = document.createElement("div");
     modal.id = "guest-warning-modal";
-    modal.style.position = "fixed";
-    modal.style.top = "0";
-    modal.style.left = "0";
-    modal.style.width = "100%";
-    modal.style.height = "100%";
-    modal.style.backgroundColor = "rgba(0,0,0,0.5)";
-    modal.style.display = "flex";
-    modal.style.alignItems = "center";
-    modal.style.justifyContent = "center";
-    modal.style.zIndex = "10000";
+    modal.className = "guest-warning-modal-overlay";
     modal.innerHTML = `
-      <div class="modal-content" style="background:#fff;padding:24px;border-radius:12px;max-width:400px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.15); font-family: inherit;">
-        <h4 style="margin-top:0;color:#734724;font-size:18px;">Trải nghiệm Guest</h4>
-        <p style="font-size:14px;color:#555;line-height:1.5;margin:12px 0 20px;">Bạn đang trải nghiệm dưới quyền Khách vãng lai. Vui lòng Đăng ký hoặc Đăng nhập tài khoản để lưu giữ vĩnh viễn phối đồ này vào tủ đồ cá nhân!</p>
-        <div style="display:flex;gap:12px;justify-content:center;">
-          <button type="button" class="js-close-warning-modal" style="background:#f4f4f4;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:500;color:#1a1a1a;">Đóng</button>
-          <a href="/src/pages/auth/signin.html" style="background:#734724;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;display:inline-block;font-weight:500;">Đăng nhập / Đăng ký</a>
+      <div class="guest-warning-modal-content">
+        <h4>Trải nghiệm Guest</h4>
+        <p>Bạn đang trải nghiệm dưới quyền Khách vãng lai. Vui lòng Đăng ký hoặc Đăng nhập tài khoản để lưu giữ vĩnh viễn phối đồ này vào tủ đồ cá nhân!</p>
+        <div class="guest-warning-modal-buttons">
+          <button type="button" class="guest-warning-modal-btn guest-warning-modal-btn--secondary js-close-warning-modal">Đóng</button>
+          <a href="/src/pages/auth/signin.html" class="guest-warning-modal-btn guest-warning-modal-btn--primary">Đăng nhập / Đăng ký</a>
         </div>
       </div>
     `;
     document.body.appendChild(modal);
     modal.querySelector(".js-close-warning-modal").addEventListener("click", () => {
-      modal.style.display = "none";
+      modal.hidden = true;
     });
-  } else {
-    modal.style.display = "flex";
   }
+  modal.hidden = false;
+}
+
+export function showGuestCloseWarning(onConfirm) {
+  let modal = document.getElementById("chatbot-guest-warning-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "chatbot-guest-warning-modal";
+    modal.className = "chatbot-warning-modal";
+    modal.innerHTML = `
+      <div class="chatbot-warning-modal__content">
+        <header class="chatbot-warning-modal__header">
+          <h4>⚠️ Cảnh báo phiên trò chuyện</h4>
+        </header>
+        <div class="chatbot-warning-modal__body">
+          <p>Bạn đang sử dụng chatbot với tư cách là <strong>Guest (Khách vãng lai)</strong>.</p>
+          <p>Nếu bạn thoát màn hình hoặc đóng cuộc trò chuyện, <strong>toàn bộ dữ liệu lịch sử chat này sẽ không được lưu trữ</strong>.</p>
+          <p>Hãy đăng ký tài khoản hoặc đăng nhập để lưu lại toàn bộ lịch sử tư vấn thời trang của bạn nhé!</p>
+        </div>
+        <footer class="chatbot-warning-modal__footer">
+          <button class="chatbot-warning-modal__btn chatbot-warning-modal__btn--secondary js-warn-confirm-leave">Đồng ý thoát</button>
+          <button class="chatbot-warning-modal__btn chatbot-warning-modal__btn--primary js-warn-cancel">Ở lại</button>
+        </footer>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector(".js-warn-cancel").addEventListener("click", () => {
+      modal.hidden = true;
+    });
+  }
+
+  modal.hidden = false;
+
+  const confirmBtn = modal.querySelector(".js-warn-confirm-leave");
+  const newConfirmBtn = confirmBtn.cloneNode(true);
+  confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+  newConfirmBtn.addEventListener("click", () => {
+    modal.hidden = true;
+    onConfirm();
+  });
 }
