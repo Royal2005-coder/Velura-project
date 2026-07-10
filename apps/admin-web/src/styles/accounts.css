@@ -183,3 +183,10 @@
     text-align: left;
   }
 }
+
+/* KPI Grid Override for 5 Cards */
+@media (min-width: 1101px) {
+  .admin-kpi-grid--accounts {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
