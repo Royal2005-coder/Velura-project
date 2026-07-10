@@ -1312,6 +1312,17 @@ body .chatbot-widget {
   border-bottom: 1px solid var(--line, #e6dfd9);
 }
 
+.chatbot-warning-modal__title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chatbot-warning-modal__icon {
+  color: var(--terracotta, #c97b63);
+  flex-shrink: 0;
+}
+
 .chatbot-warning-modal__header h4 {
   margin: 0;
   color: var(--terracotta, #c97b63);

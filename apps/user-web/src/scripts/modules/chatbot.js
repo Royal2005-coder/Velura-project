@@ -59,7 +59,12 @@ export function initChatbot() {
       if (anchor && anchor.href && !anchor.href.includes("chatbot.html") && !anchor.target) {
         if (state.mode === "guest" && state.sessionId) {
           event.preventDefault();
-          showGuestCloseWarning(() => {
+          showGuestCloseWarning(async () => {
+            try {
+              await deleteSession(state, state.sessionId);
+            } catch (e) {
+              console.error("Failed to delete guest session on link click:", e);
+            }
             window.location.href = anchor.href;
           });
         }
@@ -119,7 +124,12 @@ function bindChatContainer(container, state) {
       event.stopPropagation();
       const isClosing = container.classList.contains("chatbot-widget--open");
       if (isClosing && state.mode === "guest" && state.sessionId) {
-        showGuestCloseWarning(() => {
+        showGuestCloseWarning(async () => {
+          try {
+            await deleteSession(state, state.sessionId);
+          } catch (e) {
+            console.error("Failed to delete guest session on widget close:", e);
+          }
           container.classList.remove("chatbot-widget--open");
         });
       } else {
@@ -927,7 +937,14 @@ export function showGuestCloseWarning(onConfirm) {
     modal.innerHTML = `
       <div class="chatbot-warning-modal__content">
         <header class="chatbot-warning-modal__header">
-          <h4>⚠️ Cảnh báo phiên trò chuyện</h4>
+          <div class="chatbot-warning-modal__title-wrapper">
+            <svg class="chatbot-warning-modal__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <h4>Cảnh báo phiên trò chuyện</h4>
+          </div>
         </header>
         <div class="chatbot-warning-modal__body">
           <p>Bạn đang sử dụng chatbot với tư cách là <strong>Guest (Khách vãng lai)</strong>.</p>
