@@ -666,29 +666,32 @@ export function initStyleQuiz() {
 
     window.quizSubmittedRedirect = true;
     
+    const quizPayload = {
+      height_cm,
+      weight_kg,
+      chest_cm,
+      waist_cm,
+      hip_cm,
+      body_shape,
+      skin_tone: sessionStorage.getItem("quiz-skin-tone") || "Neutral",
+      style_tags,
+      preferred_occasions: occasions,
+      favorite_brands: ["Velura"],
+      budget_range,
+      age_group: age,
+      favorite_colors: colors
+    };
+
     // 1. Submit quiz data to API
     const apiPromise = import("./api.js").then(({ apiRequest }) => {
       return apiRequest("/api/user/style-quiz", {
         method: "POST",
-        body: {
-          height_cm,
-          weight_kg,
-          chest_cm,
-          waist_cm,
-          hip_cm,
-          body_shape,
-          skin_tone: sessionStorage.getItem("quiz-skin-tone") || "Neutral",
-          style_tags,
-          preferred_occasions: occasions,
-          favorite_brands: ["Velura"],
-          budget_range,
-          age_group: age,
-          favorite_colors: colors
-        }
+        body: quizPayload
       });
     }).then((res) => {
       console.log("Style Profile saved successfully!");
       localStorage.setItem("velura_guest_quiz_completed", "true");
+      localStorage.setItem("velura_guest_quiz_data", JSON.stringify(quizPayload));
       return res;
     });
 

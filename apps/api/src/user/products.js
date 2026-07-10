@@ -17,6 +17,40 @@ export async function handleProductsRoute(req, res, subRoute, action, corsHeader
             const { rows: compVariants } = await selectRows("variant", { variant_id: `in.(${variantIds.join(",")})` }, { useAnonKey: true });
             variants = compVariants.map(v => ({ ...v, product_id: product.product_id }));
           }
+
+          // Fetch full component product details for combo display
+          const componentProductIds = [...new Set(comboItems.map(ci => ci.component_product_id).filter(Boolean))];
+          let comboComponents = [];
+          if (componentProductIds.length > 0) {
+            const { rows: compProducts } = await selectRows("product", { product_id: `in.(${componentProductIds.join(",")})` }, { useAnonKey: true });
+            const { rows: compCategories } = await selectRows("category", {}, { useAnonKey: true });
+            const compCatMap = new Map(compCategories.map(c => [c.category_id, c.name]));
+
+            // Get unique component products (dedupe by product_id)
+            const seenProducts = new Set();
+            comboComponents = compProducts
+              .filter(cp => {
+                if (seenProducts.has(cp.product_id)) return false;
+                seenProducts.add(cp.product_id);
+                return true;
+              })
+              .map(cp => {
+                const item = comboItems.find(ci => ci.component_product_id === cp.product_id);
+                const qty = item ? item.quantity : 1;
+                return {
+                  product_id: cp.product_id,
+                  name: cp.name,
+                  slug: cp.slug,
+                  images: cp.images || [],
+                  base_price: cp.base_price,
+                  category_name: compCatMap.get(cp.category_id) || "",
+                  quantity: qty
+                };
+              });
+          }
+          product.combo_components = comboComponents;
+          product.total_original_price = comboComponents.reduce((sum, c) => sum + (c.base_price * c.quantity), 0);
+          product.combo_savings = product.total_original_price - (product.sale_price || product.base_price);
         } else {
           const { rows: dbVariants } = await selectRows("variant", { product_id: `eq.${action}` }, { useAnonKey: true });
           variants = dbVariants;

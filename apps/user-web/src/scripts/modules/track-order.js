@@ -55,7 +55,7 @@ export function initTrackOrder() {
   function handleSearch() {
     const val = searchInput.value.trim();
     if (!val) {
-      alert("Vui lòng nhập mã đơn hàng hoặc mã vận đơn.");
+      showToast("Vui lòng nhập mã đơn hàng hoặc mã vận đơn.");
       return;
     }
     // Clean code formatting (like prefix #)
@@ -313,11 +313,7 @@ export function initTrackOrder() {
   }
 
   function showError(msg) {
-    try {
-      showToast(msg);
-    } catch (e) {
-      alert(msg);
-    }
+    showToast(msg);
   }
 }
 

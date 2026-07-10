@@ -240,7 +240,14 @@ export function initMyOrders() {
         if (orderReturn) {
           returnBtnHtml = `<a href="/src/pages/account/order-detail.html?id=${orderId}" class="btn btn--outline js-btn-return">Theo dõi Đổi/Trả</a>`;
         } else {
-          returnBtnHtml = `<a href="/src/pages/account/return-request.html?orderId=${orderId}" class="btn btn--primary js-btn-return">Đổi/Trả</a>`;
+          const deliveryDate = order.delivered_at ? new Date(order.delivered_at) : new Date(order.updated_at || order.created_at);
+          const now = new Date();
+          const diffMs = now - deliveryDate;
+          const diffHours = diffMs / (1000 * 60 * 60);
+
+          if (diffHours <= 48) {
+            returnBtnHtml = `<a href="/src/pages/account/return-request.html?orderId=${orderId}" class="btn btn--primary js-btn-return">Đổi/Trả</a>`;
+          }
         }
 
         actionsHtml = `

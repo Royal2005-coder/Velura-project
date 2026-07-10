@@ -1,5 +1,6 @@
 import { apiRequest } from "./api.js";
 import { getCurrentRole, hasRealAuthSession, storeAuthSession } from "./auth-session.js";
+import { locationData } from "./location-data.js";
 
 // Custom premium toast helper
 export function showToast(message) {
@@ -1085,48 +1086,6 @@ export function initVoucherModal() {
   });
 }
 
-const locationData = {
-  HCM: {
-    name: "TP. Hồ Chí Minh",
-    districts: {
-      Q1: {
-        name: "Quận 1",
-        wards: ["Phường Bến Nghé", "Phường Bến Thành", "Phường Phạm Ngũ Lão"]
-      },
-      Q7: {
-        name: "Quận 7",
-        wards: ["Phường Tân Phong", "Phường Tân Kiểng", "Phường Tân Quy"]
-      },
-      QBT: {
-        name: "Quận Bình Thạnh",
-        wards: ["Phường 25", "Phường 26", "Phường 27"]
-      }
-    }
-  },
-  HN: {
-    name: "TP. Hà Nội",
-    districts: {
-      QHK: {
-        name: "Quận Hoàn Kiếm",
-        wards: ["Phường Hàng Bài", "Phường Tràng Tiền", "Phường Lý Thái Tổ"]
-      },
-      QBD: {
-        name: "Quận Ba Đình",
-        wards: ["Phường Điện Biên", "Phường Quán Thánh", "Phường Ngọc Hà"]
-      }
-    }
-  },
-  DN: {
-    name: "TP. Đà Nẵng",
-    districts: {
-      QHC: {
-        name: "Quận Hải Châu",
-        wards: ["Phường Hòa Cường Bắc", "Phường Hòa Cường Nam", "Phường Thạch Thang"]
-      }
-    }
-  }
-};
-
 let paymentUserListenersBound = false;
 let checkoutAddresses = [];
 let checkoutUserObj = {};
@@ -1224,6 +1183,21 @@ async function initPaymentUserPage() {
   const provinceSelect = document.getElementById("address-province");
   const districtSelect = document.getElementById("address-district");
   const wardSelect = document.getElementById("address-ward");
+
+  function populateProvinces() {
+    if (!provinceSelect) return;
+    const firstOption = provinceSelect.querySelector('option[value=""]');
+    provinceSelect.innerHTML = "";
+    if (firstOption) provinceSelect.appendChild(firstOption);
+    for (const key in locationData) {
+      const option = document.createElement("option");
+      option.value = key;
+      option.textContent = locationData[key].name;
+      provinceSelect.appendChild(option);
+    }
+  }
+
+  populateProvinces();
 
   const closeModal = () => {
     if (modal) {
@@ -1481,6 +1455,16 @@ function initPaymentGuestPage() {
   const wardSelect = document.getElementById("address-ward");
 
   if (provinceSelect) {
+    const firstOption = provinceSelect.querySelector('option[value=""]');
+    provinceSelect.innerHTML = "";
+    if (firstOption) provinceSelect.appendChild(firstOption);
+    for (const key in locationData) {
+      const option = document.createElement("option");
+      option.value = key;
+      option.textContent = locationData[key].name;
+      provinceSelect.appendChild(option);
+    }
+
     provinceSelect.addEventListener("change", (e) => {
       const provinceKey = e.target.value;
       if (districtSelect && locationData[provinceKey]) {
@@ -1645,6 +1629,357 @@ function initShippingPaymentPage() {
   }
 }
 
+// Helper: re-render review sections from localStorage
+function refreshReviewSections() {
+  const shipping = JSON.parse(localStorage.getItem("checkout_shipping") || "{}");
+  const methods = JSON.parse(localStorage.getItem("checkout_methods") || "{}");
+  const cart = getCheckoutItems();
+
+  const nameEl = document.querySelector("#review-address .review-section__name");
+  const addrEl = document.querySelector("#review-address .review-section__text");
+  if (nameEl) nameEl.textContent = shipping.name || "";
+  if (addrEl) {
+    const lines = [];
+    if (shipping.phone) lines.push(shipping.phone);
+    if (shipping.email) lines.push(shipping.email);
+    if (shipping.address) lines.push(shipping.address);
+    addrEl.innerHTML = lines.join("<br/>");
+  }
+
+  const shipEl = document.querySelector("#review-shipping .review-section__text");
+  if (shipEl) {
+    const feeText = methods.shippingFee > 0 ? `${methods.shippingFee.toLocaleString("vi-VN")}đ` : "Miễn phí";
+    shipEl.textContent = `Giao hàng tiêu chuẩn — TP.HCM/Hà Nội 1 - 3 ngày, tỉnh thành khác 3 - 5 ngày — ${feeText}`;
+  }
+
+  const payEl = document.querySelector("#review-payment .review-section__text");
+  if (payEl) {
+    if (methods.paymentMethod === "COD") payEl.textContent = "Thanh toán khi nhận hàng (COD)";
+    else if (methods.paymentMethod === "VNPAY") payEl.textContent = "Ví điện tử VNPay";
+    else if (methods.paymentMethod === "MOMO") payEl.textContent = "Ví điện tử MoMo";
+  }
+
+  const subtotal = cart.reduce((sum, x) => sum + x.unit_price * x.quantity, 0);
+  const discountAmount = parseInt(localStorage.getItem("checkout_discount") || 0, 10);
+  const grandTotal = Math.max(0, subtotal - discountAmount + (methods.shippingFee || 0));
+
+  const subtotalEl = document.querySelector(".order-summary .summary-lines .summary-line:nth-of-type(1) .summary-line__value");
+  const shippingEl = document.querySelector(".order-summary .summary-lines .summary-line--shipping .summary-line__value");
+  const grandTotalEl = document.querySelector(".order-summary .summary-total .summary-total__value");
+
+  if (subtotalEl) subtotalEl.textContent = `${subtotal.toLocaleString("vi-VN")}₫`;
+  if (shippingEl) shippingEl.textContent = methods.shippingFee > 0 ? `${methods.shippingFee.toLocaleString("vi-VN")}đ` : "Miễn phí";
+
+  const sidebarLines = document.querySelector(".order-summary .summary-lines");
+  if (sidebarLines) {
+    const existingPromo = sidebarLines.querySelector(".summary-line--discount");
+    if (existingPromo) existingPromo.remove();
+    if (discountAmount > 0) {
+      const promoLine = document.createElement("div");
+      promoLine.className = "summary-line summary-line--discount";
+      promoLine.innerHTML = `<span>Khuyến mãi</span><span class="summary-line__value" style="color: #C97B63;">-${discountAmount.toLocaleString("vi-VN")}₫</span>`;
+      sidebarLines.appendChild(promoLine);
+    }
+  }
+
+  if (grandTotalEl) grandTotalEl.textContent = `${grandTotal.toLocaleString("vi-VN")}₫`;
+}
+
+// Helper: toggle option-card selection within a modal
+function bindModalOptionCards(modalEl) {
+  modalEl.querySelectorAll(".option-card").forEach(card => {
+    card.addEventListener("click", () => {
+      card.closest(".option-list").querySelectorAll(".option-card").forEach(c => c.classList.remove("is-selected"));
+      card.classList.add("is-selected");
+      const radio = card.querySelector('input[type="radio"]');
+      if (radio) radio.checked = true;
+    });
+  });
+}
+
+// Helper: open / close modal
+function openReviewModal(id) {
+  const m = document.getElementById(id);
+  if (m) { m.classList.add("is-visible"); document.body.style.overflow = "hidden"; }
+}
+function closeReviewModal(id) {
+  const m = document.getElementById(id);
+  if (m) { m.classList.remove("is-visible"); document.body.style.overflow = ""; }
+}
+
+// Initialize edit modals on the review page
+function initReviewEditModals() {
+  const isMember = document.body.dataset.checkoutRole === "member";
+
+  // Close modal handlers
+  document.querySelectorAll(".review-edit-modal .js-btn-close-modal").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const modal = btn.closest(".review-edit-modal");
+      if (modal) closeReviewModal(modal.id);
+    });
+  });
+  document.querySelectorAll(".review-edit-modal .modal__backdrop").forEach(bd => {
+    bd.addEventListener("click", () => {
+      const modal = bd.closest(".review-edit-modal");
+      if (modal) closeReviewModal(modal.id);
+    });
+  });
+
+  // Pre-select option cards in shipping & payment modals
+  bindModalOptionCards(document.getElementById("edit-shipping-modal"));
+  bindModalOptionCards(document.getElementById("edit-payment-modal"));
+
+  // === ADDRESS EDIT ===
+  document.querySelector(".js-edit-address")?.addEventListener("click", async () => {
+    const body = document.getElementById("edit-address-body");
+    const shipping = JSON.parse(localStorage.getItem("checkout_shipping") || "{}");
+
+    if (isMember) {
+      // Fetch saved addresses from API
+      let addresses = [];
+      try {
+        const user = await apiRequest("/api/user/profile");
+        addresses = user?.saved_addresses || [];
+      } catch (e) {}
+
+      if (addresses.length === 0) {
+        body.innerHTML = `<p style="color:#6B635D; text-align:center; padding:16px;">Bạn chưa lưu địa chỉ nào. Vui lòng quay lại trang trước để thêm địa chỉ.</p>`;
+      } else {
+        body.innerHTML = `
+          <div class="edit-form__group" style="margin-bottom:16px;">
+            <label>Email (tùy chọn)</label>
+            <input class="edit-form__input" type="email" id="edit-email" value="${shipping.email || ""}" placeholder="email@example.com" />
+          </div>
+          <div class="address-list" style="display:flex;flex-direction:column;gap:10px;">
+          ${addresses.map((addr, idx) => `
+            <label class="address-card ${addr.is_default ? "is-selected" : ""}" style="border:1.5px solid ${addr.is_default ? "var(--terracotta)" : "var(--card-border)"}; border-radius:var(--radius-sm); padding:14px 16px; cursor:pointer; display:block;">
+              <input type="radio" name="edit-address-radio" value="${idx}" ${addr.is_default ? "checked" : ""} style="display:none;" />
+              <div class="address-card__head" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <span class="address-card__name" style="font-weight:600;font-size:0.875rem;">${addr.name || ""}</span>
+                ${addr.is_default ? '<span style="font-size:0.65rem;background:var(--terracotta);color:#fff;padding:2px 6px;border-radius:4px;">Mặc định</span>' : ""}
+              </div>
+              <p style="font-size:0.8125rem;color:#50453B;margin:2px 0;">${addr.phone || ""}</p>
+              <p style="font-size:0.8125rem;color:#50453B;">${addr.detail || ""}</p>
+            </label>
+          `).join("")}
+        </div>`;
+        // Bind selection
+        body.querySelectorAll(".address-card").forEach(card => {
+          card.addEventListener("click", () => {
+            body.querySelectorAll(".address-card").forEach(c => {
+              c.style.borderColor = "var(--card-border)";
+              c.classList.remove("is-selected");
+            });
+            card.style.borderColor = "var(--terracotta)";
+            card.classList.add("is-selected");
+            card.querySelector('input[type="radio"]').checked = true;
+          });
+        });
+      }
+    } else {
+      // Guest: render address form
+      body.innerHTML = `
+        <div class="edit-form__row">
+          <div class="edit-form__group">
+            <label>Họ và tên</label>
+            <input class="edit-form__input" type="text" id="edit-fullname" value="${shipping.name || ""}" />
+          </div>
+          <div class="edit-form__group">
+            <label>Số điện thoại</label>
+            <input class="edit-form__input" type="tel" id="edit-phone" value="${shipping.phone || ""}" />
+          </div>
+        </div>
+        <div class="edit-form__group" style="margin-bottom:12px;">
+          <label>Email (tùy chọn)</label>
+          <input class="edit-form__input" type="email" id="edit-email" value="${shipping.email || ""}" placeholder="email@example.com" />
+        </div>
+        <div class="edit-form__row edit-form__row--three">
+          <div class="edit-form__group">
+            <label>Tỉnh/Thành phố</label>
+            <select class="edit-form__input" id="edit-province"><option value="" disabled selected>Chọn Tỉnh/Thành</option></select>
+          </div>
+          <div class="edit-form__group">
+            <label>Quận/Huyện</label>
+            <select class="edit-form__input" id="edit-district" disabled><option value="" disabled selected>Chọn Quận/Huyện</option></select>
+          </div>
+          <div class="edit-form__group">
+            <label>Phường/Xã</label>
+            <select class="edit-form__input" id="edit-ward" disabled><option value="" disabled selected>Chọn Phường/Xã</option></select>
+          </div>
+        </div>
+        <div class="edit-form__group">
+          <label>Địa chỉ chi tiết</label>
+          <input class="edit-form__input" type="text" id="edit-detail" value="" placeholder="Số nhà, tên đường..." />
+        </div>`;
+
+      // Populate provinces
+      const provSel = document.getElementById("edit-province");
+      const distSel = document.getElementById("edit-district");
+      const wardSel = document.getElementById("edit-ward");
+      for (const key in locationData) {
+        const opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = locationData[key].name;
+        provSel.appendChild(opt);
+      }
+
+      provSel.addEventListener("change", () => {
+        distSel.innerHTML = '<option value="" disabled selected>Chọn Quận/Huyện</option>';
+        distSel.disabled = false;
+        wardSel.innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
+        wardSel.disabled = true;
+        const d = locationData[provSel.value]?.districts;
+        if (d) for (const k in d) { const o = document.createElement("option"); o.value = k; o.textContent = d[k].name; distSel.appendChild(o); }
+      });
+
+      distSel.addEventListener("change", () => {
+        wardSel.innerHTML = '<option value="" disabled selected>Chọn Phường/Xã</option>';
+        wardSel.disabled = false;
+        const w = locationData[provSel.value]?.districts?.[distSel.value]?.wards;
+        if (w) w.forEach(name => { const o = document.createElement("option"); o.value = name; o.textContent = name; wardSel.appendChild(o); });
+      });
+
+      // Try to pre-fill from saved address
+      if (shipping.address) {
+        const parts = shipping.address.split(",").map(s => s.trim());
+        // last part = province, second last = district, third last = ward
+        if (parts.length >= 3) {
+          const wardPart = parts[parts.length - 3];
+          const distPart = parts[parts.length - 2];
+          const provPart = parts[parts.length - 1];
+          // Find and select province
+          for (const k in locationData) {
+            if (locationData[k].name === provPart || provPart.includes(locationData[k].name)) {
+              provSel.value = k;
+              provSel.dispatchEvent(new Event("change"));
+              // Find district
+              setTimeout(() => {
+                const dists = locationData[k].districts;
+                for (const dk in dists) {
+                  if (dists[dk].name === distPart || distPart.includes(dists[dk].name)) {
+                    distSel.value = dk;
+                    distSel.dispatchEvent(new Event("change"));
+                    // Find ward
+                    setTimeout(() => {
+                      const wards = dists[dk].wards;
+                      for (const w of wards) {
+                        if (wardPart.includes(w) || w.includes(wardPart)) {
+                          wardSel.value = w;
+                          break;
+                        }
+                      }
+                    }, 50);
+                    break;
+                  }
+                }
+              }, 50);
+              break;
+            }
+          }
+          // Detail = everything before the last 3 parts
+          const detailEl = document.getElementById("edit-detail");
+          if (detailEl && parts.length > 3) detailEl.value = parts.slice(0, parts.length - 3).join(", ");
+        }
+      }
+    }
+
+    openReviewModal("edit-address-modal");
+  });
+
+  // Save address
+  document.querySelector(".js-save-address")?.addEventListener("click", () => {
+    const shipping = JSON.parse(localStorage.getItem("checkout_shipping") || "{}");
+
+    if (isMember) {
+      const checked = document.querySelector('#edit-address-body input[name="edit-address-radio"]:checked');
+      if (!checked) { showToast("Vui lòng chọn một địa chỉ"); return; }
+      const emailInput = document.getElementById("edit-email");
+      if (emailInput) shipping.email = emailInput.value.trim();
+      // Re-fetch from API to get the selected address detail
+      apiRequest("/api/user/profile").then(user => {
+        const addrs = user?.saved_addresses || [];
+        const selected = addrs[parseInt(checked.value)];
+        if (selected) {
+          shipping.name = selected.name || shipping.name;
+          shipping.phone = selected.phone || shipping.phone;
+          shipping.address = selected.detail || shipping.address;
+          localStorage.setItem("checkout_shipping", JSON.stringify(shipping));
+          refreshReviewSections();
+          closeReviewModal("edit-address-modal");
+        }
+      }).catch(() => {});
+    } else {
+      const fullname = document.getElementById("edit-fullname")?.value.trim();
+      const phone = document.getElementById("edit-phone")?.value.trim();
+      const email = document.getElementById("edit-email")?.value.trim();
+      const province = document.getElementById("edit-province");
+      const district = document.getElementById("edit-district");
+      const ward = document.getElementById("edit-ward");
+      const detail = document.getElementById("edit-detail")?.value.trim();
+
+      if (!fullname || !phone || !province?.value || !district?.value || !ward?.value || !detail) {
+        showToast("Vui lòng điền đầy đủ thông tin địa chỉ");
+        return;
+      }
+
+      const provName = province.options[province.selectedIndex].text;
+      const distName = district.options[district.selectedIndex].text;
+      shipping.name = fullname;
+      shipping.phone = phone;
+      shipping.email = email || "";
+      shipping.address = `${detail}, ${ward.value}, ${distName}, ${provName}`;
+      localStorage.setItem("checkout_shipping", JSON.stringify(shipping));
+      refreshReviewSections();
+      closeReviewModal("edit-address-modal");
+    }
+  });
+
+  // === SHIPPING EDIT ===
+  document.querySelector(".js-edit-shipping")?.addEventListener("click", () => {
+    const methods = JSON.parse(localStorage.getItem("checkout_methods") || "{}");
+    const modal = document.getElementById("edit-shipping-modal");
+    // Pre-select current method
+    modal.querySelectorAll('input[name="edit-shipping"]').forEach(r => {
+      r.checked = r.value === (methods.shippingMethod || "standard");
+      r.closest(".option-card")?.classList.toggle("is-selected", r.checked);
+    });
+    openReviewModal("edit-shipping-modal");
+  });
+
+  document.querySelector(".js-save-shipping")?.addEventListener("click", () => {
+    const checked = document.querySelector('#edit-shipping-modal input[name="edit-shipping"]:checked');
+    if (!checked) return;
+    const methods = JSON.parse(localStorage.getItem("checkout_methods") || "{}");
+    methods.shippingMethod = checked.value;
+    methods.shippingFee = calculatePolicyShippingFee();
+    localStorage.setItem("checkout_methods", JSON.stringify(methods));
+    refreshReviewSections();
+    closeReviewModal("edit-shipping-modal");
+  });
+
+  // === PAYMENT EDIT ===
+  document.querySelector(".js-edit-payment")?.addEventListener("click", () => {
+    const methods = JSON.parse(localStorage.getItem("checkout_methods") || "{}");
+    const modal = document.getElementById("edit-payment-modal");
+    const currentVal = (methods.paymentMethod || "COD").toLowerCase();
+    modal.querySelectorAll('input[name="edit-payment"]').forEach(r => {
+      r.checked = r.value === currentVal;
+      r.closest(".option-card")?.classList.toggle("is-selected", r.checked);
+    });
+    openReviewModal("edit-payment-modal");
+  });
+
+  document.querySelector(".js-save-payment")?.addEventListener("click", () => {
+    const checked = document.querySelector('#edit-payment-modal input[name="edit-payment"]:checked');
+    if (!checked) return;
+    const methods = JSON.parse(localStorage.getItem("checkout_methods") || "{}");
+    methods.paymentMethod = checked.value.toUpperCase();
+    localStorage.setItem("checkout_methods", JSON.stringify(methods));
+    refreshReviewSections();
+    closeReviewModal("edit-payment-modal");
+  });
+}
+
 // 6. INITIALIZE ORDER REVIEW / CONFIRMATION PAGE (order-confirm.html / otp-verify.html)
 function initOrderConfirmPage() {
   const isOtpPage = window.location.pathname.includes("/otp-verify.html");
@@ -1657,24 +1992,30 @@ function initOrderConfirmPage() {
     return;
   }
 
+  initReviewEditModals();
+
   // Render Address Info
-  const recipientNameEl = document.querySelector(".review-section__name");
+  const recipientNameEl = document.querySelector("#review-address .review-section__name");
   if (recipientNameEl) recipientNameEl.textContent = shipping.name;
   
-  const addressBlock = document.querySelector(".review-section:nth-of-type(1) .review-section__text");
+  const addressBlock = document.querySelector("#review-address .review-section__text");
   if (addressBlock) {
-    addressBlock.innerHTML = `${shipping.phone}<br/>${shipping.address}`;
+    const lines = [];
+    if (shipping.phone) lines.push(shipping.phone);
+    if (shipping.email) lines.push(shipping.email);
+    if (shipping.address) lines.push(shipping.address);
+    addressBlock.innerHTML = lines.join("<br/>");
   }
 
   // Render Shipping info
-  const shippingBlock = document.querySelector(".review-section:nth-of-type(2) .review-section__text");
+  const shippingBlock = document.querySelector("#review-shipping .review-section__text");
   if (shippingBlock) {
     const feeText = methods.shippingFee > 0 ? `${methods.shippingFee.toLocaleString("vi-VN")}đ` : "Miễn phí";
     shippingBlock.textContent = `Giao hàng tiêu chuẩn — TP.HCM/Hà Nội 1 - 3 ngày, tỉnh thành khác 3 - 5 ngày — ${feeText}`;
   }
 
   // Render Payment Method info
-  const paymentBlock = document.querySelector(".review-section:nth-of-type(3) .review-section__text");
+  const paymentBlock = document.querySelector("#review-payment .review-section__text");
   if (paymentBlock) {
     if (methods.paymentMethod === "COD") {
       paymentBlock.textContent = "Thanh toán khi nhận hàng (COD)";

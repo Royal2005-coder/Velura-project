@@ -4,49 +4,9 @@
 import { apiRequest } from "./api.js";
 import { addToCart, getVariantImage } from "./cart.js";
 import { getCurrentRole, hasRealAuthSession } from "./auth-session.js";
+import { locationData } from "./location-data.js";
 
-// Mock data for location dropdowns
-const locationData = {
-  HCM: {
-    name: "TP. Hồ Chí Minh",
-    districts: {
-      Q1: {
-        name: "Quận 1",
-        wards: ["Phường Bến Nghé", "Phường Bến Thành", "Phường Phạm Ngũ Lão"]
-      },
-      Q7: {
-        name: "Quận 7",
-        wards: ["Phường Tân Phong", "Phường Tân Kiểng", "Phường Tân Quy"]
-      },
-      QBT: {
-        name: "Quận Bình Thạnh",
-        wards: ["Phường 25", "Phường 26", "Phường 27"]
-      }
-    }
-  },
-  HN: {
-    name: "TP. Hà Nội",
-    districts: {
-      QHK: {
-        name: "Quận Hoàn Kiếm",
-        wards: ["Phường Hàng Bài", "Phường Tràng Tiền", "Phường Lý Thái Tổ"]
-      },
-      QBD: {
-        name: "Quận Ba Đình",
-        wards: ["Phường Điện Biên", "Phường Quán Thánh", "Phường Ngọc Hà"]
-      }
-    }
-  },
-  DN: {
-    name: "TP. Đà Nẵng",
-    districts: {
-      QHC: {
-        name: "Quận Hải Châu",
-        wards: ["Phường Hòa Cường Bắc", "Phường Hòa Cường Nam", "Phường Thạch Thang"]
-      }
-    }
-  }
-};
+
 
 export function initProfileForm() {
   if (!document.querySelector(".profile-page")) return;
@@ -201,7 +161,7 @@ function loadProfileData(form) {
       const phoneInput = form.querySelector('input[name="phone"]');
       const emailInput = form.querySelector('input[name="email"]');
       const dobInput = form.querySelector('input[name="dob"]');
-      const avatarInput = form.querySelector('input[name="avatar"]');
+      const avatarInput = createHiddenAvatarInput(form);
       
       if (nameInput) nameInput.value = profile.full_name || "";
       if (phoneInput) {
@@ -267,7 +227,7 @@ function loadProfileData(form) {
             const nameInput = form.querySelector('input[name="fullname"]');
             const phoneInput = form.querySelector('input[name="phone"]');
             const emailInput = form.querySelector('input[name="email"]');
-            const avatarInput = form.querySelector('input[name="avatar"]');
+            const avatarInput = createHiddenAvatarInput(form);
             
             if (nameInput) nameInput.value = profile.full_name || "";
             if (phoneInput) {
@@ -380,8 +340,9 @@ function renderUserAvatar(avatarUrl, fullName) {
 }
 
 function setupAvatarUploadBtn(form) {
-  const uploadBtn = document.querySelector(".profile-avatar-upload-btn");
-  if (!uploadBtn) return;
+  const uploadBtn = document.querySelector(".js-avatar-upload");
+  const fileInput = document.querySelector(".js-avatar-file-input");
+  if (!uploadBtn || !fileInput) return;
 
   // Prevent multiple bindings
   if (uploadBtn.dataset.bound === "true") return;
@@ -389,22 +350,72 @@ function setupAvatarUploadBtn(form) {
 
   uploadBtn.addEventListener("click", function(e) {
     e.preventDefault();
-    const avatarInput = form.querySelector('input[name="avatar"]');
-    const nameInput = form.querySelector('input[name="fullname"]');
-    const currentVal = avatarInput ? avatarInput.value.trim() : "";
-    const fullName = nameInput ? nameInput.value.trim() : "User";
+    fileInput.click();
+  });
 
-    const newUrl = prompt("Nhập đường dẫn ảnh đại diện mới (URL):", currentVal);
-    if (newUrl !== null) {
-      const trimmed = newUrl.trim();
-      if (avatarInput) {
-        avatarInput.value = trimmed;
+  fileInput.addEventListener("change", async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("Vui lòng chọn tệp ảnh hợp lệ.");
+      fileInput.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Kích thước ảnh phải nhỏ hơn 5MB.");
+      fileInput.value = "";
+      return;
+    }
+
+    uploadBtn.style.opacity = "0.5";
+    uploadBtn.style.pointerEvents = "none";
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const token = localStorage.getItem("velura_token");
+      const res = await fetch("/api/user/upload/evidence", {
+        method: "POST",
+        headers: token ? { "Authorization": `Bearer ${token}` } : {},
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Upload failed");
       }
-      // Update preview immediately
-      renderUserAvatar(trimmed, fullName);
-      showToast("Đã cập nhật ảnh xem trước. Nhấn 'Cập nhật' ở dưới để lưu thay đổi.");
+
+      const avatarInput = form.querySelector('input[name="avatar"]') || createHiddenAvatarInput(form);
+      avatarInput.value = data.url;
+
+      const nameInput = form.querySelector('input[name="fullname"]');
+      const fullName = nameInput ? nameInput.value.trim() : "User";
+      renderUserAvatar(data.url, fullName);
+
+      showToast("Đã tải ảnh lên thành công. Nhấn 'Cập nhật' để lưu thay đổi.");
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+      showToast("Tải ảnh lên thất bại: " + (err.message || "Vui lòng thử lại."));
+    } finally {
+      uploadBtn.style.opacity = "1";
+      uploadBtn.style.pointerEvents = "";
+      fileInput.value = "";
     }
   });
+}
+
+function createHiddenAvatarInput(form) {
+  let existing = form.querySelector('input[name="avatar"]');
+  if (existing) return existing;
+  existing = document.createElement("input");
+  existing.type = "hidden";
+  existing.name = "avatar";
+  form.appendChild(existing);
+  return existing;
 }
 
 function initProfileFormValidation() {
@@ -491,7 +502,7 @@ function initProfileFormValidation() {
       const genderInput = form.querySelector('input[name="gender"]:checked');
       const gender = genderInput ? genderInput.value : null;
 
-      const avatarInput = form.querySelector('input[name="avatar"]');
+      const avatarInput = createHiddenAvatarInput(form);
       const avatar = avatarInput ? avatarInput.value.trim() : "";
 
       apiRequest("/api/user/profile", {
@@ -625,7 +636,7 @@ function loadAddresses(addressList) {
               <span class="address-card__phone">${addr.phone}</span>
               <span class="badge badge--default ${isDefault ? "" : "d-none"}">Mặc định</span>
             </div>
-            <p class="address-card__detail">${addr.detail}</p>
+            <p class="address-card__detail">${addr.detail || addr.address || ""}</p>
           </div>
           <div class="address-card__actions">
             <button class="address-card__btn js-btn-edit-address" aria-label="Chỉnh sửa" type="button">
@@ -662,6 +673,21 @@ function initAddressManager() {
   const provinceSelect = document.getElementById("address-province");
   const districtSelect = document.getElementById("address-district");
   const wardSelect = document.getElementById("address-ward");
+
+  function populateProvinces() {
+    if (!provinceSelect) return;
+    const firstOption = provinceSelect.querySelector('option[value=""]');
+    provinceSelect.innerHTML = "";
+    if (firstOption) provinceSelect.appendChild(firstOption);
+    for (const key in locationData) {
+      const option = document.createElement("option");
+      option.value = key;
+      option.textContent = locationData[key].name;
+      provinceSelect.appendChild(option);
+    }
+  }
+
+  populateProvinces();
 
   if (addressList) {
     loadAddresses(addressList);
@@ -813,16 +839,14 @@ function initAddressManager() {
     let selectedDist = "";
     let selectedWard = "";
 
-    // Determine Province
-    if (detailText.includes("TP. Hồ Chí Minh")) {
-      selectedProv = "HCM";
-      addressDetail = addressDetail.replace(", TP. Hồ Chí Minh", "");
-    } else if (detailText.includes("Hà Nội")) {
-      selectedProv = "HN";
-      addressDetail = addressDetail.replace(", Hà Nội", "");
-    } else if (detailText.includes("Đà Nẵng")) {
-      selectedProv = "DN";
-      addressDetail = addressDetail.replace(", TP. Đà Nẵng", "");
+    // Determine Province dynamically
+    for (const provKey in locationData) {
+      const provName = locationData[provKey].name;
+      if (detailText.includes(provName)) {
+        selectedProv = provKey;
+        addressDetail = addressDetail.replace(`, ${provName}`, "");
+        break;
+      }
     }
 
     if (selectedProv) {
@@ -859,13 +883,14 @@ function initAddressManager() {
     openModal();
   }
 
-  function handleDelete(card) {
+  async function handleDelete(card) {
     if (card.classList.contains("address-card--default")) {
-      alert("Không thể xóa địa chỉ mặc định! Hãy đặt địa chỉ khác làm mặc định trước.");
+      showToast("Không thể xóa địa chỉ mặc định! Hãy đặt địa chỉ khác làm mặc định trước.");
       return;
     }
 
-    if (confirm("Bạn có chắc chắn muốn xóa địa chỉ này?")) {
+    const confirmed = await showConfirmModal("Bạn có chắc chắn muốn xóa địa chỉ này?");
+    if (confirmed) {
       card.style.opacity = "0";
       card.style.transform = "scale(0.9)";
       setTimeout(() => {
@@ -1487,4 +1512,37 @@ export function showToast(message) {
       }
     }, 400);
   }, 4000);
+}
+
+export function showConfirmModal(message) {
+  return new Promise(resolve => {
+    const existing = document.querySelector(".confirm-modal-overlay");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "confirm-modal-overlay";
+    overlay.innerHTML = `
+      <div class="confirm-modal">
+        <p class="confirm-modal__message">${message}</p>
+        <div class="confirm-modal__actions">
+          <button class="btn btn--outline confirm-modal__btn confirm-modal__btn--cancel" type="button">Hủy</button>
+          <button class="btn btn--primary confirm-modal__btn confirm-modal__btn--ok" type="button">Đồng ý</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    void overlay.offsetWidth;
+    overlay.classList.add("is-visible");
+
+    const close = (result) => {
+      overlay.classList.remove("is-visible");
+      setTimeout(() => overlay.remove(), 200);
+      resolve(result);
+    };
+
+    overlay.querySelector(".confirm-modal__btn--ok").addEventListener("click", () => close(true));
+    overlay.querySelector(".confirm-modal__btn--cancel").addEventListener("click", () => close(false));
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(false); });
+  });
 }

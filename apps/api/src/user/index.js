@@ -42,7 +42,7 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
       return await handleReturnsRoute(req, res, action, corsHeaders, context);
       
     case "reviews":
-      return await handleReviewsRoute(req, res, corsHeaders, context);
+      return await handleReviewsRoute(req, res, action, parts, corsHeaders, context);
       
     case "style-quiz":
       return await handleQuizRoute(req, res, corsHeaders, context);

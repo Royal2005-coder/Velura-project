@@ -108,36 +108,50 @@ async function checkDuplicate(type, value, errorId, iconId) {
 export async function migrateStyleQuizOnLogin() {
   const guestSessionId = localStorage.getItem("velura_guest_session_id");
   
-  // Construct fallback payload from sessionStorage if present
-  const height_cm = sessionStorage.getItem("quiz-height");
-  const weight_kg = sessionStorage.getItem("quiz-weight");
-  const chest_cm = sessionStorage.getItem("quiz-vong1");
-  const waist_cm = sessionStorage.getItem("quiz-vong2");
-  const hip_cm = sessionStorage.getItem("quiz-vong3");
-  const body_shape = sessionStorage.getItem("quiz-body-shape");
-  const styleStr = sessionStorage.getItem("quiz-main-style");
-  const context = sessionStorage.getItem("quiz-context");
-  const budget = sessionStorage.getItem("quiz-budget");
+  let payload = {};
   
-  let style_tags = null;
-  if (styleStr) {
+  // Try to load cached guest quiz from localStorage
+  const localQuizStr = localStorage.getItem("velura_guest_quiz_data");
+  if (localQuizStr) {
     try {
-      style_tags = JSON.parse(styleStr);
+      payload = JSON.parse(localQuizStr);
     } catch (e) {
-      style_tags = [styleStr];
+      console.error("Failed to parse local guest quiz data on login migration:", e);
     }
   }
   
-  const payload = {};
-  if (height_cm) payload.height_cm = parseInt(height_cm, 10);
-  if (weight_kg) payload.weight_kg = parseInt(weight_kg, 10);
-  if (chest_cm) payload.chest_cm = parseInt(chest_cm, 10);
-  if (waist_cm) payload.waist_cm = parseInt(waist_cm, 10);
-  if (hip_cm) payload.hip_cm = parseInt(hip_cm, 10);
-  if (body_shape) payload.body_shape = body_shape;
-  if (style_tags) payload.style_tags = style_tags;
-  if (context) payload.preferred_occasions = [context];
-  if (budget) payload.budget_range = budget;
+  // Fallback to sessionStorage if localStorage payload is empty
+  if (!payload || Object.keys(payload).length === 0) {
+    const height_cm = sessionStorage.getItem("quiz-height");
+    const weight_kg = sessionStorage.getItem("quiz-weight");
+    const chest_cm = sessionStorage.getItem("quiz-vong1");
+    const waist_cm = sessionStorage.getItem("quiz-vong2");
+    const hip_cm = sessionStorage.getItem("quiz-vong3");
+    const body_shape = sessionStorage.getItem("quiz-body-shape");
+    const styleStr = sessionStorage.getItem("quiz-main-style");
+    const context = sessionStorage.getItem("quiz-context");
+    const budget = sessionStorage.getItem("quiz-budget");
+    
+    let style_tags = null;
+    if (styleStr) {
+      try {
+        style_tags = JSON.parse(styleStr);
+      } catch (e) {
+        style_tags = [styleStr];
+      }
+    }
+    
+    payload = {};
+    if (height_cm) payload.height_cm = parseInt(height_cm, 10);
+    if (weight_kg) payload.weight_kg = parseInt(weight_kg, 10);
+    if (chest_cm) payload.chest_cm = parseInt(chest_cm, 10);
+    if (waist_cm) payload.waist_cm = parseInt(waist_cm, 10);
+    if (hip_cm) payload.hip_cm = parseInt(hip_cm, 10);
+    if (body_shape) payload.body_shape = body_shape;
+    if (style_tags) payload.style_tags = style_tags;
+    if (context) payload.preferred_occasions = [context];
+    if (budget) payload.budget_range = budget;
+  }
   
   try {
     const res = await apiRequest("/api/user/style-quiz/migrate", {
@@ -152,6 +166,7 @@ export async function migrateStyleQuizOnLogin() {
     console.error("Failed to migrate Style Quiz on login:", err);
   } finally {
     // Clean up local storage and session storage style quiz items
+    localStorage.removeItem("velura_guest_quiz_data");
     const keysToRemove = [
       "quiz-height", "quiz-weight", "quiz-vong1", "quiz-vong2", "quiz-vong3",
       "quiz-body-shape", "quiz-main-style", "quiz-context", "quiz-colors", "quiz-budget"

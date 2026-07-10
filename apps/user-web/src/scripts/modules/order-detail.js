@@ -1,4 +1,5 @@
 import { apiRequest } from "./api.js";
+import { showToast, showConfirmModal } from "./account-profile.js";
 
 export function initOrderDetail() {
   const container = document.querySelector(".order-detail-page");
@@ -62,7 +63,7 @@ export function initOrderDetail() {
       if (reason === "Khác") {
         reason = cancelReasonOther.value.trim();
         if (!reason) {
-          alert("Vui lòng nhập chi tiết lý do hủy đơn hàng.");
+          showToast("Vui lòng nhập chi tiết lý do hủy đơn hàng.");
           return;
         }
       }
@@ -79,12 +80,12 @@ export function initOrderDetail() {
         })
       })
       .then(() => {
-        alert("Hủy đơn hàng thành công!");
+        showToast("Hủy đơn hàng thành công!");
         closeCancelModal();
         loadOrderDetail();
       })
       .catch(err => {
-        alert(`Không thể hủy đơn hàng: ${err.message}`);
+        showToast(`Không thể hủy đơn hàng: ${err.message}`);
         submitCancelBtn.disabled = false;
         submitCancelBtn.textContent = "Xác nhận hủy";
       });
@@ -450,8 +451,9 @@ export function initOrderDetail() {
     // Bind Cancel Return Button
     const cancelBtn = container.querySelector(".js-btn-cancel-return-req");
     if (cancelBtn) {
-      cancelBtn.addEventListener("click", () => {
-        if (!confirm("Bạn có chắc muốn hủy yêu cầu đổi trả này?")) return;
+      cancelBtn.addEventListener("click", async () => {
+        const confirmed = await showConfirmModal("Bạn có chắc muốn hủy yêu cầu đổi trả này?");
+        if (!confirmed) return;
         cancelBtn.disabled = true;
         cancelBtn.textContent = "Đang xử lý...";
         apiRequest("/api/user/returns/cancel", {
@@ -459,11 +461,11 @@ export function initOrderDetail() {
           body: JSON.stringify({ return_id: ret.return_id })
         })
           .then(() => {
-            alert("Hủy yêu cầu thành công!");
+            showToast("Hủy yêu cầu thành công!");
             loadOrderDetail();
           })
           .catch(err => {
-            alert("Không thể hủy yêu cầu: " + err.message);
+            showToast("Không thể hủy yêu cầu: " + err.message);
             cancelBtn.disabled = false;
             cancelBtn.textContent = "Hủy yêu cầu đổi trả";
           });
@@ -504,14 +506,21 @@ export function initOrderDetail() {
       groupEl.appendChild(reviewBtn);
 
       if (returns.length === 0) {
-        const returnBtn = document.createElement("button");
-        returnBtn.type = "button";
-        returnBtn.className = "detail-action-btn detail-action-btn--outline";
-        returnBtn.textContent = "Yêu cầu Đổi/Trả hàng";
-        returnBtn.addEventListener("click", () => {
-          window.location.href = `/src/pages/account/return-request.html?orderId=${order.order_id}`;
-        });
-        groupEl.appendChild(returnBtn);
+        const deliveryDate = order.delivered_at ? new Date(order.delivered_at) : new Date(order.updated_at || order.created_at);
+        const now = new Date();
+        const diffMs = now - deliveryDate;
+        const diffHours = diffMs / (1000 * 60 * 60);
+
+        if (diffHours <= 48) {
+          const returnBtn = document.createElement("button");
+          returnBtn.type = "button";
+          returnBtn.className = "detail-action-btn detail-action-btn--outline";
+          returnBtn.textContent = "Yêu cầu Đổi/Trả hàng";
+          returnBtn.addEventListener("click", () => {
+            window.location.href = `/src/pages/account/return-request.html?orderId=${order.order_id}`;
+          });
+          groupEl.appendChild(returnBtn);
+        }
       }
     }
 
@@ -520,23 +529,24 @@ export function initOrderDetail() {
     supportBtn.className = "detail-action-btn detail-action-btn--support";
     supportBtn.textContent = "Liên hệ hỗ trợ";
     supportBtn.addEventListener("click", () => {
-      alert("Cảm ơn bạn. Bộ phận CSKH Velura sẽ liên hệ với bạn qua số điện thoại đăng ký.");
+      showToast("Cảm ơn bạn. Bộ phận CSKH Velura sẽ liên hệ với bạn qua số điện thoại đăng ký.");
     });
     groupEl.appendChild(supportBtn);
 
     actionCardEl.appendChild(groupEl);
   }
 
-  function handleConfirmDelivery(id) {
-    if (!confirm("Bạn xác nhận đã nhận đầy đủ sản phẩm và muốn hoàn thành đơn hàng?")) return;
+  async function handleConfirmDelivery(id) {
+    const confirmed = await showConfirmModal("Bạn xác nhận đã nhận đầy đủ sản phẩm và muốn hoàn thành đơn hàng?");
+    if (!confirmed) return;
 
     apiRequest(`/api/user/orders`, { method: "PATCH", body: JSON.stringify({ order_id: id, status: "delivered" }) })
       .then(() => {
-        alert("Xác nhận đã nhận hàng thành công!");
+        showToast("Xác nhận đã nhận hàng thành công!");
         loadOrderDetail();
       })
       .catch(err => {
-        alert(`Không thể xác nhận nhận hàng: ${err.message}`);
+        showToast(`Không thể xác nhận nhận hàng: ${err.message}`);
       });
   }
 

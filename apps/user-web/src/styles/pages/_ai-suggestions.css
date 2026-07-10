@@ -640,7 +640,8 @@
   color: rgba(255, 255, 255, 0.85);
   max-width: 480px;
   line-height: 1.6;
-  margin: 0 0 24px;
+  margin: 0 auto 24px;
+  text-align: center;
 }
 
 .btn-cta-update {

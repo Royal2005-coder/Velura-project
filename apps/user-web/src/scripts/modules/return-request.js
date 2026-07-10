@@ -106,8 +106,16 @@ export function initReturnRequest() {
     apiRequest("/api/user/orders")
       .then(data => {
         allOrdersList = data.orders || [];
-        // Only allow returns on delivered orders
-        const deliverOrders = allOrdersList.filter(o => o.status === "delivered");
+        // Only allow returns on delivered/completed orders within 48 hours of delivery
+        const deliverOrders = allOrdersList.filter(o => {
+          if (o.status !== "delivered" && o.status !== "completed") return false;
+          
+          const deliveryDate = o.delivered_at ? new Date(o.delivered_at) : new Date(o.updated_at || o.created_at);
+          const now = new Date();
+          const diffMs = now - deliveryDate;
+          const diffHours = diffMs / (1000 * 60 * 60);
+          return diffHours <= 48;
+        });
 
         if (deliverOrders.length === 0) {
           orderList.innerHTML = `

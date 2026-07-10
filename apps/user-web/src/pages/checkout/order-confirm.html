@@ -37,7 +37,7 @@
           <div class="checkout-main">
             <h2 class="review-title">Kiểm tra đơn hàng</h2>
 
-            <div class="review-section">
+            <div class="review-section" id="review-address">
               <div class="review-section__head">
                 <span class="review-section__label">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -46,14 +46,13 @@
                   </svg>
                   Địa chỉ giao hàng
                 </span>
-                <a href="./payment-user.html" class="review-section__change">Thay đổi</a>
+                <button type="button" class="review-section__change js-edit-address">Thay đổi</button>
               </div>
-              <p class="review-section__name">NPNH</p>
-              <p class="review-section__text">0901 234 567<br />123 Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí
-                Minh</p>
+              <p class="review-section__name"></p>
+              <p class="review-section__text"></p>
             </div>
 
-            <div class="review-section">
+            <div class="review-section" id="review-shipping">
               <div class="review-section__head">
                 <span class="review-section__label">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -64,12 +63,12 @@
                   </svg>
                   Vận chuyển
                 </span>
-                <a href="./shipping-payment.html" class="review-section__change">Thay đổi</a>
+                <button type="button" class="review-section__change js-edit-shipping">Thay đổi</button>
               </div>
-              <p class="review-section__text">Giao hàng tiêu chuẩn — 30.000đ / Freeship từ 500.000đ</p>
+              <p class="review-section__text"></p>
             </div>
 
-            <div class="review-section">
+            <div class="review-section" id="review-payment">
               <div class="review-section__head">
                 <span class="review-section__label">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -78,9 +77,9 @@
                   </svg>
                   Thanh toán
                 </span>
-                <a href="./shipping-payment.html" class="review-section__change">Thay đổi</a>
+                <button type="button" class="review-section__change js-edit-payment">Thay đổi</button>
               </div>
-              <p class="review-section__text">Thanh toán khi nhận hàng (COD)</p>
+              <p class="review-section__text"></p>
             </div>
 
             <h3 class="section-title" style="margin:32px 0 16px">Sản phẩm</h3>
@@ -116,6 +115,109 @@
         </div>
       </div>
     </main>
+
+    <!-- Edit Address Modal -->
+    <div class="modal review-edit-modal" id="edit-address-modal" aria-hidden="true">
+      <div class="modal__backdrop"></div>
+      <div class="modal__container">
+        <div class="modal__content card">
+          <div class="modal__header">
+            <h3 class="modal__title">Thay đổi địa chỉ giao hàng</h3>
+            <button class="modal__close js-btn-close-modal" type="button" aria-label="Đóng modal">×</button>
+          </div>
+          <div class="review-edit-modal__body" id="edit-address-body">
+            <!-- JS fills: saved address list (member) or address form (guest) -->
+          </div>
+          <div class="review-edit-modal__actions">
+            <button class="btn btn--primary js-save-address" type="button">Lưu</button>
+            <button class="btn btn--outline js-btn-close-modal" type="button">Hủy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Shipping Modal -->
+    <div class="modal review-edit-modal" id="edit-shipping-modal" aria-hidden="true">
+      <div class="modal__backdrop"></div>
+      <div class="modal__container">
+        <div class="modal__content card">
+          <div class="modal__header">
+            <h3 class="modal__title">Thay đổi phương thức vận chuyển</h3>
+            <button class="modal__close js-btn-close-modal" type="button" aria-label="Đóng modal">×</button>
+          </div>
+          <div class="review-edit-modal__body">
+            <div class="option-list">
+              <label class="option-card is-selected">
+                <input type="radio" name="edit-shipping" value="standard" checked />
+                <div class="option-card__left">
+                  <span class="option-card__radio"></span>
+                  <div>
+                    <p class="option-card__title">Giao hàng tiêu chuẩn</p>
+                    <p class="option-card__desc">TP.HCM/Hà Nội 1 - 3 ngày; tỉnh thành khác 3 - 5 ngày</p>
+                  </div>
+                </div>
+                <span class="option-card__price">30.000đ / Freeship từ 500.000đ</span>
+              </label>
+            </div>
+          </div>
+          <div class="review-edit-modal__actions">
+            <button class="btn btn--primary js-save-shipping" type="button">Lưu</button>
+            <button class="btn btn--outline js-btn-close-modal" type="button">Hủy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Payment Modal -->
+    <div class="modal review-edit-modal" id="edit-payment-modal" aria-hidden="true">
+      <div class="modal__backdrop"></div>
+      <div class="modal__container">
+        <div class="modal__content card">
+          <div class="modal__header">
+            <h3 class="modal__title">Thay đổi phương thức thanh toán</h3>
+            <button class="modal__close js-btn-close-modal" type="button" aria-label="Đóng modal">×</button>
+          </div>
+          <div class="review-edit-modal__body">
+            <div class="option-list">
+              <label class="option-card">
+                <input type="radio" name="edit-payment" value="cod" />
+                <div class="option-card__left">
+                  <span class="option-card__radio"></span>
+                  <div>
+                    <p class="option-card__title">Thanh toán khi nhận hàng</p>
+                    <p class="option-card__desc">Thanh toán bằng tiền mặt khi nhận hàng</p>
+                  </div>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="edit-payment" value="vnpay" />
+                <div class="option-card__left">
+                  <span class="option-card__radio"></span>
+                  <div>
+                    <p class="option-card__title">VNPay</p>
+                    <p class="option-card__desc">Thanh toán qua ví điện tử VNPay</p>
+                  </div>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="edit-payment" value="momo" />
+                <div class="option-card__left">
+                  <span class="option-card__radio"></span>
+                  <div>
+                    <p class="option-card__title">MoMo</p>
+                    <p class="option-card__desc">Thanh toán qua ví MoMo</p>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+          <div class="review-edit-modal__actions">
+            <button class="btn btn--primary js-save-payment" type="button">Lưu</button>
+            <button class="btn btn--outline js-btn-close-modal" type="button">Hủy</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <load src="/src/components/footer.html" />
   </div>

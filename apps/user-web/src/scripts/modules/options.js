@@ -51,6 +51,50 @@ export async function initOptions() {
   if (productId && titleEl) {
     try {
       const product = await apiRequest(`/api/user/products/${productId}`);
+
+      // Determine product type (clothing, footwear, accessory)
+      const categoryName = (product.category?.name || "").toLowerCase();
+      const categorySlug = (product.category?.slug || "").toLowerCase();
+      const productName = (product.name || "").toLowerCase();
+
+      let productType = "clothing"; // default fallback
+
+      if (
+        categoryName.includes("giày") || 
+        categoryName.includes("dép") || 
+        categoryName.includes("guốc") || 
+        categoryName.includes("sandal") ||
+        categorySlug.includes("giay") ||
+        categorySlug.includes("dep") ||
+        categorySlug.includes("sandal") ||
+        productName.includes("giày") ||
+        productName.includes("dép") ||
+        productName.includes("sandal")
+      ) {
+        productType = "footwear";
+      } else if (
+        categoryName.includes("phụ kiện") ||
+        categoryName.includes("túi") ||
+        categoryName.includes("ví") ||
+        categoryName.includes("kính") ||
+        categoryName.includes("mũ") ||
+        categoryName.includes("nón") ||
+        categoryName.includes("trang sức") ||
+        categorySlug.includes("phu-kien") ||
+        categorySlug.includes("accessories") ||
+        categorySlug.includes("tui") ||
+        categorySlug.includes("vi") ||
+        categorySlug.includes("kinh") ||
+        categorySlug.includes("mu") ||
+        categorySlug.includes("non") ||
+        categorySlug.includes("trang-suc")
+      ) {
+        productType = "accessory";
+      }
+
+      if (productType !== "clothing") {
+        predictedSize = "";
+      }
       
       // Bind basic info
       titleEl.textContent = product.name;
@@ -67,6 +111,50 @@ export async function initOptions() {
         priceOldEl.style.display = "";
       } else {
         priceOldEl.style.display = "none";
+      }
+
+      // Combo Components Section
+      if (product.is_combo && product.combo_components && product.combo_components.length > 0) {
+        const comboSection = document.querySelector(".combo-components");
+        const comboListEl = document.querySelector(".js-combo-components");
+        const comboSummaryEl = document.querySelector(".js-combo-summary");
+
+        if (comboSection && comboListEl) {
+          comboSection.style.display = "";
+
+          comboListEl.innerHTML = product.combo_components.map(comp => {
+            const img = comp.images && comp.images.length > 0 ? comp.images[0] : "/src/assets/images/placeholder.jpg";
+            const priceStr = formatVND(comp.base_price);
+            return `
+              <a href="/src/pages/products/detail.html?id=${comp.product_id}" class="combo-component-item" title="Xem ${comp.name}">
+                <img src="${img}" alt="${comp.name}" class="combo-component-item__img" loading="lazy" />
+                <div class="combo-component-item__info">
+                  <span class="combo-component-item__category">${comp.category_name}</span>
+                  <span class="combo-component-item__name">${comp.name}</span>
+                  <span class="combo-component-item__price">${priceStr}</span>
+                </div>
+                <svg class="combo-component-item__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </a>
+            `;
+          }).join("");
+
+          if (comboSummaryEl && product.total_original_price > 0) {
+            const savingsPct = Math.round(((product.total_original_price - (product.sale_price || product.base_price)) / product.total_original_price) * 100);
+            const savingsAmt = product.total_original_price - (product.sale_price || product.base_price);
+            comboSummaryEl.innerHTML = `
+              <div class="combo-summary-row">
+                <span class="combo-summary__label">Tổng nếu mua lẻ:</span>
+                <span class="combo-summary__old-price">${formatVND(product.total_original_price)}</span>
+              </div>
+              <div class="combo-summary-row combo-summary-row--savings">
+                <span class="combo-summary__label">Tiết kiệm khi mua set:</span>
+                <span class="combo-summary__savings">-${formatVND(savingsAmt)} (${savingsPct}%)</span>
+              </div>
+            `;
+          }
+        }
       }
 
       if (descEl) {
@@ -149,10 +237,12 @@ export async function initOptions() {
         const tone = toneMap[product.color_tone] || product.color_tone;
         
         let recommendationText = "";
-        if (predictedSize) {
-          recommendationText = `<div style="font-weight: 700; color: #8A6D3B; margin-top: 4px;">Gợi ý kích cỡ: Size ${predictedSize} vừa vặn nhất với bạn dựa trên Style Profile.</div>`;
-        } else {
-          recommendationText = `<div style="margin-top: 4px;"><a href="/src/pages/ai/style-quiz.html" class="btn btn--sm btn--primary" style="text-decoration:none; padding: 4px 8px; font-size:0.75rem; border-radius: 4px; display:inline-block;">Làm Style Quiz để nhận gợi ý size chính xác</a></div>`;
+        if (productType === "clothing") {
+          if (predictedSize) {
+            recommendationText = `<div style="font-weight: 700; color: #8A6D3B; margin-top: 4px;">Gợi ý kích cỡ: Size ${predictedSize} vừa vặn nhất với bạn dựa trên Style Profile.</div>`;
+          } else {
+            recommendationText = `<div style="margin-top: 4px;"><a href="/src/pages/ai/style-quiz.html" class="btn btn--sm btn--primary" style="text-decoration:none; padding: 4px 8px; font-size:0.75rem; border-radius: 4px; display:inline-block;">Làm Style Quiz để nhận gợi ý size chính xác</a></div>`;
+          }
         }
 
         if (shapes.length > 0 && tone) {
@@ -281,6 +371,145 @@ export async function initOptions() {
       const uniqueColors = Array.from(colorMap.entries()).map(([name, hex]) => ({ name, hex }));
       const uniqueSizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
 
+      // Hide size selection if there are no size variants or it is an accessory
+      const optionSizeEl = document.querySelector(".option-size");
+      if (optionSizeEl) {
+        if (uniqueSizes.length === 0 || productType === "accessory") {
+          optionSizeEl.style.display = "none";
+        } else {
+          optionSizeEl.style.display = "";
+        }
+      }
+
+      // Hide size guide link and size tab button if it's an accessory
+      const sizeGuideLinkEl = document.querySelector(".size-guide-link");
+      if (sizeGuideLinkEl) {
+        if (productType === "accessory") {
+          sizeGuideLinkEl.style.display = "none";
+        } else {
+          sizeGuideLinkEl.style.display = "";
+        }
+      }
+
+      const sizeTabBtnEl = document.querySelector("#tab-size");
+      if (sizeTabBtnEl) {
+        if (productType === "accessory") {
+          sizeTabBtnEl.style.display = "none";
+        } else {
+          sizeTabBtnEl.style.display = "";
+        }
+      }
+
+      // Dynamic size table guide
+      const sizePanelEl = document.querySelector("#panel-size");
+      if (sizePanelEl) {
+        if (productType === "clothing") {
+          sizePanelEl.innerHTML = `
+            <table class="specs-table">
+              <thead>
+                <tr>
+                  <th>Size</th>
+                  <th>Ngực (cm)</th>
+                  <th>Eo (cm)</th>
+                  <th>Mông (cm)</th>
+                  <th>Cân nặng đề xuất</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>XS</th>
+                  <td>78</td>
+                  <td>62</td>
+                  <td>84</td>
+                  <td>40-45kg</td>
+                </tr>
+                <tr>
+                  <th>S</th>
+                  <td>82</td>
+                  <td>66</td>
+                  <td>88</td>
+                  <td>45-50kg</td>
+                </tr>
+                <tr>
+                  <th>M</th>
+                  <td>86</td>
+                  <td>70</td>
+                  <td>92</td>
+                  <td>50-55kg</td>
+                </tr>
+                <tr>
+                  <th>L</th>
+                  <td>90</td>
+                  <td>74</td>
+                  <td>96</td>
+                  <td>55-60kg</td>
+                </tr>
+                <tr>
+                  <th>XL</th>
+                  <td>94</td>
+                  <td>78</td>
+                  <td>100</td>
+                  <td>60-65kg</td>
+                </tr>
+              </tbody>
+            </table>
+          `;
+        } else if (productType === "footwear") {
+          sizePanelEl.innerHTML = `
+            <table class="specs-table">
+              <thead>
+                <tr>
+                  <th>Size (EU)</th>
+                  <th>Chiều dài chân (cm)</th>
+                  <th>Size (US)</th>
+                  <th>Size (UK)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th>35</th>
+                  <td>22.0 - 22.5</td>
+                  <td>5</td>
+                  <td>3</td>
+                </tr>
+                <tr>
+                  <th>36</th>
+                  <td>22.5 - 23.0</td>
+                  <td>6</td>
+                  <td>4</td>
+                </tr>
+                <tr>
+                  <th>37</th>
+                  <td>23.0 - 23.5</td>
+                  <td>6.5</td>
+                  <td>4.5</td>
+                </tr>
+                <tr>
+                  <th>38</th>
+                  <td>23.5 - 24.0</td>
+                  <td>7.5</td>
+                  <td>5.5</td>
+                </tr>
+                <tr>
+                  <th>39</th>
+                  <td>24.0 - 24.5</td>
+                  <td>8.5</td>
+                  <td>6.5</td>
+                </tr>
+                <tr>
+                  <th>40</th>
+                  <td>24.5 - 25.0</td>
+                  <td>9</td>
+                  <td>7</td>
+                </tr>
+              </tbody>
+            </table>
+          `;
+        } else {
+          sizePanelEl.innerHTML = `<p style="color: var(--soft); text-align: center; padding: 24px 0;">Sản phẩm này không có bảng size.</p>`;
+        }
+      }
+
       if (colorListEl) {
         colorListEl.innerHTML = uniqueColors.map((col, idx) => {
           return `
@@ -308,6 +537,8 @@ export async function initOptions() {
 
         if (sizeNameLabel && uniqueSizes[selectIndex]) {
           sizeNameLabel.textContent = uniqueSizes[selectIndex];
+        } else if (sizeNameLabel) {
+          sizeNameLabel.textContent = "";
         }
       }
 
@@ -886,6 +1117,72 @@ function renderReviews(reviews) {
          </div>`
       : "";
 
+    // Parse existing replies from admin_reply
+    let replies = [];
+    if (r.admin_reply) {
+      try {
+        replies = JSON.parse(r.admin_reply);
+        if (!Array.isArray(replies)) {
+          replies = [{
+            user_name: "Admin",
+            role: "admin",
+            reply_text: r.admin_reply,
+            created_at: r.moderated_at || r.updated_at
+          }];
+        }
+      } catch (e) {
+        replies = [{
+          user_name: "Admin",
+          role: "admin",
+          reply_text: r.admin_reply,
+          created_at: r.moderated_at || r.updated_at
+        }];
+      }
+    }
+
+    const repliesHtml = replies.map(rep => {
+      const isAdmin = rep.role === "admin";
+      const badgeHtml = isAdmin ? `<span style="background: #C97B63; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-left: 6px;">QTV</span>` : "";
+      const repDate = rep.created_at ? new Date(rep.created_at).toLocaleDateString("vi-VN") : "Đang cập nhật";
+      const repAuthor = rep.user_name || (isAdmin ? "Quản trị viên" : "Khách hàng");
+      return `
+        <div class="review-reply-item" style="background: #fcfbfa; border-left: 3px solid #C97B63; padding: 12px 16px; margin-top: 12px; border-radius: 0 4px 4px 0; font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <div style="display: flex; align-items: center;">
+              <span style="font-weight: 600; color: var(--text-dark);">${repAuthor}</span>
+              ${badgeHtml}
+            </div>
+            <span style="font-size: 0.75rem; color: var(--soft);">${repDate}</span>
+          </div>
+          <p style="margin: 0; color: #555; line-height: 1.5;">${rep.reply_text}</p>
+        </div>
+      `;
+    }).join("");
+
+    // Reply button and input form
+    const isUserLoggedIn = localStorage.getItem("velura_token") || localStorage.getItem("velura_user");
+    const replyFormHtml = isUserLoggedIn 
+      ? `
+        <div class="review-reply-form-container" style="margin-top: 16px;">
+          <button type="button" class="js-toggle-reply-form" style="background: none; border: none; color: #C97B63; font-weight: 600; font-size: 0.85rem; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            Phản hồi
+          </button>
+          <div class="reply-form-box js-reply-form-box" style="display: none; margin-top: 12px; gap: 8px; flex-direction: column;">
+            <textarea class="reply-textarea js-reply-textarea" placeholder="Viết câu trả lời hoặc phản hồi..." style="width: 100%; min-height: 80px; padding: 10px; border: 1px solid #e5dfd8; border-radius: 4px; font-family: inherit; font-size: 0.85rem; outline: none; resize: vertical; background: #fff;"></textarea>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <button type="button" class="btn-cancel-reply js-cancel-reply" style="background: #f7f5f2; border: 1px solid #e5dfd8; padding: 6px 14px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; font-weight: 500;">Hủy</button>
+              <button type="button" class="btn-submit-reply js-submit-reply" data-review-id="${r.review_id}" style="background: #C97B63; border: 1px solid #C97B63; color: white; padding: 6px 14px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; font-weight: 500;">Gửi phản hồi</button>
+            </div>
+          </div>
+        </div>
+      `
+      : `
+        <div style="margin-top: 12px; font-size: 0.8rem; color: var(--soft);">
+          <a href="/src/pages/auth/signin.html" style="color: #C97B63; text-decoration: underline; font-weight: 500;">Đăng nhập</a> để gửi phản hồi đánh giá.
+        </div>
+      `;
+
     return `
       <article class="review-item" style="border-bottom: 1px solid #f0edf0; padding: 24px 0;">
         <div class="review-item__head" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
@@ -898,7 +1195,77 @@ function renderReviews(reviews) {
         ${tagsHtml}
         <p class="review-item__text" style="color: var(--text-dark); margin: 0; line-height: 1.6;">${r.comment || "Không có nhận xét chi tiết."}</p>
         ${imagesHtml}
+
+        <!-- Replies Container -->
+        <div class="review-replies-list" style="margin-left: 16px;">
+          ${repliesHtml}
+        </div>
+
+        <!-- Reply Action / Form -->
+        <div style="margin-left: 16px;">
+          ${replyFormHtml}
+        </div>
       </article>
     `;
   }).join("");
+
+  // Attach event handlers for replies
+  const reviewItems = reviewsListEl.querySelectorAll(".review-item");
+  reviewItems.forEach(item => {
+    const toggleBtn = item.querySelector(".js-toggle-reply-form");
+    const formBox = item.querySelector(".js-reply-form-box");
+    const cancelBtn = item.querySelector(".js-cancel-reply");
+    const submitBtn = item.querySelector(".js-submit-reply");
+    const textarea = item.querySelector(".js-reply-textarea");
+
+    if (toggleBtn && formBox) {
+      toggleBtn.addEventListener("click", () => {
+        const isHidden = formBox.style.display === "none";
+        formBox.style.display = isHidden ? "flex" : "none";
+        if (isHidden && textarea) textarea.focus();
+      });
+    }
+
+    if (cancelBtn && formBox) {
+      cancelBtn.addEventListener("click", () => {
+        formBox.style.display = "none";
+        if (textarea) textarea.value = "";
+      });
+    }
+
+    if (submitBtn && textarea && formBox) {
+      submitBtn.addEventListener("click", async () => {
+        const reviewId = submitBtn.getAttribute("data-review-id");
+        const replyText = textarea.value.trim();
+
+        if (!replyText) {
+          showToast("Vui lòng nhập nội dung phản hồi.");
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Đang gửi...";
+
+        try {
+          const res = await apiRequest(`/api/user/reviews/${reviewId}/reply`, {
+            method: "POST",
+            body: { reply_text: replyText }
+          });
+          
+          if (res.success) {
+            window.location.reload();
+          } else {
+            showToast("Không thể gửi phản hồi. Vui lòng thử lại.");
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Gửi phản hồi";
+          }
+        } catch (err) {
+          console.error("Failed to submit reply:", err);
+          showToast(err.message || "Đã xảy ra lỗi khi gửi phản hồi.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Gửi phản hồi";
+        }
+      });
+    }
+  });
 }
