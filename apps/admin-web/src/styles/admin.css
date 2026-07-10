@@ -29,15 +29,24 @@ body.admin-page::-webkit-scrollbar-thumb { background: var(--brown-light); borde
 html:has(.admin-page)::-webkit-scrollbar-thumb:hover,
 body.admin-page::-webkit-scrollbar-thumb:hover { background: var(--terracotta); }
 body.admin-page,
-body.admin-page *,
 body.admin-page input,
 body.admin-page button,
 body.admin-page select,
 body.admin-page textarea {
-  font-family: "Playfair Display", Georgia, serif !important;
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 .admin-page { font-size: 17px; }
-.admin-topbar__title { color: var(--text-dark); font-family: "Playfair Display", Georgia, serif; font-size: 1.25rem; font-weight: 600; }
+.admin-topbar__title,
+.admin-card__title,
+.admin-modal__header h2,
+.admin-drawer__header h2,
+.admin-drawer__section,
+.admin-section__title,
+.admin-page-header__title,
+.admin-page-intro__title,
+.admin-kpi-card__value {
+  font-family: "Playfair Display", Georgia, serif !important;
+}
 .admin-content { padding-top: 28px; }
 .admin-page-header { display: none; }
 .admin-menu-item { justify-content: flex-start; text-align: left; font-size: 1rem; }
@@ -128,7 +137,7 @@ body.admin-page textarea {
 
 .admin-tabs { display: flex; gap: 4px; padding: 16px 24px 0; border-bottom: 1px solid var(--line); }.admin-tab { padding: 10px 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--soft); cursor: pointer; font-size: .8125rem; font-weight: 500; }.admin-tab:hover { color: var(--ink); }.admin-tab--active { border-bottom-color: var(--terracotta); color: var(--terracotta); }
 .admin-tab-content { padding: 20px 24px 0; }.admin-tab-content[hidden] { display: none; }
-.admin-filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; }.admin-filter-bar .admin-form-group { display: block; margin-bottom: 0; }.admin-search-field { display: flex; flex: 1 1 220px; align-items: center; gap: 8px; min-width: 0; }.admin-search-field .admin-form-control { min-width: 0; }.admin-filter-bar__actions { display: flex; gap: 16px; align-items: center; }
+.admin-filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }.admin-filter-bar .admin-form-group { display: block; margin-bottom: 0; }.admin-search-field { display: flex; flex: 1 1 220px; align-items: center; gap: 8px; min-width: 0; }.admin-search-field .admin-form-control { min-width: 0; }.admin-filter-bar__actions { display: flex; gap: 16px; align-items: center; }
 .admin-form-group { display: grid; gap: 7px; margin-bottom: 16px; }.admin-form-label { color: var(--text-body); font-size: .8125rem; font-weight: 500; }.admin-form-control { min-width: 150px; height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); outline: 0; background: #fff; color: var(--ink); font-size: .8125rem; transition: border-color .2s, box-shadow .2s; }.admin-form-control:focus { border-color: var(--terracotta); box-shadow: 0 0 0 3px rgba(201, 123, 99, .12); }.admin-form-textarea { height: auto; min-height: 96px; padding: 12px; resize: vertical; }.admin-form-helper { color: var(--soft); font-size: .75rem; }.admin-form-error { color: var(--error); font-size: .75rem; }.admin-form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 
 .admin-table-wrap { overflow-x: auto; }.admin-table { width: 100%; min-width: 720px; border-collapse: collapse; text-align: left; }.admin-table th { padding: 12px 16px; background: var(--field-bg); color: var(--muted); font-size: .6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }.admin-table td { padding: 15px 16px; border-bottom: 1px solid var(--line); color: var(--text-body); font-size: .8125rem; }.admin-table tbody tr { transition: background .2s; }.admin-table tbody tr:hover { background: #fdfaf8; }.admin-table td:first-child { color: var(--ink); }.admin-table__actions { position: relative; width: 48px; text-align: right; }
@@ -209,7 +218,7 @@ body.admin-page textarea {
 .admin-card__footer { position: relative; z-index: 1; }
 .admin-account-action-menu { min-width:210px; }.admin-account-action-menu button { display:grid; grid-template-columns:16px minmax(0,1fr); align-items:center; column-gap:10px; min-height:38px; font-size:.875rem; font-weight:500; }.admin-account-action-menu .admin-line-icon { width:16px; height:16px; }.admin-account-action-menu__danger { color:var(--error)!important; }
 .admin-account-action-menu__success { color:#4c7048!important; }.admin-dropdown--up { top:auto!important; bottom:calc(100% + 6px)!important; }
-.admin-sidebar__logo { display: block; }.admin-sidebar__logo img { width: 86px; height: auto; }.admin-tabs { gap: 18px; padding-left: 28px; }.admin-tab { padding-inline: 4px; }.admin-filter-bar .admin-search-field + .admin-form-control { margin-left: auto; }
+.admin-sidebar__logo { display: block; }.admin-sidebar__logo img { width: 86px; height: auto; }.admin-tabs { gap: 18px; padding-left: 28px; }.admin-tab { padding-inline: 4px; }.admin-filter-bar .admin-filter-bar__actions { margin-left: auto; }
 .admin-page-header { display: block; margin: 0 0 30px; }.admin-page-header__title { margin: 0; font-size: clamp(2.5rem, 4vw, 3.25rem); font-weight: 600; }.admin-btn--approve { background: #A8B5A0; color: #fff; }.admin-btn--approve:hover { background: #879981; }.admin-btn--danger { background: var(--error); }.admin-btn--secondary { background: var(--terracotta); }.admin-btn--secondary:hover { background: var(--terracotta-h); }.admin-pagination--right { justify-content: flex-end; }
 .admin-card__footer { min-height: 64px; }.admin-card__footer .admin-pagination { margin-left: auto; }
 .admin-btn[data-modal="approve"] { background: #A8B5A0; color: #fff; }.admin-btn[data-modal="approve"]:hover { background: #879981; }
@@ -500,7 +509,7 @@ input:checked + .admin-sim-slider:before {
 .admin-table,
 .admin-modal,
 .admin-drawer {
-  font-family: "Playfair Display", Georgia, serif !important;
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
 }
 
 /* Monospace formatting for technical numbers and codes */
