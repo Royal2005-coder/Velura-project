@@ -37,7 +37,7 @@ export function escapeServiceHtml(value) {
 function icon(name) { return `<svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#${escapeServiceHtml(name)}"></use></svg>`; }
 function formatDate(value) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "-" : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
+  return Number.isNaN(date.getTime()) ? "-" : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(date);
 }
 function badge(value) { return `<span class="admin-badge admin-badge--${["completed", "resolved", "closed"].includes(value) ? "success" : value === "rejected" ? "danger" : "pending"}">${escapeServiceHtml(labels[value] || value || "-")}</span>`; }
 function empty(message) { return `<tr><td colspan="8"><div class="admin-order-empty"><strong>${escapeServiceHtml(message)}</strong></div></td></tr>`; }
@@ -104,10 +104,19 @@ function renderPaginationMarkup(totalItems, currentPage, type) {
 
 function renderReturns(rows = state.returns) {
   const query = (document.querySelector("[data-table-search='returns']")?.value || "").toLowerCase();
+  const typeFilter = document.querySelector("#return-type-filter")?.value || "";
+  const statusFilter = document.querySelector("#return-status-filter")?.value || "";
+
   const filtered = rows.filter((row) => {
     if (query) {
       const matchString = JSON.stringify(row).toLowerCase();
       if (!matchString.includes(query)) return false;
+    }
+    if (typeFilter && row.return_type !== typeFilter) {
+      return false;
+    }
+    if (statusFilter && row.status !== statusFilter) {
+      return false;
     }
     // Rule: Hide pending tickets older than 48 hours
     if (row.status === "pending") {
@@ -165,10 +174,19 @@ function renderReturns(rows = state.returns) {
 
 function renderTickets(rows = state.tickets) {
   const query = (document.querySelector("[data-table-search='support']")?.value || "").toLowerCase();
+  const typeFilter = document.querySelector("#ticket-type-filter")?.value || "";
+  const priorityFilter = document.querySelector("#ticket-priority-filter")?.value || "";
+
   const filtered = rows.filter((row) => {
     if (query) {
       const matchString = JSON.stringify(row).toLowerCase();
       if (!matchString.includes(query)) return false;
+    }
+    if (typeFilter && row.title !== typeFilter) {
+      return false;
+    }
+    if (priorityFilter && row.priority !== priorityFilter) {
+      return false;
     }
     return true;
   });
@@ -208,29 +226,6 @@ function renderTickets(rows = state.tickets) {
       ${renderPaginationMarkup(totalItems, state.ticketsPage, "tickets")}
     `;
   }
-}
-
-function renderLogs() {
-  const body = document.querySelector("#logs-body");
-  body.innerHTML = state.logs.length ? state.logs.map((row) => `<tr><td>${escapeServiceHtml(formatDate(row.timestamp))}</td><td>${escapeServiceHtml(row.module)}</td><td>${escapeServiceHtml(row.target_id)}</td><td>${escapeServiceHtml(row.actor_id || "system")}</td><td>${escapeServiceHtml(row.action)}</td><td>${escapeServiceHtml(JSON.stringify(row.old_value || {}))} -> ${escapeServiceHtml(JSON.stringify(row.new_value || {}))}</td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr>`).join("") : empty("Chưa có nhật ký phù hợp");
-}
-
-function updateKpis() {
-  const values = [
-    state.returns.filter((r) => r.status === "pending").length, 
-    state.tickets.filter((t) => ["open", "processing"].includes(t.status)).length, 
-    state.tickets.filter((t) => t.priority === "high").length, 
-    state.returns.filter((r) => r.status === "completed").length
-  ];
-  document.querySelectorAll(".admin-kpi-card__value").forEach((node, index) => { node.textContent = String(values[index] || 0); });
-  document.querySelectorAll("[data-zone] .admin-badge").forEach((node) => {
-    const zoneName = node.parentElement.dataset.zone;
-    if (zoneName === "returns") {
-      node.textContent = String(state.returns.length);
-    } else if (zoneName === "support") {
-      node.textContent = String(state.tickets.length);
-    }
-  });
 }
 
 function detail(type, id) {
@@ -663,6 +658,68 @@ async function submitAction(form) {
   await loadAll();
 }
 
+function updateKpis() {
+  const kpis = document.querySelectorAll(".admin-kpi-card__value");
+  if (kpis.length >= 4) {
+    const pendingReturns = state.returns.filter(r => r.status === "pending").length;
+    const pendingTickets = state.tickets.filter(t => !["resolved", "closed"].includes(t.status)).length;
+    
+    // Priority high: return pending + high priority open tickets
+    const highPriority = state.tickets.filter(t => t.priority === "high" && !["resolved", "closed"].includes(t.status)).length + pendingReturns;
+    
+    // Completed today: completed returns + resolved/closed tickets
+    const todayStr = new Date().toISOString().split("T")[0];
+    const completedToday = state.returns.filter(r => ["completed", "resolved"].includes(r.status)).length;
+
+    kpis[0].textContent = String(pendingReturns);
+    kpis[1].textContent = String(pendingTickets);
+    kpis[2].textContent = String(highPriority);
+    kpis[3].textContent = String(completedToday || 0);
+  }
+
+  // Also update tab badges
+  const returnsTabBadge = document.querySelector('[data-zone="returns"] .admin-badge');
+  if (returnsTabBadge) {
+    returnsTabBadge.textContent = String(state.returns.length);
+  }
+
+  const supportTabBadge = document.querySelector('[data-zone="support"] .admin-badge');
+  if (supportTabBadge) {
+    supportTabBadge.textContent = String(state.tickets.length);
+  }
+}
+
+function renderLogs(rows = state.logs) {
+  const query = (document.querySelector("[data-table-search='logs']")?.value || "").toLowerCase();
+  const filtered = rows.filter((row) => {
+    if (query) {
+      const matchString = JSON.stringify(row).toLowerCase();
+      if (!matchString.includes(query)) return false;
+    }
+    return true;
+  });
+
+  const body = document.querySelector("#logs-body");
+  if (!body) return;
+  body.innerHTML = filtered.length ? filtered.map((row) => {
+    const oldValue = row.old_value || {};
+    const newValue = row.new_value || {};
+    const statusText = (oldValue.status || newValue.status) 
+      ? `${escapeServiceHtml(oldValue.status || "—")} → ${escapeServiceHtml(newValue.status || "—")}`
+      : "—";
+
+    return `<tr>
+      <td>${escapeServiceHtml(formatDate(row.timestamp))}</td>
+      <td>${escapeServiceHtml(row.module || "CSKH")}</td>
+      <td><strong>${escapeServiceHtml(row.target_id || "—")}</strong></td>
+      <td>${escapeServiceHtml(row.actor_id || "Hệ thống")}<br><small>${escapeServiceHtml(row.actor_role || "")}</small></td>
+      <td>${escapeServiceHtml(row.action || "—")}</td>
+      <td>${statusText}</td>
+      <td><span class="admin-badge admin-badge--success">Thành công</span></td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="7"><div class="admin-empty-state">Không có nhật ký phù hợp</div></td></tr>`;
+}
+
 async function loadAll() {
   try {
     const [returnsResult, ticketsResult, logsResult, chatResult] = await Promise.all([
@@ -1063,12 +1120,29 @@ document.addEventListener("click", (event) => {
     }
   }
 
-  if (event.target.closest("[data-reset]")) {
-    document.querySelectorAll("[data-table-search]").forEach((input) => { input.value = ""; });
-    state.returnsPage = 1;
-    state.ticketsPage = 1;
-    renderReturns();
-    renderTickets();
+  const resetBtn = event.target.closest("[data-reset]");
+  if (resetBtn) {
+    const type = resetBtn.dataset.reset;
+    if (type === "returns" || !type) {
+      const input = document.querySelector("[data-table-search='returns']");
+      if (input) input.value = "";
+      const typeSel = document.querySelector("#return-type-filter");
+      if (typeSel) typeSel.value = "";
+      const statusSel = document.querySelector("#return-status-filter");
+      if (statusSel) statusSel.value = "";
+      state.returnsPage = 1;
+      renderReturns();
+    }
+    if (type === "support" || !type) {
+      const input = document.querySelector("[data-table-search='support']");
+      if (input) input.value = "";
+      const typeSel = document.querySelector("#ticket-type-filter");
+      if (typeSel) typeSel.value = "";
+      const prioritySel = document.querySelector("#ticket-priority-filter");
+      if (prioritySel) prioritySel.value = "";
+      state.ticketsPage = 1;
+      renderTickets();
+    }
   }
 
   const detailButton = event.target.closest("[data-service-detail]");
@@ -1113,7 +1187,30 @@ document.querySelectorAll("[data-table-search]").forEach((input) => input.addEve
     state.ticketsPage = 1;
     renderTickets();
   }
+  if (input.dataset.tableSearch === "logs") {
+    renderLogs();
+  }
 }));
+
+document.querySelectorAll("#return-type-filter, #return-status-filter").forEach((sel) => sel.addEventListener("change", () => {
+  state.returnsPage = 1;
+  renderReturns();
+}));
+
+document.querySelectorAll("#ticket-type-filter, #ticket-priority-filter").forEach((sel) => sel.addEventListener("change", () => {
+  state.ticketsPage = 1;
+  renderTickets();
+}));
+
+document.querySelector("#btn-filter-returns")?.addEventListener("click", () => {
+  state.returnsPage = 1;
+  renderReturns();
+});
+
+document.querySelector("#btn-filter-tickets")?.addEventListener("click", () => {
+  state.ticketsPage = 1;
+  renderTickets();
+});
 
 document.querySelector("[data-export]")?.addEventListener("click", () => {
   const rows = state.zone === "support" ? state.tickets : state.returns;
@@ -1122,13 +1219,62 @@ document.querySelector("[data-export]")?.addEventListener("click", () => {
   link.click(); URL.revokeObjectURL(link.href);
 });
 
-// Initial zone setup - default to chat
-document.querySelectorAll("[data-zone]").forEach((node) => node.classList.toggle("admin-tab--active", node.dataset.zone === "chat"));
+// Initial zone setup - parse URL hash or parameter
+let initialZone = "chat";
+if (location.hash === "#returns" || location.hash === "#returns-panel") {
+  initialZone = "returns";
+} else if (location.hash === "#support" || location.hash === "#support-panel") {
+  initialZone = "support";
+} else if (location.hash === "#logs" || location.hash === "#logs-panel") {
+  initialZone = "logs";
+} else {
+  const params = new URLSearchParams(location.search);
+  const zoneParam = params.get("zone");
+  if (["chat", "returns", "support", "logs"].includes(zoneParam)) {
+    initialZone = zoneParam;
+  }
+}
+
+state.zone = initialZone;
+
+document.querySelectorAll("[data-zone]").forEach((node) => node.classList.toggle("admin-tab--active", node.dataset.zone === initialZone));
 ["chat", "returns", "support", "logs"].forEach((name) => {
   const panel = document.querySelector(`#${name}-panel`);
-  if (panel) panel.hidden = name !== "chat";
+  if (panel) panel.hidden = name !== initialZone;
+});
+
+window.addEventListener("hashchange", () => {
+  let targetZone = "chat";
+  if (location.hash === "#returns" || location.hash === "#returns-panel") {
+    targetZone = "returns";
+  } else if (location.hash === "#support" || location.hash === "#support-panel") {
+    targetZone = "support";
+  } else if (location.hash === "#logs" || location.hash === "#logs-panel") {
+    targetZone = "logs";
+  }
+  
+  state.zone = targetZone;
+  state.returnsPage = 1;
+  state.ticketsPage = 1;
+  
+  const tabButton = document.querySelector(`[data-zone="${targetZone}"]`);
+  if (tabButton) {
+    document.querySelectorAll("[data-zone]").forEach((node) => node.classList.toggle("admin-tab--active", node === tabButton));
+  }
+  ["chat", "returns", "support", "logs"].forEach((name) => {
+    const panel = document.querySelector(`#${name}-panel`);
+    if (panel) panel.hidden = name !== targetZone;
+  });
+  
+  if (targetZone === "chat") {
+    startChatAutoRefresh();
+  } else {
+    stopChatAutoRefresh();
+  }
 });
 
 loadAll().then(() => {
-  startChatAutoRefresh();
+  if (initialZone === "chat") {
+    startChatAutoRefresh();
+  }
 });

@@ -11,7 +11,7 @@ export function escapePricingHtml(value) {
 }
 function icon(name) { return `<svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#${escapePricingHtml(name)}"></use></svg>`; }
 function money(value) { return Number(value || 0).toLocaleString("vi-VN") + "đ"; }
-function formatDate(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? "-" : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date); }
+function formatDate(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? "-" : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(date); }
 function discount(row) { const base = Number(row.base_price || 0); const sale = Number(row.sale_price ?? base); return base > sale && base > 0 ? Math.round((base - sale) * 100 / base) : 0; }
 function discountFromPrices(basePrice, salePrice) { return basePrice > salePrice && basePrice > 0 ? Math.round((basePrice - salePrice) * 100 / basePrice) : 0; }
 function pricePreviewMarkup(basePrice, salePrice) {

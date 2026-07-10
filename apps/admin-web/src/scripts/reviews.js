@@ -17,7 +17,7 @@ function icon(name) {
 
 function formatDate(value) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
+  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(date);
 }
 
 function stars(value) {
@@ -206,6 +206,14 @@ function toast(message, error = false) {
 function showError(error) { panel.innerHTML = `<div class="admin-order-empty">${icon("alert")}<strong>Không thể tải dữ liệu</strong><span>${escapeReviewHtml(error.message)}</span><button class="admin-btn admin-btn--secondary" data-review-retry>Thử lại</button></div>`; }
 
 document.addEventListener("click", (event) => {
+  const menuBtn = event.target.closest("[data-review-menu]");
+  const menuContent = event.target.closest(".admin-review-action-menu");
+  if (!menuBtn && !menuContent) {
+    document.querySelectorAll(".admin-review-action-menu").forEach((menu) => {
+      menu.hidden = true;
+    });
+  }
+
   const pageBtn = event.target.closest("[data-review-page]");
   if (pageBtn) {
     const page = Number(pageBtn.dataset.reviewPage);
@@ -225,7 +233,12 @@ document.addEventListener("click", (event) => {
   }
   if (button.dataset.reviewOpenLogs !== undefined) { state.active = "logs"; state.currentPage = 1; render(); }
   if (button.dataset.reviewSidebar !== undefined) document.querySelector(".admin-layout").classList.toggle("admin-layout--sidebar-collapsed");
-  if (button.dataset.reviewMenu) { document.querySelectorAll(".admin-review-action-menu").forEach((menu) => { menu.hidden = true; }); document.querySelector(`#review-menu-${CSS.escape(button.dataset.reviewMenu)}`).hidden = false; }
+  if (button.dataset.reviewMenu) {
+    const targetMenu = document.querySelector(`#review-menu-${CSS.escape(button.dataset.reviewMenu)}`);
+    const isCurrentlyHidden = targetMenu.hidden;
+    document.querySelectorAll(".admin-review-action-menu").forEach((menu) => { menu.hidden = true; });
+    targetMenu.hidden = !isCurrentlyHidden;
+  }
   if (button.dataset.reviewDetail) openDetail(button.dataset.reviewDetail);
   if (button.dataset.reviewAction) openAction(button.dataset.reviewAction, button.dataset.reviewId);
   if (button.dataset.reviewClose !== undefined) overlay.innerHTML = "";

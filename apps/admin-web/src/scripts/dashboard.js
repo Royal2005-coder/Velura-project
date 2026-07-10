@@ -36,6 +36,12 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
     return String(n);
   }
 
+  function escapeHtml(str) {
+    return String(str || "").replace(/[&<>'"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c];
+    });
+  }
+
   function updateDashboardUI(data) {
     loadError = false;
     var opsPanel = document.querySelector("#dashboard-operations");
@@ -53,15 +59,90 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
         kpis[4].querySelector("small").textContent = fmtNum(data.operations.urgentReviews) + " đánh giá tiêu cực";
       }
 
+      var alertCountBtn = opsPanel.querySelector("[data-dashboard-drawer='alerts']");
+      if (alertCountBtn) {
+        var totalAlerts = data.operations.openReturns + data.operations.paymentErrors + data.operations.lowStockProducts + data.operations.openSupportTickets;
+        alertCountBtn.textContent = "Xem tất cả " + totalAlerts;
+      }
+
       // Update alerts list on operations panel
       var alertList = opsPanel.querySelector(".dashboard-alert-list");
       if (alertList) {
         alertList.innerHTML = `
-          <article class="dashboard-alert dashboard-alert--critical"><span class="admin-badge admin-badge--danger dashboard-alert__level">Khẩn cấp</span><div><h4>${fmtNum(data.operations.openReturns)} phiếu đổi/trả cần xử lý</h4><p>Đổi trả &amp; CSKH · Tải trực tiếp từ Supabase</p></div><a href="./returns-cskh.html">Xem phiếu</a></article>
+          <article class="dashboard-alert dashboard-alert--critical"><span class="admin-badge admin-badge--danger dashboard-alert__level">Khẩn cấp</span><div><h4>${fmtNum(data.operations.openReturns)} phiếu đổi/trả cần xử lý</h4><p>Đổi trả &amp; CSKH · Tải trực tiếp từ Supabase</p></div><a href="./returns-cskh.html#returns">Xem phiếu</a></article>
           <article class="dashboard-alert dashboard-alert--critical"><span class="admin-badge admin-badge--danger dashboard-alert__level">Khẩn cấp</span><div><h4>${fmtNum(data.operations.paymentErrors)} đơn hàng thanh toán lỗi cần kiểm tra</h4><p>Quản lý đơn hàng · Cảnh báo hệ thống</p></div><a href="./orders.html">Kiểm tra</a></article>
           <article class="dashboard-alert dashboard-alert--high"><span class="admin-badge admin-badge--warning dashboard-alert__level">Cao</span><div><h4>${fmtNum(data.operations.lowStockProducts)} sản phẩm dưới mức tồn kho tối thiểu</h4><p>Sản phẩm &amp; tồn kho · Tồn kho thấp</p></div><a href="./products.html">Xem tồn kho</a></article>
-          <article class="dashboard-alert dashboard-alert--medium"><span class="admin-badge admin-badge--pending dashboard-alert__level">Trung bình</span><div><h4>${fmtNum(data.operations.openSupportTickets)} phiếu hỗ trợ khách hàng chờ phản hồi</h4><p>Đổi trả &amp; CSKH · Phiếu mới nhận</p></div><a href="./returns-cskh.html">Xem hỗ trợ</a></article>
+          <article class="dashboard-alert dashboard-alert--medium"><span class="admin-badge admin-badge--pending dashboard-alert__level">Trung bình</span><div><h4>${fmtNum(data.operations.openSupportTickets)} phiếu hỗ trợ khách hàng chờ phản hồi</h4><p>Đổi trả &amp; CSKH · Phiếu mới nhận</p></div><a href="./returns-cskh.html#support">Xem hỗ trợ</a></article>
         `;
+      }
+
+      // Update dynamic tasks list
+      var taskList = opsPanel.querySelector(".dashboard-task-list");
+      var taskCount = opsPanel.querySelector(".dashboard-action-queue .dashboard-section__count");
+      if (taskList) {
+        var tasks = [
+          {
+            index: "01",
+            title: `Duyệt ${fmtNum(data.operations.openReturns)} phiếu đổi/trả cần xử lý`,
+            desc: "Đổi trả & CSKH · Hạn trong tuần này",
+            badge: "Cao",
+            badgeClass: "admin-badge--danger",
+            link: "./returns-cskh.html#returns"
+          },
+          {
+            index: "02",
+            title: `Kiểm tra ${fmtNum(data.operations.paymentErrors)} đơn thanh toán lỗi`,
+            desc: "Quản lý đơn hàng · Cảnh báo hệ thống",
+            badge: "Cao",
+            badgeClass: "admin-badge--danger",
+            link: "./orders.html"
+          },
+          {
+            index: "03",
+            title: `Phản hồi ${fmtNum(data.operations.urgentReviews)} đánh giá tiêu cực`,
+            desc: "Quản lý đánh giá · Trong hôm nay",
+            badge: "Vừa",
+            badgeClass: "admin-badge--warning",
+            link: "./reviews.html"
+          },
+          {
+            index: "04",
+            title: `Bổ sung tồn kho cho ${fmtNum(data.operations.lowStockProducts)} sản phẩm`,
+            desc: "Quản lý sản phẩm · Tồn kho thấp",
+            badge: "Vừa",
+            badgeClass: "admin-badge--warning",
+            link: "./products.html"
+          }
+        ];
+        taskList.innerHTML = tasks.map(t => `
+          <a href="${t.link}"><span class="dashboard-task__index">${t.index}</span><div><strong>${t.title}</strong><small>${t.desc}</small></div><span class="admin-badge ${t.badgeClass}">${t.badge}</span></a>
+        `).join("");
+        if (taskCount) {
+          taskCount.textContent = tasks.length + " việc";
+        }
+      }
+
+      // Update recent activity timeline
+      var timeline = opsPanel.querySelector(".dashboard-timeline");
+      if (timeline && data.recentLogs) {
+        timeline.innerHTML = data.recentLogs.slice(0, 5).map(log => {
+          var date = new Date(log.timestamp);
+          var timeStr = date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
+          var actor = log.actor_id || "Hệ thống";
+          var action = log.action || "Thao tác hệ thống";
+          var moduleName = log.module || "Hệ thống";
+          return `
+            <article>
+              <time>${timeStr}</time>
+              <span></span>
+              <div>
+                <strong>${escapeHtml(actor)}</strong>
+                <p>${escapeHtml(action)}</p>
+                <small>${escapeHtml(moduleName)} · Thành công</small>
+              </div>
+            </article>
+          `;
+        }).join("");
       }
     }
 
@@ -77,6 +158,48 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
         kpis[3].querySelector("strong").textContent = (data.business.completionRate ?? 100) + "%";
 
         kpis[4].querySelector("strong").textContent = fmtMoney(data.business.promotionBudgetUsed);
+      }
+
+      // Update best categories ranking
+      var rankingContainer = busPanel.querySelector(".dashboard-ranking");
+      if (rankingContainer && data.business.categoryContributions) {
+        rankingContainer.innerHTML = data.business.categoryContributions.map(cat => `
+          <div>
+            <span>${escapeHtml(cat.name)}</span>
+            <i style="--pct: ${cat.pct}%"><b style="width: ${cat.pct}%"></b></i>
+            <strong>${fmtMoney(cat.revenue)} <small>${cat.pct}%</small></strong>
+          </div>
+        `).join("");
+      }
+
+      // Update best selling products
+      var productsContainer = busPanel.querySelector(".dashboard-products");
+      if (productsContainer && data.business.bestSellers) {
+        productsContainer.innerHTML = data.business.bestSellers.map((prod, index) => {
+          var num = String(index + 1).padStart(2, "0");
+          return `
+            <article>
+              <span>${num}</span>
+              <div>
+                <strong>${escapeHtml(prod.name)}</strong>
+                <small>${escapeHtml(prod.sku)} · ${fmtNum(prod.qty)} đã bán</small>
+              </div>
+              <b>${fmtMoney(prod.revenue)}</b>
+              <em class="admin-badge admin-badge--${prod.statusClass}">${escapeHtml(prod.stockStatus)}</em>
+            </article>
+          `;
+        }).join("");
+      }
+
+      // Update promotion impact stats
+      var promoStats = busPanel.querySelector(".dashboard-impact-stats");
+      if (promoStats) {
+        promoStats.innerHTML = `
+          <div><small>Đơn có khuyến mãi</small><strong>${fmtNum(data.business.promoOrdersCount)}</strong></div>
+          <div><small>Tổng giá trị giảm</small><strong>${fmtMoney(data.business.totalDiscount)}</strong></div>
+          <div><small>Campaign tốt nhất</small><strong>${escapeHtml(data.business.bestCampaign)}</strong></div>
+          <div><small>Voucher dùng nhiều</small><strong>${escapeHtml(data.business.mostUsedVoucher)}</strong></div>
+        `;
       }
     }
   }

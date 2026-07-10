@@ -111,6 +111,9 @@ Hệ thống đã triển khai đầy đủ, tối ưu hóa thiết kế theo ch
 - **Stock Adjustment Modal Verification**:
   - Inspected the stock adjustment form fields (`delta`, `lowStockThreshold`, `reason`) and modal overlay elements in [products.html](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/admin-web/src/pages/admin/products.html) and [products.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/admin-web/src/scripts/products.js).
   - Confirmed that form validation (e.g. `minlength="10"` on `reason` and non-zero `delta` requirements) matches the database function expectations.
+  - Resolved the label discrepancy where the selling status modal's submit button remained hardcoded to "Xác nhận tạm ẩn" regardless of selection. Added an event listener in [products.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/admin-web/src/scripts/products.js) to dynamically update the submit button text matching the active selected radio (e.g. "Xác nhận hết hàng", "Xác nhận ngừng kinh doanh").
+  - Ensured product catalog status automatic alignment triggers on both initial creation and regular edit updates inside [product-service.js](file:///c:/Users/ADMIN/Downloads/Velura-Images/apps/api/src/products/product-service.js) when variant stock is updated via the form.
   - Verified the complete suite of 103 API and service tests passes successfully.
+
 
 

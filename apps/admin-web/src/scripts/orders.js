@@ -35,7 +35,7 @@ function money(value) {
 
 function dateTime(value) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(date);
+  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(date);
 }
 
 function badge(value, kind = "order") {
@@ -287,6 +287,14 @@ function showToast(message, isError = false) {
 }
 
 document.addEventListener("click", (event) => {
+  const menuBtn = event.target.closest("[data-order-menu]");
+  const menuContent = event.target.closest(".admin-order-action-menu");
+  if (!menuBtn && !menuContent) {
+    document.querySelectorAll(".admin-order-action-menu").forEach((menu) => {
+      menu.hidden = true;
+    });
+  }
+
   const pageBtn = event.target.closest("[data-order-page]");
   if (pageBtn) {
     const page = Number(pageBtn.dataset.orderPage);
@@ -307,7 +315,12 @@ document.addEventListener("click", (event) => {
   }
   if (button.dataset.orderOpenLogs !== undefined) { state.active = "logs"; state.currentPage = 1; render(); }
   if (button.dataset.orderSidebar !== undefined) document.querySelector(".admin-layout").classList.toggle("admin-layout--sidebar-collapsed");
-  if (button.dataset.orderMenu) { document.querySelectorAll(".admin-order-action-menu").forEach((menu) => { menu.hidden = true; }); document.querySelector(`#order-menu-${CSS.escape(button.dataset.orderMenu)}`).hidden = false; }
+  if (button.dataset.orderMenu) {
+    const targetMenu = document.querySelector(`#order-menu-${CSS.escape(button.dataset.orderMenu)}`);
+    const isCurrentlyHidden = targetMenu.hidden;
+    document.querySelectorAll(".admin-order-action-menu").forEach((menu) => { menu.hidden = true; });
+    targetMenu.hidden = !isCurrentlyHidden;
+  }
   if (button.dataset.orderDetail) openDetail(button.dataset.orderDetail);
   if (button.dataset.orderAction) openAction(button.dataset.orderAction, button.dataset.orderId);
   if (button.dataset.orderClose !== undefined) overlay.innerHTML = "";

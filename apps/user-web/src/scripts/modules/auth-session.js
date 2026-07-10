@@ -23,10 +23,18 @@ export function storeAuthSession({ token, user }) {
   localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(normalizedUser));
   localStorage.setItem(STORAGE_KEYS.role, normalizedUser.role);
   localStorage.setItem(STORAGE_KEYS.userId, String(normalizedUser.user_id));
+
+  // Clear chatbot session state to force clean loading of member sessions
+  localStorage.removeItem("velura_chat_session_id");
+  localStorage.removeItem("chatbotStateMode");
 }
 
 export function clearAuthSession() {
   Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+  // Clear chatbot session state and guest identifier to prevent session leakage
+  localStorage.removeItem("velura_chat_session_id");
+  localStorage.removeItem("velura_chat_guest_id");
+  localStorage.removeItem("chatbotStateMode");
 }
 
 export function isTokenExpired(token) {

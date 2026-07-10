@@ -60,7 +60,7 @@ function date(value) {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime())
     ? "-"
-    : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(parsed);
+    : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(parsed);
 }
 
 function isRecent(value, days = 30) {
@@ -183,11 +183,6 @@ function filterBar() {
         <option value="active">Đang hoạt động</option>
         <option value="locked">Bị khóa</option>
       </select>
-      <select class="admin-form-control" name="verified" aria-label="Lọc xác thực">
-        <option value="">Tất cả xác thực</option>
-        <option value="true">Đã xác thực</option>
-        <option value="false">Chưa xác thực</option>
-      </select>
       <div class="admin-filter-bar__actions">
         <button class="admin-btn admin-btn--filter admin-btn--sm">Lọc</button>
         <button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button>
@@ -198,7 +193,6 @@ function filterBar() {
 
 function memberSummary() {
   const rows = state.filtered.filter((row) => accountGroup(row) === "members");
-  const verified = rows.filter((row) => row.is_verified).length;
   const active = rows.filter((row) => row.is_active).length;
   const recent = rows.filter((row) => isRecent(row.created_at, 30)).length;
   return `
@@ -206,10 +200,6 @@ function memberSummary() {
       <article>
         <span>Tổng member</span>
         <strong>${rows.length}</strong>
-      </article>
-      <article>
-        <span>Đã xác thực</span>
-        <strong>${verified}</strong>
       </article>
       <article>
         <span>Đang hoạt động</span>
@@ -227,8 +217,6 @@ function memberCommandCenter() {
   const members = state.accounts.filter((row) => accountGroup(row) === "members");
   const admins = state.accounts.filter((row) => accountGroup(row) === "admins");
   const activeMembers = members.filter((row) => row.is_active).length;
-  const verifiedMembers = members.filter((row) => row.is_verified).length;
-  const verifiedRate = members.length ? Math.round((verifiedMembers / members.length) * 100) : 0;
   const lockedMembers = members.filter((row) => !row.is_active).length;
   const pendingRequests = state.requests.filter((row) => row.status === "pending").length;
 
@@ -237,18 +225,13 @@ function memberCommandCenter() {
       <div class="admin-member-command__copy">
         <span class="admin-member-command__eyebrow">Trung tâm member</span>
         <h2>Quản lý tài khoản member</h2>
-        <p>Theo dõi xác thực, trạng thái khóa và phân quyền từ cùng một màn hình để chăm sóc khách hàng nhanh hơn.</p>
+        <p>Theo dõi trạng thái khóa và phân quyền từ cùng một màn hình để chăm sóc khách hàng nhanh hơn.</p>
       </div>
       <div class="admin-member-command__metrics">
         <article>
           <span>Member hoạt động</span>
           <strong>${activeMembers}</strong>
           <small>${members.length} tổng member</small>
-        </article>
-        <article>
-          <span>Tỷ lệ xác thực</span>
-          <strong>${verifiedRate}%</strong>
-          <small>${verifiedMembers} tài khoản đã xác thực</small>
         </article>
         <article>
           <span>Cần chú ý</span>
@@ -289,7 +272,6 @@ function accountTable() {
           <tr>
             <th>Tài khoản</th>
             <th>Nhóm</th>
-            <th>Xác thực</th>
             <th>Trạng thái</th>
             <th>Đăng nhập gần nhất</th>
             <th>Thao tác</th>
@@ -311,7 +293,6 @@ function accountTable() {
                 ${badge(row.role === "admin" ? "admin" : "member")}
                 <small class="admin-member-role">${escapeHtml(accountRoleText(row))}</small>
               </td>
-              <td>${badge(row.is_verified ? "verified" : "unverified")}</td>
               <td>${badge(status(row))}</td>
               <td>${escapeHtml(date(row.last_login_at))}</td>
               <td>
@@ -522,7 +503,6 @@ function detail(id) {
         <dl class="admin-data-list">
           ${dataRow("Vai trò tài khoản", row.role)}
           ${dataRow("Vai trò quản trị", row.admin_role || "member")}
-          ${dataRow("Xác thực", row.is_verified ? "Đã xác thực" : "Chưa xác thực")}
           ${dataRow("Trạng thái", row.is_active ? "Đang hoạt động" : "Bị khóa")}
           ${dataRow("Loại khóa", row.lock_type)}
           ${dataRow("Lý do khóa", row.lock_reason)}

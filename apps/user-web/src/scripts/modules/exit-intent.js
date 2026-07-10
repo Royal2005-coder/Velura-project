@@ -9,21 +9,22 @@ export function initExitIntentPopup() {
       const cart = JSON.parse(localStorage.getItem("velura_cart") || "[]");
       const wishlist = JSON.parse(localStorage.getItem("velura_guest_wishlist") || "[]");
       const hasQuiz = localStorage.getItem("velura_guest_quiz_completed") === "true";
+      const hasChat = !!localStorage.getItem("velura_chat_session_id");
 
-      if (cart.length === 0 && wishlist.length === 0 && !hasQuiz) return;
+      if (cart.length === 0 && wishlist.length === 0 && !hasQuiz && !hasChat) return;
 
       // Smart Throttling: Only show if the data state has changed since the last popup
-      const currentState = `${cart.length}_${wishlist.length}_${hasQuiz}`;
+      const currentState = `${cart.length}_${wishlist.length}_${hasQuiz}_${hasChat}`;
       const lastShownState = sessionStorage.getItem("velura_exit_intent_last_state");
       
       if (currentState === lastShownState) return;
       if (document.getElementById("exit-intent-modal")) return;
 
-      showPopup(cart, wishlist, hasQuiz, currentState);
+      showPopup(cart, wishlist, hasQuiz, hasChat, currentState);
     }
   };
 
-  const showPopup = (cart, wishlist, hasQuiz, currentState) => {
+  const showPopup = (cart, wishlist, hasQuiz, hasChat, currentState) => {
     // Record this state so we don't spam the user until they add more items
     sessionStorage.setItem("velura_exit_intent_last_state", currentState);
     
@@ -31,6 +32,7 @@ export function initExitIntentPopup() {
     if (cart.length > 0) itemsToLose.push(`giỏ hàng <strong>(${cart.length} món)</strong>`);
     if (wishlist.length > 0) itemsToLose.push(`yêu thích <strong>(${wishlist.length} món)</strong>`);
     if (hasQuiz) itemsToLose.push(`<strong>kết quả Style Quiz</strong>`);
+    if (hasChat) itemsToLose.push(`<strong>lịch sử chat tư vấn AI</strong>`);
     const loseText = itemsToLose.join(', ');
 
     const modalHtml = `

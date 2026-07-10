@@ -655,10 +655,14 @@ async function requireOwnedSession(repository, sessionId, actor) {
   if (!session || !session.is_active) {
     throw new HttpError(404, "CHAT_SESSION_NOT_FOUND", "Chat session not found");
   }
-  const profileMatches = actor.profileUserId && session.profile_user_id === actor.profileUserId;
-  const guestMatches = actor.guestId && String(session.guest_id || "") === actor.guestId;
-  if (!profileMatches && !guestMatches) {
-    throw new HttpError(403, "CHAT_SESSION_FORBIDDEN", "This chat session belongs to another visitor");
+  if (session.profile_user_id) {
+    if (!actor.profileUserId || session.profile_user_id !== actor.profileUserId) {
+      throw new HttpError(403, "CHAT_SESSION_FORBIDDEN", "This chat session belongs to another user");
+    }
+  } else {
+    if (!actor.guestId || String(session.guest_id || "") !== actor.guestId) {
+      throw new HttpError(403, "CHAT_SESSION_FORBIDDEN", "This chat session belongs to another visitor");
+    }
   }
   return session;
 }
