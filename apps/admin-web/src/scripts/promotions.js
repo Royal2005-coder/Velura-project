@@ -11,7 +11,7 @@ export function escapePromotionHtml(value) {
 }
 function icon(name) { return `<svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#${escapePromotionHtml(name)}"></use></svg>`; }
 function money(value) { return Number(value || 0).toLocaleString("vi-VN") + "đ"; }
-function date(value) { const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? "-" : new Intl.DateTimeFormat("vi-VN").format(parsed); }
+function date(value) { const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? "-" : new Intl.DateTimeFormat("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }).format(parsed); }
 function badge(active) { return `<span class="admin-badge admin-badge--${active ? "success" : "warning"}">${active ? "Đang hoạt động" : "Tạm dừng"}</span>`; }
 function progressBar(used, total) {
   const pct = total > 0 ? Math.min(Math.round(used * 100 / total), 100) : 0;

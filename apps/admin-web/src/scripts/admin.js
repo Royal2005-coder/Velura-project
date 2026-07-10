@@ -60,7 +60,7 @@ function date(value) {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime())
     ? "-"
-    : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(parsed);
+    : new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(parsed);
 }
 
 function isRecent(value, days = 30) {
