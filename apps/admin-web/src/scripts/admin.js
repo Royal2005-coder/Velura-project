@@ -57,6 +57,7 @@ function initials(row) {
 }
 
 function date(value) {
+  if (!value) return "-";
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime())
     ? "-"
