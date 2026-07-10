@@ -210,24 +210,59 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
       // Update recent activity timeline
       var timeline = opsPanel.querySelector(".dashboard-timeline");
       if (timeline && data.recentLogs) {
-        timeline.innerHTML = data.recentLogs.slice(0, 5).map(log => {
-          var date = new Date(log.timestamp);
-          var timeStr = date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
-          var actor = log.actor_id || "Hệ thống";
-          var action = log.action || "Thao tác hệ thống";
-          var moduleName = log.module || "Hệ thống";
-          return `
-            <article>
-              <time>${timeStr}</time>
-              <span></span>
-              <div>
-                <strong>${escapeHtml(actor)}</strong>
-                <p>${escapeHtml(action)}</p>
-                <small>${escapeHtml(moduleName)} · Thành công</small>
-              </div>
-            </article>
+        if (data.recentLogs.length === 0) {
+          timeline.innerHTML = `
+            <div style="padding: 24px; text-align: center; color: var(--muted); font-size: 0.85rem;">
+              Chưa có hoạt động gần đây
+            </div>
           `;
-        }).join("");
+        } else {
+          timeline.innerHTML = data.recentLogs.slice(0, 5).map(log => {
+            var date = new Date(log.timestamp);
+            var timeStr = date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
+            var actor = log.actor_name || log.actor_id || "Hệ thống";
+            
+            var actionVerb = "";
+            if (log.action === "create") actionVerb = "Tạo mới";
+            else if (log.action === "update") actionVerb = "Cập nhật";
+            else if (log.action === "delete") actionVerb = "Xóa";
+            else if (log.action === "approve") actionVerb = "Duyệt";
+            else if (log.action === "reject") actionVerb = "Từ chối";
+            else actionVerb = log.action || "Thao tác";
+
+            var targetModule = "";
+            if (log.module === "orders") targetModule = "đơn hàng";
+            else if (log.module === "product" || log.module === "products") targetModule = "sản phẩm";
+            else if (log.module === "reviews") targetModule = "đánh giá";
+            else if (log.module === "accounts") targetModule = "tài khoản";
+            else if (log.module === "returns" || log.module === "return_exchange") targetModule = "yêu cầu đổi trả";
+            else targetModule = log.module || "";
+
+            var desc = actionVerb + " " + targetModule;
+            if (log.target_id) {
+              desc += " #" + log.target_id.slice(0, 8);
+            }
+
+            var moduleLabel = "Hệ thống";
+            if (log.module === "orders") moduleLabel = "Đơn hàng";
+            else if (log.module === "product" || log.module === "products") moduleLabel = "Sản phẩm";
+            else if (log.module === "reviews") moduleLabel = "Đánh giá";
+            else if (log.module === "accounts") moduleLabel = "Tài khoản";
+            else if (log.module === "returns" || log.module === "return_exchange") moduleLabel = "Đổi trả & CSKH";
+
+            return `
+              <article>
+                <time>${timeStr}</time>
+                <span></span>
+                <div>
+                  <strong>${escapeHtml(actor)}</strong>
+                  <p>${escapeHtml(desc)}</p>
+                  <small>${escapeHtml(moduleLabel)} · Thành công</small>
+                </div>
+              </article>
+            `;
+          }).join("");
+        }
       }
     }
 
