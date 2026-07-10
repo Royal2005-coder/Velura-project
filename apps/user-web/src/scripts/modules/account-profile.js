@@ -1492,10 +1492,8 @@ function initSettingsAndStyleActions() {
           }
           
           const budgetTranslations = {
-            "under_300k": "Dưới 300.000đ", "under_500k": "Dưới 500.000đ",
-            "300k_700k": "300.000đ – 700.000đ", "500k_1.5m": "500.000đ – 1.500.000đ",
-            "700k_1.5m": "700.000đ – 1.500.000đ", "1.5m_3m": "1.500.000đ – 3.000.000đ",
-            "above_1.5m": "Trên 1.500.000đ", "above_3m": "Trên 3.000.000đ"
+            "under_300k": "Dưới 300.000đ", "300k_700k": "300.000đ – 700.000đ",
+            "700k_1.5m": "700.000đ – 1.500.000đ", "above_1.5m": "Trên 1.500.000đ"
           };
           const budgetEl = document.getElementById("js-style-budget");
           if (budgetEl) budgetEl.textContent = budgetTranslations[q.budget_range] || q.budget_range || 'Chưa cập nhật';

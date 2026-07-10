@@ -656,14 +656,14 @@ export function initStyleQuiz() {
 
     const occasions = sessionStorage.getItem("quiz-context") ? [sessionStorage.getItem("quiz-context")] : [];
     
-    let budget_range = sessionStorage.getItem("quiz-budget") || "500k_1.5m";
+    let budget_range = sessionStorage.getItem("quiz-budget") || "300k_700k";
     const budgetText = budget_range;
-    if (budgetText.includes("Dưới 500") || budgetText.includes("D\u01b0\u1edbi 500")) budget_range = "under_500k";
-    else if (budgetText.includes("500") && budgetText.includes("1.500")) budget_range = "500k_1.5m";
-    else if (budgetText.includes("1.500") && budgetText.includes("3.000")) budget_range = "1.5m_3m";
-    else if (budgetText.includes("Trên 3") || budgetText.includes("Tr\u00ean 3") || budgetText.includes("3.000")) budget_range = "above_3m";
-    else if (!['under_300k', '300k_700k', '700k_1.5m', 'above_1.5m', 'under_500k', '500k_1.5m', '1.5m_3m', 'above_3m'].includes(budget_range)) {
-      budget_range = "500k_1.5m";
+    if (budgetText.includes("Dưới 500") || budgetText.includes("D\u01b0\u1edbi 500")) budget_range = "under_300k";
+    else if (budgetText.includes("500") && budgetText.includes("1.500")) budget_range = "300k_700k";
+    else if (budgetText.includes("1.500") && budgetText.includes("3.000")) budget_range = "700k_1.5m";
+    else if (budgetText.includes("Trên 3") || budgetText.includes("Tr\u00ean 3") || budgetText.includes("3.000")) budget_range = "above_1.5m";
+    else if (!['under_300k', '300k_700k', '700k_1.5m', 'above_1.5m'].includes(budget_range)) {
+      budget_range = "300k_700k";
     }
 
     window.quizSubmittedRedirect = true;
