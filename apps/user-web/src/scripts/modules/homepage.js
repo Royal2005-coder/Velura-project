@@ -169,54 +169,119 @@ export function initHomepage() {
 
     const iconMap = {
       ao: `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18.6 5.8l-3.2-1C14.7 6.1 13.5 7 12 7S9.3 6.1 8.6 4.8l-3.2 1c-.8.2-1.4 1-1.4 1.8v3.6c0 .8.6 1.4 1.4 1.4h1.7V20c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V12.6h1.7c.8 0 1.4-.6 1.4-1.4V7.6c-.1-.8-.7-1.6-1.5-1.8z" />
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" stroke="#C97B63" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Áo blouse cổ tròn nữ -->
+          <path d="M19 6c0 0-2 2-5 3L7 12l3 8h4v22h24V20h4l3-8-7-3c-3-1-5-3-5-3"/>
+          <path d="M19 6c1.5 2.5 3.5 4 7 4s5.5-1.5 7-4"/>
+          <!-- Đường kẻ ngang ngực -->
+          <line x1="14" y1="26" x2="38" y2="26"/>
+          <line x1="14" y1="32" x2="38" y2="32"/>
         </svg>
       `,
       quan: `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 2v20h4V10h4v12h4V2H6z" />
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" stroke="#C97B63" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Quần short lưng cao -->
+          <rect x="9" y="10" width="34" height="7" rx="2"/>
+          <path d="M9 17l4 23h11l2-10 2 10h11l4-23"/>
+          <!-- Dây rút -->
+          <line x1="22" y1="10" x2="22" y2="7"/>
+          <line x1="30" y1="10" x2="30" y2="7"/>
+          <circle cx="22" cy="6" r="1.5"/>
+          <circle cx="30" cy="6" r="1.5"/>
+          <!-- Đường chi tiết -->
+          <line x1="9" y1="21" x2="43" y2="21"/>
         </svg>
       `,
       "dam-vay": `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2L4 22h16L12 2z M8 12h8" />
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" stroke="#C97B63" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Đầm váy dây 2 bên -->
+          <path d="M20 6h12"/>
+          <!-- Dây váy 2 bên -->
+          <line x1="20" y1="6" x2="17" y2="3"/>
+          <line x1="32" y1="6" x2="35" y2="3"/>
+          <!-- Thân váy trên -->
+          <path d="M16 6h20v14H16z"/>
+          <!-- Phần váy xoè -->
+          <path d="M16 20 L6 48 h40 L36 20"/>
+          <!-- Đường eo -->
+          <line x1="14" y1="20" x2="38" y2="20"/>
         </svg>
       `,
       "ao-khoac": `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20.5 5.5L12 2 3.5 5.5V11c0 5.5 8.5 11 8.5 11s8.5-5.5 8.5-11V5.5z" />
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" stroke="#C97B63" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Áo khoác cardigan dài -->
+          <path d="M19 5c0 0-2 2-6 3.5L7 12v30h12V20h10v22h12V12l-6-3.5C31 7 29 5 29 5"/>
+          <path d="M19 5c1.5 2 3.5 3 7 3s5.5-1 7-3"/>
+          <!-- Đường giữa áo khoác -->
+          <line x1="26" y1="20" x2="26" y2="42"/>
+          <!-- Túi -->
+          <rect x="11" y="30" width="6" height="8" rx="1"/>
+          <rect x="35" y="30" width="6" height="8" rx="1"/>
+          <!-- Cổ áo chữ V -->
+          <path d="M19 5 L26 18 L33 5"/>
         </svg>
       `,
       "set-do": `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2a3 3 0 0 0-3 3h6a3 3 0 0 0-3-3z M2 8h20v4H2z M5 12h14v8H5z" />
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" stroke="#C97B63" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Áo crop top -->
+          <path d="M17 5c0 0-1.5 1.5-4 2.5L8 10l2 7h4v6h24v-6h4l2-7-5-2.5C33 6.5 31 5 31 5"/>
+          <path d="M17 5c1.5 2 3.5 3 9 3s7.5-1 9-3"/>
+          <!-- Quần cao eo -->
+          <rect x="9" y="25" width="34" height="6" rx="2"/>
+          <path d="M9 31l4 18h11l2-8 2 8h11l4-18"/>
         </svg>
       `,
       "phu-kien": `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="7" />
-          <polyline points="12 9 12 12 14 12" />
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" stroke="#C97B63" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Nơ bướm -->
+          <path d="M26 26 C26 26 14 18 8 22 C4 25 8 30 14 28 C20 26 26 26 26 26"/>
+          <path d="M26 26 C26 26 38 18 44 22 C48 25 44 30 38 28 C32 26 26 26 26 26"/>
+          <path d="M26 26 C26 26 14 34 8 30 C4 27 8 22 14 24 C20 26 26 26 26 26"/>
+          <path d="M26 26 C26 26 38 34 44 30 C48 27 44 22 38 24 C32 26 26 26 26 26"/>
+          <!-- Nút giữa nơ -->
+          <circle cx="26" cy="26" r="3"/>
         </svg>
       `,
       "giay-dep": `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 18l3-3h12l3 3H3z M4 11h16v4H4z" />
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" stroke="#C97B63" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Giày boots -->
+          <path d="M14 10 L14 32 Q14 36 10 38 L8 44 h30 l-2-6 Q34 36 34 32 L34 24"/>
+          <!-- Phần mũi giày -->
+          <path d="M34 32 Q38 33 40 36 L42 44"/>
+          <!-- Dây giày -->
+          <line x1="14" y1="16" x2="34" y2="16"/>
+          <line x1="14" y1="21" x2="34" y2="21"/>
+          <line x1="14" y1="26" x2="34" y2="26"/>
+          <!-- Lưỡi giày -->
+          <path d="M14 10 h20 v6 Q28 18 26 16 Q22 18 20 16 Q18 18 16 16 Q14 16 14 14z"/>
+          <!-- Đế giày -->
+          <path d="M6 44 h40 Q47 47 44 48 H8 Q5 47 6 44z"/>
         </svg>
       `
     };
 
+    const categoryImageMap = {
+      ao: "/src/assets/images/category-icons/icon-ao.png",
+      quan: "/src/assets/images/category-icons/icon-quan.png",
+      "dam-vay": "/src/assets/images/category-icons/icon-dam-vay.png",
+      "ao-khoac": "/src/assets/images/category-icons/icon-ao-khoac.png",
+      "set-do": "/src/assets/images/category-icons/icon-set-do.png",
+      "phu-kien": "/src/assets/images/category-icons/icon-phu-kien.png",
+      "giay-dep": "/src/assets/images/category-icons/icon-giay-dep.png"
+    };
+
     categoriesGrid.innerHTML = categories.map(c => {
       const iconHtml = iconMap[c.slug] || `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none" stroke="#C97B63" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M26 6L6 17l20 10 20-10-20-11zM6 37l20 10 20-10M6 27l20 10 20-10"/>
         </svg>
       `;
+      const iconSrc = categoryImageMap[c.slug] || categoryImageMap.ao;
 
       return `
         <a href="/src/pages/products/list.html?category=${c.slug}" class="category-card">
           <div class="category-card__icon">
-            ${iconHtml}
+            <img src="${iconSrc}" alt="${c.name}" class="category-card__icon-img" loading="lazy" />
           </div>
           <span class="category-card__name">${c.name}</span>
           <span class="category-card__count">${c.product_count || 0} sản phẩm</span>
@@ -229,6 +294,7 @@ export function initHomepage() {
       scrollRatio: 0.75
     });
   }
+
 
   // Render featured products
   function renderProducts(products) {

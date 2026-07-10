@@ -204,10 +204,11 @@
 .header-col--right {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 20px;
-  padding: 16px;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 8px 16px 16px;
   border: none;
+  margin-top: -6px;
   /* No vertical borders! */
 }
 
@@ -387,6 +388,7 @@
     padding: 0;
     justify-content: flex-end;
     gap: 8px;
+    margin-top: 0;
   }
 
   .btn-label {

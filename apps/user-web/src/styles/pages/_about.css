@@ -233,11 +233,14 @@
   color: var(--terracotta, #c97b63);
 }
 
-.value-card__icon {
-  width: 24px;
-  height: 24px;
+.value-card__icon-wrapper svg {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
   stroke: currentColor;
+  fill: none;
 }
+
 
 .value-card__title {
   margin: 0 0 12px;
@@ -255,6 +258,51 @@
   font-size: 0.92rem;
   line-height: 1.65;
 }
+
+/* Background image variant */
+.value-card--bg {
+  position: relative;
+  overflow: hidden;
+  border: none !important;
+}
+
+.value-card--bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.value-card--bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+.value-card--bg .value-card__icon-wrapper {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.value-card--bg .value-card__title {
+  color: #ffffff !important;
+}
+
+.value-card--bg .value-card__desc {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.value-card--bg:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
+}
+
+
 
 /* ============================================================
    Section 5: Đội ngũ sáng tạo (Creative Team)
