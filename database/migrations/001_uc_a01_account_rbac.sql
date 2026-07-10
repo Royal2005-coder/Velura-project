@@ -866,10 +866,6 @@ begin
   end if;
 
   if p_decision = 'approve' then
-    if v_target.version <> v_request.target_version then
-      raise sqlstate 'PT409' using message = 'TARGET_VERSION_CONFLICT';
-    end if;
-
     select * into v_typed
     from jsonb_populate_record(
       null::public.users,
@@ -882,7 +878,7 @@ begin
         version = version + 1,
         updated_at = now()
     where user_id = v_target.user_id
-      and version = v_request.target_version
+      and version = v_target.version
     returning * into v_after;
 
     if v_after.user_id is null then
