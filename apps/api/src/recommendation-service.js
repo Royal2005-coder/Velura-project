@@ -316,6 +316,12 @@ function normalizeProduct(product) {
 }
 
 function buildProfileEmbeddingText(quiz, profile) {
+  const budgetDisplay = {
+    "under_300k": "Dưới 300k", "under_500k": "Dưới 500k",
+    "300k_700k": "300k – 700k", "500k_1.5m": "500k – 1.5 triệu",
+    "700k_1.5m": "700k – 1.5 triệu", "1.5m_3m": "1.5 triệu – 3 triệu",
+    "above_1.5m": "Trên 1.5 triệu", "above_3m": "Trên 3 triệu"
+  };
   return [
     `Người dùng: ${profile?.full_name || "Khách hàng Velura"}`,
     `Dáng người: ${quiz.body_shape || ""}`,
@@ -323,7 +329,7 @@ function buildProfileEmbeddingText(quiz, profile) {
     `Phong cách yêu thích: ${arrayText(quiz.style_tags)}`,
     `Dịp mặc ưu tiên: ${arrayText(quiz.preferred_occasions)}`,
     `Thương hiệu yêu thích: ${arrayText(quiz.favorite_brands)}`,
-    `Ngân sách: ${quiz.budget_range || ""}`,
+    `Ngân sách: ${budgetDisplay[quiz.budget_range] || quiz.budget_range || ""}`,
     `Chiều cao: ${quiz.height_cm || ""}cm`,
     `Cân nặng: ${quiz.weight_kg || ""}kg`
   ].join(" | ");
@@ -518,9 +524,10 @@ function isPriceInsideBudget(product, budget) {
   const price = Number(product.sale_price || product.base_price || 0);
   if (!price) return false;
   if (budget === "under_300k") return price <= 300000;
-  if (budget === "300k_700k") return price >= 300000 && price <= 700000;
-  if (budget === "700k_1.5m" || budget === "700k_1_5m" || budget === "700k_1.5" || budget === "700k_1_5") return price >= 700000 && price <= 1500000;
-  if (budget === "above_1.5m" || budget === "above_1_5m" || budget === "above_1.5" || budget === "above_1_5") return price >= 1500000;
+  if (budget === "under_500k") return price <= 500000;
+  if (budget === "300k_700k" || budget === "500k_1.5m") return price >= 300000 && price <= 1500000;
+  if (budget === "700k_1.5m" || budget === "700k_1_5m" || budget === "700k_1.5" || budget === "700k_1_5" || budget === "1.5m_3m") return price >= 700000 && price <= 3000000;
+  if (budget === "above_1.5m" || budget === "above_1_5m" || budget === "above_1.5" || budget === "above_1_5" || budget === "above_3m") return price >= 1500000;
   return false;
 }
 
