@@ -60,11 +60,7 @@ export function initChatbot() {
         if (state.mode === "guest" && state.sessionId) {
           event.preventDefault();
           showGuestCloseWarning(async () => {
-            try {
-              await deleteSession(state, state.sessionId);
-            } catch (e) {
-              console.error("Failed to delete guest session on link click:", e);
-            }
+            await deleteAllGuestSessions(state);
             window.location.href = anchor.href;
           });
         }
@@ -125,11 +121,7 @@ function bindChatContainer(container, state) {
       const isClosing = container.classList.contains("chatbot-widget--open");
       if (isClosing && state.mode === "guest" && state.sessionId) {
         showGuestCloseWarning(async () => {
-          try {
-            await deleteSession(state, state.sessionId);
-          } catch (e) {
-            console.error("Failed to delete guest session on widget close:", e);
-          }
+          await deleteAllGuestSessions(state);
           container.classList.remove("chatbot-widget--open");
         });
       } else {
@@ -371,6 +363,29 @@ async function deleteSession(state, sessionId) {
     renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
   } catch (error) {
     showToast(error.message || "Không thể xóa phiên chat.");
+  }
+}
+
+async function deleteAllGuestSessions(state) {
+  try {
+    const sessionIds = new Set(state.sessions.map((s) => s.session_id));
+    if (state.sessionId) {
+      sessionIds.add(state.sessionId);
+    }
+    const deletePromises = Array.from(sessionIds).map((id) =>
+      apiRequest(`/api/v1/chat/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        body: { guestId: state.guestId }
+      }).catch((err) => console.error("Error deleting session:", id, err))
+    );
+    await Promise.all(deletePromises);
+    state.sessions = [];
+    state.sessionId = "";
+    localStorage.removeItem(SESSION_ID_KEY);
+    state.messages = [localGreeting()];
+    renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
+  } catch (error) {
+    console.error("Failed to delete all guest sessions:", error);
   }
 }
 
