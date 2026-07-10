@@ -6,7 +6,16 @@
   --welcome-accent: var(--terracotta, #c97b63);
   --welcome-brown: var(--brown, #765438);
   --welcome-shadow: 0 24px 70px rgba(42, 37, 34, 0.09);
-  --welcome-font: "Be Vietnam Pro", Arial, sans-serif;
+  --welcome-font: "DM Sans", Arial, sans-serif;
+}
+
+.member-gate h1,
+.member-gate h2,
+.member-gate h3,
+.member-gate h4,
+.member-gate h5,
+.member-gate h6 {
+  font-family: "Playfair Display", Georgia, serif;
 }
 
 * {
@@ -96,7 +105,7 @@ body {
 
 .member-brand__copy strong {
   color: var(--welcome-ink);
-  font-family: var(--welcome-font);
+  font-family: "Playfair Display", Georgia, serif;
   font-size: 1.3rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -282,7 +291,7 @@ body {
   max-width: 620px;
   margin: 0;
   color: var(--welcome-ink);
-  font-family: var(--welcome-font);
+  font-family: "Playfair Display", Georgia, serif;
   font-size: clamp(2.55rem, 4.55vw, 4.15rem);
   font-weight: 800;
   line-height: 1.1;
@@ -372,7 +381,7 @@ body {
 .member-panel__title h2 {
   margin: 0;
   color: var(--welcome-ink);
-  font-family: var(--welcome-font);
+  font-family: "Playfair Display", Georgia, serif;
   font-size: 1.05rem;
   font-weight: 800;
   letter-spacing: 0;
