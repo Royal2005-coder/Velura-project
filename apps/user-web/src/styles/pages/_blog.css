@@ -498,8 +498,8 @@
   border: 1px solid rgba(201, 123, 99, 0.2);
   border-radius: var(--radius-md, 8px);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(251, 247, 242, 0.82)),
-    url("https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=1200&auto=format&fit=crop") center/cover;
+    linear-gradient(90deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.78)),
+    url("/src/assets/images/velura-journal-banner.png") center / cover;
   box-shadow: 0 24px 70px rgba(42, 37, 34, 0.05);
   text-align: left;
 }
@@ -578,6 +578,13 @@
 
 .newsletter-box__form button:hover {
   background: var(--terracotta-h, #b36a53);
+  color: #fff;
+}
+
+.newsletter-box__form button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px var(--terracotta, #7b1e2b);
 }
 
 .newsletter-box__form button:active {
@@ -1401,7 +1408,7 @@
 .newsletter-box__error {
   grid-column: 1 / -1;
   margin: 0;
-  color: #fff;
+  color: var(--terracotta, #7b1e2b);
   font-family: "DM Sans", sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
@@ -1864,6 +1871,104 @@
   }
 }
 
+/* Lead story: a compact editorial crop keeps portrait source art from
+   overpowering the page while giving the headline a clear reading scale. */
+.page-blog .featured-post {
+  grid-template-columns: minmax(0, 1.06fr) minmax(400px, 0.94fr);
+  min-height: 520px;
+  margin-bottom: 72px;
+  border: 1px solid var(--line);
+}
+
+.page-blog .featured-post__image {
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  background: #ebe6e3;
+}
+
+.page-blog .featured-post__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 49%;
+  opacity: 1;
+}
+
+.page-blog .featured-post__content {
+  padding: clamp(38px, 5vw, 78px);
+}
+
+.page-blog .featured-post__content .blog-badge {
+  margin-bottom: 24px;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+}
+
+.page-blog .featured-post__title {
+  max-width: 12ch;
+  margin-bottom: 22px;
+  font-size: clamp(2.2rem, 3.7vw, 3.5rem);
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+}
+
+.page-blog .featured-post__excerpt {
+  max-width: 46ch;
+  margin-bottom: 30px;
+  font-size: 1.06rem;
+  line-height: 1.7;
+}
+
+.page-blog .featured-post .post-meta {
+  margin-bottom: 28px;
+  font-size: 0.82rem;
+}
+
+.page-blog .featured-post .btn-read-more {
+  padding-bottom: 4px;
+  border-bottom: 1px solid currentColor;
+  font-size: 0.98rem;
+}
+
+@media (max-width: 1024px) {
+  .page-blog .featured-post {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .page-blog .featured-post__image {
+    aspect-ratio: 16 / 8;
+  }
+
+  .page-blog .featured-post__content {
+    max-width: 760px;
+    padding: 42px clamp(24px, 7vw, 64px) 52px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-blog .featured-post {
+    margin-bottom: 52px;
+  }
+
+  .page-blog .featured-post__image {
+    aspect-ratio: 4 / 3;
+  }
+
+  .page-blog .featured-post__content {
+    padding: 30px 22px 38px;
+  }
+
+  .page-blog .featured-post__title {
+    max-width: 14ch;
+    font-size: clamp(2rem, 9.5vw, 2.8rem);
+  }
+
+  .page-blog .featured-post__excerpt {
+    font-size: 1rem;
+  }
+}
+
 /* Velura Journal campaign hero */
 .page-blog .blog-intro {
   margin-bottom: 76px;
@@ -1904,7 +2009,8 @@
 
 .page-blog .blog-intro__media {
   width: min(100vw, 1540px);
-  aspect-ratio: 3.42 / 1;
+  aspect-ratio: 3 / 1;
+  overflow: hidden;
   border-top: 2px solid var(--terracotta, #7b1e2b);
   box-shadow: 0 28px 54px rgba(32, 14, 18, 0.16);
 }
@@ -1916,12 +2022,12 @@
 }
 
 .page-blog .blog-intro__media img {
-  height: auto;
-  min-height: 100%;
-  object-fit: initial;
-  object-position: center 0;
-  transform: translateY(-13%);
-  transform-origin: center top;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  object-position: center;
+  transform: none;
 }
 
 @media (max-width: 768px) {
@@ -1945,11 +2051,12 @@
   }
 
   .page-blog .blog-intro__media img {
-    width: auto;
-    min-width: 100%;
-    height: 126%;
-    max-width: none;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    max-width: 100%;
     object-fit: cover;
-    transform: translateY(-12%);
+    object-position: center;
+    transform: none;
   }
 }
