@@ -26,6 +26,7 @@ import { initContentPages } from "./modules/content.js";
 import { hasRealAuthSession } from "./modules/auth-session.js";
 import { initAiSuggestions } from "./modules/ai-suggestions.js";
 import { initHotBannerSlider } from "./modules/hot-banner-slider.js";
+import { initMonthlyOffers } from "./modules/monthly-offers.js";
 import { initNotifications } from "./modules/notifications.js";
 import { initExitIntentPopup } from "./modules/exit-intent.js";
 
@@ -80,6 +81,7 @@ import { initExitIntentPopup } from "./modules/exit-intent.js";
   initTrackOrder();
   initHomepage();
   initHotBannerSlider();
+  initMonthlyOffers();
   initCart();
   initContentPages();
   initAiSuggestions();

@@ -6,7 +6,7 @@ const HOT_BANNERS = [
     title: "Tháng sinh nhật của bạn",
     description: "Velura có quà nhỏ dành riêng",
     ctaText: "Nhận quà ngay",
-    ctaLink: "/src/pages/account/profile.html",
+    ctaLink: "/src/pages/offers.html?offer=A1",
     imageSrc: "/src/assets/images/banners/hot-banner-a1-birthday.png",
     imageAlt: "Tháng sinh nhật của bạn - Velura có quà nhỏ dành riêng",
     showCondition: { birthdayThisMonth: true }
@@ -16,7 +16,7 @@ const HOT_BANNERS = [
     title: "Chỉ còn 2 ngày",
     description: "Ưu đãi đặc biệt dành riêng - nhanh tay nhé",
     ctaText: "Xem ngay",
-    ctaLink: "/src/pages/products/list.html",
+    ctaLink: "/src/pages/products/list.html?sale=true&campaign=monthly-last-days",
     imageSrc: "/src/assets/images/banners/hot-banner-a2-last-days.png",
     imageAlt: "Chỉ còn 2 ngày - ưu đãi đặc biệt dành riêng",
     showCondition: null
@@ -26,7 +26,7 @@ const HOT_BANNERS = [
     title: "Combo Phối Đồ Tiết Kiệm",
     description: "Mua trọn áo, quần và túi - tiết kiệm ngay 15%",
     ctaText: "Thêm vào giỏ trọn set",
-    ctaLink: "/src/pages/ai/suggestions.html",
+    ctaLink: "/src/pages/collections.html?type=combo&offer=monthly-combo",
     imageSrc: "/src/assets/images/banners/hot-banner-a3-combo.png",
     imageAlt: "Combo phối đồ tiết kiệm - mua trọn set tiết kiệm 15%",
     showCondition: null
@@ -36,7 +36,7 @@ const HOT_BANNERS = [
     title: "Khách hàng thân thiết",
     description: "Một món quà nhỏ thay lời cảm ơn từ Velura",
     ctaText: "Nhận ngay ưu đãi",
-    ctaLink: "/src/pages/account/profile.html",
+    ctaLink: "/src/pages/offers.html?offer=A4",
     imageSrc: "/src/assets/images/banners/hot-banner-a4-loyal.png",
     imageAlt: "Khách hàng thân thiết - giảm 10% không giới hạn đơn hàng",
     showCondition: null
@@ -46,7 +46,7 @@ const HOT_BANNERS = [
     title: "Một mình vui không bằng cả hai",
     description: "Chia sẻ voucher cho bạn - cả hai cùng nhận ưu đãi",
     ctaText: "Chia sẻ ngay",
-    ctaLink: "/src/pages/account/profile.html",
+    ctaLink: "/src/pages/offers.html?offer=A5",
     imageSrc: "/src/assets/images/banners/hot-banner-a5-friend.png",
     imageAlt: "Rủ rê bạn thân - chia sẻ voucher cho bạn",
     showCondition: null
@@ -56,7 +56,7 @@ const HOT_BANNERS = [
     title: "FreeShip cho đơn từ 500k",
     description: "Vận chuyển nhanh, bảo quản cẩn thận, không phí ẩn",
     ctaText: "Xem ngay",
-    ctaLink: "/src/pages/products/list.html",
+    ctaLink: "/src/pages/offers.html?offer=A6",
     imageSrc: "/src/assets/images/banners/hot-banner-a6-freeship.png",
     imageAlt: "FreeShip cho đơn từ 500k - áp dụng toàn quốc",
     showCondition: null
@@ -188,9 +188,9 @@ function initOfferBannerList() {
         <span class="offer-banner-row__index">${escapeHtml(banner.id)}</span>
         <h3 class="offer-banner-row__title">${escapeHtml(banner.title)}</h3>
         <p class="offer-banner-row__desc">${escapeHtml(banner.description)}</p>
-        <a class="offer-banner-row__cta" href="${escapeHtml(banner.ctaLink)}">${escapeHtml(banner.ctaText)} →</a>
+        <a class="offer-banner-row__cta" href="${escapeHtml(banner.ctaLink)}" data-banner-id="${escapeHtml(banner.id)}">${escapeHtml(banner.ctaText)} →</a>
       </div>
-      <a class="offer-banner-row__image-link" href="${escapeHtml(banner.ctaLink)}" aria-label="${escapeHtml(banner.title)}">
+      <a class="offer-banner-row__image-link" href="${escapeHtml(banner.ctaLink)}" aria-label="${escapeHtml(banner.title)}" data-banner-id="${escapeHtml(banner.id)}">
         <img class="offer-banner-row__image" src="${escapeHtml(banner.imageSrc)}" alt="${escapeHtml(banner.imageAlt)}"
           loading="${index < 2 ? "eager" : "lazy"}" decoding="async" />
       </a>
