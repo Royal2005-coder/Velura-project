@@ -26,6 +26,14 @@ export async function handleProductsRoute(req, res, subRoute, action, corsHeader
             const { rows: compCategories } = await selectRows("category", {}, { useAnonKey: true });
             const compCatMap = new Map(compCategories.map(c => [c.category_id, c.name]));
 
+            // Fetch ALL variants for component products
+            const { rows: allCompVariants } = await selectRows("variant", { product_id: `in.(${componentProductIds.join(",")})` }, { useAnonKey: true });
+            const compVariantsMap = new Map();
+            allCompVariants.forEach(v => {
+              if (!compVariantsMap.has(v.product_id)) compVariantsMap.set(v.product_id, []);
+              compVariantsMap.get(v.product_id).push(v);
+            });
+
             // Get unique component products (dedupe by product_id)
             const seenProducts = new Set();
             comboComponents = compProducts
@@ -37,14 +45,25 @@ export async function handleProductsRoute(req, res, subRoute, action, corsHeader
               .map(cp => {
                 const item = comboItems.find(ci => ci.component_product_id === cp.product_id);
                 const qty = item ? item.quantity : 1;
+                const compVariants = compVariantsMap.get(cp.product_id) || [];
                 return {
                   product_id: cp.product_id,
                   name: cp.name,
                   slug: cp.slug,
                   images: cp.images || [],
                   base_price: cp.base_price,
+                  sale_price: cp.sale_price,
                   category_name: compCatMap.get(cp.category_id) || "",
-                  quantity: qty
+                  quantity: qty,
+                  variants: compVariants.map(v => ({
+                    variant_id: v.variant_id,
+                    color: v.color,
+                    color_hex: v.color_hex,
+                    size: v.size,
+                    stock_quantity: v.stock_quantity || 0,
+                    reserved_quantity: v.reserved_quantity || 0,
+                    sku: v.sku
+                  }))
                 };
               });
           }

@@ -8,6 +8,7 @@ import {
   updateRows as supabaseUpdateRows
 } from "../supabase.js";
 import { config } from "../config.js";
+import { generateGeminiEmbedding, isGeminiConfigured, vectorLiteral } from "../gemini-client.js";
 import { CHAT_MESSAGE_SELECT, CHAT_PRODUCT_SELECT, CHAT_SESSION_SELECT } from "./chatbot-constants.js";
 
 const CHAT_DB_OPTIONS = Object.freeze({ useAnonKey: false });
@@ -33,28 +34,12 @@ function callRpc(name, payload) {
 }
 
 async function getEmbedding(text) {
-  const apiKey = config.geminiApiKey;
-  if (!apiKey) return null;
+  if (!isGeminiConfigured()) return null;
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${apiKey}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "models/gemini-embedding-001",
-        content: {
-          parts: [{ text }]
-        }
-      })
-    });
-    if (!res.ok) {
-      console.error("[EMBEDDING_ERROR]", res.status, await res.text());
-      return null;
-    }
-    const data = await res.json();
-    return data.embedding?.values || null;
+    const values = await generateGeminiEmbedding(text);
+    return vectorLiteral(values);
   } catch (err) {
-    console.error("[EMBEDDING_ERROR]", err);
+    console.warn("[EMBEDDING_ERROR] Chatbot embedding failed, falling back to text search:", err.message || err);
     return null;
   }
 }

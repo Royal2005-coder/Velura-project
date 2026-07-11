@@ -32,17 +32,15 @@ const COMBO_SCHEMA = {
   properties: {
     combos: {
       type: "array",
-      minItems: 1,
-      maxItems: 5,
+      description: "Danh sách 1-5 set đồ được gợi ý",
       items: {
         type: "object",
         properties: {
-          combo_name: { type: "string" },
-          reason: { type: "string" },
+          combo_name: { type: "string", description: "Tên set đồ" },
+          reason: { type: "string", description: "Lý do gợi ý (tiếng Việt)" },
           product_ids: {
             type: "array",
-            minItems: 2,
-            maxItems: 4,
+            description: "Danh sách 2-4 product_id từ danh sách ứng viên",
             items: { type: "string" }
           }
         },
@@ -65,20 +63,29 @@ export async function buildStyleProfileRecommendations(context, req) {
     return { success: true, quiz: null, combos: [], categories: [], source: "db_error" };
   }
 
-  if (!quiz || !hasStyleSignal(quiz) || !isGeminiConfigured()) {
-    return { ...fallbackData, source: isGeminiConfigured() ? "rule_fallback" : "rule_fallback_no_gemini_key" };
+  const geminiConfigured = isGeminiConfigured();
+  if (!quiz || !hasStyleSignal(quiz) || !geminiConfigured) {
+    const reason = !quiz ? "no_quiz" : !hasStyleSignal(quiz) ? "no_style_signal" : "no_gemini_key";
+    console.warn(`[RECOMMENDATION] Using rule-based fallback: ${reason}`);
+    return { ...fallbackData, source: geminiConfigured ? "rule_fallback" : "rule_fallback_no_gemini_key" };
   }
 
   try {
     const queryText = buildProfileEmbeddingText(quiz, context.profile);
+    console.log(`[RECOMMENDATION] Generating embedding for quiz profile...`);
     const queryEmbedding = await generateGeminiEmbedding(`task: search result | query: ${queryText}`);
+    console.log(`[RECOMMENDATION] Embedding generated (${queryEmbedding.length} dims). Matching products...`);
     const candidates = await matchProductsByVector(queryEmbedding, quiz);
+    console.log(`[RECOMMENDATION] Found ${candidates.length} vector matches`);
 
     if (!candidates.length) {
+      console.warn("[RECOMMENDATION] No vector matches found, using rule-based fallback");
       return { ...fallbackData, source: "rule_fallback_no_vector_matches" };
     }
 
+    console.log(`[RECOMMENDATION] Generating AI combos from ${candidates.length} candidates...`);
     const combos = await buildStylistCombos(quiz, candidates);
+    console.log(`[RECOMMENDATION] Generated ${combos.length} AI combos`);
     const categories = groupProductsByCategory(candidates);
     return {
       success: true,
@@ -88,8 +95,9 @@ export async function buildStyleProfileRecommendations(context, req) {
       source: "gemini_rag"
     };
   } catch (error) {
-    console.error("[GEMINI RAG RECOMMENDATION FALLBACK]:", sanitizeAiError(error));
-    return { ...fallbackData, source: "rule_fallback_gemini_error" };
+    const errorDetail = sanitizeAiError(error);
+    console.error("[RECOMMENDATION] Gemini RAG failed, using rule-based fallback:", errorDetail);
+    return { ...fallbackData, source: "rule_fallback_gemini_error", error: errorDetail };
   }
 }
 
@@ -351,7 +359,14 @@ function formatQuiz(quiz) {
     style_tags: quiz.style_tags,
     preferred_occasions: quiz.preferred_occasions,
     favorite_brands: quiz.favorite_brands,
+    favorite_colors: quiz.favorite_colors,
     budget_range: quiz.budget_range,
+    age_group: quiz.age_group,
+    height_cm: quiz.height_cm,
+    weight_kg: quiz.weight_kg,
+    chest_cm: quiz.chest_cm,
+    waist_cm: quiz.waist_cm,
+    hip_cm: quiz.hip_cm,
     clothing_size: quiz.clothing_size || quiz.size || null,
     shoe_size: quiz.shoe_size || null
   };

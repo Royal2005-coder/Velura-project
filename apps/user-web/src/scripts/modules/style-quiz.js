@@ -694,6 +694,8 @@ export function initStyleQuiz() {
       console.log("Style Profile saved successfully!");
       localStorage.setItem("velura_guest_quiz_completed", "true");
       localStorage.setItem("velura_guest_quiz_data", JSON.stringify(quizPayload));
+      // Enable profile-based suggestions after quiz completion
+      localStorage.setItem("velura_suggestions_enabled", "true");
       return res;
     });
 

@@ -143,6 +143,12 @@ export function initProductCatalog() {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
   };
 
+  function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, function (s) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s];
+    });
+  }
+
   function applyProfileFilters(enable) {
     if (!hasStyleProfile || !quizData) return;
 
@@ -300,10 +306,10 @@ export function initProductCatalog() {
       if (fitHelperEl) {
         const bodyShapeTranslations = {
           "hourglass": "Đồng hồ cát",
-          "pear": "Dáng quả lê",
-          "apple": "Dáng quả táo",
-          "rectangle": "Dáng chữ nhật",
-          "inverted triangle": "Dáng tam giác ngược"
+          "pear": "Quả lê",
+          "apple": "Quả táo",
+          "rectangle": "Chữ nhật",
+          "inverted triangle": "Tam giác ngược"
         };
         const translatedShape = userBodyShape ? (bodyShapeTranslations[userBodyShape.toLowerCase()] || userBodyShape) : "";
 
@@ -366,13 +372,101 @@ export function initProductCatalog() {
     }
 
     applyMemberFeatureGate();
+    renderStyleProfileToggle();
+  }
+
+  function renderStyleProfileToggle() {
+    const container = document.querySelector(".js-style-profile-toggle");
+    if (!container) return;
+
+    const profileTags = [];
+    if (quizData) {
+      if (quizData.style_tags && Array.isArray(quizData.style_tags)) {
+        quizData.style_tags.forEach(t => profileTags.push(t));
+      }
+      if (quizData.preferred_occasions && Array.isArray(quizData.preferred_occasions)) {
+        quizData.preferred_occasions.forEach(t => profileTags.push(t));
+      }
+      if (quizData.favorite_colors && Array.isArray(quizData.favorite_colors)) {
+        quizData.favorite_colors.slice(0, 2).forEach(c => {
+          const name = typeof c === "string" ? c.split("|")[0].trim() : c;
+          profileTags.push(name);
+        });
+      }
+      if (quizData.budget_range) {
+        const budgetLabels = {
+          "under_300k": "Dưới 300k", "300k_700k": "300k – 700k",
+          "700k_1.5m": "700k – 1.5M", "above_1.5m": "Trên 1.5M"
+        };
+        profileTags.push(budgetLabels[quizData.budget_range] || quizData.budget_range);
+      }
+    }
+
+    const hasProfile = hasStyleProfile && quizData;
+    const checkedAttr = isSuggestionsEnabled ? "checked" : "";
+    const disabledAttr = hasProfile ? "" : "disabled";
+    const labelClass = hasProfile ? "style-profile-toggle__label" : "style-profile-toggle__label style-profile-toggle__label--disabled";
+
+    let summaryHtml = "";
+    if (hasProfile && isSuggestionsEnabled && profileTags.length > 0) {
+      summaryHtml = '<div class="style-profile-toggle__summary">' +
+        profileTags.slice(0, 6).map(tag =>
+          '<span class="style-profile-toggle__tag">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>' +
+            escapeHtml(tag) +
+          '</span>'
+        ).join("") +
+        (profileTags.length > 6 ? '<span class="style-profile-toggle__tag">+' + (profileTags.length - 6) + '</span>' : "") +
+        '</div>';
+    }
+
+    let ctaHtml = "";
+    if (!hasProfile) {
+      ctaHtml = '<div class="style-profile-toggle__cta">' +
+        '<a href="/src/pages/ai/style-quiz.html" class="style-profile-toggle__cta-link">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>' +
+          'Làm Quiz' +
+        '</a>' +
+        '<span class="style-profile-toggle__cta-text">Hoàn thành Style Quiz để nhận gợi ý cá nhân hóa</span>' +
+      '</div>';
+    }
+
+    container.innerHTML =
+      '<div class="style-profile-toggle__row">' +
+        '<label class="' + labelClass + '">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>' +
+          '</svg>' +
+          '<span>Gợi ý dựa trên Style Profile</span>' +
+        '</label>' +
+        '<label class="style-profile-toggle__switch">' +
+          '<input type="checkbox" class="js-style-profile-switch" ' + checkedAttr + ' ' + disabledAttr + ' />' +
+          '<span class="style-profile-toggle__slider"></span>' +
+        '</label>' +
+      '</div>' +
+      summaryHtml +
+      ctaHtml;
+
+    // Bind toggle event
+    const switchInput = container.querySelector(".js-style-profile-switch");
+    if (switchInput) {
+      switchInput.addEventListener("change", () => {
+        isSuggestionsEnabled = switchInput.checked;
+        localStorage.setItem("velura_suggestions_enabled", String(isSuggestionsEnabled));
+        applyProfileFilters(isSuggestionsEnabled);
+        renderStyleProfileToggle();
+        updateFitHelperUI();
+      });
+    }
   }
 
   function applyMemberFeatureGate() {
+    if (hasStyleProfile) return;
+
     const group = document.getElementById("body-shape-filter-group");
     const lockOverlay = document.querySelector(".js-body-shape-lock");
     const shapeListContainer = document.querySelector(".js-body-shape-list");
-    if (!group || !lockOverlay || !shapeListContainer || isMember()) return;
+    if (!group || !lockOverlay || !shapeListContainer) return;
 
     shapeListContainer.style.opacity = "0.5";
     shapeListContainer.style.filter = "blur(2px)";
@@ -380,15 +474,32 @@ export function initProductCatalog() {
 
     lockOverlay.style.display = "flex";
     lockOverlay.style.cursor = "pointer";
-    lockOverlay.innerHTML = `
-      <div class="member-lock-badge">
-        <span aria-hidden="true">🔒</span>
-        Chỉ thành viên. Lọc theo dáng người - đăng ký để mở khóa.
-      </div>
-    `;
-    lockOverlay.addEventListener("click", () => {
-      window.location.href = "/src/pages/auth/signup.html";
-    }, { once: true });
+
+    if (isMember()) {
+      lockOverlay.innerHTML = `
+        <div class="member-lock-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          Hoàn thành Style Profile để mở khóa bộ lọc dáng người.
+        </div>
+      `;
+      lockOverlay.addEventListener("click", () => {
+        window.location.href = "/src/pages/ai/style-quiz.html";
+      }, { once: true });
+    } else {
+      lockOverlay.innerHTML = `
+        <div class="member-lock-badge">
+          <span aria-hidden="true">🔒</span>
+          Chỉ thành viên. Lọc theo dáng người - đăng ký để mở khóa.
+        </div>
+      `;
+      lockOverlay.addEventListener("click", () => {
+        window.location.href = "/src/pages/auth/signup.html";
+      }, { once: true });
+    }
   }
 
   // Initialize
@@ -1147,6 +1258,36 @@ export function initProductCatalog() {
 
   // Start Loading
   loadProducts();
+
+  // Re-fetch quiz data when user returns to this tab (e.g. after completing quiz in another tab)
+  document.addEventListener("visibilitychange", async () => {
+    if (document.hidden) return;
+    try {
+      const profileRes = await apiRequest("/api/user/style-quiz");
+      if (profileRes && profileRes.quiz) {
+        const prevShape = userBodyShape;
+        hasStyleProfile = true;
+        userBodyShape = profileRes.quiz.body_shape || "";
+        quizData = profileRes.quiz;
+
+        // Parse PostgreSQL array strings to JS arrays
+        ["style_tags", "preferred_occasions", "favorite_brands", "favorite_colors"].forEach(key => {
+          if (quizData[key] && typeof quizData[key] === "string" && quizData[key].startsWith("{")) {
+            try {
+              quizData[key] = quizData[key].replace(/^{|}$/g, "").split(",").map(s => s.trim().replace(/^"|"$/g, ""));
+            } catch (e) { /* keep as-is */ }
+          }
+        });
+
+        // Re-apply filters if body shape changed
+        if (prevShape !== userBodyShape || !prevShape) {
+          applyProfileFilters(isSuggestionsEnabled);
+          updateFitHelperUI();
+          applyFiltersAndSort();
+        }
+      }
+    } catch (e) { /* silent */ }
+  });
 
   /* 2. Grid Layout view switches (kept from static template logic) */
   const btnViewGrid = document.querySelector(".js-view-grid");

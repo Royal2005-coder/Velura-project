@@ -51,7 +51,7 @@ export async function supabaseRequest(path, options = {}) {
       if (!options.silentError) {
         console.error("[SUPABASE_ERROR_LOG]", response.status, url.toString(), "Response data:", data);
       }
-      throw new HttpError(response.status, "SUPABASE_ERROR", "Supabase request failed", data);
+      throw new HttpError(response.status, "SUPABASE_ERROR", (data?.msg || data?.message || "Supabase request failed") + " [status:" + response.status + "]", data);
     }
 
     return {

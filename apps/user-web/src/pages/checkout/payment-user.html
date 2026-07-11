@@ -146,27 +146,24 @@
 
             <div class="profile-form__row-grid profile-form__row-grid--three">
               <div class="profile-form__group">
-                <label for="address-province">Tỉnh/Thành phố</label>
+                <label>Tỉnh/Thành phố</label>
                 <div class="profile-form__input-wrapper">
-                  <select class="profile-form__input" id="address-province" name="province" required>
-                    <option value="" disabled selected>Chọn Tỉnh/Thành</option>
-                  </select>
+                  <div id="address-province-wrapper" data-field="province" data-placeholder="Chọn Tỉnh/Thành"></div>
+                  <input type="hidden" id="address-province" name="province" required />
                 </div>
               </div>
               <div class="profile-form__group">
-                <label for="address-district">Quận/Huyện</label>
+                <label>Quận/Huyện</label>
                 <div class="profile-form__input-wrapper">
-                  <select class="profile-form__input" id="address-district" name="district" required disabled>
-                    <option value="" disabled selected>Chọn Quận/Huyện</option>
-                  </select>
+                  <div id="address-district-wrapper" data-field="district" data-placeholder="Chọn Quận/Huyện"></div>
+                  <input type="hidden" id="address-district" name="district" required />
                 </div>
               </div>
               <div class="profile-form__group">
-                <label for="address-ward">Phường/Xã</label>
+                <label>Phường/Xã</label>
                 <div class="profile-form__input-wrapper">
-                  <select class="profile-form__input" id="address-ward" name="ward" required disabled>
-                    <option value="" disabled selected>Chọn Phường/Xã</option>
-                  </select>
+                  <div id="address-ward-wrapper" data-field="ward" data-placeholder="Chọn Phường/Xã"></div>
+                  <input type="hidden" id="address-ward" name="ward" required />
                 </div>
               </div>
             </div>

@@ -2,6 +2,8 @@ import { config } from "./config.js";
 import { HttpError } from "./http.js";
 
 const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 1500;
 
 export function isGeminiConfigured() {
   return Boolean(config.geminiApiKey);
@@ -18,7 +20,7 @@ export async function generateGeminiEmbedding(text, options = {}) {
     output_dimensionality: dimensions
   };
 
-  const data = await geminiRequest(`/models/${encodeURIComponent(model)}:embedContent`, payload);
+  const data = await geminiRequestWithRetry(`/models/${encodeURIComponent(model)}:embedContent`, payload);
   const values = data?.embedding?.values || data?.embeddings?.[0]?.values;
   if (!Array.isArray(values) || values.length !== dimensions) {
     throw new HttpError(502, "GEMINI_EMBEDDING_INVALID", "Gemini embedding response is invalid", {
@@ -33,26 +35,31 @@ export async function generateGeminiJson(prompt, schema, options = {}) {
   requireGeminiKey();
   const model = options.model || config.geminiStylistModel;
   const payload = {
-    model,
-    input: String(prompt || "").slice(0, 30000),
-    response_format: {
-      type: "text",
-      mime_type: "application/json",
-      schema
+    contents: [{
+      parts: [{ text: String(prompt || "").slice(0, 30000) }]
+    }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: schema
     }
   };
 
-  const data = await geminiRequest("/interactions", payload);
-  const text = data?.output_text || data?.output?.[0]?.content?.[0]?.text || data?.text || "";
+  const data = await geminiRequestWithRetry(`/models/${encodeURIComponent(model)}:generateContent`, payload);
+
+  // Gemini response: candidates[0].content.parts[0].text
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
   if (!text) {
+    console.error("[GEMINI_JSON_EMPTY] Raw response:", JSON.stringify(data).slice(0, 500));
     throw new HttpError(502, "GEMINI_JSON_EMPTY", "Gemini returned an empty stylist response");
   }
 
   try {
     return JSON.parse(text);
   } catch (error) {
+    console.error("[GEMINI_JSON_INVALID] Response text:", text.slice(0, 300));
     throw new HttpError(502, "GEMINI_JSON_INVALID", "Gemini stylist response is not valid JSON", {
-      parserMessage: error.message
+      parserMessage: error.message,
+      responsePreview: text.slice(0, 200)
     });
   }
 }
@@ -62,6 +69,24 @@ export function vectorLiteral(values) {
     throw new HttpError(500, "INVALID_VECTOR", "Embedding vector is empty");
   }
   return `[${values.map((value) => Number(value).toFixed(8)).join(",")}]`;
+}
+
+async function geminiRequestWithRetry(path, payload) {
+  let lastError;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await geminiRequest(path, payload);
+    } catch (error) {
+      lastError = error;
+      const isRetryable = error instanceof HttpError && [429, 500, 502, 503].includes(error.status);
+      if (!isRetryable || attempt === MAX_RETRIES) {
+        throw error;
+      }
+      console.warn(`[GEMINI RETRY] Attempt ${attempt + 1}/${MAX_RETRIES} failed (${error.status}), retrying in ${RETRY_DELAY_MS}ms...`);
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * (attempt + 1)));
+    }
+  }
+  throw lastError;
 }
 
 async function geminiRequest(path, payload) {
@@ -78,10 +103,25 @@ async function geminiRequest(path, payload) {
   const data = text ? parseJson(text) : {};
 
   if (!response.ok) {
-    throw new HttpError(response.status, "GEMINI_API_ERROR", "Gemini API request failed", {
+    const geminiMessage = data?.error?.message || response.statusText;
+    console.error(`[GEMINI API ERROR] ${response.status} on ${path}:`, geminiMessage);
+    throw new HttpError(response.status, "GEMINI_API_ERROR", `Gemini API error: ${geminiMessage}`, {
       status: response.status,
-      message: data?.error?.message || response.statusText
+      message: geminiMessage,
+      path
     });
+  }
+
+  // Check for safety blocks in promptFeedback
+  const blockReason = data?.promptFeedback?.blockReason;
+  if (blockReason) {
+    console.error(`[GEMINI SAFETY BLOCK] Reason: ${blockReason}`);
+    throw new HttpError(400, "GEMINI_SAFETY_BLOCK", `Gemini blocked the request: ${blockReason}`);
+  }
+
+  // Check for empty candidates
+  if (!data?.candidates?.length) {
+    console.error("[GEMINI NO CANDIDATES] Raw response:", JSON.stringify(data).slice(0, 500));
   }
 
   return data;
@@ -89,7 +129,7 @@ async function geminiRequest(path, payload) {
 
 function requireGeminiKey() {
   if (!config.geminiApiKey) {
-    throw new HttpError(503, "GEMINI_API_KEY_REQUIRED", "Gemini API key is not configured");
+    throw new HttpError(503, "GEMINI_API_KEY_REQUIRED", "Gemini API key is not configured. Set GEMINI_API_KEY in .env");
   }
 }
 

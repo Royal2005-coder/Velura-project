@@ -663,6 +663,198 @@
   color: var(--terracotta);
 }
 
+/* Combo Component Item - Header */
+.combo-component-item__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+/* Combo Component Item - Toggle Button */
+.combo-component-item__toggle {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(212, 196, 183, 0.2);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  color: var(--text-dark);
+}
+
+.combo-component-item__toggle:hover {
+  background: rgba(212, 196, 183, 0.4);
+}
+
+.combo-component-item__toggle.is-expanded {
+  transform: rotate(180deg);
+  background: var(--terracotta);
+  color: #fff;
+}
+
+/* Combo Component Item - Quantity Badge */
+.combo-component-item__qty {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--terracotta);
+  background: rgba(161, 130, 101, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
+/* Combo Component Item - Options Panel */
+.combo-component-item__options {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 0 4px 78px;
+  border-top: 1px solid rgba(212, 196, 183, 0.25);
+  margin-top: 8px;
+}
+
+/* Combo Options - Colors */
+.combo-options__colors,
+.combo-options__sizes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.combo-options__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #8c857e;
+  min-width: 32px;
+}
+
+.combo-options__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Combo Color Button */
+.combo-color-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  padding: 0;
+}
+
+.combo-color-btn:hover {
+  transform: scale(1.1);
+}
+
+.combo-color-btn.is-selected {
+  border-color: var(--terracotta);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--terracotta);
+}
+
+/* Combo Size Button */
+.combo-size-btn {
+  min-width: 36px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.combo-size-btn:hover {
+  border-color: var(--terracotta);
+  color: var(--terracotta);
+}
+
+.combo-size-btn.is-selected {
+  background: var(--terracotta);
+  border-color: var(--terracotta);
+  color: #fff;
+}
+
+/* Combo Stock Display */
+.combo-options__stock {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.combo-stock--available {
+  color: #5a8f5a;
+}
+
+.combo-stock--unavailable {
+  color: #c97b63;
+}
+
+/* Combo Actions */
+.combo-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.combo-actions .btn {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.combo-add-cart {
+  background: transparent;
+  border: 1.5px solid var(--text-dark);
+  color: var(--text-dark);
+}
+
+.combo-add-cart:hover {
+  background: var(--text-dark);
+  color: #fff;
+}
+
+.combo-buy-now {
+  background: var(--terracotta);
+  border: 1.5px solid var(--terracotta);
+  color: #fff;
+}
+
+.combo-buy-now:hover {
+  background: #8a6a52;
+  border-color: #8a6a52;
+}
+
+/* Combo Summary - Total Row */
+.combo-summary-row--total {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(212, 196, 183, 0.3);
+}
+
+.combo-summary__total {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
 /* ---------- Tabs Content area ---------- */
 .product-detail__description {
   margin-top: 80px;

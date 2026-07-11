@@ -1030,7 +1030,8 @@
   border-top: 1px solid var(--line, #e8dfd6);
 }
 
-.section-title {
+.page-blog .section-title,
+.page-blog-detail .section-title {
   margin: 0 0 32px;
   color: var(--ink, #2a2522);
   font-family: "Playfair Display", Georgia, serif;

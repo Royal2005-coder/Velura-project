@@ -1,5 +1,6 @@
 import { apiRequest } from "./api.js";
 import { showToast, addToCart, getVariantImage } from "./cart.js";
+import { hasRealAuthSession } from "./auth-session.js";
 import { updateWishlistBadge } from "./wishlist.js";
 
 /**
@@ -149,6 +150,18 @@ export async function initOptions() {
         const comboListEl = document.querySelector(".js-combo-components");
         const comboSummaryEl = document.querySelector(".js-combo-summary");
 
+        // Hide color/size/quantity selectors and main action buttons for combo sets
+        const optionColorEl = document.querySelector(".option-color");
+        const optionSizeEl2 = document.querySelector(".option-size");
+        const fitHelperEl3 = document.querySelector(".product-fit-helper");
+        const qtyEl = document.querySelector(".product-quantity");
+        const mainActionsEl = document.querySelector(".product-actions-grid");
+        if (optionColorEl) optionColorEl.style.display = "none";
+        if (optionSizeEl2) optionSizeEl2.style.display = "none";
+        if (fitHelperEl3) fitHelperEl3.style.display = "none";
+        if (qtyEl) qtyEl.style.display = "none";
+        if (mainActionsEl) mainActionsEl.style.display = "none";
+
         if (comboSection && comboListEl) {
           comboSection.style.display = "";
 
@@ -158,7 +171,7 @@ export async function initOptions() {
               product_id: comp.product_id,
               name: comp.name,
               selectedVariant: comp.variants && comp.variants.length > 0 ? comp.variants[0] : null,
-              quantity: comp.quantity || 1
+              quantity: 1
             }))
           };
 
@@ -212,7 +225,6 @@ export async function initOptions() {
                     <span class="combo-component-item__category">${comp.category_name}</span>
                     <span class="combo-component-item__name">${comp.name}</span>
                     <span class="combo-component-item__price" data-price-idx="${idx}">${formatVND(currentPrice)}</span>
-                    ${comp.quantity > 1 ? `<span class="combo-component-item__qty">x${comp.quantity}</span>` : ''}
                   </div>
                   <button type="button" class="combo-component-item__toggle js-combo-toggle" data-index="${idx}" aria-expanded="false" aria-label="Chọn tùy chọn cho ${comp.name}">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -390,20 +402,75 @@ export async function initOptions() {
 
           // Add combo action buttons after summary
           const comboActionsHtml = `
-            <div class="combo-actions">
-              <button type="button" class="btn btn--outline combo-add-cart js-combo-add-cart">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                  <circle cx="9" cy="21" r="1"></circle>
-                  <circle cx="20" cy="21" r="1"></circle>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+            <div class="combo-actions" style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn btn--outline combo-add-cart js-combo-add-cart" style="flex: 1;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                    <circle cx="9" cy="21" r="1"></circle>
+                    <circle cx="20" cy="21" r="1"></circle>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                  </svg>
+                  Thêm set vào giỏ
+                </button>
+                <button type="button" class="btn btn--primary combo-buy-now js-combo-buy-now" style="flex: 1;">Mua ngay set này</button>
+              </div>
+              <button type="button" class="btn btn--secondary combo-wishlist js-combo-wishlist" style="width: 100%;">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" style="margin-right: 8px;">
+                  <path d="M10 17.5l-5.83-5.83a4.17 4.17 0 115.83-5.83 4.17 4.17 0 115.83 5.83L10 17.5z" />
                 </svg>
-                Thêm set vào giỏ
+                Thêm vào yêu thích
               </button>
-              <button type="button" class="btn btn--primary combo-buy-now js-combo-buy-now">Mua ngay set này</button>
             </div>
           `;
           comboSummaryEl.insertAdjacentHTML("afterend", comboActionsHtml);
+
+          // Combo Wishlist handler
+          const comboWishlistBtn = comboSection.querySelector(".js-combo-wishlist");
+          if (comboWishlistBtn) {
+            comboWishlistBtn.addEventListener("click", async () => {
+              if (!localStorage.getItem("velura_token")) {
+                showToast("Vui lòng đăng nhập để lưu sản phẩm!");
+                return;
+              }
+              const isActive = comboWishlistBtn.classList.contains("is-wishlist-active");
+              try {
+                if (isActive) {
+                  await apiRequest(`/api/user/wishlist?product_id=${product.product_id}`, { method: "DELETE" });
+                  comboWishlistBtn.classList.remove("is-wishlist-active");
+                  showToast("Đã xóa khỏi danh sách yêu thích");
+                  const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+                  localStorage.setItem("velura_wishlist_count", Math.max(0, currentCount - 1));
+                  updateWishlistBadge();
+                } else {
+                  await apiRequest("/api/user/wishlist", {
+                    method: "POST",
+                    body: { product_id: product.product_id }
+                  });
+                  comboWishlistBtn.classList.add("is-wishlist-active");
+                  showToast("Đã thêm vào danh sách yêu thích!");
+                  const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+                  localStorage.setItem("velura_wishlist_count", currentCount + 1);
+                  updateWishlistBadge();
+                }
+              } catch (err) {
+                if (err.status === 401) {
+                  showToast("Vui lòng đăng nhập để lưu sản phẩm!");
+                } else {
+                  showToast(err.message || "Lỗi thao tác yêu thích");
+                }
+              }
+            });
+
+            // Check if combo is already wishlisted
+            try {
+              const wishlistData = await apiRequest("/api/user/wishlist");
+              const items = wishlistData.items || [];
+              if (items.some(item => item.product_id === product.product_id)) {
+                comboWishlistBtn.classList.add("is-wishlist-active");
+              }
+            } catch { /* ignore */ }
+          }
 
           // Combo Add to Cart handler
           const comboCartBtn = comboSection.querySelector(".js-combo-add-cart");
@@ -429,7 +496,7 @@ export async function initOptions() {
                     quantity: stateItem.quantity,
                     unit_price: comp.sale_price || comp.base_price,
                     color: stateItem.selectedVariant.color,
-                    size: stateItem.selectedVariant.size,
+                    size: stateItem.selectedVariant.size || null,
                     combo_id: comboId,
                     combo_name: product.name,
                     combo_price: product.sale_price || product.base_price
@@ -451,13 +518,13 @@ export async function initOptions() {
                 return;
               }
 
-              // Add each component to cart as part of the combo
+              // Build checkout items directly (no add to cart)
               const comboId = `combo-${product.product_id}-${Date.now()}`;
               const checkoutItems = [];
               for (const stateItem of comboState.components) {
                 const comp = product.combo_components.find(c => c.product_id === stateItem.product_id);
                 if (comp && stateItem.selectedVariant) {
-                  const item = {
+                  checkoutItems.push({
                     variant_id: stateItem.selectedVariant.variant_id,
                     product_id: stateItem.product_id,
                     product_name: comp.name,
@@ -465,13 +532,11 @@ export async function initOptions() {
                     quantity: stateItem.quantity,
                     unit_price: comp.sale_price || comp.base_price,
                     color: stateItem.selectedVariant.color,
-                    size: stateItem.selectedVariant.size,
+                    size: stateItem.selectedVariant.size || null,
                     combo_id: comboId,
                     combo_name: product.name,
                     combo_price: product.sale_price || product.base_price
-                  };
-                  await addToCart(item);
-                  checkoutItems.push(item);
+                  });
                 }
               }
 
@@ -480,7 +545,30 @@ export async function initOptions() {
               localStorage.removeItem("checkout_voucher_id");
               localStorage.removeItem("checkout_voucher_code");
 
-              if (localStorage.getItem("velura_token")) {
+              // Member with saved addresses → skip to shipping/payment
+              if (hasRealAuthSession()) {
+                try {
+                  const user = await apiRequest("/api/user/profile");
+                  const addresses = user.saved_addresses || [];
+                  if (addresses.length > 0) {
+                    const addr = addresses.find(a => a.is_default) || addresses[0];
+                    const shippingInfo = {
+                      name: addr.name || addr.recipient_name || user.full_name || "",
+                      phone: addr.phone || addr.recipient_phone || user.phone || "",
+                      email: user.email || "",
+                      address: addr.detail || addr.address || addr.address_line || "",
+                      note: ""
+                    };
+                    if (shippingInfo.phone && shippingInfo.address) {
+                      localStorage.setItem("checkout_shipping", JSON.stringify(shippingInfo));
+                      window.location.href = "/src/pages/checkout/shipping-payment.html";
+                      return;
+                    }
+                  }
+                } catch (err) {
+                  console.error("Failed to fetch profile for auto-skip:", err);
+                }
+                // Fallback: no addresses → go to address page
                 window.location.href = "/src/pages/checkout/payment-user.html";
               } else {
                 window.location.href = "/src/pages/checkout/payment-guest.html";
@@ -1102,7 +1190,26 @@ export async function initOptions() {
           localStorage.removeItem("checkout_voucher_code");
 
           if (localStorage.getItem("velura_token")) {
-            window.location.href = "/src/pages/checkout/payment-user.html";
+            try {
+              const user = await apiRequest("/api/user/profile");
+              const savedAddresses = user.saved_addresses || user.addresses || [];
+              if (savedAddresses.length > 0) {
+                const addr = savedAddresses.find(a => a.is_default) || savedAddresses[0];
+                const shippingInfo = {
+                  name: addr.name || addr.recipient_name || user.full_name || "",
+                  phone: addr.phone || addr.recipient_phone || user.phone || "",
+                  email: user.email || "",
+                  address: addr.detail || addr.address || addr.address_line || "",
+                  note: ""
+                };
+                localStorage.setItem("checkout_shipping", JSON.stringify(shippingInfo));
+                window.location.href = "/src/pages/checkout/shipping-payment.html";
+              } else {
+                window.location.href = "/src/pages/checkout/payment-user.html";
+              }
+            } catch {
+              window.location.href = "/src/pages/checkout/payment-user.html";
+            }
           } else {
             window.location.href = "/src/pages/checkout/payment-guest.html";
           }

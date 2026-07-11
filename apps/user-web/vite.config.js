@@ -22,6 +22,7 @@ export default defineConfig({
         signup: resolve(__dirname, "src/pages/auth/signup.html"),
         forgotPassword: resolve(__dirname, "src/pages/auth/forgot-password.html"),
         resetPassword: resolve(__dirname, "src/pages/auth/reset-password.html"),
+        authCallback: resolve(__dirname, "src/pages/auth/auth-callback.html"),
         paymentFailed: resolve(__dirname, "src/pages/checkout/payment-failed.html"),
         shippingPayment: resolve(__dirname, "src/pages/checkout/shipping-payment.html"),
         orderConfirm: resolve(__dirname, "src/pages/checkout/order-confirm.html"),

@@ -69,22 +69,19 @@
               </div>
               <div class="form-row form-row--three">
                 <div class="form-group">
-                  <label for="address-province">Tỉnh/Thành phố *</label>
-                  <select class="form-input" id="address-province" required>
-                    <option value="" disabled selected>Chọn Tỉnh/Thành phố</option>
-                  </select>
+                  <label>Tỉnh/Thành phố *</label>
+                  <div id="address-province-wrapper" data-field="province" data-placeholder="Chọn Tỉnh/Thành phố"></div>
+                  <input type="hidden" id="address-province" name="province" required />
                 </div>
                 <div class="form-group">
-                  <label for="address-district">Quận/Huyện *</label>
-                  <select class="form-input" id="address-district" required disabled>
-                    <option value="" disabled selected>Chọn Quận/Huyện</option>
-                  </select>
+                  <label>Quận/Huyện *</label>
+                  <div id="address-district-wrapper" data-field="district" data-placeholder="Chọn Quận/Huyện"></div>
+                  <input type="hidden" id="address-district" name="district" required />
                 </div>
                 <div class="form-group">
-                  <label for="address-ward">Phường/Xã *</label>
-                  <select class="form-input" id="address-ward" required disabled>
-                    <option value="" disabled selected>Chọn Phường/Xã</option>
-                  </select>
+                  <label>Phường/Xã *</label>
+                  <div id="address-ward-wrapper" data-field="ward" data-placeholder="Chọn Phường/Xã"></div>
+                  <input type="hidden" id="address-ward" name="ward" required />
                 </div>
               </div>
               <div class="form-group">
