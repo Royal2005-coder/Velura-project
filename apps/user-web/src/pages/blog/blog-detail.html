@@ -30,6 +30,7 @@
         <header class="article-header" id="articleHeader">
           <span class="blog-badge" id="articleBadge">Xu hướng</span>
           <h1 class="article-header__title" id="articleTitle">Loading...</h1>
+          <p class="article-header__dek" id="articleDek"></p>
           <div class="post-meta" id="articleMeta">
             <span class="post-meta__author" id="articleAuthor">-</span>
             <span class="post-meta__dot">&middot;</span>
@@ -299,6 +300,7 @@
       document.getElementById('breadcrumbCategory').textContent = category?.name || post.category_slug;
       document.getElementById('articleBadge').textContent = category?.name || post.category_slug;
       document.getElementById('articleTitle').textContent = post.title;
+      document.getElementById('articleDek').textContent = post.excerpt || '';
       document.getElementById('articleAuthor').textContent = post.author;
       document.getElementById('articleDate').textContent = new Date(post.published_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
       document.getElementById('articleReadTime').textContent = `${post.read_minutes} phút đọc`;
