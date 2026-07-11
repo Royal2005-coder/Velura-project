@@ -89,9 +89,9 @@ export function initHomepage() {
             if (bodyShape) {
               const matchedProds = products.filter(p => {
                 const suitable = Array.isArray(p.suitable_body_shapes)
-                  ? p.suitable_body_shapes.map(s => s.toLowerCase())
+                  ? p.suitable_body_shapes.map(s => (s || "").toLowerCase())
                   : [];
-                return suitable.includes(bodyShape.toLowerCase());
+                return suitable.includes((bodyShape || "").toLowerCase());
               }).slice(0, 4);
 
               if (matchedProds.length > 0) {

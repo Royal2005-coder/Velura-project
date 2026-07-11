@@ -103,7 +103,7 @@ export function initProductCatalog() {
 
     if (!isSame) {
       sizeSelector.innerHTML = targetSizes.map(sz => {
-        const activeClass = selectedSize.toLowerCase() === sz.toLowerCase() ? "is-active" : "";
+        const activeClass = (selectedSize || "").toLowerCase() === (sz || "").toLowerCase() ? "is-active" : "";
         return `<button type="button" class="size-option ${activeClass}">${sz}</button>`;
       }).join("");
 
@@ -221,7 +221,7 @@ export function initProductCatalog() {
       const shapeCheckboxes = document.querySelectorAll('input[name="body_shape"]');
       if (userBodyShape) {
         shapeCheckboxes.forEach(cb => {
-          if (cb.value.toLowerCase() === userBodyShape.toLowerCase()) {
+          if (cb.value.toLowerCase() === (userBodyShape || "").toLowerCase()) {
             cb.checked = true;
           }
         });
@@ -274,7 +274,7 @@ export function initProductCatalog() {
           "rectangle": "Dáng chữ nhật",
           "inverted triangle": "Dáng tam giác ngược"
         };
-        const translatedShape = bodyShapeTranslations[userBodyShape.toLowerCase()] || userBodyShape;
+        const translatedShape = bodyShapeTranslations[(userBodyShape || "").toLowerCase()] || userBodyShape || "";
 
         if (isSuggestionsEnabled) {
           fitHelperEl.innerHTML = `
@@ -384,11 +384,12 @@ export function initProductCatalog() {
         const profileRes = await apiRequest("/api/user/style-quiz");
         if (profileRes && profileRes.quiz) {
           hasStyleProfile = true;
-          userBodyShape = profileRes.quiz.body_shape;
+          userBodyShape = profileRes.quiz.body_shape || "";
           quizData = profileRes.quiz;
         }
       } catch (quizErr) {
         hasStyleProfile = false;
+        userBodyShape = "";
       }
 
       // Apply initial suggestion filters and update layout
@@ -657,7 +658,7 @@ export function initProductCatalog() {
       // Body Shape Filter
       if (checkedBodyShapes.length > 0) {
         const suitable = Array.isArray(p.suitable_body_shapes)
-          ? p.suitable_body_shapes.map(s => s.toLowerCase())
+          ? p.suitable_body_shapes.map(s => (s || "").toLowerCase())
           : [];
         const matchesShape = checkedBodyShapes.some(shape => suitable.includes(shape));
         if (!matchesShape) return false;
