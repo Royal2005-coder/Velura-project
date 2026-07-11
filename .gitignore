@@ -34,3 +34,5 @@ scratch_*.js
 scratch_*.cjs
 test.jpg
 scratch_screenshot*.png
+query-review-*.mjs
+inspect-*.mjs

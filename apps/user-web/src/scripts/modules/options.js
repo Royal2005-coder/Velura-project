@@ -1,5 +1,6 @@
 import { apiRequest } from "./api.js";
 import { showToast, addToCart, getVariantImage } from "./cart.js";
+import { hasRealAuthSession } from "./auth-session.js";
 import { updateWishlistBadge } from "./wishlist.js";
 
 /**
@@ -25,11 +26,22 @@ export async function initOptions() {
 
   let styleProfile = null;
   let predictedSize = "";
+  let recommendedColors = [];
   try {
     const profileRes = await apiRequest("/api/user/style-quiz");
-    if (profileRes && profileRes.profile) {
-      styleProfile = profileRes.profile;
-      const { chest_cm, waist_cm, hip_cm, weight_kg } = styleProfile;
+    if (profileRes && (profileRes.quiz || profileRes.profile)) {
+      styleProfile = profileRes.quiz || profileRes.profile;
+
+      // Parse PostgreSQL array strings to JS arrays
+      ["style_tags", "preferred_occasions", "favorite_brands", "favorite_colors"].forEach(key => {
+        if (styleProfile[key] && typeof styleProfile[key] === "string" && styleProfile[key].startsWith("{")) {
+          try {
+            styleProfile[key] = styleProfile[key].replace(/^{|}$/g, "").split(",").map(s => s.trim().replace(/^"|"$/g, ""));
+          } catch (e) { /* keep as-is */ }
+        }
+      });
+
+      const { chest_cm, waist_cm, hip_cm, weight_kg, skin_tone, favorite_colors } = styleProfile;
       if (chest_cm || waist_cm || hip_cm || weight_kg) {
         if (chest_cm <= 80 && waist_cm <= 64 && hip_cm <= 86 && (weight_kg || 0) <= 45) {
           predictedSize = "XS";
@@ -42,6 +54,25 @@ export async function initOptions() {
         } else {
           predictedSize = "XL";
         }
+      }
+
+      const skinToneColorMap = {
+        "warm": ["Beige", "Camel", "Terracotta", "Coral", "Đỏ", "Nâu", "Kem", "Vàng", "Cam", "Caramel"],
+        "cool": ["Đen", "Trắng", "Xanh dương", "Navy", "Bạc", "Hồng nhạt", "Tím nhạt", "Xám", "Xanh lam"],
+        "neutral": ["Kem", "Xám", "Xanh rêu", "Be", "Nâu nhạt", "Trắng kem", "Đỏ sẫm", "Xanh olive"]
+      };
+
+      if (skin_tone) {
+        const toneLower = skin_tone.toLowerCase();
+        recommendedColors = skinToneColorMap[toneLower] || [];
+      }
+
+      if (favorite_colors && Array.isArray(favorite_colors) && favorite_colors.length > 0) {
+        const quizColors = favorite_colors.map(c => {
+          if (typeof c === "string" && c.includes("|")) return c.split("|")[0].trim();
+          return c;
+        }).filter(Boolean);
+        recommendedColors = [...quizColors, ...recommendedColors];
       }
     }
   } catch (quizErr) {
@@ -60,9 +91,9 @@ export async function initOptions() {
       let productType = "clothing"; // default fallback
 
       if (
-        categoryName.includes("giày") || 
-        categoryName.includes("dép") || 
-        categoryName.includes("guốc") || 
+        categoryName.includes("giày") ||
+        categoryName.includes("dép") ||
+        categoryName.includes("guốc") ||
         categoryName.includes("sandal") ||
         categorySlug.includes("giay") ||
         categorySlug.includes("dep") ||
@@ -95,7 +126,7 @@ export async function initOptions() {
       if (productType !== "clothing") {
         predictedSize = "";
       }
-      
+
       // Bind basic info
       titleEl.textContent = product.name;
       document.title = `${product.name} — Velura`;
@@ -103,7 +134,7 @@ export async function initOptions() {
       if (breadcrumbTitleEl) {
         breadcrumbTitleEl.textContent = product.name;
       }
-      
+
       const formatVND = (val) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(val);
       priceCurrentEl.textContent = formatVND(product.sale_price || product.base_price);
       if (product.sale_price && product.base_price > product.sale_price) {
@@ -119,40 +150,430 @@ export async function initOptions() {
         const comboListEl = document.querySelector(".js-combo-components");
         const comboSummaryEl = document.querySelector(".js-combo-summary");
 
+        // Hide color/size/quantity selectors and main action buttons for combo sets
+        const optionColorEl = document.querySelector(".option-color");
+        const optionSizeEl2 = document.querySelector(".option-size");
+        const fitHelperEl3 = document.querySelector(".product-fit-helper");
+        const qtyEl = document.querySelector(".product-quantity");
+        const mainActionsEl = document.querySelector(".product-actions-grid");
+        if (optionColorEl) optionColorEl.style.display = "none";
+        if (optionSizeEl2) optionSizeEl2.style.display = "none";
+        if (fitHelperEl3) fitHelperEl3.style.display = "none";
+        if (qtyEl) qtyEl.style.display = "none";
+        if (mainActionsEl) mainActionsEl.style.display = "none";
+
         if (comboSection && comboListEl) {
           comboSection.style.display = "";
 
-          comboListEl.innerHTML = product.combo_components.map(comp => {
-            const img = comp.images && comp.images.length > 0 ? comp.images[0] : "/src/assets/images/placeholder.jpg";
-            const priceStr = formatVND(comp.base_price);
-            return `
-              <a href="/src/pages/products/detail.html?id=${comp.product_id}" class="combo-component-item" title="Xem ${comp.name}">
-                <img src="${img}" alt="${comp.name}" class="combo-component-item__img" loading="lazy" />
-                <div class="combo-component-item__info">
-                  <span class="combo-component-item__category">${comp.category_name}</span>
-                  <span class="combo-component-item__name">${comp.name}</span>
-                  <span class="combo-component-item__price">${priceStr}</span>
-                </div>
-                <svg class="combo-component-item__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </a>
-            `;
-          }).join("");
+          // State to track selected variants for each component
+          const comboState = {
+            components: product.combo_components.map(comp => ({
+              product_id: comp.product_id,
+              name: comp.name,
+              selectedVariant: comp.variants && comp.variants.length > 0 ? comp.variants[0] : null,
+              quantity: 1
+            }))
+          };
 
-          if (comboSummaryEl && product.total_original_price > 0) {
-            const savingsPct = Math.round(((product.total_original_price - (product.sale_price || product.base_price)) / product.total_original_price) * 100);
-            const savingsAmt = product.total_original_price - (product.sale_price || product.base_price);
+          // Helper to get available colors for a component
+          const getComponentColors = (comp) => {
+            if (!comp.variants) return [];
+            const colorMap = new Map();
+            comp.variants.forEach(v => {
+              if (v.color && !colorMap.has(v.color)) {
+                colorMap.set(v.color, v.color_hex || "#CCCCCC");
+              }
+            });
+            return Array.from(colorMap.entries()).map(([name, hex]) => ({ name, hex }));
+          };
+
+          // Helper to get available sizes for a component given a color
+          const getComponentSizes = (comp, color) => {
+            if (!comp.variants) return [];
+            return [...new Set(
+              comp.variants
+                .filter(v => !color || v.color === color)
+                .map(v => v.size)
+                .filter(Boolean)
+            )];
+          };
+
+          // Helper to get stock for a specific variant
+          const getVariantStock = (comp, color, size) => {
+            if (!comp.variants) return 0;
+            const variant = comp.variants.find(v => v.color === color && v.size === size);
+            if (!variant) return 0;
+            return Math.max(0, (variant.stock_quantity || 0) - (variant.reserved_quantity || 0));
+          };
+
+          // Render a single component item
+          const renderComponentItem = (comp, idx) => {
+            const img = comp.images && comp.images.length > 0 ? comp.images[0] : "/src/assets/images/placeholder.jpg";
+            const colors = getComponentColors(comp);
+            const stateItem = comboState.components[idx];
+            const selectedColor = stateItem.selectedVariant?.color || (colors[0]?.name || "");
+            const sizes = getComponentSizes(comp, selectedColor);
+            const selectedSize = stateItem.selectedVariant?.size || (sizes[0] || "");
+            // Always show base_price (retail price) for "Tổng nếu mua lẻ" comparison
+            const currentPrice = comp.base_price;
+
+            return `
+              <div class="combo-component-item" data-index="${idx}">
+                <div class="combo-component-item__header">
+                  <img src="${img}" alt="${comp.name}" class="combo-component-item__img" loading="lazy" />
+                  <div class="combo-component-item__info">
+                    <span class="combo-component-item__category">${comp.category_name}</span>
+                    <span class="combo-component-item__name">${comp.name}</span>
+                    <span class="combo-component-item__price" data-price-idx="${idx}">${formatVND(currentPrice)}</span>
+                  </div>
+                  <button type="button" class="combo-component-item__toggle js-combo-toggle" data-index="${idx}" aria-expanded="false" aria-label="Chọn tùy chọn cho ${comp.name}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+                </div>
+                <div class="combo-component-item__options js-combo-options" data-options-idx="${idx}" style="display: none;">
+                  <div class="combo-options__colors">
+                    <span class="combo-options__label">Màu:</span>
+                    <div class="combo-options__list">
+                      ${colors.map((col, cIdx) => `
+                        <button type="button" class="combo-color-btn js-combo-color ${selectedColor === col.name ? 'is-selected' : ''}"
+                          data-comp-idx="${idx}" data-color="${col.name}"
+                          style="background: ${col.hex}; border: 1px solid #ddd;"
+                          title="${col.name}"></button>
+                      `).join("")}
+                    </div>
+                  </div>
+                  ${sizes.length > 0 ? `
+                    <div class="combo-options__sizes">
+                      <span class="combo-options__label">Size:</span>
+                      <div class="combo-options__list">
+                        ${sizes.map((size, sIdx) => `
+                          <button type="button" class="combo-size-btn js-combo-size ${selectedSize === size ? 'is-selected' : ''}"
+                            data-comp-idx="${idx}" data-size="${size}">${size}</button>
+                        `).join("")}
+                      </div>
+                    </div>
+                  ` : ''}
+                  <div class="combo-options__stock" data-stock-idx="${idx}">
+                    ${getVariantStock(comp, selectedColor, selectedSize) > 0
+                      ? `<span class="combo-stock--available">Còn ${getVariantStock(comp, selectedColor, selectedSize)} sản phẩm</span>`
+                      : '<span class="combo-stock--unavailable">Hết hàng</span>'}
+                  </div>
+                </div>
+              </div>
+            `;
+          };
+
+          // Render all components
+          comboListEl.innerHTML = product.combo_components.map((comp, idx) => renderComponentItem(comp, idx)).join("");
+
+          // Update summary based on selected variants
+          const updateComboSummary = () => {
+            if (!comboSummaryEl) return;
+
+            let totalOriginal = 0;
+            let allSelected = true;
+
+            comboState.components.forEach((stateItem, idx) => {
+              const comp = product.combo_components[idx];
+              // "Tổng nếu mua lẻ" always uses base_price (retail price) for comparison
+              const retailPrice = comp.base_price;
+              totalOriginal += retailPrice * stateItem.quantity;
+
+              // Update individual component price display to show retail price
+              const priceEl = comboListEl.querySelector(`[data-price-idx="${idx}"]`);
+              if (priceEl) priceEl.textContent = formatVND(retailPrice);
+
+              if (!stateItem.selectedVariant) allSelected = false;
+            });
+
+            const comboPrice = product.sale_price || product.base_price;
+            const savings = Math.max(0, totalOriginal - comboPrice);
+            const savingsPct = totalOriginal > 0 ? Math.round((savings / totalOriginal) * 100) : 0;
+
             comboSummaryEl.innerHTML = `
               <div class="combo-summary-row">
                 <span class="combo-summary__label">Tổng nếu mua lẻ:</span>
-                <span class="combo-summary__old-price">${formatVND(product.total_original_price)}</span>
+                <span class="combo-summary__old-price">${formatVND(totalOriginal)}</span>
               </div>
               <div class="combo-summary-row combo-summary-row--savings">
                 <span class="combo-summary__label">Tiết kiệm khi mua set:</span>
-                <span class="combo-summary__savings">-${formatVND(savingsAmt)} (${savingsPct}%)</span>
+                <span class="combo-summary__savings">-${formatVND(savings)} (${savingsPct}%)</span>
+              </div>
+              <div class="combo-summary-row combo-summary-row--total">
+                <span class="combo-summary__label">Giá set:</span>
+                <span class="combo-summary__total">${formatVND(comboPrice)}</span>
               </div>
             `;
+          };
+
+          // Initial summary render
+          updateComboSummary();
+
+          // Event delegation for combo component interactions
+          comboListEl.addEventListener("click", (e) => {
+            // Toggle expand/collapse
+            const toggleBtn = e.target.closest(".js-combo-toggle");
+            if (toggleBtn) {
+              const idx = parseInt(toggleBtn.dataset.index);
+              const optionsPanel = comboListEl.querySelector(`[data-options-idx="${idx}"]`);
+              if (optionsPanel) {
+                const isExpanded = optionsPanel.style.display !== "none";
+                optionsPanel.style.display = isExpanded ? "none" : "flex";
+                toggleBtn.setAttribute("aria-expanded", !isExpanded);
+                toggleBtn.classList.toggle("is-expanded", !isExpanded);
+              }
+              return;
+            }
+
+            // Color selection
+            const colorBtn = e.target.closest(".js-combo-color");
+            if (colorBtn) {
+              const compIdx = parseInt(colorBtn.dataset.compIdx);
+              const color = colorBtn.dataset.color;
+              const comp = product.combo_components[compIdx];
+
+              // Update selected state
+              colorBtn.closest(".combo-options__list").querySelectorAll(".js-combo-color").forEach(b => b.classList.remove("is-selected"));
+              colorBtn.classList.add("is-selected");
+
+              // Update state
+              const sizes = getComponentSizes(comp, color);
+              const firstSize = sizes[0] || "";
+              const variant = comp.variants.find(v => v.color === color && v.size === firstSize);
+              comboState.components[compIdx].selectedVariant = variant || null;
+
+              // Re-render sizes
+              const sizeContainer = colorBtn.closest(".combo-component-item__options").querySelector(".combo-options__sizes .combo-options__list");
+              if (sizeContainer) {
+                sizeContainer.innerHTML = sizes.map((size, sIdx) => `
+                  <button type="button" class="combo-size-btn js-combo-size ${sIdx === 0 ? 'is-selected' : ''}"
+                    data-comp-idx="${compIdx}" data-size="${size}">${size}</button>
+                `).join("");
+              }
+
+              // Update stock display
+              const stockEl = comboListEl.querySelector(`[data-stock-idx="${compIdx}"]`);
+              if (stockEl) {
+                const stock = getVariantStock(comp, color, firstSize);
+                stockEl.innerHTML = stock > 0
+                  ? `<span class="combo-stock--available">Còn ${stock} sản phẩm</span>`
+                  : '<span class="combo-stock--unavailable">Hết hàng</span>';
+              }
+
+              updateComboSummary();
+              return;
+            }
+
+            // Size selection
+            const sizeBtn = e.target.closest(".js-combo-size");
+            if (sizeBtn) {
+              const compIdx = parseInt(sizeBtn.dataset.compIdx);
+              const size = sizeBtn.dataset.size;
+              const comp = product.combo_components[compIdx];
+
+              // Update selected state
+              sizeBtn.closest(".combo-options__list").querySelectorAll(".js-combo-size").forEach(b => b.classList.remove("is-selected"));
+              sizeBtn.classList.add("is-selected");
+
+              // Find selected color
+              const colorBtns = comboListEl.querySelectorAll(`.js-combo-color[data-comp-idx="${compIdx}"]`);
+              let selectedColor = "";
+              colorBtns.forEach(b => { if (b.classList.contains("is-selected")) selectedColor = b.dataset.color; });
+
+              // Update state
+              const variant = comp.variants.find(v => v.color === selectedColor && v.size === size);
+              comboState.components[compIdx].selectedVariant = variant || null;
+
+              // Update stock display
+              const stockEl = comboListEl.querySelector(`[data-stock-idx="${compIdx}"]`);
+              if (stockEl) {
+                const stock = getVariantStock(comp, selectedColor, size);
+                stockEl.innerHTML = stock > 0
+                  ? `<span class="combo-stock--available">Còn ${stock} sản phẩm</span>`
+                  : '<span class="combo-stock--unavailable">Hết hàng</span>';
+              }
+
+              updateComboSummary();
+              return;
+            }
+          });
+
+          // Add combo action buttons after summary
+          const comboActionsHtml = `
+            <div class="combo-actions" style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn btn--outline combo-add-cart js-combo-add-cart" style="flex: 1;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                    <circle cx="9" cy="21" r="1"></circle>
+                    <circle cx="20" cy="21" r="1"></circle>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                  </svg>
+                  Thêm set vào giỏ
+                </button>
+                <button type="button" class="btn btn--primary combo-buy-now js-combo-buy-now" style="flex: 1;">Mua ngay set này</button>
+              </div>
+              <button type="button" class="btn btn--secondary combo-wishlist js-combo-wishlist" style="width: 100%;">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.67" style="margin-right: 8px;">
+                  <path d="M10 17.5l-5.83-5.83a4.17 4.17 0 115.83-5.83 4.17 4.17 0 115.83 5.83L10 17.5z" />
+                </svg>
+                Thêm vào yêu thích
+              </button>
+            </div>
+          `;
+          comboSummaryEl.insertAdjacentHTML("afterend", comboActionsHtml);
+
+          // Combo Wishlist handler
+          const comboWishlistBtn = comboSection.querySelector(".js-combo-wishlist");
+          if (comboWishlistBtn) {
+            comboWishlistBtn.addEventListener("click", async () => {
+              if (!localStorage.getItem("velura_token")) {
+                showToast("Vui lòng đăng nhập để lưu sản phẩm!");
+                return;
+              }
+              const isActive = comboWishlistBtn.classList.contains("is-wishlist-active");
+              try {
+                if (isActive) {
+                  await apiRequest(`/api/user/wishlist?product_id=${product.product_id}`, { method: "DELETE" });
+                  comboWishlistBtn.classList.remove("is-wishlist-active");
+                  showToast("Đã xóa khỏi danh sách yêu thích");
+                  const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+                  localStorage.setItem("velura_wishlist_count", Math.max(0, currentCount - 1));
+                  updateWishlistBadge();
+                } else {
+                  await apiRequest("/api/user/wishlist", {
+                    method: "POST",
+                    body: { product_id: product.product_id }
+                  });
+                  comboWishlistBtn.classList.add("is-wishlist-active");
+                  showToast("Đã thêm vào danh sách yêu thích!");
+                  const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+                  localStorage.setItem("velura_wishlist_count", currentCount + 1);
+                  updateWishlistBadge();
+                }
+              } catch (err) {
+                if (err.status === 401) {
+                  showToast("Vui lòng đăng nhập để lưu sản phẩm!");
+                } else {
+                  showToast(err.message || "Lỗi thao tác yêu thích");
+                }
+              }
+            });
+
+            // Check if combo is already wishlisted
+            try {
+              const wishlistData = await apiRequest("/api/user/wishlist");
+              const items = wishlistData.items || [];
+              if (items.some(item => item.product_id === product.product_id)) {
+                comboWishlistBtn.classList.add("is-wishlist-active");
+              }
+            } catch { /* ignore */ }
+          }
+
+          // Combo Add to Cart handler
+          const comboCartBtn = comboSection.querySelector(".js-combo-add-cart");
+          if (comboCartBtn) {
+            comboCartBtn.addEventListener("click", async () => {
+              // Check all components have selected variants
+              const missingSelections = comboState.components.filter(c => !c.selectedVariant);
+              if (missingSelections.length > 0) {
+                showToast(`Vui lòng chọn màu sắc và kích cỡ cho: ${missingSelections.map(c => c.name).join(", ")}`);
+                return;
+              }
+
+              // Add each component to cart as part of the combo
+              const comboId = `combo-${product.product_id}-${Date.now()}`;
+              for (const stateItem of comboState.components) {
+                const comp = product.combo_components.find(c => c.product_id === stateItem.product_id);
+                if (comp && stateItem.selectedVariant) {
+                  await addToCart({
+                    variant_id: stateItem.selectedVariant.variant_id,
+                    product_id: stateItem.product_id,
+                    product_name: comp.name,
+                    product_image: comp.images?.[0] || "/src/assets/images/placeholder.jpg",
+                    quantity: stateItem.quantity,
+                    unit_price: comp.sale_price || comp.base_price,
+                    color: stateItem.selectedVariant.color,
+                    size: stateItem.selectedVariant.size || null,
+                    combo_id: comboId,
+                    combo_name: product.name,
+                    combo_price: product.sale_price || product.base_price
+                  });
+                }
+              }
+              showToast("Đã thêm set sản phẩm vào giỏ hàng!");
+            });
+          }
+
+          // Combo Buy Now handler
+          const comboBuyBtn = comboSection.querySelector(".js-combo-buy-now");
+          if (comboBuyBtn) {
+            comboBuyBtn.addEventListener("click", async () => {
+              // Check all components have selected variants
+              const missingSelections = comboState.components.filter(c => !c.selectedVariant);
+              if (missingSelections.length > 0) {
+                showToast(`Vui lòng chọn màu sắc và kích cỡ cho: ${missingSelections.map(c => c.name).join(", ")}`);
+                return;
+              }
+
+              // Build checkout items directly (no add to cart)
+              const comboId = `combo-${product.product_id}-${Date.now()}`;
+              const checkoutItems = [];
+              for (const stateItem of comboState.components) {
+                const comp = product.combo_components.find(c => c.product_id === stateItem.product_id);
+                if (comp && stateItem.selectedVariant) {
+                  checkoutItems.push({
+                    variant_id: stateItem.selectedVariant.variant_id,
+                    product_id: stateItem.product_id,
+                    product_name: comp.name,
+                    product_image: comp.images?.[0] || "/src/assets/images/placeholder.jpg",
+                    quantity: stateItem.quantity,
+                    unit_price: comp.sale_price || comp.base_price,
+                    color: stateItem.selectedVariant.color,
+                    size: stateItem.selectedVariant.size || null,
+                    combo_id: comboId,
+                    combo_name: product.name,
+                    combo_price: product.sale_price || product.base_price
+                  });
+                }
+              }
+
+              sessionStorage.setItem("checkout_items", JSON.stringify(checkoutItems));
+              localStorage.removeItem("checkout_discount");
+              localStorage.removeItem("checkout_voucher_id");
+              localStorage.removeItem("checkout_voucher_code");
+
+              // Member with saved addresses → skip to shipping/payment
+              if (hasRealAuthSession()) {
+                try {
+                  const user = await apiRequest("/api/user/profile");
+                  const addresses = user.saved_addresses || [];
+                  if (addresses.length > 0) {
+                    const addr = addresses.find(a => a.is_default) || addresses[0];
+                    const shippingInfo = {
+                      name: addr.name || addr.recipient_name || user.full_name || "",
+                      phone: addr.phone || addr.recipient_phone || user.phone || "",
+                      email: user.email || "",
+                      address: addr.detail || addr.address || addr.address_line || "",
+                      note: ""
+                    };
+                    if (shippingInfo.phone && shippingInfo.address) {
+                      localStorage.setItem("checkout_shipping", JSON.stringify(shippingInfo));
+                      window.location.href = "/src/pages/checkout/shipping-payment.html";
+                      return;
+                    }
+                  }
+                } catch (err) {
+                  console.error("Failed to fetch profile for auto-skip:", err);
+                }
+                // Fallback: no addresses → go to address page
+                window.location.href = "/src/pages/checkout/payment-user.html";
+              } else {
+                window.location.href = "/src/pages/checkout/payment-guest.html";
+              }
+            });
           }
         }
       }
@@ -229,19 +650,19 @@ export async function initOptions() {
       if (fitHelperEl) {
         let fitText = "";
         const shapeMap = {
-          "Hourglass": "Đồng hồ cát", "Pear": "Quả lê", "Apple": "Quả táo", 
+          "Hourglass": "Đồng hồ cát", "Pear": "Quả lê", "Apple": "Quả táo",
           "Rectangle": "Thước kẻ/Chữ nhật", "Inverted Triangle": "Tam giác ngược"
         };
         const toneMap = { "Warm": "Warm (Ấm)", "Cool": "Cool (Lạnh)", "Neutral": "Neutral (Trung tính)" };
         const shapes = (product.suitable_body_shapes || []).map(s => shapeMap[s] || s);
         const tone = toneMap[product.color_tone] || product.color_tone;
-        
+
         let recommendationText = "";
         if (productType === "clothing") {
           if (predictedSize) {
-            recommendationText = `<div style="font-weight: 700; color: #8A6D3B; margin-top: 4px;">Gợi ý kích cỡ: Size ${predictedSize} vừa vặn nhất với bạn dựa trên Style Profile.</div>`;
+            recommendationText += `<div style="font-weight: 700; color: #8A6D3B; margin-top: 4px;">Gợi ý kích cỡ: Size ${predictedSize} vừa vặn nhất với bạn dựa trên Style Profile.</div>`;
           } else {
-            recommendationText = `<div style="margin-top: 4px;"><a href="/src/pages/ai/style-quiz.html" class="btn btn--sm btn--primary" style="text-decoration:none; padding: 4px 8px; font-size:0.75rem; border-radius: 4px; display:inline-block;">Làm Style Quiz để nhận gợi ý size chính xác</a></div>`;
+            recommendationText += `<div style="margin-top: 4px;"><a href="/src/pages/ai/style-quiz.html" class="btn btn--sm btn--primary" style="text-decoration:none; padding: 4px 8px; font-size:0.75rem; border-radius: 4px; display:inline-block;">Làm Style Quiz để nhận gợi ý size chính xác</a></div>`;
           }
         }
 
@@ -254,7 +675,7 @@ export async function initOptions() {
         } else {
           fitText = `Thiết kế chuẩn phom tôn dáng tôn da từ Velura`;
         }
-        
+
         fitHelperEl.innerHTML = `
           <div style="display: flex; align-items: flex-start; gap: 8px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -370,6 +791,24 @@ export async function initOptions() {
       });
       const uniqueColors = Array.from(colorMap.entries()).map(([name, hex]) => ({ name, hex }));
       const uniqueSizes = [...new Set(variants.map(v => v.size).filter(Boolean))];
+
+      // Show color recommendations from style profile in fit helper
+      if (styleProfile && recommendedColors.length > 0 && uniqueColors.length > 0) {
+        const matchedRecColors = uniqueColors.filter(c =>
+          recommendedColors.some(rc => c.name.toLowerCase().includes(rc.toLowerCase()) || rc.toLowerCase().includes(c.name.toLowerCase()))
+        );
+        if (matchedRecColors.length > 0) {
+          const fitHelperEl2 = document.querySelector(".product-fit-helper");
+          if (fitHelperEl2) {
+            const colorNames = matchedRecColors.map(c => c.name).join(", ");
+            const recDiv = document.createElement("div");
+            recDiv.style.cssText = "font-weight: 600; color: #8A6D3B; margin-top: 4px;";
+            recDiv.textContent = `Màu phù hợp với bạn: ${colorNames}`;
+            const innerDiv = fitHelperEl2.querySelector("div > div");
+            if (innerDiv) innerDiv.appendChild(recDiv);
+          }
+        }
+      }
 
       // Hide size selection if there are no size variants or it is an accessory
       const optionSizeEl = document.querySelector(".option-size");
@@ -511,14 +950,22 @@ export async function initOptions() {
       }
 
       if (colorListEl) {
+        let recColorIndex = 0;
+        if (recommendedColors.length > 0 && uniqueColors.length > 0) {
+          const matchedIdx = uniqueColors.findIndex(c =>
+            recommendedColors.some(rc => c.name.toLowerCase().includes(rc.toLowerCase()) || rc.toLowerCase().includes(c.name.toLowerCase()))
+          );
+          if (matchedIdx > -1) recColorIndex = matchedIdx;
+        }
+
         colorListEl.innerHTML = uniqueColors.map((col, idx) => {
           return `
-            <button type="button" class="color-btn js-color-btn ${idx === 0 ? 'is-selected' : ''}" data-color="${col.name}" style="background: ${col.hex}; border: 1px solid #ddd;" title="${col.name}"></button>
+            <button type="button" class="color-btn js-color-btn ${idx === recColorIndex ? 'is-selected' : ''}" data-color="${col.name}" style="background: ${col.hex}; border: 1px solid #ddd;" title="${col.name}"></button>
           `;
         }).join("");
 
-        if (colorNameLabel && uniqueColors[0]) {
-          colorNameLabel.textContent = uniqueColors[0].name;
+        if (colorNameLabel && uniqueColors[recColorIndex]) {
+          colorNameLabel.textContent = uniqueColors[recColorIndex].name;
         }
       }
 
@@ -546,7 +993,7 @@ export async function initOptions() {
       const updateStockDisplay = () => {
         const selectedColorBtn = document.querySelector(".js-color-btn.is-selected");
         const selectedSizeBtn = document.querySelector(".js-size-btn.is-selected");
-        
+
         const targetBadge = activeStockBadgeEl || document.querySelector(".product-badge--stock");
         if (!targetBadge) return;
 
@@ -555,10 +1002,10 @@ export async function initOptions() {
           targetBadge.textContent = `Còn ${totalStock} sản phẩm`;
           return;
         }
-        
+
         const color = selectedColorBtn.getAttribute("data-color");
         const size = selectedSizeBtn.getAttribute("data-size");
-        
+
         const matchedVariant = variants.find(v => v.color === color && v.size === size);
         if (matchedVariant) {
           const availableStock = Math.max(0, matchedVariant.stock_quantity - (matchedVariant.reserved_quantity || 0));
@@ -580,37 +1027,37 @@ export async function initOptions() {
           if (colorNameLabel) {
             colorNameLabel.textContent = selectedColor;
           }
-          
+
           // Switch main image to match selected color if found in image URLs
           if (selectedColor && images.length > 0) {
             const colorSlug = selectedColor.toLowerCase().replace(/[^a-z0-9]+/g, "-");
             const tokens = colorSlug.split("-").filter(t => t.length >= 3);
-            
+
             let bestIdx = -1;
             let maxScore = 0;
-            
+
             images.forEach((img, idx) => {
               const urlLower = img.toLowerCase();
               let score = 0;
-              
+
               // Exact slug match (highest priority)
               if (urlLower.includes(colorSlug) || urlLower.includes(colorSlug.replace("-", ""))) {
                 score += 10;
               }
-              
+
               // Partial token match (e.g. "beige" in "Champagne Beige", or "terracotta" in "Terracotta Rose")
               tokens.forEach(tok => {
                 if (urlLower.includes(tok)) {
                   score += 5;
                 }
               });
-              
+
               if (score > maxScore) {
                 maxScore = score;
                 bestIdx = idx;
               }
             });
-            
+
             if (bestIdx > -1 && maxScore > 0) {
               setActiveImage(bestIdx);
             }
@@ -646,7 +1093,7 @@ export async function initOptions() {
       // Cart binding in product details
       const detailCartBtn = document.querySelector(".js-add-cart");
       const buyNowBtn = document.querySelector(".js-buy-now");
-      
+
       const isOutOfStock = product.status === "out_of_stock";
 
       if (isOutOfStock) {
@@ -665,7 +1112,7 @@ export async function initOptions() {
           detailCartBtn.removeAttribute("onclick"); // Clear fallback inline redirect
           detailCartBtn.addEventListener("click", (e) => {
             e.preventDefault();
-            
+
             const selectedColorBtn = document.querySelector(".js-color-btn.is-selected");
             const selectedSizeBtn = document.querySelector(".js-size-btn.is-selected");
             const qtyInputEl = document.querySelector(".js-qty-input");
@@ -734,16 +1181,35 @@ export async function initOptions() {
           };
 
           await addToCart(checkoutItem);
-          
+
           sessionStorage.setItem("checkout_items", JSON.stringify([checkoutItem]));
-          
+
           // Clear any old checkout session data
           localStorage.removeItem("checkout_discount");
           localStorage.removeItem("checkout_voucher_id");
           localStorage.removeItem("checkout_voucher_code");
 
           if (localStorage.getItem("velura_token")) {
-            window.location.href = "/src/pages/checkout/payment-user.html";
+            try {
+              const user = await apiRequest("/api/user/profile");
+              const savedAddresses = user.saved_addresses || user.addresses || [];
+              if (savedAddresses.length > 0) {
+                const addr = savedAddresses.find(a => a.is_default) || savedAddresses[0];
+                const shippingInfo = {
+                  name: addr.name || addr.recipient_name || user.full_name || "",
+                  phone: addr.phone || addr.recipient_phone || user.phone || "",
+                  email: user.email || "",
+                  address: addr.detail || addr.address || addr.address_line || "",
+                  note: ""
+                };
+                localStorage.setItem("checkout_shipping", JSON.stringify(shippingInfo));
+                window.location.href = "/src/pages/checkout/shipping-payment.html";
+              } else {
+                window.location.href = "/src/pages/checkout/payment-user.html";
+              }
+            } catch {
+              window.location.href = "/src/pages/checkout/payment-user.html";
+            }
           } else {
             window.location.href = "/src/pages/checkout/payment-guest.html";
           }
@@ -764,7 +1230,7 @@ export async function initOptions() {
   if (wishlistBtn) {
     wishlistBtn.addEventListener("click", async () => {
       if (!productId) return;
-      
+
       const isActive = wishlistBtn.classList.contains("is-wishlist-active");
       try {
         if (isActive) {
@@ -847,36 +1313,36 @@ async function loadRelatedProducts(product) {
   try {
     const allProducts = await apiRequest("/api/user/products");
     const categoryId = product.category_id;
-    
+
     // Filter products in the same category, excluding the current product itself
     let relatedProducts = allProducts.filter(p => p.category_id === categoryId && p.product_id !== product.product_id);
-    
+
     // Fallback if no products in same category
     if (relatedProducts.length === 0) {
       relatedProducts = allProducts.filter(p => p.product_id !== product.product_id);
     }
-    
+
     // Limit to 4
     relatedProducts = relatedProducts.slice(0, 4);
-    
+
     const relatedGridEl = document.querySelector(".related-products .product-grid");
     if (relatedGridEl) {
       if (relatedProducts.length > 0) {
         const formatVND = (val) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(val);
-        
+
         relatedGridEl.innerHTML = relatedProducts.map(rp => {
           const rpPrice = rp.sale_price || rp.base_price;
           const rpOldPrice = rp.sale_price && rp.base_price > rp.sale_price ? rp.base_price : null;
           const rpDiscount = rpOldPrice ? Math.round((1 - rpPrice / rpOldPrice) * 100) : 0;
-          
+
           const isOutOfStock = rp.status === "out_of_stock";
 
           const badgeHtml = isOutOfStock
             ? `<span class="card__badge card__badge--out-of-stock" style="background:#555;color:#fff;">HẾT HÀNG</span>`
-            : (rpDiscount > 0 
-              ? `<span class="card__badge card__badge--sale">-${rpDiscount}%</span>` 
+            : (rpDiscount > 0
+              ? `<span class="card__badge card__badge--sale">-${rpDiscount}%</span>`
               : (rp.is_featured ? `<span class="card__badge" style="background:#A18265;color:#fff;">HOT</span>` : ""));
-            
+
           const colorMap = new Map();
           rp.variants?.forEach(v => {
             if (v.color && !colorMap.has(v.color)) {
@@ -886,12 +1352,12 @@ async function loadRelatedProducts(product) {
           const colorDotsHtml = Array.from(colorMap.entries()).map(([name, hex]) => {
             return `<span class="card__color-dot" style="background-color: ${hex}; border: 1px solid #ddd;" title="${name}"></span>`;
           }).join("");
-          
+
           const cardStyle = isOutOfStock ? "opacity: 0.6; filter: grayscale(100%); cursor: not-allowed;" : "";
           const linkTag = isOutOfStock ? "div" : "a";
           const linkHref = isOutOfStock ? "" : `href="/src/pages/products/detail.html?id=${rp.product_id}"`;
 
-          const actionsHtml = isOutOfStock 
+          const actionsHtml = isOutOfStock
             ? `<div style="text-align:center; padding:12px; color:#555; font-weight:bold; border-top:1px solid #eee;">HẾT HÀNG</div>`
             : `<button class="btn btn--primary card__add-btn js-add-cart-related" type="button" data-id="${rp.product_id}">Thêm giỏ</button>`;
 
@@ -922,7 +1388,7 @@ async function loadRelatedProducts(product) {
             </article>
           `;
         }).join("");
-        
+
         // Wishlist click handler
         relatedGridEl.querySelectorAll(".js-add-wishlist-related").forEach(btn => {
           btn.addEventListener("click", async (e) => {
@@ -975,7 +1441,7 @@ async function loadRelatedProducts(product) {
             }
           });
         });
-        
+
         // Check wishlist status for related products to set active class
         try {
           const wishlistData = await apiRequest("/api/user/wishlist");
@@ -1005,7 +1471,7 @@ function renderReviews(reviews) {
 
   const count = reviews.length;
   let avgRating = 5.0;
-  
+
   // Calculate average rating
   if (count > 0) {
     const totalRating = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
@@ -1048,7 +1514,7 @@ function renderReviews(reviews) {
   const summaryLeftTitle = document.querySelector(".reviews-summary__left .reviews-summary__title");
   const summaryLeftStars = document.querySelector(".reviews-summary__left .rating-stars");
   const summaryLeftSubtitle = document.querySelector(".reviews-summary__left .reviews-summary__subtitle");
-  
+
   if (summaryLeftTitle) {
     summaryLeftTitle.textContent = avgRating;
   }
@@ -1161,7 +1627,7 @@ function renderReviews(reviews) {
 
     // Reply button and input form
     const isUserLoggedIn = localStorage.getItem("velura_token") || localStorage.getItem("velura_user");
-    const replyFormHtml = isUserLoggedIn 
+    const replyFormHtml = isUserLoggedIn
       ? `
         <div class="review-reply-form-container" style="margin-top: 16px;">
           <button type="button" class="js-toggle-reply-form" style="background: none; border: none; color: #C97B63; font-weight: 600; font-size: 0.85rem; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 4px;">
@@ -1251,7 +1717,7 @@ function renderReviews(reviews) {
             method: "POST",
             body: { reply_text: replyText }
           });
-          
+
           if (res.success) {
             window.location.reload();
           } else {

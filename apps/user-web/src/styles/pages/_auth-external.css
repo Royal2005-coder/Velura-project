@@ -546,3 +546,126 @@
   .velura-auth-page .header h1       { font-size: 20px; }
   .velura-auth-page .tab-btn         { padding: 10px; font-size: 13px; }
 }
+
+/* ── Google Button ───────────────────────────────────────────── */
+.velura-auth-page .btn-google {
+  background: #fff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+}
+.velura-auth-page .btn-google:hover {
+  background: #f8f9fa;
+  border-color: #c6c8ca;
+}
+.velura-auth-page .btn-google .icon-google {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ── Back Button ─────────────────────────────────────────────── */
+.velura-auth-page .btn-back {
+  flex: 1;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--auth-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--auth-text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  text-decoration: none;
+}
+.velura-auth-page .btn-back:hover {
+  background: var(--auth-input-bg);
+  border-color: var(--auth-primary);
+  color: var(--auth-text-dark);
+}
+.velura-auth-page .btn-back svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Divider with "hoặc" ─────────────────────────────────────── */
+.velura-auth-page .or-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 16px;
+  color: var(--auth-text-light);
+  font-size: 13px;
+}
+.velura-auth-page .or-divider::before,
+.velura-auth-page .or-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--auth-border);
+}
+
+/* ── Auth Callback Page ──────────────────────────────────────── */
+.velura-auth-page .callback-card {
+  max-width: 420px;
+  width: 100%;
+  padding: 60px 40px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  text-align: center;
+  position: relative;
+}
+.velura-auth-page .callback-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 20px;
+  border: 3px solid var(--auth-border);
+  border-top-color: var(--auth-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.velura-auth-page .callback-card h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--auth-text-dark);
+  margin: 0 0 8px;
+}
+.velura-auth-page .callback-card p {
+  font-size: 14px;
+  color: var(--auth-text-muted);
+  margin: 0 0 16px;
+}
+.velura-auth-page .callback-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px;
+  color: #991b1b;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.velura-auth-page .callback-back {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 10px 24px;
+  background: var(--auth-primary);
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.velura-auth-page .callback-back:hover {
+  background: var(--auth-primary-hover);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -714,6 +714,66 @@ export function updateHeaderAuthUI() {
   }, 3000);
 }
 
+// ─── Social OAuth (Google / Facebook via Supabase Auth) ─────────────────────
+
+const SUPABASE_URL = "https://drvkrpoojyncodfytftn.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_6ELMfwBsM3SFAXQz8-jmOQ_kv1kkGh7";
+const SUPABASE_AUTH = SUPABASE_URL + "/auth/v1";
+const PKCE_KEY = "velura-oauth-pkce-code-verifier";
+const CALLBACK_URL = window.location.origin + "/src/pages/auth/auth-callback.html";
+
+function generateCodeVerifier() {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode.apply(null, array))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function computeCodeChallenge(verifier) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  const array = new Uint8Array(digest);
+  return btoa(String.fromCharCode.apply(null, array))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function startSocialOAuth(provider) {
+  const verifier = generateCodeVerifier();
+  const challenge = await computeCodeChallenge(verifier);
+  localStorage.setItem(PKCE_KEY, verifier);
+  const url = SUPABASE_AUTH + "/authorize?provider=" + provider
+    + "&code_challenge=" + encodeURIComponent(challenge)
+    + "&code_challenge_method=s256"
+    + "&redirect_to=" + encodeURIComponent(CALLBACK_URL);
+  window.location.href = url;
+}
+
+function bindSocialLogin() {
+  const googleBtn = document.getElementById("btn-google-login");
+  const facebookBtn = document.getElementById("btn-facebook-login");
+
+  if (googleBtn) {
+    googleBtn.addEventListener("click", async () => {
+      try {
+        await startSocialOAuth("google");
+      } catch {
+        showToast("Không thể kết nối Google. Vui lòng thử lại.");
+      }
+    });
+  }
+
+  if (facebookBtn) {
+    facebookBtn.addEventListener("click", async () => {
+      try {
+        await startSocialOAuth("facebook");
+      } catch {
+        showToast("Không thể kết nối Facebook. Vui lòng thử lại.");
+      }
+    });
+  }
+}
+
 // ─── Main entry ──────────────────────────────────────────────────────────────
 
 export function initAuthClient() {
@@ -736,6 +796,7 @@ export function initAuthClient() {
   bindSignup();
   bindForgotPassword();
   bindResetPassword();
+  bindSocialLogin();
   updateHeaderAuthUI();
 
   // Bind Account Dropdown Item Listeners

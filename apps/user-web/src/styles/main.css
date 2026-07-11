@@ -35,6 +35,7 @@
 @import "./components/_quiz-popup.css";
 @import "./components/_my-orders.css";
 @import "./components/_product-review.css";
+@import "./components/_search-dropdown.css";
 
 /* Pages */
 @import "./pages/_signin.css";

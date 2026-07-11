@@ -52,7 +52,6 @@ export function clearAuthSession() {
     "checkout_methods",
     "guest_temp_password",
     "created_order",
-    "velura_suggestions_enabled",
     "cart_merged"
   ];
   keysToRemove.forEach((key) => localStorage.removeItem(key));

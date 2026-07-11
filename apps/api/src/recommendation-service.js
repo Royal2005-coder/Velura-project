@@ -32,17 +32,15 @@ const COMBO_SCHEMA = {
   properties: {
     combos: {
       type: "array",
-      minItems: 1,
-      maxItems: 5,
+      description: "Danh sách 1-5 set đồ được gợi ý",
       items: {
         type: "object",
         properties: {
-          combo_name: { type: "string" },
-          reason: { type: "string" },
+          combo_name: { type: "string", description: "Tên set đồ" },
+          reason: { type: "string", description: "Lý do gợi ý (tiếng Việt)" },
           product_ids: {
             type: "array",
-            minItems: 2,
-            maxItems: 4,
+            description: "Danh sách 2-4 product_id từ danh sách ứng viên",
             items: { type: "string" }
           }
         },
@@ -54,23 +52,40 @@ const COMBO_SCHEMA = {
 };
 
 export async function buildStyleProfileRecommendations(context, req) {
-  const quiz = await getStyleProfile(context, req);
-  const fallbackData = await buildRuleBasedRecommendations(quiz);
+  let quiz = null;
+  let fallbackData = { success: true, quiz: null, combos: [], categories: [] };
 
-  if (!quiz || !hasStyleSignal(quiz) || !isGeminiConfigured()) {
-    return { ...fallbackData, source: isGeminiConfigured() ? "rule_fallback" : "rule_fallback_no_gemini_key" };
+  try {
+    quiz = await getStyleProfile(context, req);
+    fallbackData = await buildRuleBasedRecommendations(quiz);
+  } catch (dbError) {
+    console.error("[RECOMMENDATION DB ERROR]:", sanitizeAiError(dbError));
+    return { success: true, quiz: null, combos: [], categories: [], source: "db_error" };
+  }
+
+  const geminiConfigured = isGeminiConfigured();
+  if (!quiz || !hasStyleSignal(quiz) || !geminiConfigured) {
+    const reason = !quiz ? "no_quiz" : !hasStyleSignal(quiz) ? "no_style_signal" : "no_gemini_key";
+    console.warn(`[RECOMMENDATION] Using rule-based fallback: ${reason}`);
+    return { ...fallbackData, source: geminiConfigured ? "rule_fallback" : "rule_fallback_no_gemini_key" };
   }
 
   try {
     const queryText = buildProfileEmbeddingText(quiz, context.profile);
+    console.log(`[RECOMMENDATION] Generating embedding for quiz profile...`);
     const queryEmbedding = await generateGeminiEmbedding(`task: search result | query: ${queryText}`);
+    console.log(`[RECOMMENDATION] Embedding generated (${queryEmbedding.length} dims). Matching products...`);
     const candidates = await matchProductsByVector(queryEmbedding, quiz);
+    console.log(`[RECOMMENDATION] Found ${candidates.length} vector matches`);
 
     if (!candidates.length) {
+      console.warn("[RECOMMENDATION] No vector matches found, using rule-based fallback");
       return { ...fallbackData, source: "rule_fallback_no_vector_matches" };
     }
 
+    console.log(`[RECOMMENDATION] Generating AI combos from ${candidates.length} candidates...`);
     const combos = await buildStylistCombos(quiz, candidates);
+    console.log(`[RECOMMENDATION] Generated ${combos.length} AI combos`);
     const categories = groupProductsByCategory(candidates);
     return {
       success: true,
@@ -80,8 +95,9 @@ export async function buildStyleProfileRecommendations(context, req) {
       source: "gemini_rag"
     };
   } catch (error) {
-    console.error("[GEMINI RAG RECOMMENDATION FALLBACK]:", sanitizeAiError(error));
-    return { ...fallbackData, source: "rule_fallback_gemini_error" };
+    const errorDetail = sanitizeAiError(error);
+    console.error("[RECOMMENDATION] Gemini RAG failed, using rule-based fallback:", errorDetail);
+    return { ...fallbackData, source: "rule_fallback_gemini_error", error: errorDetail };
   }
 }
 
@@ -308,6 +324,12 @@ function normalizeProduct(product) {
 }
 
 function buildProfileEmbeddingText(quiz, profile) {
+  const budgetDisplay = {
+    "under_300k": "Dưới 300k",
+    "300k_700k": "300k – 700k",
+    "700k_1.5m": "700k – 1.5 triệu",
+    "above_1.5m": "Trên 1.5 triệu"
+  };
   return [
     `Người dùng: ${profile?.full_name || "Khách hàng Velura"}`,
     `Dáng người: ${quiz.body_shape || ""}`,
@@ -315,7 +337,7 @@ function buildProfileEmbeddingText(quiz, profile) {
     `Phong cách yêu thích: ${arrayText(quiz.style_tags)}`,
     `Dịp mặc ưu tiên: ${arrayText(quiz.preferred_occasions)}`,
     `Thương hiệu yêu thích: ${arrayText(quiz.favorite_brands)}`,
-    `Ngân sách: ${quiz.budget_range || ""}`,
+    `Ngân sách: ${budgetDisplay[quiz.budget_range] || quiz.budget_range || ""}`,
     `Chiều cao: ${quiz.height_cm || ""}cm`,
     `Cân nặng: ${quiz.weight_kg || ""}kg`
   ].join(" | ");
@@ -337,7 +359,14 @@ function formatQuiz(quiz) {
     style_tags: quiz.style_tags,
     preferred_occasions: quiz.preferred_occasions,
     favorite_brands: quiz.favorite_brands,
+    favorite_colors: quiz.favorite_colors,
     budget_range: quiz.budget_range,
+    age_group: quiz.age_group,
+    height_cm: quiz.height_cm,
+    weight_kg: quiz.weight_kg,
+    chest_cm: quiz.chest_cm,
+    waist_cm: quiz.waist_cm,
+    hip_cm: quiz.hip_cm,
     clothing_size: quiz.clothing_size || quiz.size || null,
     shoe_size: quiz.shoe_size || null
   };
@@ -511,8 +540,8 @@ function isPriceInsideBudget(product, budget) {
   if (!price) return false;
   if (budget === "under_300k") return price <= 300000;
   if (budget === "300k_700k") return price >= 300000 && price <= 700000;
-  if (budget === "700k_1_5m" || budget === "700k_1_5") return price >= 700000 && price <= 1500000;
-  if (budget === "above_1_5m" || budget === "above_1_5") return price >= 1500000;
+  if (budget === "700k_1.5m" || budget === "700k_1_5m" || budget === "700k_1.5" || budget === "700k_1_5") return price >= 700000 && price <= 1500000;
+  if (budget === "above_1.5m" || budget === "above_1_5m" || budget === "above_1.5" || budget === "above_1_5") return price >= 1500000;
   return false;
 }
 

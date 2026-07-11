@@ -149,28 +149,28 @@ export function initStyleQuiz() {
       if (isSummaryScreen) {
         runAILoadingSimulation();
       } else {
-        if (validateStep(currentStep)) {
-          if (currentStep === maxSteps) {
-            gatherQuizResults();
-            isSummaryScreen = true;
-            updateQuizUI();
-          } else {
-            currentStep++;
-            updateQuizUI();
-          }
+        saveStepToSessionStorage();
+        if (currentStep === maxSteps) {
+          gatherQuizResults();
+          isSummaryScreen = true;
+          updateQuizUI();
+        } else {
+          currentStep++;
+          updateQuizUI();
         }
       }
     });
   }
 
-  // Handle leaving page warning for guest users
+  // Handle "Bỏ qua" skip link — skip current step and jump to next
   const skipBtn = container.querySelector(".quiz-progress__skip");
   if (skipBtn) {
     skipBtn.addEventListener("click", (e) => {
-      const hasToken = localStorage.getItem("velura_token");
-      if (!hasToken) {
-        e.preventDefault();
-        showGuestLeavingWarningModal(skipBtn.getAttribute("href"));
+      e.preventDefault();
+      if (isSummaryScreen) return;
+      if (currentStep < maxSteps) {
+        currentStep++;
+        updateQuizUI();
       }
     });
   }
@@ -657,11 +657,13 @@ export function initStyleQuiz() {
     const occasions = sessionStorage.getItem("quiz-context") ? [sessionStorage.getItem("quiz-context")] : [];
     
     let budget_range = sessionStorage.getItem("quiz-budget") || "300k_700k";
-    if (!['under_300k', '300k_700k', '700k_1.5m', 'above_1.5m'].includes(budget_range)) {
-      if (budget_range.includes("300") && budget_range.includes("700")) budget_range = "300k_700k";
-      else if (budget_range.includes("300")) budget_range = "under_300k";
-      else if (budget_range.includes("1.5")) budget_range = "above_1.5m";
-      else budget_range = "700k_1.5m";
+    const budgetText = budget_range;
+    if (budgetText.includes("Dưới 500") || budgetText.includes("D\u01b0\u1edbi 500")) budget_range = "under_300k";
+    else if (budgetText.includes("500") && budgetText.includes("1.500")) budget_range = "300k_700k";
+    else if (budgetText.includes("1.500") && budgetText.includes("3.000")) budget_range = "700k_1.5m";
+    else if (budgetText.includes("Trên 3") || budgetText.includes("Tr\u00ean 3") || budgetText.includes("3.000")) budget_range = "above_1.5m";
+    else if (!['under_300k', '300k_700k', '700k_1.5m', 'above_1.5m'].includes(budget_range)) {
+      budget_range = "300k_700k";
     }
 
     window.quizSubmittedRedirect = true;
@@ -692,6 +694,8 @@ export function initStyleQuiz() {
       console.log("Style Profile saved successfully!");
       localStorage.setItem("velura_guest_quiz_completed", "true");
       localStorage.setItem("velura_guest_quiz_data", JSON.stringify(quizPayload));
+      // Enable profile-based suggestions after quiz completion
+      localStorage.setItem("velura_suggestions_enabled", "true");
       return res;
     });
 

@@ -8,7 +8,7 @@ import {
   updateRows as supabaseUpdateRows
 } from "../supabase.js";
 import { config } from "../config.js";
-import { generateGeminiEmbedding } from "../gemini-client.js";
+import { generateGeminiEmbedding, isGeminiConfigured, vectorLiteral } from "../gemini-client.js";
 import { CHAT_MESSAGE_SELECT, CHAT_PRODUCT_SELECT, CHAT_SESSION_SELECT } from "./chatbot-constants.js";
 
 const CHAT_DB_OPTIONS = Object.freeze({ useAnonKey: false });
@@ -34,10 +34,12 @@ function callRpc(name, payload) {
 }
 
 async function getEmbedding(text) {
+  if (!isGeminiConfigured()) return null;
   try {
-    return await generateGeminiEmbedding(text);
+    const values = await generateGeminiEmbedding(text);
+    return vectorLiteral(values);
   } catch (err) {
-    console.error("[EMBEDDING_ERROR]", err);
+    console.warn("[EMBEDDING_ERROR] Chatbot embedding failed, falling back to text search:", err.message || err);
     return null;
   }
 }

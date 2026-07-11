@@ -1,5 +1,5 @@
 import { HttpError, readJson, sendJson } from "../http.js";
-import { selectOne, insertRow, updateRows } from "../supabase.js";
+import { selectOne, insertRow, updateRows, getAuthUser } from "../supabase.js";
 import { hashPassword, verifyPassword, signJwt } from "../auth-helper.js";
 import { createNotification } from "./notifications.js";
 
@@ -366,6 +366,101 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
     return sendJson(res, 200, {
       success: true,
       message: "Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại."
+    }, corsHeaders);
+  }
+
+  // POST /api/user/auth/social-login  (Google / Facebook via Supabase Auth)
+  if (action === "social-login" && req.method === "POST") {
+    const body = await readJson(req);
+    const { token: supabaseToken } = body;
+
+    if (!supabaseToken) {
+      throw new HttpError(400, "BAD_REQUEST", "Thiếu Supabase access token");
+    }
+
+    // Verify token with Supabase and get user info
+    let authUser;
+    try {
+      console.log("[social-login] Verifying Supabase token...");
+      authUser = await getAuthUser(supabaseToken);
+      console.log("[social-login] authUser result:", authUser ? `OK (${authUser.email})` : "NULL");
+    } catch (err) {
+      console.error("[social-login] getAuthUser error:", err.status, err.message, err.details);
+      throw new HttpError(502, "SUPABASE_ERROR", "Không thể xác thực token: " + (err.details?.msg || err.message));
+    }
+    if (!authUser || !authUser.email) {
+      console.error("[social-login] authUser is null or missing email:", authUser);
+      throw new HttpError(401, "INVALID_TOKEN", "Token Supabase không hợp lệ hoặc đã hết hạn");
+    }
+
+    const email = authUser.email;
+    const fullName = authUser.user_metadata?.full_name
+      || authUser.user_metadata?.name
+      || email.split("@")[0];
+    const avatarRaw = authUser.user_metadata?.avatar_url
+      || authUser.user_metadata?.picture
+      || null;
+    const avatar = avatarRaw ? avatarRaw.slice(0, 255) : null;
+    const authUserId = authUser.id;
+    const safeName = fullName.slice(0, 100);
+
+    // Find existing user by email or auth_user_id
+    let user = await selectOne("users", { email: `eq.${email}` });
+    if (!user) {
+      // Also check by auth_user_id in case email was added later
+      user = await selectOne("users", { auth_user_id: `eq.${authUserId}` });
+    }
+
+    if (user) {
+      // Link auth_user_id if not already linked
+      if (!user.auth_user_id) {
+        await updateRows("users", { user_id: `eq.${user.user_id}` }, {
+          auth_user_id: authUserId
+        });
+      }
+      // Update avatar if user doesn't have one
+      if (!user.avatar && avatar) {
+        await updateRows("users", { user_id: `eq.${user.user_id}` }, {
+          avatar
+        });
+      }
+    } else {
+      // Create new user from social profile
+      const randomPassword = "SocialAuth" + Math.floor(1000 + Math.random() * 9000) + "!";
+      user = await insertRow("users", {
+        email,
+        password_hash: hashPassword(randomPassword),
+        full_name: safeName,
+        avatar,
+        auth_user_id: authUserId,
+        is_active: true,
+        role: "member",
+        tier: "Standard"
+      });
+
+      // Welcome notification
+      await createNotification(
+        user.user_id,
+        "system",
+        "Chào mừng bạn đến với Velura! 🎉",
+        "Tài khoản của bạn đã được tạo qua đăng nhập mạng xã hội. Bắt đầu mua sắm ngay!",
+        "/src/pages/products/list.html"
+      );
+    }
+
+    const veluraToken = signJwt({ user_id: user.user_id, email: user.email, role: user.role });
+
+    return sendJson(res, 200, {
+      success: true,
+      token: veluraToken,
+      user: {
+        user_id: user.user_id,
+        email: user.email,
+        phone: user.phone,
+        full_name: user.full_name || safeName,
+        role: user.role,
+        avatar: user.avatar || avatar
+      }
     }, corsHeaders);
   }
 
