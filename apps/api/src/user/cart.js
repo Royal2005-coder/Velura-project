@@ -24,7 +24,14 @@ export async function handleCartRoute(req, res, corsHeaders, context) {
     const warnings = [];
     const validatedItems = [];
     for (const item of items) {
-      const variant = await selectOne("variant", { variant_id: `eq.${item.variant_id}` });
+      const normalizedVariantId = normalizeVariantId(item.variant_id);
+      if (!normalizedVariantId) {
+        warnings.push(`Sản phẩm '${item.product_name || "Sản phẩm"}' có mã biến thể không hợp lệ và đã bị xóa khỏi giỏ hàng.`);
+        continue;
+      }
+      item.variant_id = normalizedVariantId;
+
+      const variant = await selectOne("variant", { variant_id: `eq.${normalizedVariantId}` });
       if (!variant) {
         throw new HttpError(400, "NOT_FOUND", `Không tìm thấy biến thể sản phẩm`);
       }
@@ -59,4 +66,16 @@ export async function handleCartRoute(req, res, corsHeaders, context) {
   }
 
   throw new HttpError(404, "NOT_FOUND", "Route cart not found");
+}
+
+function normalizeVariantId(value) {
+  const rawValue = String(value || "").trim();
+  const prefixedUuid = rawValue.match(/^var-([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i);
+  if (prefixedUuid) {
+    return prefixedUuid[1];
+  }
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawValue)) {
+    return rawValue;
+  }
+  return "";
 }

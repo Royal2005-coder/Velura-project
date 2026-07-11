@@ -1,4 +1,5 @@
 import { config } from "../config.js";
+import { generateGeminiText, isGeminiConfigured } from "../gemini-client.js";
 
 const GEMINI_INTERACTIONS_URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
 
@@ -169,9 +170,260 @@ export function createLLMService({ repository }) {
   if (!repository) throw new TypeError("repository is required");
   return {
     async chat(messages, contextProducts = [], previousInteractionId = null, styleProfile = null, userId = null) {
+      if (isGeminiConfigured()) {
+        const geminiResult = await callGeminiChat(messages, repository, contextProducts, styleProfile, userId);
+        if (geminiResult.used) {
+          return geminiResult;
+        }
+        console.warn("[LLM] Gemini did not return a usable response, falling back to Mistral:", geminiResult.metadata?.error || "unknown");
+      }
       return callMistralChat(messages, repository, contextProducts, styleProfile, userId);
     }
   };
+}
+
+async function callGeminiChat(messages, repository, contextProducts = [], styleProfile = null, userId = null) {
+  const lastUserText = getLastUserText(messages);
+  console.log("[LLM] callGeminiChat called, model:", config.geminiModel || config.geminiStylistModel);
+
+  try {
+    const [policyContext, blogContext] = await Promise.all([
+      shouldLoadPolicyContext(lastUserText) ? safeSearchPolicies(repository, lastUserText) : Promise.resolve([]),
+      shouldLoadBlogContext(lastUserText) ? safeSearchBlogs(repository, lastUserText) : Promise.resolve([])
+    ]);
+
+    const prompt = buildGeminiChatPrompt({
+      messages,
+      contextProducts,
+      policyContext,
+      blogContext,
+      styleProfile,
+      userId,
+      lastUserText
+    });
+
+    const finalText = await generateGeminiText(prompt, {
+      model: config.geminiModel || config.geminiStylistModel,
+      temperature: 0.35,
+      maxOutputTokens: 1700,
+      timeoutMs: Math.max(config.requestTimeoutMs || 15000, 20000)
+    });
+
+    const intent = detectGeminiIntent(lastUserText, policyContext, blogContext, contextProducts);
+    const productIds = intent === "product_search" || intent === "size_query"
+      ? inferProductIdsFromAnswer(finalText, contextProducts)
+      : [];
+    const blogIds = intent === "blog_search"
+      ? blogContext.map((blog) => blog.blog_id).filter(Boolean).slice(0, 4)
+      : [];
+
+    console.log("[LLM] Gemini reply length:", finalText.length, "Products:", productIds.length, "Policies:", policyContext.length);
+    return {
+      text: finalText.trim().slice(0, 4000),
+      productIds,
+      blogIds,
+      used: true,
+      intent,
+      interactionId: null,
+      createdTicket: null,
+      metadata: {
+        provider: "gemini",
+        model: config.geminiModel || config.geminiStylistModel,
+        context: {
+          products: contextProducts.length,
+          policies: policyContext.length,
+          blogs: blogContext.length,
+          hasStyleProfile: Boolean(styleProfile)
+        }
+      }
+    };
+  } catch (error) {
+    console.error("[LLM] Error in callGeminiChat:", error.message);
+    return {
+      text: "",
+      productIds: [],
+      blogIds: [],
+      used: false,
+      intent: "llm_error",
+      metadata: { provider: "gemini", error: error.message }
+    };
+  }
+}
+
+function buildGeminiChatPrompt({ messages, contextProducts, policyContext, blogContext, styleProfile, userId, lastUserText }) {
+  return `${SYSTEM_PROMPT}
+
+NGUỒN DỮ LIỆU ĐÃ NẠP CHO LƯỢT TRẢ LỜI NÀY
+
+1. Trạng thái người dùng
+- userId: ${userId || "guest hoặc chưa xác định"}
+${formatStyleProfileForPrompt(styleProfile)}
+
+2. Sản phẩm thật từ database
+${formatProductsForPrompt(contextProducts)}
+
+3. Chính sách thật từ database
+${formatPoliciesForPrompt(policyContext)}
+
+4. Bài viết liên quan từ database
+${formatBlogsForPrompt(blogContext)}
+
+5. Lịch sử trò chuyện gần nhất
+${formatMessagesForPrompt(messages)}
+
+YÊU CẦU CUỐI CỦA KHÁCH
+${lastUserText || "Khách chưa nêu rõ nhu cầu."}
+
+QUY TẮC TRẢ LỜI BẮT BUỘC
+- Trả lời bằng tiếng Việt tự nhiên, đúng vai trò Velura Stylist.
+- Nếu tư vấn sản phẩm hoặc phối đồ, phải dựa trên sản phẩm trong mục 2, nêu rõ tên sản phẩm thật, giá nếu có, và lý do phù hợp với dáng người, màu sắc, phong cách hoặc dịp mặc.
+- Nếu hỏi chính sách, chỉ dùng dữ liệu ở mục 3. Không dùng thông tin cũ như đổi trả 7 ngày nếu database nêu 48 giờ.
+- Nếu dữ liệu chưa đủ, hỏi tối đa 2 câu ngắn để lấy thêm thông tin.
+- Không nhắc lỗi kỹ thuật, tên API, embedding, vector hoặc database với khách hàng.
+- Không bịa sản phẩm, giá, tồn kho, thời gian xử lý hoặc chính sách.`;
+}
+
+function formatStyleProfileForPrompt(styleProfile) {
+  if (!styleProfile) {
+    return "- Style Profile: chưa có hoặc chưa tải được.";
+  }
+  return `- Style Profile:
+  + Chiều cao: ${styleProfile.height_cm || "chưa rõ"} cm
+  + Cân nặng: ${styleProfile.weight_kg || "chưa rõ"} kg
+  + Số đo: ngực ${styleProfile.chest_cm || "chưa rõ"} cm, eo ${styleProfile.waist_cm || "chưa rõ"} cm, mông ${styleProfile.hip_cm || "chưa rõ"} cm
+  + Dáng người: ${styleProfile.body_shape || "chưa rõ"}
+  + Tông da: ${styleProfile.skin_tone || "chưa rõ"}
+  + Phong cách: ${formatArray(styleProfile.style_tags)}
+  + Dịp mặc ưu tiên: ${formatArray(styleProfile.preferred_occasions)}
+  + Màu yêu thích: ${formatArray(styleProfile.favorite_colors)}
+  + Size quần áo: ${styleProfile.clothing_size || "chưa rõ"}
+  + Size giày: ${styleProfile.shoe_size || "chưa rõ"}
+  + Ngân sách: ${styleProfile.budget_range || "chưa rõ"}`;
+}
+
+function formatProductsForPrompt(products = []) {
+  if (!products.length) {
+    return "- Chưa có sản phẩm phù hợp được truy xuất ở lượt này.";
+  }
+  return products.slice(0, 10).map((product, index) => {
+    const price = Number(product.sale_price || product.base_price || product.price || 0);
+    const variants = Array.isArray(product.variants)
+      ? product.variants.slice(0, 4).map((variant) => `${variant.color || "màu chưa rõ"} / ${variant.size || "size chưa rõ"} / tồn ${variant.stock_quantity ?? "?"}`).join("; ")
+      : "";
+    return `${index + 1}. ${product.name || "Sản phẩm"} | ID: ${product.product_id || ""} | Giá: ${price ? price.toLocaleString("vi-VN") + "đ" : "chưa rõ"} | SKU: ${product.sku || "chưa rõ"} | Danh mục: ${product.category?.name || product.category_name || "chưa rõ"} | Tag: ${formatArray(product.tags)} | Feature: ${formatArray(product.features)} | Biến thể: ${variants || "chưa rõ"} | Mô tả: ${truncateText(product.description, 420)}`;
+  }).join("\n");
+}
+
+function formatPoliciesForPrompt(policies = []) {
+  if (!policies.length) {
+    return "- Không có chính sách liên quan được truy xuất ở lượt này.";
+  }
+  return policies.slice(0, 6).map((policy, index) => {
+    return `${index + 1}. ${policy.title || policy.slug || "Chính sách"}\nTóm tắt: ${policy.summary || ""}\nNội dung: ${formatPolicyContent(policy.content)}`;
+  }).join("\n\n");
+}
+
+function formatBlogsForPrompt(blogs = []) {
+  if (!blogs.length) {
+    return "- Không có bài viết liên quan được truy xuất ở lượt này.";
+  }
+  return blogs.slice(0, 4).map((blog, index) => {
+    return `${index + 1}. ${blog.title || "Bài viết"} | Tóm tắt: ${blog.excerpt || ""} | Nội dung: ${truncateText(blog.content, 700)}`;
+  }).join("\n");
+}
+
+function formatMessagesForPrompt(messages = []) {
+  return messages.slice(-8).map((message) => {
+    const role = message.sender === "user" ? "Khách" : "Velura Stylist";
+    return `${role}: ${truncateText(message.text, 650)}`;
+  }).join("\n") || "Chưa có lịch sử trò chuyện.";
+}
+
+function formatPolicyContent(content) {
+  if (Array.isArray(content)) {
+    return content.map((section) => {
+      const heading = section.heading ? `${section.heading}: ` : "";
+      const body = Array.isArray(section.items) ? section.items.join("; ") : (section.text || "");
+      return heading + body;
+    }).filter(Boolean).join(" | ");
+  }
+  if (typeof content === "string") {
+    return truncateText(content, 1400);
+  }
+  return truncateText(JSON.stringify(content || {}), 1400);
+}
+
+function formatArray(value) {
+  return Array.isArray(value) && value.length ? value.join(", ") : "chưa rõ";
+}
+
+function truncateText(value, maxLength = 500) {
+  const text = String(value || "").trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+async function safeSearchPolicies(repository, query) {
+  try {
+    const result = await repository.searchPolicies?.(query);
+    return result?.rows || [];
+  } catch (error) {
+    console.warn("[LLM] Could not load policy context:", error.message);
+    return [];
+  }
+}
+
+async function safeSearchBlogs(repository, query) {
+  try {
+    const result = await repository.searchBlogs?.(query);
+    return result?.rows || [];
+  } catch (error) {
+    console.warn("[LLM] Could not load blog context:", error.message);
+    return [];
+  }
+}
+
+function getLastUserText(messages = []) {
+  return [...messages].reverse().find((message) => message.sender === "user")?.text || "";
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d");
+}
+
+function shouldLoadPolicyContext(text) {
+  const normalized = normalizeText(text);
+  return /(chinh sach|doi tra|hoan tien|van chuyen|giao hang|phi ship|bao mat|dieu khoan|thanh vien|faq|cau hoi|ho tro|khieu nai|return|refund|shipping|privacy|policy)/.test(normalized);
+}
+
+function shouldLoadBlogContext(text) {
+  const normalized = normalizeText(text);
+  return /(blog|bai viet|xu huong|cam nang|meo phoi|quiet luxury|capsule|phong cach)/.test(normalized);
+}
+
+function detectGeminiIntent(text, policies = [], blogs = [], products = []) {
+  const normalized = normalizeText(text);
+  if (policies.length || shouldLoadPolicyContext(text)) return "policy_query";
+  if (blogs.length || shouldLoadBlogContext(text)) return "blog_search";
+  if (/(don hang|ma don|tracking|van don)/.test(normalized)) return "order_query";
+  if (/(size|kich co|vong eo|vong nguc|vong mong|cao|nang)/.test(normalized)) return "size_query";
+  if (products.length || /(ao|quan|dam|vay|giay|phu kien|set|outfit|phoi do|san pham|mua|mac|cong so|du tiec|blazer|dress|skirt|shirt)/.test(normalized)) return "product_search";
+  return "general";
+}
+
+function inferProductIdsFromAnswer(answer, products = []) {
+  if (!products.length) return [];
+  const normalizedAnswer = normalizeText(answer);
+  const matched = products
+    .filter((product) => product.product_id && product.name && normalizedAnswer.includes(normalizeText(product.name).slice(0, 40)))
+    .map((product) => product.product_id);
+  if (matched.length) {
+    return [...new Set(matched)].slice(0, 6);
+  }
+  return products.map((product) => product.product_id).filter(Boolean).slice(0, 4);
 }
 
 async function callMistralChat(messages, repository, contextProducts = [], styleProfile = null, userId = null) {

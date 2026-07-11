@@ -61,6 +61,36 @@ export async function generateGeminiJson(prompt, schema, options = {}) {
   }
 }
 
+export async function generateGeminiText(prompt, options = {}) {
+  requireGeminiKey();
+  const model = options.model || config.geminiModel || config.geminiStylistModel;
+  const payload = {
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: String(prompt || "").slice(0, 30000) }]
+      }
+    ],
+    generationConfig: {
+      temperature: options.temperature ?? 0.35,
+      topP: options.topP ?? 0.9,
+      maxOutputTokens: options.maxOutputTokens ?? 1600
+    }
+  };
+
+  const data = await geminiRequest(
+    `/models/${encodeURIComponent(model)}:generateContent`,
+    payload,
+    { timeoutMs: options.timeoutMs }
+  );
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  const text = parts.map((part) => part.text || "").join("").trim();
+  if (!text) {
+    throw new HttpError(502, "GEMINI_TEXT_EMPTY", "Gemini returned an empty response");
+  }
+  return text;
+}
+
 export function vectorLiteral(values) {
   if (!Array.isArray(values) || !values.length) {
     throw new HttpError(500, "INVALID_VECTOR", "Embedding vector is empty");
@@ -68,14 +98,16 @@ export function vectorLiteral(values) {
   return `[${values.map((value) => Number(value).toFixed(8)).join(",")}]`;
 }
 
-async function geminiRequest(path, payload) {
+async function geminiRequest(path, payload, options = {}) {
+  const timeoutMs = Number(options.timeoutMs || config.requestTimeoutMs || 15000);
   const response = await fetch(`${GEMINI_API_BASE}${path}`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "x-goog-api-key": config.geminiApiKey
     },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(timeoutMs)
   });
 
   const text = await response.text();
