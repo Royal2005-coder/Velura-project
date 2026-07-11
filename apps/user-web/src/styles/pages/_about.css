@@ -509,18 +509,73 @@
    Section 8: CTA Section
    ============================================================ */
 .about-cta {
-  padding: 96px 0;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(80px, 9vw, 124px) 0;
   border-radius: 0;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(246, 239, 232, 0.82)),
-    url("https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=1400&auto=format&fit=crop") center/cover;
+  background: #f8f4f2;
   text-align: center;
 }
 
+.about-cta::before,
+.about-cta::after {
+  position: absolute;
+  pointer-events: none;
+  content: "";
+}
+
+.about-cta::before {
+  z-index: -2;
+  inset: -4%;
+  background: url("/src/assets/images/velura-journal-banner.png") center / cover no-repeat;
+  opacity: 0.46;
+  animation: about-cta-drift 18s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
+.about-cta::after {
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.84), rgba(255, 252, 249, 0.67) 50%, rgba(255, 255, 255, 0.84));
+}
+
+@keyframes about-cta-drift {
+  from { transform: scale(1); }
+  to { transform: scale(1.06) translateX(-1.2%); }
+}
+
 .about-cta__content {
+  position: relative;
+  z-index: 1;
   max-width: 640px;
   margin: 0 auto;
+  padding: 0 24px;
 }
+
+.about-cta__kicker {
+  display: block;
+  margin-bottom: 18px;
+  color: #7b1e2b;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.17em;
+}
+
+.page-about .about-cta__content > * {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-about .about-cta__content.is-story-visible > * {
+  opacity: 1;
+  transform: none;
+}
+
+.page-about .about-cta__content.is-story-visible .about-cta__title { transition-delay: 0.08s; }
+.page-about .about-cta__content.is-story-visible .about-cta__desc { transition-delay: 0.16s; }
+.page-about .about-cta__content.is-story-visible .about-cta__btn { transition-delay: 0.24s; }
 
 .about-cta__title {
   margin: 0 0 16px;
@@ -565,6 +620,12 @@
 
 .about-cta__btn:active {
   transform: translateY(-1px) scale(0.97);
+}
+
+.about-cta__btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px #7b1e2b;
 }
 
 /* ============================================================
@@ -639,3 +700,482 @@
     height: 80px;
   }
 }
+
+/* Campaign-led about hero: the supplied artwork carries the brand message.
+   The only overlay is the collection link, placed in the image's quiet space. */
+.page-about .about-hero {
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 2.03 / 1;
+  margin-bottom: 80px;
+}
+
+.page-about .about-hero__img {
+  filter: none;
+  object-fit: cover;
+  object-position: center;
+}
+
+.page-about .about-hero__content {
+  position: absolute;
+  top: 72%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: center;
+  width: max-content;
+  z-index: 3;
+}
+
+.page-about .about-hero__cta {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  border: 1px solid rgba(123, 30, 43, 0.18);
+  border-radius: 0;
+  background: #7b1e2b;
+  color: #fff;
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(82, 22, 31, 0.18);
+}
+
+.page-about .about-hero__cta:hover {
+  background: #5f1520;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.page-about .about-hero__cta:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px #7b1e2b;
+}
+
+@media (max-width: 768px) {
+  .page-about .about-hero {
+    aspect-ratio: 4 / 5;
+    margin-bottom: 48px;
+  }
+
+  .page-about .about-hero__img {
+    object-position: 57% center;
+  }
+}
+
+
+/* Origin image: keep the moodboard as a tactile editorial object. */
+.page-about .about-story__image {
+  overflow: hidden;
+  border-radius: 0;
+  background: #e9ddd0;
+}
+
+.page-about .about-story__image img {
+  height: 100%;
+  border-radius: 0;
+  object-position: center 46%;
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-about .about-story__image:hover img {
+  transform: scale(1.035);
+  filter: saturate(1.02) contrast(1.015);
+}
+
+/* Origin story enters in the same sequence as the copy is read. */
+.page-about [data-story-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-about [data-story-reveal].is-story-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.page-about .about-story__content .about-badge,
+.page-about .about-story__content .about-title,
+.page-about .about-story__content .about-desc {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-about .about-story__content.is-story-visible .about-badge,
+.page-about .about-story__content.is-story-visible .about-title,
+.page-about .about-story__content.is-story-visible .about-desc {
+  opacity: 1;
+  transform: none;
+}
+
+.page-about .about-story__content.is-story-visible .about-title {
+  transition-delay: 0.08s;
+}
+
+.page-about .about-story__content.is-story-visible .about-desc:nth-of-type(1) {
+  transition-delay: 0.16s;
+}
+
+.page-about .about-story__content.is-story-visible .about-desc:nth-of-type(2) {
+  transition-delay: 0.24s;
+}
+
+.page-about .about-story__content.is-story-visible .about-desc:nth-of-type(3) {
+  transition-delay: 0.32s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-about .about-cta::before {
+    animation: none;
+  }
+
+  .page-about .about-cta__content > * {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .page-about .about-atelier__content .about-badge,
+  .page-about .about-atelier__content .about-title,
+  .page-about .about-atelier__content .about-desc {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .page-about .about-story__image img {
+    transition: none;
+  }
+
+  .page-about .about-story__image:hover img {
+    transform: none;
+  }
+
+  .page-about [data-story-reveal],
+  .page-about .about-story__content .about-badge,
+  .page-about .about-story__content .about-title,
+  .page-about .about-story__content .about-desc {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Brand principles: one visual lead, two concise editorial notes. */
+.page-about .about-values {
+  padding: clamp(72px, 9vw, 120px) 0;
+  margin-bottom: 88px;
+  border: 0;
+  background: #fff;
+}
+
+.page-about .about-values__header {
+  max-width: 1240px;
+  margin: 0 auto 42px;
+  padding: 0 24px;
+  text-align: left;
+}
+
+.page-about .about-values__grid {
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 1240px;
+  margin: 0 auto;
+  gap: 18px;
+  padding: 0 24px;
+}
+
+.page-about .value-card {
+  min-height: 328px;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 32px;
+  border: 1px solid #e8dfda;
+  border-radius: 0;
+  background: #faf7f5;
+  text-align: left;
+  box-shadow: none;
+}
+
+.page-about .value-card:hover {
+  transform: translateY(-3px);
+  border-color: #c88872;
+  box-shadow: 0 18px 38px rgba(82, 47, 43, 0.09);
+}
+
+.page-about .value-card__icon-wrapper {
+  width: 46px;
+  height: 46px;
+  margin: 0 0 auto;
+  border: 1px solid rgba(123, 30, 43, 0.14);
+  border-radius: 50%;
+  background: transparent;
+  color: #7b1e2b;
+}
+
+.page-about .value-card__icon,
+.page-about .value-card__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.page-about .value-card__title {
+  margin-bottom: 10px;
+  font-size: clamp(1.35rem, 1.7vw, 1.65rem);
+}
+
+.page-about .value-card__desc {
+  max-width: 31ch;
+  font-size: 0.96rem;
+  line-height: 1.7;
+}
+
+
+.page-about .about-hero__cta {
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 0;
+  font-size: 0.78rem;
+}
+
+.page-about .about-hero__cta::after {
+  margin-left: 10px;
+  content: "→";
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@media (max-width: 768px) {
+  .page-about .about-values {
+    margin-bottom: 48px;
+  }
+
+  .page-about .about-values__header,
+  .page-about .about-values__grid {
+    padding: 0 18px;
+  }
+
+  .page-about .about-values__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-about .value-card {
+    min-height: 280px;
+  }
+}
+
+/* Atelier film: real process footage replaces the static stock image. */
+.page-about .about-atelier__video {
+  overflow: hidden;
+  border-radius: 0;
+  background: #221b18;
+  box-shadow: 0 24px 70px rgba(42, 37, 34, 0.12);
+}
+
+.page-about .about-atelier__video video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  filter: saturate(0.92) contrast(1.03);
+}
+
+.page-about .about-atelier__video video:focus-visible {
+  outline: 3px solid #7b1e2b;
+  outline-offset: -3px;
+}
+
+/* Atelier chapter: a calmer editorial rhythm so the craft story and film read together. */
+.page-about .about-atelier {
+  margin-top: clamp(16px, 3vw, 40px);
+}
+
+.page-about .about-atelier__grid {
+  grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr);
+  gap: clamp(48px, 7vw, 112px);
+  align-items: start;
+}
+
+.page-about .about-atelier__content {
+  max-width: 650px;
+  padding-top: clamp(20px, 3vw, 46px);
+}
+
+.page-about .about-atelier__content .about-badge {
+  margin-bottom: 18px;
+  color: #7b1e2b;
+  letter-spacing: 0.14em;
+}
+
+.page-about .about-atelier__content .about-title {
+  max-width: 16ch;
+  margin-bottom: 28px;
+  font-size: clamp(2.15rem, 3.35vw, 3.45rem);
+  line-height: 1.08;
+}
+
+.page-about .about-atelier__lead {
+  max-width: 59ch;
+  margin-bottom: 26px;
+  color: #4f4640;
+  font-size: clamp(1rem, 1.1vw, 1.08rem);
+  line-height: 1.82;
+}
+
+.page-about .about-atelier__detail {
+  max-width: 61ch;
+  margin-bottom: 0;
+  padding: 17px 0 0 20px;
+  border-top: 1px solid rgba(123, 30, 43, 0.15);
+  border-left: 2px solid rgba(123, 30, 43, 0.42);
+  color: #6a615b;
+  font-size: 0.94rem;
+}
+
+.page-about .about-atelier__detail + .about-atelier__detail {
+  margin-top: 18px;
+}
+
+.page-about .about-atelier__video {
+  position: relative;
+  margin-top: 0;
+}
+
+.page-about .about-atelier__video::after {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  content: "";
+  pointer-events: none;
+}
+
+.page-about .about-atelier__content .about-badge,
+.page-about .about-atelier__content .about-title,
+.page-about .about-atelier__content .about-desc {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-about .about-atelier__content.is-story-visible .about-badge,
+.page-about .about-atelier__content.is-story-visible .about-title,
+.page-about .about-atelier__content.is-story-visible .about-desc {
+  opacity: 1;
+  transform: none;
+}
+
+.page-about .about-atelier__content.is-story-visible .about-title { transition-delay: 0.08s; }
+.page-about .about-atelier__content.is-story-visible .about-atelier__lead { transition-delay: 0.16s; }
+.page-about .about-atelier__content.is-story-visible .about-atelier__detail:nth-of-type(2) { transition-delay: 0.24s; }
+.page-about .about-atelier__content.is-story-visible .about-atelier__detail:nth-of-type(3) { transition-delay: 0.32s; }
+
+@media (max-width: 768px) {
+  .page-about .about-atelier__grid {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 32px;
+  }
+
+  .page-about .about-atelier__content {
+    padding-top: 0;
+  }
+
+  .page-about .about-atelier__content .about-title {
+    max-width: 18ch;
+    font-size: clamp(2rem, 9vw, 2.7rem);
+  }
+
+  .page-about .about-atelier__detail {
+    padding-left: 16px;
+  }
+
+  .page-about .about-atelier__video video {
+    aspect-ratio: 16 / 11;
+  }
+}
+
+/* Editorial storytelling adjustments for Team, Stats and Press logo cards */
+.page-about .team-card {
+  border: 1px solid #e8dfda;
+  border-radius: 0;
+  background: #faf7f5;
+  box-shadow: none;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.6s ease, box-shadow 0.6s ease;
+}
+
+.page-about .team-card:hover {
+  transform: translateY(-4px);
+  border-color: #c88872;
+  box-shadow: 0 18px 38px rgba(82, 47, 43, 0.08);
+}
+
+.page-about .team-card__image {
+  border-radius: 0;
+}
+
+.page-about .team-card__image img {
+  filter: saturate(0.92) contrast(1.02);
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), filter 0.8s ease;
+}
+
+.page-about .team-card:hover .team-card__image img {
+  transform: scale(1.035);
+  filter: saturate(1.02) contrast(1.015);
+}
+
+.page-about .stat-card {
+  border: 1px solid #e8dfda;
+  border-radius: 0;
+  background: #faf7f5;
+  box-shadow: none;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.6s ease, box-shadow 0.6s ease;
+}
+
+.page-about .stat-card:hover {
+  transform: translateY(-4px);
+  border-color: #c88872;
+  box-shadow: 0 18px 38px rgba(82, 47, 43, 0.08);
+}
+
+.page-about .press-logo {
+  border: 1px solid #e8dfda;
+  border-radius: 0;
+  background: #faf7f5;
+  box-shadow: none;
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-about .press-logo:hover {
+  transform: scale(1.02);
+  border-color: #c88872;
+  color: #7b1e2b;
+  box-shadow: 0 10px 24px rgba(82, 47, 43, 0.06);
+}
+
+/* Scroll reveal animations for Team, Stats, Press sections */
+.page-about .about-team__header,
+.page-about .about-stats__header,
+.page-about .about-press__header {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-about .about-team__header.is-story-visible,
+.page-about .about-stats__header.is-story-visible,
+.page-about .about-press__header.is-story-visible {
+  opacity: 1;
+  transform: none;
+}
+

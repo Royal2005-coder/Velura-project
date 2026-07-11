@@ -76,6 +76,91 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
         `;
       }
 
+      // Update health list cards dynamically
+      var healthList = opsPanel.querySelector(".dashboard-health-list");
+      if (healthList) {
+        var ordersStatus = (data.operations.pendingOrders > 0 || data.operations.paymentErrors > 0) ? "warning" : "success";
+        var ordersStatusLabel = ordersStatus === "warning" ? "Cần chú ý" : "Tốt";
+        
+        var productsStatus = data.operations.lowStockProducts > 0 ? "danger" : "success";
+        var productsStatusLabel = productsStatus === "danger" ? "Rủi ro" : "Tốt";
+        
+        var reviewsStatus = data.business.pendingReviews > 0 ? "warning" : "success";
+        var reviewsStatusLabel = reviewsStatus === "warning" ? "Cần chú ý" : "Tốt";
+        
+        var returnsStatus = (data.operations.openReturns > 0 || data.operations.openSupportTickets > 0) ? "warning" : "success";
+        var returnsStatusLabel = returnsStatus === "warning" ? "Cần chú ý" : "Tốt";
+
+        healthList.innerHTML = `
+          <a class="dashboard-health-card" href="./orders.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("cart")}</i>
+              <span class="admin-badge admin-badge--${ordersStatus}">${ordersStatusLabel}</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--${ordersStatus}"></span>
+              <strong>Đơn hàng</strong>
+            </div>
+            <small>${fmtNum(data.operations.pendingOrders)} cần xử lý · ${fmtNum(data.operations.paymentErrors)} thanh toán lỗi</small>
+          </a>
+          <a class="dashboard-health-card" href="./products.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("box")}</i>
+              <span class="admin-badge admin-badge--${productsStatus}">${productsStatusLabel}</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--${productsStatus}"></span>
+              <strong>Sản phẩm &amp; tồn kho</strong>
+            </div>
+            <small>${fmtNum(data.operations.lowStockProducts)} dưới tồn tối thiểu</small>
+          </a>
+          <a class="dashboard-health-card" href="./reviews.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("star")}</i>
+              <span class="admin-badge admin-badge--${reviewsStatus}">${reviewsStatusLabel}</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--${reviewsStatus}"></span>
+              <strong>Đánh giá</strong>
+            </div>
+            <small>${fmtNum(data.business.pendingReviews)} chờ duyệt</small>
+          </a>
+          <a class="dashboard-health-card" href="./returns-cskh.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("support")}</i>
+              <span class="admin-badge admin-badge--${returnsStatus}">${returnsStatusLabel}</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--${returnsStatus}"></span>
+              <strong>Đổi trả &amp; CSKH</strong>
+            </div>
+            <small>${fmtNum(data.operations.openReturns)} phiếu còn hạn · ${fmtNum(data.operations.openSupportTickets)} ticket chờ</small>
+          </a>
+          <a class="dashboard-health-card" href="./promotions.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("tag")}</i>
+              <span class="admin-badge admin-badge--success">Tốt</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--success"></span>
+              <strong>Giá &amp; khuyến mãi</strong>
+            </div>
+            <small>Hoạt động bình thường</small>
+          </a>
+          <a class="dashboard-health-card" href="./accounts.html">
+            <div class="dashboard-health-card__head">
+              <i>${icon("users")}</i>
+              <span class="admin-badge admin-badge--success">Tốt</span>
+            </div>
+            <div class="dashboard-health-card__title">
+              <span class="dashboard-health-dot dashboard-health-dot--success"></span>
+              <strong>Tài khoản &amp; hệ thống</strong>
+            </div>
+            <small>Không có cảnh báo bảo mật mới</small>
+          </a>
+        `;
+      }
+
       // Update dynamic tasks list
       var taskList = opsPanel.querySelector(".dashboard-task-list");
       var taskCount = opsPanel.querySelector(".dashboard-action-queue .dashboard-section__count");
@@ -125,24 +210,59 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
       // Update recent activity timeline
       var timeline = opsPanel.querySelector(".dashboard-timeline");
       if (timeline && data.recentLogs) {
-        timeline.innerHTML = data.recentLogs.slice(0, 5).map(log => {
-          var date = new Date(log.timestamp);
-          var timeStr = date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
-          var actor = log.actor_id || "Hệ thống";
-          var action = log.action || "Thao tác hệ thống";
-          var moduleName = log.module || "Hệ thống";
-          return `
-            <article>
-              <time>${timeStr}</time>
-              <span></span>
-              <div>
-                <strong>${escapeHtml(actor)}</strong>
-                <p>${escapeHtml(action)}</p>
-                <small>${escapeHtml(moduleName)} · Thành công</small>
-              </div>
-            </article>
+        if (data.recentLogs.length === 0) {
+          timeline.innerHTML = `
+            <div style="padding: 24px; text-align: center; color: var(--muted); font-size: 0.85rem;">
+              Chưa có hoạt động gần đây
+            </div>
           `;
-        }).join("");
+        } else {
+          timeline.innerHTML = data.recentLogs.slice(0, 5).map(log => {
+            var date = new Date(log.timestamp);
+            var timeStr = date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
+            var actor = log.actor_name || log.actor_id || "Hệ thống";
+            
+            var actionVerb = "";
+            if (log.action === "create") actionVerb = "Tạo mới";
+            else if (log.action === "update") actionVerb = "Cập nhật";
+            else if (log.action === "delete") actionVerb = "Xóa";
+            else if (log.action === "approve") actionVerb = "Duyệt";
+            else if (log.action === "reject") actionVerb = "Từ chối";
+            else actionVerb = log.action || "Thao tác";
+
+            var targetModule = "";
+            if (log.module === "orders") targetModule = "đơn hàng";
+            else if (log.module === "product" || log.module === "products") targetModule = "sản phẩm";
+            else if (log.module === "reviews") targetModule = "đánh giá";
+            else if (log.module === "accounts") targetModule = "tài khoản";
+            else if (log.module === "returns" || log.module === "return_exchange") targetModule = "yêu cầu đổi trả";
+            else targetModule = log.module || "";
+
+            var desc = actionVerb + " " + targetModule;
+            if (log.target_id) {
+              desc += " #" + log.target_id.slice(0, 8);
+            }
+
+            var moduleLabel = "Hệ thống";
+            if (log.module === "orders") moduleLabel = "Đơn hàng";
+            else if (log.module === "product" || log.module === "products") moduleLabel = "Sản phẩm";
+            else if (log.module === "reviews") moduleLabel = "Đánh giá";
+            else if (log.module === "accounts") moduleLabel = "Tài khoản";
+            else if (log.module === "returns" || log.module === "return_exchange") moduleLabel = "Đổi trả & CSKH";
+
+            return `
+              <article>
+                <time>${timeStr}</time>
+                <span></span>
+                <div>
+                  <strong>${escapeHtml(actor)}</strong>
+                  <p>${escapeHtml(desc)}</p>
+                  <small>${escapeHtml(moduleLabel)} · Thành công</small>
+                </div>
+              </article>
+            `;
+          }).join("");
+        }
       }
     }
 
@@ -200,6 +320,36 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
           <div><small>Campaign tốt nhất</small><strong>${escapeHtml(data.business.bestCampaign)}</strong></div>
           <div><small>Voucher dùng nhiều</small><strong>${escapeHtml(data.business.mostUsedVoucher)}</strong></div>
         `;
+      }
+
+      // Update chart dynamically
+      var chartContainer = busPanel.querySelector(".dashboard-chart__bars");
+      var gridContainer = busPanel.querySelector(".dashboard-chart__grid");
+      if (chartContainer && data.business.revenueTrend && data.business.revenueTrend.length > 0) {
+        var trend = data.business.revenueTrend;
+        var maxRevenue = Math.max.apply(null, trend.map(function(p) { return p.revenue; })) || 1;
+        var maxOrders = Math.max.apply(null, trend.map(function(p) { return p.orderCount; })) || 1;
+
+        chartContainer.innerHTML = trend.map(function(p) {
+          var pctBar = Math.round((p.revenue / maxRevenue) * 90) + 10;
+          var pctOrders = Math.round((p.orderCount / maxOrders) * 90) + 10;
+          return `
+            <div style="--bar: ${pctBar}%; --orders: ${pctOrders}%;">
+              <i title="Doanh thu: ${fmtMoney(p.revenue)}"></i>
+              <b title="Số đơn: ${p.orderCount} đơn"></b>
+              <span>${escapeHtml(p.dateStr)}</span>
+            </div>
+          `;
+        }).join("");
+
+        if (gridContainer) {
+          gridContainer.innerHTML = `
+            <span>${fmtMoney(maxRevenue)}</span>
+            <span>${fmtMoney(maxRevenue * 2 / 3)}</span>
+            <span>${fmtMoney(maxRevenue / 3)}</span>
+            <span>0</span>
+          `;
+        }
       }
     }
   }

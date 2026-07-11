@@ -6,7 +6,7 @@ export const config = {
   supabaseAnonKey: process.env.VELURA_SUPABASE_ANON_KEY || "",
   supabaseServiceRoleKey: process.env.VELURA_SUPABASE_SERVICE_ROLE_KEY || "",
   requestTimeoutMs: Number(process.env.API_REQUEST_TIMEOUT_MS || 15000),
-  maxBodyBytes: Number(process.env.API_MAX_BODY_BYTES || 65536),
+  maxBodyBytes: Number(process.env.API_MAX_BODY_BYTES || 15728640),
   adminMutationLimitPerMinute: Number(process.env.ADMIN_MUTATION_LIMIT_PER_MINUTE || 60),
   accountMaintenanceIntervalMs: Number(process.env.ACCOUNT_MAINTENANCE_INTERVAL_MS || 3600000),
   emailWorkerIntervalMs: Number(process.env.EMAIL_WORKER_INTERVAL_MS || 60000),

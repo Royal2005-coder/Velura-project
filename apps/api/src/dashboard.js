@@ -79,14 +79,12 @@ export async function buildDashboardSummary(searchParams) {
     safeSelect("return_exchange", {
       select: "return_id,status,created_at",
       limit: 1000,
-      order: "created_at.desc",
-      ...dateFilter
+      order: "created_at.desc"
     }),
     safeSelect("support_ticket", {
       select: "ticket_id,status,priority,created_at",
       limit: 1000,
-      order: "created_at.desc",
-      ...dateFilter
+      order: "created_at.desc"
     }),
     safeSelect("promotion", {
       select: "promo_id,promo_name,is_active,budget_limit,updated_at",
@@ -278,6 +276,43 @@ export async function buildDashboardSummary(searchParams) {
     if (activePromo) bestCampaign = activePromo.promo_name;
   }
 
+  // Calculate daily revenue trend (last 7 days or matching range)
+  const dailyPoints = [];
+  const startDay = new Date(fromDate);
+  const endDay = new Date(toDate);
+  
+  // Calculate duration in days
+  const diffTime = Math.abs(endDay - startDay);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 7;
+  
+  // Create points
+  for (let i = 0; i < Math.min(diffDays, 15); i++) {
+    const d = new Date(startDay.getTime() + i * 24 * 60 * 60 * 1000);
+    const dayStr = d.toISOString().split("T")[0];
+    const formattedDay = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`;
+    
+    // Sum revenue for this day
+    const dayRevenue = orderRows
+      .filter((row) => {
+        const rowDay = new Date(row.created_at).toISOString().split("T")[0];
+        return rowDay === dayStr && !["cancelled", "returned"].includes(row.status);
+      })
+      .reduce((sum, row) => sum + Number(row.total_amount || 0), 0);
+      
+    // Count orders for this day
+    const dayOrdersCount = orderRows
+      .filter((row) => {
+        const rowDay = new Date(row.created_at).toISOString().split("T")[0];
+        return rowDay === dayStr;
+      }).length;
+      
+    dailyPoints.push({
+      dateStr: formattedDay,
+      revenue: dayRevenue,
+      orderCount: dayOrdersCount
+    });
+  }
+
   return {
     range,
     from: fromDate,
@@ -287,7 +322,11 @@ export async function buildDashboardSummary(searchParams) {
       paymentErrors,
       lowStockProducts: variantRows.filter((row) => Number(row.stock_quantity) <= Number(row.low_stock_threshold || 0)).length,
       urgentReviews: reviewRows.filter((row) => Number(row.rating) <= 2).length,
-      openReturns: returnRows.filter((row) => ["pending", "processing"].includes(row.status)).length,
+      openReturns: returnRows.filter((row) => {
+        if (row.status !== "pending") return false;
+        const ageInHours = (new Date() - new Date(row.created_at)) / (60 * 60 * 1000);
+        return ageInHours <= 48;
+      }).length,
       openSupportTickets: ticketRows.filter((row) => !["resolved", "closed"].includes(row.status)).length
     },
     business: {
@@ -304,7 +343,8 @@ export async function buildDashboardSummary(searchParams) {
       promoOrdersCount,
       totalDiscount,
       mostUsedVoucher,
-      bestCampaign
+      bestCampaign,
+      revenueTrend: dailyPoints
     },
     recentLogs: logRows
   };

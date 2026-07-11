@@ -29,14 +29,14 @@
 .admin-log-result--warning { background:#f6eee0; color:#9a6b28; }
 .admin-log-empty { display:grid; place-items:center; gap:8px; min-height:280px; padding:36px; text-align:center; }
 .admin-log-empty .admin-line-icon { width:30px; height:30px; color:var(--brown-light); }
-.admin-log-empty strong { color:var(--ink); font-family:"DM Sans",sans-serif; font-size:1.125rem; font-weight:600; }
+.admin-log-empty strong { color:var(--ink); font-family:"Playfair Display",Georgia,serif; font-size:1.125rem; font-weight:600; }
 .admin-log-empty p { max-width:520px; color:var(--soft); font-size:.8125rem; }
 .admin-log-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 0 0; }
 .admin-log-drawer { width:min(620px,100vw); }
 .admin-log-drawer .admin-drawer__header { align-items:flex-start; }
 .admin-log-drawer__heading { display:grid; gap:5px; }
 .admin-log-drawer__heading small { color:var(--soft); font-size:.6875rem; font-weight:600; letter-spacing:.08em; }
-.admin-log-drawer__heading h2 { margin:0; color:var(--text-dark); font-family:"DM Sans",sans-serif; font-size:1.5rem; font-weight:600; }
+.admin-log-drawer__heading h2 { margin:0; color:var(--text-dark); font-family:"Playfair Display",Georgia,serif; font-size:1.5rem; font-weight:600; }
 .admin-log-drawer__meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
 .admin-log-summary { margin-bottom:18px; padding:14px; border-left:3px solid var(--terracotta); border-radius:var(--radius-sm); background:var(--field-bg); color:var(--text-body); font-size:.8125rem; line-height:1.6; }
 .admin-log-compare { width:100%; border-collapse:collapse; }

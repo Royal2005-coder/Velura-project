@@ -1,5 +1,6 @@
 import { apiRequest } from "./api.js";
 import { addToCart, showToast } from "./cart.js";
+import { updateWishlistBadge } from "./wishlist.js";
 
 const GUEST_ID_KEY = "velura_chat_guest_id";
 const SESSION_ID_KEY = "velura_chat_session_id";
@@ -42,6 +43,31 @@ export function initChatbot() {
     renderAll(containers, state);
   });
   startChatPolling(state);
+
+  // Warn guest users before unloading/navigating away from the website completely
+  window.addEventListener("beforeunload", (event) => {
+    if (state.mode === "guest" && state.sessionId) {
+      event.preventDefault();
+      event.returnValue = "Lịch sử trò chuyện của Guest sẽ bị xóa khi thoát trang.";
+      return event.returnValue;
+    }
+  });
+
+  // Intercept navigation links on standalone chatbot page
+  if (document.querySelector(".chatbot-page")) {
+    window.addEventListener("click", (event) => {
+      const anchor = event.target.closest("a");
+      if (anchor && anchor.href && !anchor.href.includes("chatbot.html") && !anchor.target) {
+        if (state.mode === "guest" && state.sessionId) {
+          event.preventDefault();
+          showGuestCloseWarning(async () => {
+            await deleteAllGuestSessions(state);
+            window.location.href = anchor.href;
+          });
+        }
+      }
+    });
+  }
 }
 
 function isChatVisible() {
@@ -93,10 +119,18 @@ function bindChatContainer(container, state) {
   togglers.forEach((toggle) => {
     toggle.addEventListener("click", (event) => {
       event.stopPropagation();
-      container.classList.toggle("chatbot-widget--open");
-      if (container.classList.contains("chatbot-widget--open")) {
-        setTimeout(() => input?.focus(), 250);
-        scrollMessages(container, false);
+      const isClosing = container.classList.contains("chatbot-widget--open");
+      if (isClosing && state.mode === "guest" && state.sessionId) {
+        showGuestCloseWarning(async () => {
+          await deleteAllGuestSessions(state);
+          container.classList.remove("chatbot-widget--open");
+        });
+      } else {
+        container.classList.toggle("chatbot-widget--open");
+        if (container.classList.contains("chatbot-widget--open")) {
+          setTimeout(() => input?.focus(), 250);
+          scrollMessages(container, false);
+        }
       }
     });
   });
@@ -124,6 +158,66 @@ function bindChatContainer(container, state) {
     }
   });
 
+  // Dynamic creation of preview elements if they don't exist yet
+  let previewArea = container.querySelector(".chatbot-image-preview-area");
+  if (!previewArea && form) {
+    previewArea = document.createElement("div");
+    previewArea.className = "chatbot-image-preview-area";
+    previewArea.style.display = "none";
+    previewArea.style.padding = "8px 16px";
+    previewArea.style.background = "#faf9f6";
+    previewArea.style.borderTop = "1px solid var(--line, #e6dfd9)";
+    previewArea.style.alignItems = "center";
+    previewArea.style.gap = "8px";
+    previewArea.innerHTML = `
+      <div style="position: relative; display: inline-block;">
+        <img class="chatbot-image-preview-img" src="" style="max-height: 60px; max-width: 100px; border-radius: 4px; object-fit: cover; border: 1px solid var(--line, #e6dfd9);" />
+        <button type="button" class="chatbot-image-preview-remove" style="position: absolute; top: -6px; right: -6px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; padding: 0; line-height: 1;">&times;</button>
+      </div>
+      <span class="chatbot-image-preview-filename" style="font-size: 0.75rem; color: var(--text-secondary, #8c857e);"></span>
+    `;
+    form.parentNode.insertBefore(previewArea, form);
+  }
+
+  let selectedFile = null;
+
+  imgInput?.addEventListener("change", (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        showToast("Chỉ hỗ trợ đính kèm tệp tin hình ảnh.");
+        imgInput.value = "";
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        showToast("Kích thước ảnh không được vượt quá 10MB.");
+        imgInput.value = "";
+        return;
+      }
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const previewImg = previewArea?.querySelector(".chatbot-image-preview-img");
+        const filenameSpan = previewArea?.querySelector(".chatbot-image-preview-filename");
+        if (previewImg && filenameSpan && previewArea) {
+          previewImg.src = evt.target.result;
+          filenameSpan.textContent = file.name;
+          previewArea.style.display = "flex";
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  const removeBtn = previewArea?.querySelector(".chatbot-image-preview-remove");
+  removeBtn?.addEventListener("click", () => {
+    selectedFile = null;
+    if (imgInput) imgInput.value = "";
+    if (previewArea) previewArea.style.display = "none";
+    const previewImg = previewArea?.querySelector(".chatbot-image-preview-img");
+    if (previewImg) previewImg.src = "";
+  });
+
   attachBtn?.addEventListener("click", () => imgInput?.click());
 
   newChatBtn?.addEventListener("click", async () => {
@@ -138,9 +232,16 @@ function bindChatContainer(container, state) {
   form?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const text = input?.value.trim();
-    if (!text || state.loading) return;
-    input.value = "";
-    await sendChatMessage(state, text);
+    if (!text && !selectedFile) return;
+    if (state.loading) return;
+
+    if (input) input.value = "";
+    const fileToSend = selectedFile;
+    selectedFile = null;
+    if (imgInput) imgInput.value = "";
+    if (previewArea) previewArea.style.display = "none";
+
+    await sendChatMessage(state, text, fileToSend);
   });
 
   container.addEventListener("click", async (event) => {
@@ -242,14 +343,71 @@ async function loadMessages(state, sessionId, reloadSessions = true) {
   renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
 }
 
-async function sendChatMessage(state, text) {
+function downscaleImage(file, maxWidth = 800, maxHeight = 800) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve({
+          data: canvas.toDataURL("image/jpeg", 0.8),
+          mimeType: "image/jpeg"
+        });
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function sendChatMessage(state, text, file) {
   state.loading = true;
+
+  let attachmentPayload = null;
+  if (file) {
+    try {
+      const scaled = await downscaleImage(file);
+      attachmentPayload = {
+        type: "image",
+        data: scaled.data,
+        filename: file.name.replace(/\.[^/.]+$/, "") + ".jpg",
+        mimeType: scaled.mimeType
+      };
+    } catch (err) {
+      console.error("Failed to read and downscale attached file:", err);
+    }
+  }
+
   const tempUser = {
     message_id: `tmp-user-${Date.now()}`,
     sender: "user",
-    text,
+    text: text || (attachmentPayload ? "Gửi hình ảnh đính kèm" : ""),
     created_at: new Date().toISOString(),
-    metadata: {}
+    metadata: {
+      attachment: attachmentPayload
+    }
   };
   const typing = {
     message_id: "typing",
@@ -267,7 +425,8 @@ async function sendChatMessage(state, text) {
       sessionId: state.sessionId || undefined,
       guestId: state.guestId,
       mode: state.mode,
-      message: text
+      message: text || (attachmentPayload ? "Gửi hình ảnh đính kèm" : ""),
+      attachment: attachmentPayload
     };
     const data = await apiRequest("/api/v1/chat/messages", {
       method: "POST",
@@ -330,6 +489,29 @@ async function deleteSession(state, sessionId) {
     renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
   } catch (error) {
     showToast(error.message || "Không thể xóa phiên chat.");
+  }
+}
+
+async function deleteAllGuestSessions(state) {
+  try {
+    const sessionIds = new Set(state.sessions.map((s) => s.session_id));
+    if (state.sessionId) {
+      sessionIds.add(state.sessionId);
+    }
+    const deletePromises = Array.from(sessionIds).map((id) =>
+      apiRequest(`/api/v1/chat/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        body: { guestId: state.guestId }
+      }).catch((err) => console.error("Error deleting session:", id, err))
+    );
+    await Promise.all(deletePromises);
+    state.sessions = [];
+    state.sessionId = "";
+    localStorage.removeItem(SESSION_ID_KEY);
+    state.messages = [localGreeting()];
+    renderAll(document.querySelectorAll(".chatbot-widget, .chatbot-page"), state, true);
+  } catch (error) {
+    console.error("Failed to delete all guest sessions:", error);
   }
 }
 
@@ -452,11 +634,15 @@ function renderMessage(message, state) {
   }
 
   const hasRichContentClass = productCards || blogCards ? " chatbot-message--has-rich-content" : "";
+  const attachmentMarkup = message.metadata?.attachment?.data
+    ? `<div class="chatbot-message__attachment" style="margin-top: 8px;"><img src="${escapeHtml(message.metadata.attachment.data)}" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid rgba(115,71,36,0.15); object-fit: cover;" /></div>`
+    : "";
 
   return `
     <div class="chatbot-message ${senderClass}${typingClass}${agentClass}${systemClass}${hasRichContentClass}">
       ${message.sender === "agent" ? '<span class="chatbot-message__sender">CSKH</span>' : ""}
       <div class="chatbot-message__text">${formattedText}</div>
+      ${attachmentMarkup}
       ${productCards ? `
         <div class="chat-product-list">${productCards}</div>
         <div style="margin-top: 10px; text-align: left;">
@@ -822,10 +1008,38 @@ export async function syncFavoriteOutfitsOnLogin() {
   if (favorites.length === 0) return;
 
   try {
+    // 1. Sync to chat favorites
     await apiRequest("/api/v1/chat/favorites/sync", {
       method: "POST",
       body: { favorites }
     });
+
+    // 2. Add each product ID to the user's wishlist
+    const allProductIds = new Set();
+    for (const fav of favorites) {
+      if (Array.isArray(fav.product_ids)) {
+        fav.product_ids.forEach((id) => allProductIds.add(id));
+      }
+    }
+    if (allProductIds.size > 0) {
+      for (const productId of allProductIds) {
+        try {
+          await apiRequest("/api/user/wishlist", {
+            method: "POST",
+            body: { product_id: productId }
+          });
+        } catch (e) {
+          console.error("Error syncing product to wishlist on login:", productId, e);
+        }
+      }
+      // Update badge
+      const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+      localStorage.setItem("velura_wishlist_count", currentCount + allProductIds.size);
+      if (typeof updateWishlistBadge === "function") {
+        updateWishlistBadge();
+      }
+    }
+
     sessionStorage.removeItem("velura_temporary_favorites");
   } catch (err) {
     console.error("Failed to sync favorite outfits on login:", err);
@@ -835,10 +1049,32 @@ export async function syncFavoriteOutfitsOnLogin() {
 async function handleSaveOutfit(state, messageId, sessionId) {
   if (state.mode === "user") {
     try {
+      const message = state.messages.find(m => m.message_id === messageId);
+      const productIds = message ? collectProductIds(message) : [];
+
       await apiRequest("/api/v1/chat/favorites", {
         method: "POST",
         body: { messageId, sessionId }
       });
+
+      if (productIds.length > 0) {
+        for (const productId of productIds) {
+          try {
+            await apiRequest("/api/user/wishlist", {
+              method: "POST",
+              body: { product_id: productId }
+            });
+          } catch (e) {
+            console.error("Failed to add product to wishlist:", productId, e);
+          }
+        }
+        // Update badge
+        const currentCount = parseInt(localStorage.getItem("velura_wishlist_count") || "0", 10);
+        localStorage.setItem("velura_wishlist_count", currentCount + productIds.length);
+        if (typeof updateWishlistBadge === "function") {
+          updateWishlistBadge();
+        }
+      }
       showToast("Đã lưu phối đồ vĩnh viễn vào tủ đồ cá nhân!");
     } catch (err) {
       showToast(err.message || "Không thể lưu phối đồ.");
@@ -868,31 +1104,68 @@ function showGuestWarningModal() {
   if (!modal) {
     modal = document.createElement("div");
     modal.id = "guest-warning-modal";
-    modal.style.position = "fixed";
-    modal.style.top = "0";
-    modal.style.left = "0";
-    modal.style.width = "100%";
-    modal.style.height = "100%";
-    modal.style.backgroundColor = "rgba(0,0,0,0.5)";
-    modal.style.display = "flex";
-    modal.style.alignItems = "center";
-    modal.style.justifyContent = "center";
-    modal.style.zIndex = "10000";
+    modal.className = "guest-warning-modal-overlay";
     modal.innerHTML = `
-      <div class="modal-content" style="background:#fff;padding:24px;border-radius:12px;max-width:400px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.15); font-family: inherit;">
-        <h4 style="margin-top:0;color:#734724;font-size:18px;">Trải nghiệm Guest</h4>
-        <p style="font-size:14px;color:#555;line-height:1.5;margin:12px 0 20px;">Bạn đang trải nghiệm dưới quyền Khách vãng lai. Vui lòng Đăng ký hoặc Đăng nhập tài khoản để lưu giữ vĩnh viễn phối đồ này vào tủ đồ cá nhân!</p>
-        <div style="display:flex;gap:12px;justify-content:center;">
-          <button type="button" class="js-close-warning-modal" style="background:#f4f4f4;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:500;color:#1a1a1a;">Đóng</button>
-          <a href="/src/pages/auth/signin.html" style="background:#734724;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;display:inline-block;font-weight:500;">Đăng nhập / Đăng ký</a>
+      <div class="guest-warning-modal-content">
+        <h4>Trải nghiệm Guest</h4>
+        <p>Bạn đang trải nghiệm dưới quyền Khách vãng lai. Vui lòng Đăng ký hoặc Đăng nhập tài khoản để lưu giữ vĩnh viễn phối đồ này vào tủ đồ cá nhân!</p>
+        <div class="guest-warning-modal-buttons">
+          <button type="button" class="guest-warning-modal-btn guest-warning-modal-btn--secondary js-close-warning-modal">Đóng</button>
+          <a href="/src/pages/auth/signin.html" class="guest-warning-modal-btn guest-warning-modal-btn--primary">Đăng nhập / Đăng ký</a>
         </div>
       </div>
     `;
     document.body.appendChild(modal);
     modal.querySelector(".js-close-warning-modal").addEventListener("click", () => {
-      modal.style.display = "none";
+      modal.hidden = true;
     });
-  } else {
-    modal.style.display = "flex";
   }
+  modal.hidden = false;
+}
+
+export function showGuestCloseWarning(onConfirm) {
+  let modal = document.getElementById("chatbot-guest-warning-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "chatbot-guest-warning-modal";
+    modal.className = "chatbot-warning-modal";
+    modal.innerHTML = `
+      <div class="chatbot-warning-modal__content">
+        <header class="chatbot-warning-modal__header">
+          <div class="chatbot-warning-modal__title-wrapper">
+            <svg class="chatbot-warning-modal__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <h4>Cảnh báo phiên trò chuyện</h4>
+          </div>
+        </header>
+        <div class="chatbot-warning-modal__body">
+          <p>Bạn đang sử dụng chatbot với tư cách là <strong>Guest (Khách vãng lai)</strong>.</p>
+          <p>Nếu bạn thoát màn hình hoặc đóng cuộc trò chuyện, <strong>toàn bộ dữ liệu lịch sử chat này sẽ không được lưu trữ</strong>.</p>
+          <p>Hãy đăng ký tài khoản hoặc đăng nhập để lưu lại toàn bộ lịch sử tư vấn thời trang của bạn nhé!</p>
+        </div>
+        <footer class="chatbot-warning-modal__footer">
+          <button class="chatbot-warning-modal__btn chatbot-warning-modal__btn--secondary js-warn-confirm-leave">Đồng ý thoát</button>
+          <button class="chatbot-warning-modal__btn chatbot-warning-modal__btn--primary js-warn-cancel">Ở lại</button>
+        </footer>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector(".js-warn-cancel").addEventListener("click", () => {
+      modal.hidden = true;
+    });
+  }
+
+  modal.hidden = false;
+
+  const confirmBtn = modal.querySelector(".js-warn-confirm-leave");
+  const newConfirmBtn = confirmBtn.cloneNode(true);
+  confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+  newConfirmBtn.addEventListener("click", () => {
+    modal.hidden = true;
+    onConfirm();
+  });
 }

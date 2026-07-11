@@ -8,6 +8,7 @@ import {
   updateRows as supabaseUpdateRows
 } from "../supabase.js";
 import { config } from "../config.js";
+import { generateGeminiEmbedding } from "../gemini-client.js";
 import { CHAT_MESSAGE_SELECT, CHAT_PRODUCT_SELECT, CHAT_SESSION_SELECT } from "./chatbot-constants.js";
 
 const CHAT_DB_OPTIONS = Object.freeze({ useAnonKey: false });
@@ -33,26 +34,8 @@ function callRpc(name, payload) {
 }
 
 async function getEmbedding(text) {
-  const apiKey = config.geminiApiKey;
-  if (!apiKey) return null;
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${apiKey}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "models/gemini-embedding-001",
-        content: {
-          parts: [{ text }]
-        }
-      })
-    });
-    if (!res.ok) {
-      console.error("[EMBEDDING_ERROR]", res.status, await res.text());
-      return null;
-    }
-    const data = await res.json();
-    return data.embedding?.values || null;
+    return await generateGeminiEmbedding(text);
   } catch (err) {
     console.error("[EMBEDDING_ERROR]", err);
     return null;
@@ -169,7 +152,8 @@ export function createChatbotRepository() {
           const matchRows = await callRpc("match_products", {
             query_embedding: embedding,
             match_threshold: 0.15,
-            match_count: limit
+            match_count: limit,
+            filter_size: null
           });
           if (matchRows && matchRows.length > 0) {
             return { rows: matchRows };

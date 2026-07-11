@@ -661,7 +661,11 @@ async function submitAction(form) {
 function updateKpis() {
   const kpis = document.querySelectorAll(".admin-kpi-card__value");
   if (kpis.length >= 4) {
-    const pendingReturns = state.returns.filter(r => r.status === "pending").length;
+    const pendingReturns = state.returns.filter(r => {
+      if (r.status !== "pending") return false;
+      const ageInHours = (new Date() - new Date(r.created_at)) / (60 * 60 * 1000);
+      return ageInHours <= 48;
+    }).length;
     const pendingTickets = state.tickets.filter(t => !["resolved", "closed"].includes(t.status)).length;
     
     // Priority high: return pending + high priority open tickets
@@ -678,14 +682,18 @@ function updateKpis() {
   }
 
   // Also update tab badges
-  const returnsTabBadge = document.querySelector('[data-zone="returns"] .admin-badge');
+  const returnsTabBadge = document.querySelector('[data-zone="returns"] span');
   if (returnsTabBadge) {
-    returnsTabBadge.textContent = String(state.returns.length);
+    returnsTabBadge.textContent = String(state.returns.filter(r => {
+      if (r.status !== "pending") return false;
+      const ageInHours = (new Date() - new Date(r.created_at)) / (60 * 60 * 1000);
+      return ageInHours <= 48;
+    }).length);
   }
 
-  const supportTabBadge = document.querySelector('[data-zone="support"] .admin-badge');
+  const supportTabBadge = document.querySelector('[data-zone="support"] span');
   if (supportTabBadge) {
-    supportTabBadge.textContent = String(state.tickets.length);
+    supportTabBadge.textContent = String(state.tickets.filter(t => !["resolved", "closed"].includes(t.status)).length);
   }
 }
 
@@ -835,10 +843,10 @@ function renderChatMessages() {
     if (isUser) { senderClass = "admin-chat-msg--user"; senderLabel = "KH"; }
     if (isAgent) { senderClass = "admin-chat-msg--agent"; senderLabel = "CSKH"; }
 
-    const productIds = [
+    const productIds = Array.from(new Set([
       ...(Array.isArray(msg.product_ids) ? msg.product_ids : []),
       ...(Array.isArray(msg.metadata?.product_ids) ? msg.metadata.product_ids : [])
-    ];
+    ]));
     const productCards = productIds
       .map((id) => productsMap.get(id))
       .filter(Boolean)

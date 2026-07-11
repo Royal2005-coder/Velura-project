@@ -390,6 +390,453 @@ export const FALLBACK_BLOG_POSTS = [
   }
 ];
 
+const blogEditorialUpdates = {
+  "bang-mau-mua-thu-2026": {
+    image_url: "/src/assets/images/blog-autumn-palette-2026.png",
+    title: "Bảng màu mùa thu 2026: Hồng phấn, champagne và xanh thyme",
+    excerpt: "Một bảng màu dịu, có chiều sâu để làm mới tủ đồ mùa thu bằng những lớp sắc độ dễ mặc và dễ phối.",
+    content: {
+      intro: "Mùa thu này, Velura chọn những sắc độ trầm nhẹ thay vì tương phản gay gắt. Hồng phấn, antique rose, champagne, dried thyme và bisque tạo nên một nhịp màu mềm mại, hiện đại và có thể ứng dụng mỗi ngày.",
+      takeaways: [
+        "Chọn một sắc trung tính sáng làm nền để tổng thể luôn thoáng mắt.",
+        "Dùng antique rose hoặc bisque ở gần gương mặt để tạo điểm nhấn ấm áp.",
+        "Xanh thyme giúp cân bằng các gam hồng và mang lại chiều sâu cho bản phối.",
+        "Giới hạn tối đa ba sắc độ trong một diện mạo để màu sắc có khoảng thở."
+      ],
+      sections: [
+        {
+          heading: "Một bảng màu dịu nhưng không nhạt",
+          body: [
+            "Champagne và blush là lớp nền sáng, phù hợp cho sơ mi, váy lụa hoặc quần suông. Khi cần nét chín chắn hơn, antique rose tạo độ ấm vừa đủ mà không làm tổng thể nặng nề.",
+            "Dried thyme là điểm neo bất ngờ của bảng màu. Một chiếc áo khoác nhẹ, túi da hoặc giày ở sắc xanh xám này giúp các lớp màu phấn trở nên hiện đại và có chủ đích."
+          ],
+          productSkus: ["VLR-SD-019", "VLR-SD-004", "VLR-SD-002"]
+        },
+        {
+          heading: "Công thức phối màu của Velura",
+          body: [
+            "Bắt đầu với một phom dáng rõ ràng: quần ống đứng, chân váy midi hoặc đầm có đường eo gọn. Sau đó chọn một màu chính, một sắc sáng làm nền và một phụ kiện có chiều sâu.",
+            "Nếu mặc cả hồng và xanh thyme, hãy để chúng xuất hiện ở hai mảng có tỷ lệ khác nhau. Một mảng lớn dịu, một điểm nhấn đậm sẽ khiến diện mạo cân bằng hơn."
+          ],
+          productSkus: ["VLR-SD-005", "VLR-AO-003"]
+        }
+      ],
+      products: [
+        { sku: "VLR-SD-019", note: "Set Boho Linen hồng kem cho lớp màu blush nhẹ nhàng." },
+        { sku: "VLR-SD-004", note: "Set Sage Pleated là mảng xanh thyme cân bằng bảng màu." },
+        { sku: "VLR-SD-002", note: "Set Ivory Draped lụa rủ tạo nền champagne thanh thoát." }
+      ]
+    }
+  },
+  "dich-le-nhiet-ba-phan-huy": {
+    category_slug: "style",
+    title: "Biến hoá diện mạo với áo polo mùa Hè 2026",
+    excerpt: "Từ sporty street đến quiet luxury, áo polo là nền tảng linh hoạt cho những bản phối có cá tính riêng.",
+    image_url: "/src/assets/images/blog-polo-style-2026.png",
+    author: "Velura Editorial",
+    read_minutes: 7,
+    content: {
+      intro: "Áo polo đã rời xa hình ảnh chỉn chu quen thuộc để trở thành món đồ chuyển đổi linh hoạt giữa nhiều ngữ cảnh. Chìa khóa là tỷ lệ phom dáng, chất liệu và cách tiết chế phụ kiện.",
+      takeaways: [
+        "Polo regular-fit hoặc hơi rộng là lựa chọn linh hoạt nhất.",
+        "Chất liệu dệt kim và cotton có bề mặt đẹp giúp bản phối trông chỉn chu hơn.",
+        "Một món có cấu trúc như blazer hoặc túi da sẽ nâng cấp tổng thể ngay lập tức.",
+        "Chọn giày theo bối cảnh để chuyển phong cách mà không cần thay cả set đồ."
+      ],
+      sections: [
+        {
+          heading: "Polo và nhịp phố hiện đại",
+          body: [
+            "Với tinh thần thành thị, polo dáng hơi rộng đi cùng quần suông hoặc denim ống thẳng tạo cảm giác gọn mà không cứng. Một lớp jacket nhẹ khoác ngoài giúp tổng thể có chiều sâu hơn trong những ngày di chuyển nhiều.",
+            "Giữ bảng màu trong ba sắc độ: navy, ivory và một điểm chạm burgundy hoặc đen. Công thức này đủ cá tính cho cuối tuần nhưng vẫn có độ tinh tế của một tủ đồ được chọn lọc."
+          ],
+          productSkus: ["VLR-AO-002", "VLR-SD-016"]
+        },
+        {
+          heading: "Từ văn phòng đến buổi hẹn",
+          body: [
+            "Một chiếc polo trơn có thể đi cùng quần cạp cao hoặc chân váy midi. Hãy ưu tiên phần vai vừa vặn và vạt áo đủ dài để sơ vin nhẹ, tạo đường eo rõ ràng.",
+            "Khi cần vẻ mềm mại hơn, phối polo với một lớp lụa rủ hoặc blazer có cấu trúc. Một đôi slingback hoặc loafer sẽ hoàn thiện diện mạo mà không biến nó thành công thức công sở cứng nhắc."
+          ],
+          productSkus: ["VLR-SD-002", "VLR-SD-003"]
+        }
+      ],
+      products: [
+        { sku: "VLR-AO-002", note: "Áo sơ mi lụa tơ tằm cho lớp phối mềm và chỉn chu." },
+        { sku: "VLR-SD-016", note: "Set dạo biển linen linh hoạt cho ngày cuối tuần năng động." },
+        { sku: "VLR-SD-002", note: "Set Ivory Draped tạo nền sáng cho polo tông navy hoặc đen." }
+      ]
+    }
+  },
+  "he-mong-dao-dam-viet": {
+    title: "Những phụ nữ thắp sáng lối đi: Lãnh đạo bằng hành động",
+    excerpt: "Câu chuyện về những nhà sáng lập dùng đổi mới và sự bền bỉ để biến một ý tưởng thành tác động tích cực.",
+    image_url: "/src/assets/images/blog-women-leaders-2026.png",
+    author: "Velura Editorial",
+    read_minutes: 6,
+    content: {
+      intro: "Những cộng đồng phát triển bền vững thường bắt đầu từ một quyết định rất cụ thể: nhìn thấy vấn đề và chọn bắt tay vào giải quyết. Câu chuyện của các nữ lãnh đạo nhắc chúng ta rằng sự tự tin có thể được xây bằng hành động mỗi ngày.",
+      takeaways: [
+        "Tác động bền vững bắt đầu từ một vấn đề được gọi tên rõ ràng.",
+        "Mạng lưới cố vấn và cộng đồng giúp ý tưởng đi xa hơn năng lực của một cá nhân.",
+        "Sự chỉn chu trong cách hiện diện là một phần của năng lực lãnh đạo.",
+        "Trang phục phù hợp nên hỗ trợ chuyển động, sự tập trung và bản sắc riêng."
+      ],
+      sections: [
+        {
+          heading: "Dẫn dắt bằng sự rõ ràng",
+          body: [
+            "Một nhà lãnh đạo đáng tin không cần phải xuất hiện với những tuyên bố lớn. Họ tạo niềm tin bằng khả năng đặt câu hỏi đúng, lắng nghe kỹ và đưa ra lựa chọn có trách nhiệm trong những việc nhỏ.",
+            "Trong công việc sáng tạo, sự rõ ràng ấy càng quan trọng: một ý tưởng có thể bắt đầu rất cá nhân, nhưng chỉ tạo được ảnh hưởng khi nó được chuyển thành quy trình, đối thoại và một cộng đồng cùng tham gia."
+          ],
+          productSkus: ["VLR-SD-003", "VLR-SD-005"]
+        },
+        {
+          heading: "Một tủ đồ cho ngày bạn tạo khác biệt",
+          body: [
+            "Trang phục công việc không cần phải đánh đổi sự thoải mái để có độ tin cậy. Hãy bắt đầu bằng phom may vừa vặn, chất liệu có chuyển động và một bảng màu nhất quán với cách bạn muốn được ghi nhớ.",
+            "Một set may đo, một lớp lụa nhẹ và phụ kiện tối giản đủ để tạo sự tự tin từ phòng họp đến cuộc gặp gỡ sau giờ làm. Điều quan trọng là trang phục cho phép bạn tập trung vào điều mình muốn nói."
+          ],
+          productSkus: ["VLR-SD-002", "VLR-AO-003"]
+        }
+      ],
+      products: [
+        { sku: "VLR-SD-003", note: "Set Midnight Blue chạm eo, phù hợp cho những ngày cần sự tự tin." },
+        { sku: "VLR-SD-005", note: "Set Gilet Tweed Cocoa tạo cấu trúc gọn gàng cho lịch họp." },
+        { sku: "VLR-SD-002", note: "Set Ivory Draped cho lớp nền nhẹ và tinh tế." }
+      ]
+    }
+  }
+};
+
+FALLBACK_BLOG_POSTS.forEach((post) => {
+  const update = blogEditorialUpdates[post.slug];
+  if (update) Object.assign(post, update);
+});
+
+const researchedEditorialUpdates = {
+  "a-khoi-thanh-huong-ao-dai-co-yem": {
+    category_slug: "trend",
+    title: "Áo dài cổ yếm 2026: Khi di sản gặp đường nét đương đại",
+    excerpt: "Phần cổ thanh thoát, phom áo tiết chế và chất liệu nhẹ đang đưa áo dài cổ yếm trở lại đời sống hiện đại.",
+    image_url: "/src/assets/images/blog-ao-dai-co-yem-editorial.png",
+    author: "Velura Editorial",
+    read_minutes: 8,
+    content: {
+      intro: "Áo dài cổ yếm không chỉ là một biến tấu thị giác. Khi được xử lý đúng tỷ lệ, thiết kế này tạo nên cuộc đối thoại mềm mại giữa vẻ đẹp truyền thống và tinh thần tối giản của phụ nữ hôm nay.",
+      takeaways: [
+        "Đường cổ nên ôm vừa vặn, không siết sát và không khoét quá sâu.",
+        "Lụa, tơ tằm và linen pha giúp tà áo chuyển động tự nhiên hơn.",
+        "Thêu tay nên xuất hiện như một điểm nhấn thay vì phủ kín toàn bộ bề mặt.",
+        "Phụ kiện nhỏ, tóc gọn và giày thanh mảnh giữ tổng thể hiện đại."
+      ],
+      sections: [
+        {
+          heading: "Từ chiếc yếm truyền thống đến đường cổ mới",
+          body: [
+            "Cảm hứng cổ yếm được nhận biết qua phần vai mở và đường cổ hướng lên cao. Trong thiết kế đương đại, chi tiết này được tinh giản để tôn vùng cổ, xương quai xanh và tư thế của người mặc mà vẫn giữ sự kín đáo cần thiết.",
+            "Tỷ lệ là yếu tố quyết định. Thân trên cần gọn, trong khi tà áo có độ rủ vừa đủ để cân bằng phần vai. Một đường viền màu burgundy hoặc hàng cúc bọc nhỏ có thể tạo chiều sâu mà không phá vỡ vẻ thanh lịch."
+          ],
+          productSkus: ["VLR-AO-004", "VLR-SD-010"]
+        },
+        {
+          heading: "Chọn chất liệu để áo dài biết chuyển động",
+          body: [
+            "Tơ tằm mang lại độ óng nhẹ và cảm giác trang trọng, còn linen pha phù hợp với những thiết kế mặc ban ngày. Với thời tiết nhiệt đới, lớp lót mỏng và bề mặt vải thoáng quan trọng hơn việc tạo phom quá cứng.",
+            "Các họa tiết hoa nhỏ, cành mảnh hoặc thêu cùng tông giúp thiết kế có chiều sâu khi nhìn gần. Chúng nên đi theo chuyển động của tà áo thay vì nằm như một mảng trang trí tách biệt."
+          ],
+          productSkus: ["VLR-AO-002", "VLR-SD-003"]
+        },
+        {
+          heading: "Ba bối cảnh, một thiết kế",
+          body: [
+            "Cho sự kiện ban ngày, chọn bảng màu ivory, hồng phấn hoặc xanh sage cùng khuyên tai ngọc trai. Buổi tối phù hợp với midnight blue, burgundy và một chiếc clutch có cấu trúc.",
+            "Nếu muốn mặc áo dài cổ yếm trong đời sống thường ngày, hãy giảm chi tiết thêu, chọn phom gọn và phối cùng quần lụa trơn. Sự tiết chế giúp di sản trở nên gần gũi mà không mất đi phẩm chất riêng."
+          ],
+          productSkus: ["VLR-SD-002", "VLR-SD-004"]
+        }
+      ],
+      products: [
+        { sku: "VLR-AO-004", note: "Áo cổ yếm lụa tạo đường vai thanh thoát và hiện đại." },
+        { sku: "VLR-SD-010", note: "Set Soft Ceremony phù hợp cho tiệc nhẹ và sự kiện trang trọng." },
+        { sku: "VLR-SD-003", note: "Set Midnight Blue mang lại lựa chọn sâu màu cho buổi tối." }
+      ]
+    }
+  },
+  "cong-thuc-phoi-do-resort-he-2026": {
+    category_slug: "style",
+    title: "Resort 2026: Tủ đồ 5 món từ sân bay đến bữa tối",
+    excerpt: "Một capsule gọn nhẹ với linen, phom may thư giãn và phụ kiện đủ tinh tế cho mọi nhịp của chuyến đi.",
+    image_url: "/src/assets/images/blog-resort-capsule-2026.png",
+    author: "Lê Minh Châu",
+    read_minutes: 9,
+    content: {
+      intro: "Resort wear 2026 hướng đến những món đồ có thể chuyển vai linh hoạt. Thay vì đóng gói nhiều diện mạo riêng lẻ, hãy xây một bảng màu chung và chọn năm thiết kế có thể phối chéo từ lúc di chuyển đến bữa tối bên biển.",
+      takeaways: [
+        "Một bảng màu ba tông giúp mọi món đồ có thể phối cùng nhau.",
+        "Linen pha và cotton dệt mịn thoáng nhưng giữ phom tốt hơn.",
+        "Một set đồng bộ có thể tách thành ít nhất ba diện mạo.",
+        "Phụ kiện có cấu trúc là cách nhanh nhất để nâng cấp trang phục buổi tối."
+      ],
+      sections: [
+        {
+          heading: "Năm món tạo nên một capsule resort",
+          body: [
+            "Bắt đầu với sơ mi linen trắng, quần suông cùng tông, một đầm cột dáng dài, áo khoác nhẹ và set đồng bộ có thể tách rời. Năm món này tạo đủ lớp cho sân bay, bữa sáng, dạo phố và buổi tối.",
+            "Ưu tiên trắng, cát và chocolate hoặc navy. Khi màu sắc có cùng nhiệt độ, bạn có thể thay đổi phụ kiện mà không cần nghĩ lại toàn bộ trang phục."
+          ],
+          productSkus: ["VLR-SD-016", "VLR-SD-018"]
+        },
+        {
+          heading: "Công thức cho ngày di chuyển",
+          body: [
+            "Tại sân bay, quần linen ống rộng đi cùng áo mỏng và sơ mi khoác ngoài giúp cơ thể dễ chịu khi nhiệt độ thay đổi. Chọn giày phẳng có quai chắc và một túi đủ lớn cho những vật dụng cần lấy nhanh.",
+            "Khi đến resort, chỉ cần bỏ lớp áo ngoài, thay túi lớn bằng túi cói và thêm khuyên tai ánh kim. Bộ đồ di chuyển lập tức trở thành diện mạo ăn trưa thoải mái."
+          ],
+          productSkus: ["VLR-AO-002", "VLR-SD-002"]
+        },
+        {
+          heading: "Chuyển sang buổi tối bằng tỷ lệ và chất liệu",
+          body: [
+            "Buổi tối không nhất thiết cần thêm một chiếc váy mới. Sơ vin gọn, để lộ cổ tay, đổi sandal thành giày gót thấp và dùng túi có cấu trúc là đủ để thay đổi nhịp điệu của set linen.",
+            "Nếu chọn đầm dài, hãy giữ phom cột hoặc chữ A mềm để dễ gấp. Một lớp lụa, trang sức nhỏ và son màu sâu tạo điểm nhấn mà vẫn đúng tinh thần nghỉ dưỡng thanh lịch."
+          ],
+          productSkus: ["VLR-SD-003", "VLR-SD-019"]
+        }
+      ],
+      products: [
+        { sku: "VLR-SD-016", note: "Set dạo biển linen là nền tảng linh hoạt nhất cho capsule resort." },
+        { sku: "VLR-SD-018", note: "Set White Resort phù hợp từ ban ngày đến bữa tối tối giản." },
+        { sku: "VLR-SD-002", note: "Set Ivory Draped bổ sung độ rủ và vẻ trang trọng nhẹ nhàng." }
+      ]
+    }
+  },
+  "dang-my-linh-thoi-trang-nhat-ky": {
+    category_slug: "interview",
+    title: "Đặng Mỹ Linh: Phong cách là cuốn nhật ký không cần lời",
+    excerpt: "Một cuộc trò chuyện về tủ đồ có chủ đích, bản sắc người sáng lập và cách trang phục lưu giữ từng giai đoạn trưởng thành.",
+    image_url: "/src/assets/images/blog-founder-style-interview.png",
+    author: "Nguyễn Thu Hà",
+    read_minutes: 10,
+    content: {
+      intro: "Trong atelier ngập ánh sáng, Đặng Mỹ Linh nói về quần áo như một hệ thống ký ức. Mỗi chất liệu, đường cắt và sắc màu đều đánh dấu một quyết định, một chuyến đi hoặc một phiên bản cô đã từng trở thành.",
+      takeaways: [
+        "Phong cách cá nhân rõ nhất khi tủ đồ phản ánh nhịp sống thật.",
+        "Một phom dáng tốt có giá trị lâu dài hơn một xu hướng ngắn hạn.",
+        "Màu sắc có thể trở thành dấu hiệu nhận diện của người sáng lập.",
+        "Mua ít hơn giúp mỗi món đồ có nhiều ký ức và nhiều lần xuất hiện hơn."
+      ],
+      sections: [
+        {
+          heading: "Từ tủ đồ nhiều lựa chọn đến tủ đồ có chủ đích",
+          body: [
+            "Mỹ Linh từng mua theo cảm xúc và nhận ra mình vẫn thường xuyên mặc lại một nhóm rất nhỏ. Bước ngoặt đến khi cô quan sát lịch làm việc, cách di chuyển và những khoảnh khắc cần cảm thấy tự tin nhất.",
+            "Từ đó, tủ đồ được xây quanh blazer có cấu trúc, sơ mi lụa, quần suông và một vài thiết kế áo dài hiện đại. Các món đồ không giống nhau, nhưng cùng chia sẻ một ngôn ngữ về sự điềm tĩnh và rõ ràng."
+          ],
+          productSkus: ["VLR-SD-003", "VLR-AO-002"]
+        },
+        {
+          heading: "Trang phục như một phần của bản sắc lãnh đạo",
+          body: [
+            "Theo Mỹ Linh, sự chuyên nghiệp không nằm ở việc mặc cứng nhắc. Một bộ đồ tốt phải cho phép người mặc ngồi lâu, di chuyển nhanh và tập trung vào cuộc trò chuyện thay vì liên tục chỉnh lại trang phục.",
+            "Midnight blue và ivory trở thành hai màu nền quen thuộc vì chúng đủ nghiêm túc cho phòng họp nhưng vẫn mềm dưới ánh sáng tự nhiên. Burgundy chỉ xuất hiện ở phụ kiện hoặc lớp áo nhỏ như một chữ ký."
+          ],
+          productSkus: ["VLR-SD-005", "VLR-SD-002"]
+        },
+        {
+          heading: "Những món đồ giữ lại ký ức",
+          body: [
+            "Cô vẫn giữ chiếc áo lụa mặc trong buổi thuyết trình đầu tiên và một thiết kế áo dài từ ngày khai trương studio. Giá trị của chúng không nằm ở việc còn mới, mà ở khả năng đưa cô trở lại đúng cảm xúc của thời điểm ấy.",
+            "Đó cũng là nguyên tắc cô áp dụng khi mua mới: món đồ phải có chỗ trong cuộc sống hiện tại và đủ bền để tiếp tục đồng hành. Phong cách, theo cách đó, là một cuốn nhật ký được viết bằng lựa chọn hằng ngày."
+          ],
+          productSkus: ["VLR-AO-004", "VLR-SD-010"]
+        }
+      ],
+      products: [
+        { sku: "VLR-SD-003", note: "Set Midnight Blue tạo hình ảnh điềm tĩnh cho lịch làm việc quan trọng." },
+        { sku: "VLR-AO-002", note: "Áo sơ mi lụa tơ tằm là lớp nền mềm cho tủ đồ công việc." },
+        { sku: "VLR-SD-005", note: "Set Gilet Tweed Cocoa bổ sung cấu trúc mà vẫn dễ phối lại." }
+      ]
+    }
+  }
+};
+
+FALLBACK_BLOG_POSTS.forEach((post) => {
+  const update = researchedEditorialUpdates[post.slug];
+  if (update) Object.assign(post, update);
+});
+
+const fashionMagazineUpdates = {
+  "dang-my-linh-thoi-trang-nhat-ky": {
+    category_slug: "trend",
+    title: "Layering mùa mới: Khi những lớp cơ bản tạo nên phong cách",
+    excerpt: "Áo cổ lọ, sơ mi, blazer và jacket da gặp nhau trong những bản phối có tỷ lệ rõ ràng nhưng không hề cứng nhắc.",
+    image_url: "/src/assets/images/blog-street-layering-2026.png",
+    author: "Velura Fashion Desk",
+    read_minutes: 7,
+    content: {
+      intro: "Layering đẹp không đến từ số lượng lớp áo, mà từ cách mỗi lớp làm rõ tỷ lệ cơ thể. Mùa mới, street style quay về với những món quen thuộc, nhưng đặt chúng trong một trật tự sắc sảo hơn.",
+      takeaways: [
+        "Luôn bắt đầu bằng một lớp nền ôm gọn và dễ thở.",
+        "Một chiếc áo khoác có vai rõ sẽ tạo cấu trúc cho tổng thể.",
+        "Chọn tối đa ba chất liệu để diện mạo không bị rối.",
+        "Màu sắc mạnh nên xuất hiện ở một lớp duy nhất."
+      ],
+      sections: [
+        {
+          heading: "Lớp nền làm nên nhịp điệu",
+          body: [
+            "Áo cổ lọ mỏng, tank top hoặc sơ mi poplin là điểm xuất phát tốt vì chúng tạo bề mặt phẳng cho các lớp áo phía ngoài. Hãy chọn màu than, trắng ngà hoặc navy để phần nền có thể đi cùng nhiều sắc độ khác.",
+            "Khi lớp trong gọn, áo khoác dáng rộng sẽ không khiến cơ thể bị nuốt chửng. Sự đối lập giữa ôm và buông tạo nên nhịp điệu nhìn thấy rõ ngay cả trong một bản phối đơn sắc."
+          ],
+          productSkus: ["VLR-AO-002", "VLR-SD-003"]
+        },
+        {
+          heading: "Tailoring mềm cho ngày thường",
+          body: [
+            "Blazer, áo khoác dáng dài và quần ống suông không còn thuộc riêng về tủ đồ công sở. Khi đi cùng denim hoặc chân váy ngắn, chúng tạo ra vẻ chỉn chu vừa đủ cho nhịp sống thành thị.",
+            "Giữ phần vai ngay ngắn, đường eo có điểm dừng và để gấu quần chạm nhẹ vào giày. Ba chi tiết nhỏ này giúp layering có cấu trúc mà không mất cảm giác tự do."
+          ],
+          productSkus: ["VLR-SD-005", "VLR-SD-002"]
+        },
+        {
+          heading: "Một điểm chạm màu sắc",
+          body: [
+            "Nếu nền trang phục là đen, navy hoặc xám, hãy để burgundy, camel hoặc xanh lá rêu xuất hiện ở chiếc áo len, khăn mỏng hay túi xách. Màu sắc lúc này hoạt động như một dấu chấm câu, không phải toàn bộ câu chuyện.",
+            "Trang sức kim loại nhỏ, giày loafer hoặc boots mũi gọn sẽ kết thúc tổng thể. Chúng đủ có mặt để hoàn thiện phong cách nhưng không cạnh tranh với đường nét của các lớp áo."
+          ],
+          productSkus: ["VLR-SD-004", "VLR-AO-003"]
+        }
+      ],
+      products: [
+        { sku: "VLR-AO-002", note: "Áo sơ mi lụa tạo lớp nền mềm và gọn cho layering." },
+        { sku: "VLR-SD-005", note: "Set Gilet Tweed Cocoa bổ sung cấu trúc cho bản phối thành thị." },
+        { sku: "VLR-SD-003", note: "Set Midnight Blue là mảng nền sâu, dễ phối với phụ kiện sáng." }
+      ]
+    }
+  },
+  "a-khoi-thanh-huong-ao-dai-co-yem": {
+    category_slug: "trend",
+    title: "Áo khoác suede: Điểm nhấn mềm của street style 2026",
+    excerpt: "Sắc nâu thuốc lá, phom boxy và bề mặt da lộn đưa chiếc jacket trở thành lớp chuyển mùa giàu cá tính nhất.",
+    image_url: "/src/assets/images/blog-suede-jacket-2026.png",
+    author: "Velura Fashion Desk",
+    read_minutes: 6,
+    content: {
+      intro: "Giữa những phom áo khoác cứng và bề mặt kỹ thuật, suede mang đến một đối trọng mềm hơn. Chất liệu có độ mờ tự nhiên này giúp bản phối street style trở nên ấm áp, có chiều sâu và rất dễ ứng dụng.",
+      takeaways: [
+        "Sắc nâu thuốc lá dễ phối hơn nâu cam hoặc nâu đỏ.",
+        "Phom jacket ngang hông giúp cân bằng quần ống rộng và váy dài.",
+        "Bên trong nên là lớp vải trơn để giữ bề mặt suede làm điểm nhấn.",
+        "Chăm sóc bề mặt khô, tránh để nước và ma sát làm loang màu."
+      ],
+      sections: [
+        {
+          heading: "Vì sao suede trở lại đúng lúc",
+          body: [
+            "Suede tạo cảm giác ít bóng hơn da trơn, vì vậy nó dễ hòa vào đời sống thường ngày. Bề mặt có độ mờ giữ ánh sáng mềm, phù hợp với những bảng màu tự nhiên như ivory, denim xanh sẫm, đen than và burgundy.",
+            "Một chiếc jacket dáng boxy vừa chạm hông giúp tôn eo mà không ép phom. Đây là tỷ lệ linh hoạt cho cả quần jeans, chân váy midi lẫn váy lụa rủ."
+          ],
+          productSkus: ["VLR-SD-005", "VLR-SD-002"]
+        },
+        {
+          heading: "Ba công thức để mặc ngay",
+          body: [
+            "Ngày thường, phối jacket suede cùng sơ mi trắng và jeans ống đứng. Khi cần nét nữ tính hơn, thay jeans bằng váy lụa nhẹ và giữ giày mũi gọn để phần thân dưới không bị nặng.",
+            "Buổi tối phù hợp với nền màu tối: áo dệt kim mảnh, quần suông navy và một món phụ kiện ánh kim. Suede sẽ làm tổng thể mềm đi mà không mất sự sắc sảo."
+          ],
+          productSkus: ["VLR-AO-002", "VLR-SD-003"]
+        },
+        {
+          heading: "Tỷ lệ và bề mặt quan trọng hơn xu hướng",
+          body: [
+            "Hãy chọn một chiếc áo khoác có đường vai rõ, tay đủ rộng để mặc thêm lớp mỏng và phần gấu không quá dài. Phom chuẩn sẽ giúp suede đồng hành nhiều mùa thay vì trở thành một món đồ chỉ mặc một lần.",
+            "Khi jacket đã có bề mặt đặc biệt, phần còn lại nên giữ sạch và ít họa tiết. Một bộ trang phục có một chất liệu chính luôn thuyết phục hơn khi nhìn gần lẫn từ xa."
+          ],
+          productSkus: ["VLR-SD-004", "VLR-AO-003"]
+        }
+      ],
+      products: [
+        { sku: "VLR-SD-005", note: "Set Gilet Tweed Cocoa hòa nhịp cùng bảng màu nâu thuốc lá của suede." },
+        { sku: "VLR-SD-002", note: "Set Ivory Draped tạo nền sáng cho jacket màu nâu." },
+        { sku: "VLR-SD-003", note: "Set Midnight Blue tạo tương phản sâu và hiện đại." }
+      ]
+    }
+  }
+};
+
+FALLBACK_BLOG_POSTS.forEach((post) => {
+  const update = fashionMagazineUpdates[post.slug];
+  if (update) Object.assign(post, update);
+});
+
+const redCarpetEditorialUpdates = {
+  "he-mong-dao-dam-viet": {
+    category_slug: "event",
+    title: "Hoa trắng trên nền đen: Khi thảm đỏ trở về với sự tiết chế",
+    excerpt: "Một chi tiết hoa duy nhất, phom corset gọn và trang sức ánh bạc cho thấy vẻ đẹp thảm đỏ có thể tạo ấn tượng mà không cần phô trương.",
+    image_url: "/src/assets/images/blog-red-carpet-floral-2026.png",
+    author: "Velura Fashion Desk",
+    read_minutes: 6,
+    content: {
+      intro: "Trong một mùa thảm đỏ đầy chi tiết bắt sáng, chiếc váy đen với bông hoa trắng ở trung tâm cho thấy sức mạnh của sự đối lập. Không cần quá nhiều lớp trang trí, bố cục rõ ràng đã đủ dẫn ánh nhìn đến đúng nơi cần thiết.",
+      takeaways: [
+        "Một điểm nhấn có kích thước rõ ràng hiệu quả hơn nhiều chi tiết nhỏ.",
+        "Đen và trắng tạo tương phản mạnh nhưng vẫn dễ giữ vẻ thanh lịch.",
+        "Trang sức nên làm sáng đường cổ thay vì cạnh tranh với chi tiết hoa.",
+        "Phom dáng chính xác là nền tảng của mọi diện mạo thảm đỏ."
+      ],
+      sections: [
+        {
+          heading: "Một bông hoa thay cho cả câu chuyện",
+          body: [
+            "Hoa ba chiều ở thân áo không chỉ là trang trí. Khi đặt tại trung tâm ngực áo, chi tiết này tạo điểm dừng thị giác, đồng thời làm mềm cấu trúc gọn của corset đen.",
+            "Đây là bài học hữu ích cho những dịp cần nổi bật: hãy chọn một motif có chủ đích và để phần còn lại của trang phục đủ yên tĩnh để motif ấy được nhìn thấy."
+          ],
+          productSkus: ["VLR-SD-025", "VLR-SD-003"]
+        },
+        {
+          heading: "Cân bằng cấu trúc với ánh sáng",
+          body: [
+            "Vải nhung, satin mờ hoặc crepe đen mang lại chiều sâu hơn một bề mặt bóng hoàn toàn. Chúng bắt ánh sáng vừa đủ, tạo đường nét cơ thể mà không biến chiếc váy thành một mảng phản chiếu.",
+            "Trang sức ánh bạc ở vùng cổ và tai nên có đường nét mảnh, ưu tiên bề mặt sáng thay vì kích thước lớn. Khi chi tiết hoa đã là trung tâm, phụ kiện chỉ cần hỗ trợ nhịp điệu."
+          ],
+          productSkus: ["VLR-SD-010", "VLR-AO-004"]
+        },
+        {
+          heading: "Từ thảm đỏ đến buổi tối của riêng bạn",
+          body: [
+            "Không cần một chiếc váy dạ hội mới để mượn tinh thần này. Hãy bắt đầu bằng một thiết kế đen có đường cổ rõ, thêm phụ kiện trắng ngà hoặc một bông hoa cài áo và giữ tóc gọn.",
+            "Sự khác biệt nằm ở tỷ lệ: một điểm sáng, một nền tối và một phom dáng vừa vặn. Ba yếu tố đó đủ tạo nên vẻ trang trọng trong mọi buổi tiệc tối."
+          ],
+          productSkus: ["VLR-SD-002", "VLR-SD-005"]
+        }
+      ],
+      products: [
+        { sku: "VLR-SD-025", note: "Đầm Tulle dạ hội mang lại lớp chuyển động nhẹ cho buổi tối đặc biệt." },
+        { sku: "VLR-SD-003", note: "Set Midnight Blue là nền màu sâu cho phong cách tối giản có điểm nhấn." },
+        { sku: "VLR-SD-010", note: "Set Soft Ceremony phù hợp với những dịp cần vẻ trang trọng mềm mại." }
+      ]
+    }
+  }
+};
+
+FALLBACK_BLOG_POSTS.forEach((post) => {
+  const update = redCarpetEditorialUpdates[post.slug];
+  if (update) Object.assign(post, update);
+});
+
+const blogImageUpdates = {
+  "ba-thuong-hieu-viet-london-fw-2026": "/src/assets/images/blog-london-designers-moodboard.png",
+  "quiet-luxury-phai-dep-viet": "/src/assets/images/blog-quiet-luxury-moodboard.png",
+  "cach-phoi-blazer-linen-mua-he": "/src/assets/images/blog-linen-blazer-moodboard.png",
+  "hanh-trinh-vay-linen-xuong-velura": "/src/assets/images/blog-linen-workshop-moodboard.png"
+};
+
+FALLBACK_BLOG_POSTS.forEach((post) => {
+  if (blogImageUpdates[post.slug]) post.image_url = blogImageUpdates[post.slug];
+});
+
 export function getFallbackBlogPost(slug) {
   return FALLBACK_BLOG_POSTS.find((post) => post.slug === slug) || null;
 }

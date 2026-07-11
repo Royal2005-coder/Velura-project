@@ -175,6 +175,27 @@ async function initAboutPage() {
   } catch (error) {
     console.warn("About content API unavailable, keeping static content.", error);
   }
+  setupAboutStoryReveal(page);
+}
+
+function setupAboutStoryReveal(page) {
+  const targets = page.querySelectorAll("[data-story-reveal]");
+  if (!targets.length) return;
+
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    targets.forEach((target) => target.classList.add("is-story-visible"));
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-story-visible");
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.2 });
+
+  targets.forEach((target) => observer.observe(target));
 }
 
 function renderBlogTabs(categories) {
