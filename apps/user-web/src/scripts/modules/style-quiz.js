@@ -29,6 +29,9 @@ export function initStyleQuiz() {
   const vong2Input = document.getElementById("input-vong2");
   const vong3Input = document.getElementById("input-vong3");
 
+  const VALID_BODY_SHAPES = ["Hourglass", "Pear", "Apple", "Rectangle", "Inverted Triangle"];
+  const VALID_BUDGET_RANGES = ["under_300k", "300k_700k", "700k_1.5m", "above_1.5m"];
+
   // Synchronize height slider values
   if (heightInput && heightValDisplay) {
     heightInput.addEventListener("input", (e) => {
@@ -49,6 +52,7 @@ export function initStyleQuiz() {
   [vong1Input, vong2Input, vong3Input].forEach(input => {
     if (input) {
       input.addEventListener("input", () => {
+        syncBodyShapeFromMeasurements();
         saveStepToSessionStorage();
       });
     }
@@ -150,6 +154,11 @@ export function initStyleQuiz() {
         runAILoadingSimulation();
       } else {
         saveStepToSessionStorage();
+        if (!validateStep(currentStep)) return;
+        if (currentStep === 3) {
+          syncBodyShapeFromMeasurements();
+          saveStepToSessionStorage();
+        }
         if (currentStep === maxSteps) {
           gatherQuizResults();
           isSummaryScreen = true;
@@ -347,7 +356,7 @@ export function initStyleQuiz() {
         return true;
 
       case 8:
-        const budgetSelected = container.querySelector('.quiz-budget-card.is-selected');
+        const budgetSelected = container.querySelector('[data-group="budget"] .quiz-budget-card.is-selected');
         if (!budgetSelected) {
           showToast("Vui lòng chọn mức ngân sách mong muốn.");
           return false;
@@ -377,7 +386,7 @@ export function initStyleQuiz() {
       if (vong2Input) sessionStorage.setItem("quiz-vong2", vong2Input.value);
       if (vong3Input) sessionStorage.setItem("quiz-vong3", vong3Input.value);
 
-      const shape = container.querySelector('[data-group="body-shape"] .is-selected')?.getAttribute("data-value");
+      const shape = normalizeBodyShape(container.querySelector('[data-group="body-shape"] .is-selected')?.getAttribute("data-value"));
       if (shape) sessionStorage.setItem("quiz-body-shape", shape);
 
       const skinTone = container.querySelector('[data-group="skin-tone"] .is-selected')?.getAttribute("data-value");
@@ -391,7 +400,7 @@ export function initStyleQuiz() {
       const colors = Array.from(selectedColors).map(btn => `${btn.getAttribute("data-value")}|${btn.getAttribute("data-color-hex")}`);
       sessionStorage.setItem("quiz-colors", JSON.stringify(colors));
 
-      const budget = container.querySelector('.quiz-budget-card.is-selected')?.getAttribute("data-value");
+      const budget = normalizeBudgetRange(container.querySelector('[data-group="budget"] .quiz-budget-card.is-selected')?.getAttribute("data-value"));
       if (budget) sessionStorage.setItem("quiz-budget", budget);
     } catch (err) {
       console.warn("Could not save style quiz state to sessionStorage:", err);
@@ -448,11 +457,12 @@ export function initStyleQuiz() {
       // 5. Body Shape
       const shape = sessionStorage.getItem("quiz-body-shape");
       if (shape) {
+        const normalizedShape = normalizeBodyShape(shape);
         const btns = container.querySelectorAll('[data-group="body-shape"] .js-quiz-option');
         btns.forEach(btn => btn.classList.remove("is-selected"));
         btns.forEach(btn => {
           const val = btn.getAttribute("data-quiz-value") || btn.getAttribute("data-value");
-          btn.classList.toggle("is-selected", val === shape);
+          btn.classList.toggle("is-selected", normalizeBodyShape(val) === normalizedShape);
         });
       }
 
@@ -507,11 +517,12 @@ export function initStyleQuiz() {
       // 8. Budget
       const budget = sessionStorage.getItem("quiz-budget");
       if (budget) {
-        const cards = container.querySelectorAll('.quiz-budget-card');
+        const normalizedBudget = normalizeBudgetRange(budget);
+        const cards = container.querySelectorAll('[data-group="budget"] .quiz-budget-card');
         cards.forEach(card => card.classList.remove("is-selected"));
         cards.forEach(card => {
           const val = card.getAttribute("data-quiz-value") || card.getAttribute("data-value");
-          card.classList.toggle("is-selected", val === budget);
+          card.classList.toggle("is-selected", normalizeBudgetRange(val) === normalizedBudget);
         });
       }
     } catch (err) {
@@ -632,13 +643,7 @@ export function initStyleQuiz() {
     const hip_cm = parseInt(sessionStorage.getItem("quiz-vong3"), 10) || null;
     
     // Map body shape text to database enum (Hourglass, Pear, Apple, Rectangle, Inverted Triangle)
-    const rawShape = sessionStorage.getItem("quiz-body-shape") || "";
-    let body_shape = null;
-    if (rawShape.toLowerCase().includes("hourglass") || rawShape.toLowerCase().includes("dong-cat")) body_shape = "Hourglass";
-    else if (rawShape.toLowerCase().includes("pear") || rawShape.toLowerCase().includes("le")) body_shape = "Pear";
-    else if (rawShape.toLowerCase().includes("apple") || rawShape.toLowerCase().includes("tao")) body_shape = "Apple";
-    else if (rawShape.toLowerCase().includes("rectangle") || rawShape.toLowerCase().includes("chu-nhat")) body_shape = "Rectangle";
-    else if (rawShape.toLowerCase().includes("triangle") || rawShape.toLowerCase().includes("tam-giac")) body_shape = "Inverted Triangle";
+    const body_shape = normalizeBodyShape(sessionStorage.getItem("quiz-body-shape"));
 
     // Styles
     let style_tags = [];
@@ -656,15 +661,7 @@ export function initStyleQuiz() {
 
     const occasions = sessionStorage.getItem("quiz-context") ? [sessionStorage.getItem("quiz-context")] : [];
     
-    let budget_range = sessionStorage.getItem("quiz-budget") || "300k_700k";
-    const budgetText = budget_range;
-    if (budgetText.includes("Dưới 500") || budgetText.includes("D\u01b0\u1edbi 500")) budget_range = "under_300k";
-    else if (budgetText.includes("500") && budgetText.includes("1.500")) budget_range = "300k_700k";
-    else if (budgetText.includes("1.500") && budgetText.includes("3.000")) budget_range = "700k_1.5m";
-    else if (budgetText.includes("Trên 3") || budgetText.includes("Tr\u00ean 3") || budgetText.includes("3.000")) budget_range = "above_1.5m";
-    else if (!['under_300k', '300k_700k', '700k_1.5m', 'above_1.5m'].includes(budget_range)) {
-      budget_range = "300k_700k";
-    }
+    const budget_range = normalizeBudgetRange(sessionStorage.getItem("quiz-budget")) || "300k_700k";
 
     window.quizSubmittedRedirect = true;
     
@@ -719,6 +716,77 @@ export function initStyleQuiz() {
         document.body.style.overflow = "";
         window.location.href = "/src/pages/ai/suggestions.html?isNewQuiz=true";
       });
+  }
+
+  function syncBodyShapeFromMeasurements() {
+    const inferredShape = inferBodyShapeFromMeasurements();
+    if (!inferredShape) return;
+
+    const shapeCards = container.querySelectorAll('[data-group="body-shape"] .quiz-shape-card');
+    shapeCards.forEach(card => {
+      const cardShape = normalizeBodyShape(card.getAttribute("data-value"));
+      card.classList.toggle("is-selected", cardShape === inferredShape);
+    });
+    sessionStorage.setItem("quiz-body-shape", inferredShape);
+  }
+
+  function inferBodyShapeFromMeasurements() {
+    const bust = Number(vong1Input?.value);
+    const waist = Number(vong2Input?.value);
+    const hip = Number(vong3Input?.value);
+    if (!Number.isFinite(bust) || !Number.isFinite(waist) || !Number.isFinite(hip)) return null;
+    if (bust <= 0 || waist <= 0 || hip <= 0) return null;
+
+    const bustHipDiff = Math.abs(bust - hip);
+    const balancedBustHip = bustHipDiff <= 5;
+    const definedWaist = waist <= Math.min(bust, hip) * 0.78;
+    const softWaist = waist >= Math.min(bust, hip) * 0.88;
+
+    if (softWaist && waist >= Math.max(bust, hip) - 6) return "Apple";
+    if (balancedBustHip && definedWaist) return "Hourglass";
+    if (hip >= bust + 6 && hip >= waist + 16) return "Pear";
+    if (bust >= hip + 6 && bust >= waist + 16) return "Inverted Triangle";
+    if (bustHipDiff <= 8 && waist >= Math.min(bust, hip) * 0.78) return "Rectangle";
+
+    const hipDominance = hip - bust;
+    const bustDominance = bust - hip;
+    if (hipDominance >= 5) return "Pear";
+    if (bustDominance >= 5) return "Inverted Triangle";
+    return definedWaist ? "Hourglass" : "Rectangle";
+  }
+
+  function normalizeBodyShape(value) {
+    if (!value) return null;
+    const raw = String(value).trim();
+    const lower = raw.toLowerCase();
+    if (lower.includes("hourglass") || lower.includes("dong") || lower.includes("đồng")) return "Hourglass";
+    if (lower.includes("pear") || lower.includes("pearl") || lower.includes("quả lê") || lower.includes("qua le")) return "Pear";
+    if (lower.includes("apple") || lower.includes("quả táo") || lower.includes("qua tao")) return "Apple";
+    if (lower.includes("rectangle") || lower.includes("chữ nhật") || lower.includes("chu nhat")) return "Rectangle";
+    if (lower.includes("inverted") || lower.includes("triangle") || lower.includes("tam giác") || lower.includes("tam giac")) return "Inverted Triangle";
+    return VALID_BODY_SHAPES.includes(raw) ? raw : null;
+  }
+
+  function normalizeBudgetRange(value) {
+    if (!value) return null;
+    const raw = String(value).trim();
+    if (VALID_BUDGET_RANGES.includes(raw)) return raw;
+
+    const compact = raw
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replaceAll(".", "")
+      .replaceAll(",", "");
+
+    if (compact.includes("under_300k") || compact.includes("duoi300") || compact.includes("dưới300") || compact.includes("duoi500") || compact.includes("dưới500")) return "under_300k";
+    if (compact.includes("300k_700k") || (compact.includes("300000") && compact.includes("700000"))) return "300k_700k";
+    if (compact.includes("500000") && compact.includes("1500000")) return "300k_700k";
+    if (compact.includes("700k_15m") || compact.includes("700k_1.5m") || (compact.includes("700000") && compact.includes("1500000"))) return "700k_1.5m";
+    if (compact.includes("1500000") && compact.includes("3000000")) return "700k_1.5m";
+    if (compact.includes("above_15m") || compact.includes("above_1.5m") || compact.includes("tren1500000") || compact.includes("trên1500000")) return "above_1.5m";
+    if (compact.includes("tren3000000") || compact.includes("trên3000000")) return "above_1.5m";
+
+    return null;
   }
 }
 

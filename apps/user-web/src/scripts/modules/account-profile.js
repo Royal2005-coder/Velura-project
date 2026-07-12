@@ -1439,11 +1439,11 @@ function initSettingsAndStyleActions() {
 
   // ── Body shape tips ──
   const BODY_TIPS = {
-    "Hourglass": "Đầm ôm body,腰线 rõ ràng, tránh baggy quá rộng. Phù hợp với đầm bút chì, váy chữ A.",
+    "Hourglass": "Đầm ôm body, đường eo rõ ràng, tránh baggy quá rộng. Phù hợp với đầm bút chì, váy chữ A.",
     "Pear": "Áo kiểu bèo nhún, váy A-line, tránh ôm sát hông. Ưu tiên phần trên nổi bật.",
     "Apple": "Váy chữ A, đầm suông, tránh ôm sát bụng. Chọn áo có cấu trúc ở vai.",
     "Rectangle": "Đầm có belt, váy peplum, tạo đường cong bằng layering. Tránh trang phục quá rộng.",
-    "Inverted Triangle": "Váy chữ A, quần ống rộng, tránh áo vai bành. Ưu tiên下半身 nổi bật."
+    "Inverted Triangle": "Váy chữ A, quần ống rộng, tránh áo vai bành. Ưu tiên phần thân dưới nổi bật."
   };
 
   // ── Color tips by skin tone ──

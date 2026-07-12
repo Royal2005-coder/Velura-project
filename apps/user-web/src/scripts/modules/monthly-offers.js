@@ -2,6 +2,9 @@ import { apiRequest, isSessionValid } from "./api.js";
 
 const OFFER_IDS_WITH_MODAL = new Set(["A1", "A4", "A5", "A6"]);
 const BIRTHDAY_VOUCHER_CODE = "BDAY15";
+const PRODUCT_LIST_URL = "/src/pages/products/list.html";
+const OFFERS_URL = "/src/pages/offers.html";
+const PENDING_BIRTHDAY_KEY = "velura_pending_birthday";
 
 export function initMonthlyOffers() {
   document.addEventListener("click", handleOfferClick);
@@ -17,7 +20,7 @@ function handleOfferClick(event) {
 
   if (offerId === "A2") {
     event.preventDefault();
-    window.location.href = "/src/pages/products/list.html?sale=true&campaign=monthly-last-days";
+    window.location.href = `${PRODUCT_LIST_URL}?sale=true&campaign=flash-sale`;
     return;
   }
 
@@ -35,8 +38,7 @@ function handleOfferClick(event) {
 
 function openOfferFromQuery() {
   const params = new URLSearchParams(window.location.search);
-  const rawOffer = params.get("offer") || "";
-  const offerId = normalizeOfferId(rawOffer);
+  const offerId = normalizeOfferId(params.get("offer") || "");
   if (!OFFER_IDS_WITH_MODAL.has(offerId)) return;
 
   window.setTimeout(() => openMonthlyOfferFlow(offerId), 260);
@@ -81,37 +83,36 @@ async function openMonthlyOfferFlow(offerId) {
 
 async function openBirthdayFlow() {
   if (!isMember()) {
-    openBirthdayGuestModal();
+    openBirthdayCaptureModal(null, { isGuest: true, initialDate: getPendingBirthdayDate() });
     return;
   }
 
   const profile = await getFreshProfile();
   const birthday = getBirthdayDate(profile);
   if (!birthday) {
-    openBirthdayCaptureModal(profile);
+    openBirthdayCaptureModal(profile, { initialDate: getPendingBirthdayDate() });
     return;
   }
 
-  if (birthday.getMonth() === new Date().getMonth()) {
-    openBirthdayActiveModal(profile);
-  } else {
-    openBirthdayCountdownModal(profile, birthday);
-  }
+  openBirthdayConfirmModal(profile, birthday);
 }
 
 function openBirthdayGuestModal() {
-  const redirect = encodeURIComponent("/src/pages/offers.html?offer=A1");
+  const redirect = encodeURIComponent(`${OFFERS_URL}?offer=A1`);
   openInfoModal({
     title: "Tháng sinh nhật của bạn, Velura có quà nhỏ",
     eyebrow: "Ưu đãi cá nhân",
     image: "/src/assets/images/banners/hot-banner-a1-birthday.png",
     body: `
-      <p>Velura không bắt bạn nhập ngày sinh ngay khi đăng ký. Thay vào đó, bạn có thể bổ sung sau để nhận ưu đãi sinh nhật riêng.</p>
-      <ul>
-        <li>Voucher sinh nhật trong tháng của bạn.</li>
-        <li>Một món quà nhỏ kèm theo đơn hàng phù hợp.</li>
-        <li>Chỉ dùng để gửi ưu đãi sinh nhật, không gửi spam.</li>
-      </ul>
+      <p>Velura không bắt bạn nhập ngày sinh ngay khi tạo tài khoản. Bạn có thể xem ưu đãi trước, sau đó đăng nhập để lưu ngày sinh và kích hoạt quà riêng.</p>
+      ${renderBenefitCard({
+        headline: "Quà sinh nhật dành cho bạn",
+        items: [
+          "Voucher BDAY15 giảm 15% trong tháng sinh nhật.",
+          "Áp dụng cho đơn hàng từ 500.000đ, giảm tối đa 300.000đ.",
+          "Tặng thêm một món quà bất ngờ trong đơn đầu tiên của tháng sinh nhật."
+        ]
+      })}
     `,
     actions: [
       { label: "Đăng nhập để nhận quà", variant: "primary", href: `/src/pages/auth/signin.html?redirect=${redirect}` },
@@ -120,64 +121,120 @@ function openBirthdayGuestModal() {
   });
 }
 
-function openBirthdayCaptureModal(profile) {
+function openBirthdayCaptureModal(profile, options = {}) {
+  const { isGuest = false, initialDate = null } = options;
+  const selectedDay = initialDate?.getDate?.() || "";
+  const selectedMonth = initialDate ? initialDate.getMonth() + 1 : "";
+  const selectedYear = initialDate?.getFullYear?.() || "";
   openInfoModal({
-    title: "Velura chưa biết sinh nhật của bạn",
+    title: isGuest ? "Nhập sinh nhật để xem quà của bạn" : "Velura chưa biết sinh nhật của bạn",
     eyebrow: "Bổ sung thông tin",
     body: `
-      <p>Bạn chỉ cần chọn ngày và tháng. Năm sinh không bắt buộc, Velura dùng thông tin này để kích hoạt ưu đãi sinh nhật.</p>
+      <p>${isGuest
+        ? "Bạn có thể nhập ngày sinh để xem trước ưu đãi. Khi bấm lưu, Velura sẽ yêu cầu đăng nhập để lưu thông tin vào tài khoản."
+        : "Bổ sung ngày, tháng và năm sinh để Velura chuẩn bị ưu đãi đúng thời điểm, đồng thời cá nhân hóa hồ sơ mua sắm của bạn tốt hơn."
+      }</p>
+      ${renderBenefitCard({
+        headline: "Quà sinh nhật dành cho bạn",
+        items: [
+          "15% cho đơn hàng trong tháng sinh nhật.",
+          "Quà bất ngờ trong đơn hàng đầu tiên của tháng sinh nhật.",
+          "Nhận thông báo ưu đãi vào đầu tháng sinh nhật."
+        ],
+        footer: "Đơn tối thiểu 500.000đ, giảm tối đa 300.000đ."
+      })}
       <form class="monthly-offer-form js-birthday-form" novalidate>
-        <div class="monthly-offer-form__grid">
+        <div class="monthly-offer-form__grid monthly-offer-form__grid--birthdate">
           <label>
             <span>Ngày</span>
             <select name="day" required>
               <option value="">Ngày</option>
-              ${Array.from({ length: 31 }, (_, index) => `<option value="${index + 1}">${index + 1}</option>`).join("")}
+              ${renderNumberOptions(1, 31, selectedDay)}
             </select>
           </label>
           <label>
             <span>Tháng</span>
             <select name="month" required>
               <option value="">Tháng</option>
-              ${Array.from({ length: 12 }, (_, index) => `<option value="${index + 1}">Tháng ${index + 1}</option>`).join("")}
+              ${renderNumberOptions(1, 12, selectedMonth, "Tháng ")}
+            </select>
+          </label>
+          <label>
+            <span>Năm sinh</span>
+            <select name="year" required>
+              <option value="">Năm sinh</option>
+              ${renderBirthYearOptions(selectedYear)}
             </select>
           </label>
         </div>
-        <p class="monthly-offer-form__hint">Năm sinh sẽ được lưu mặc định để phù hợp cấu trúc hồ sơ hiện tại.</p>
+        <p class="monthly-offer-form__hint">Ngày sinh được dùng để kích hoạt ưu đãi sinh nhật và cá nhân hóa hồ sơ, không dùng để gửi spam.</p>
         <p class="monthly-offer-form__error js-birthday-error" hidden></p>
       </form>
     `,
     actions: [
-      { label: "Lưu và nhận ưu đãi", variant: "primary", onClick: () => submitBirthdayForm(profile) },
+      { label: "Lưu và nhận ưu đãi", variant: "primary", onClick: () => submitBirthdayForm({ isGuest }) },
       { label: "Để sau", variant: "ghost", onClick: closeOfferModal }
     ]
   });
 }
 
-async function submitBirthdayForm(profile) {
+function renderNumberOptions(start, end, selectedValue = "", prefix = "") {
+  return Array.from({ length: end - start + 1 }, (_, index) => {
+    const value = start + index;
+    const selected = Number(selectedValue) === value ? " selected" : "";
+    return `<option value="${value}"${selected}>${escapeHtml(prefix)}${value}</option>`;
+  }).join("");
+}
+
+function renderBirthYearOptions(selectedValue = "") {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let year = currentYear; year >= 1950; year -= 1) {
+    const selected = Number(selectedValue) === year ? " selected" : "";
+    years.push(`<option value="${year}"${selected}>${year}</option>`);
+  }
+  return years.join("");
+}
+
+async function submitBirthdayForm({ isGuest = false } = {}) {
   const form = document.querySelector(".js-birthday-form");
   const errorNode = document.querySelector(".js-birthday-error");
   const day = Number(form?.elements?.day?.value || 0);
   const month = Number(form?.elements?.month?.value || 0);
+  const year = Number(form?.elements?.year?.value || 0);
 
-  if (!day || !month || day < 1 || day > 31 || month < 1 || month > 12 || !isValidDayMonth(day, month)) {
-    showInlineError(errorNode, "Bạn chọn giúp Velura ngày và tháng sinh hợp lệ nhé.");
+  if (!isValidBirthDate(day, month, year)) {
+    showInlineError(errorNode, "Bạn chọn giúp Velura ngày, tháng và năm sinh hợp lệ nhé.");
     return;
   }
 
+  const date_of_birth = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+  if (isGuest || !isMember()) {
+    localStorage.setItem(PENDING_BIRTHDAY_KEY, date_of_birth);
+    openBirthdayLoginRequiredModal(date_of_birth);
+    return;
+  }
+
+  await saveBirthdayToProfile(date_of_birth, errorNode);
+}
+
+async function saveBirthdayToProfile(date_of_birth, errorNode) {
   setModalBusy(true);
   try {
-    const date_of_birth = `1900-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const updated = await apiRequest("/api/user/profile", {
       method: "PATCH",
       body: { date_of_birth }
     });
-    cacheProfile(updated);
-    const birthday = getBirthdayDate(updated) || new Date(date_of_birth);
+    const updatedProfile = { ...(getStoredUser() || {}), ...updated, date_of_birth };
+    localStorage.removeItem(PENDING_BIRTHDAY_KEY);
+    cacheProfile(updatedProfile);
+    syncProfileBirthdayInDom(date_of_birth);
+    const birthday = getBirthdayDate(updatedProfile) || new Date(date_of_birth);
     if (birthday.getMonth() === new Date().getMonth()) {
-      openBirthdayActiveModal(updated);
+      openBirthdayActiveModal(updatedProfile);
     } else {
-      openBirthdayCountdownModal(updated, birthday);
+      openBirthdayCountdownModal(updatedProfile, birthday);
     }
   } catch (error) {
     showInlineError(errorNode, error.message || "Chưa lưu được ngày sinh. Bạn thử lại giúp Velura nhé.");
@@ -186,46 +243,102 @@ async function submitBirthdayForm(profile) {
   }
 }
 
+function openBirthdayLoginRequiredModal(dateOfBirth) {
+  const redirect = encodeURIComponent(`${OFFERS_URL}?offer=A1`);
+  openInfoModal({
+    title: "Đăng nhập để lưu ưu đãi",
+    eyebrow: "Cần tài khoản",
+    body: `
+      <p>Velura đã ghi nhận tạm ngày sinh ${escapeHtml(formatDateForDisplay(dateOfBirth))}. Để lưu vào hồ sơ và nhận ưu đãi sinh nhật, bạn cần đăng nhập hoặc tạo tài khoản.</p>
+      ${renderBenefitCard({
+        headline: "Sau khi đăng nhập",
+        items: [
+          "Ngày sinh sẽ được lưu vào hồ sơ tài khoản.",
+          "Ưu đãi sinh nhật sẽ được kích hoạt đúng tháng.",
+          "Thông tin sẽ đồng bộ với giao diện Profile."
+        ]
+      })}
+    `,
+    actions: [
+      { label: "Đăng nhập", variant: "primary", href: `/src/pages/auth/signin.html?redirect=${redirect}` },
+      { label: "Tạo tài khoản", variant: "ghost", href: `/src/pages/auth/signup.html?redirect=${redirect}` }
+    ]
+  });
+}
+
+function openBirthdayConfirmModal(profile, birthday) {
+  const isoDate = toIsoDate(birthday);
+  openInfoModal({
+    title: "Xác nhận sinh nhật của bạn",
+    eyebrow: "Ưu đãi sinh nhật",
+    body: `
+      <p>Velura đang ghi nhận ngày sinh của bạn là:</p>
+      <div class="monthly-offer-voucher monthly-offer-voucher--date">
+        <span>Ngày sinh trong hồ sơ</span>
+        <strong>${escapeHtml(formatDateForDisplay(isoDate))}</strong>
+        <small>Nếu thông tin chưa đúng, bạn có thể chỉnh lại trước khi nhận ưu đãi.</small>
+      </div>
+    `,
+    actions: [
+      { label: "Chỉnh lại", variant: "ghost", onClick: () => openBirthdayCaptureModal(profile, { initialDate: birthday }) },
+      { label: "Xác nhận", variant: "primary", onClick: () => {
+        if (birthday.getMonth() === new Date().getMonth()) {
+          openBirthdayActiveModal(profile);
+        } else {
+          openBirthdayCountdownModal(profile, birthday);
+        }
+      }}
+    ]
+  });
+}
+
 function openBirthdayActiveModal(profile) {
   const name = profile?.full_name || "bạn";
   const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toLocaleDateString("vi-VN");
+  saveMyOffer({
+    id: "birthday",
+    code: BIRTHDAY_VOUCHER_CODE,
+    title: "Voucher sinh nhật",
+    description: "Giảm 15% cho đơn từ 500.000đ, giảm tối đa 300.000đ.",
+    expires_at: endOfMonth
+  });
+
   openInfoModal({
     title: `Chúc mừng sinh nhật, ${name}!`,
     eyebrow: "Ưu đãi đã sẵn sàng",
     image: "/src/assets/images/banners/hot-banner-a1-birthday.png",
     body: `
-      <p>Velura gửi bạn mã ưu đãi dùng trong tháng sinh nhật.</p>
+      <p>Bạn đã nhận ưu đãi sinh nhật dành riêng cho tháng này.</p>
       <div class="monthly-offer-voucher">
         <span>Mã của bạn</span>
         <strong>${BIRTHDAY_VOUCHER_CODE}</strong>
-        <small>Hiệu lực đến ${escapeHtml(endOfMonth)}</small>
+        <small>Giảm 15% cho đơn từ 500.000đ, tối đa 300.000đ. Hiệu lực đến ${escapeHtml(endOfMonth)}.</small>
       </div>
-      <p>Đơn hàng trong tháng sinh nhật có thể nhận thêm một món quà nhỏ từ Velura.</p>
+      <p>Đơn hàng đầu tiên trong tháng sinh nhật có thể nhận thêm một món quà bất ngờ từ Velura.</p>
     `,
     actions: [
-      { label: "Sao chép mã", variant: "ghost", onClick: () => copyVoucher(BIRTHDAY_VOUCHER_CODE) },
-      { label: "Mua sắm ngay", variant: "primary", onClick: () => goShoppingWithVoucher(BIRTHDAY_VOUCHER_CODE) }
+      { label: "Xem trong ưu đãi của tôi", variant: "ghost", href: "/src/pages/account/offers.html" },
+      { label: "Áp dụng và mua sắm ngay", variant: "primary", onClick: () => goShoppingWithVoucher(BIRTHDAY_VOUCHER_CODE) }
     ]
   });
 }
 
 function openBirthdayCountdownModal(profile, birthday) {
   const birthdayMonth = birthday.getMonth() + 1;
-  const nowMonth = new Date().getMonth() + 1;
-  const monthsLeft = (birthdayMonth - nowMonth + 12) % 12 || 12;
   openInfoModal({
-    title: "Velura đã ghi nhớ rồi",
+    title: "Velura đã ghi nhớ sinh nhật của bạn",
     eyebrow: "Sinh nhật của bạn",
     body: `
-      <p>Sinh nhật tháng ${birthdayMonth} của bạn còn khoảng ${monthsLeft} tháng nữa.</p>
+      <p>Đến tháng ${birthdayMonth}, bạn sẽ nhận được ưu đãi sinh nhật riêng từ Velura.</p>
       <ul>
-        <li>Đến tháng sinh nhật, Velura sẽ kích hoạt ưu đãi riêng cho bạn.</li>
-        <li>Bạn vẫn có thể xem các ưu đãi tháng này trong khi chờ.</li>
+        <li>Voucher giảm 15% trong tháng sinh nhật.</li>
+        <li>Một món quà bất ngờ trong đơn hàng đầu tiên của tháng sinh nhật.</li>
+        <li>Thông báo chúc mừng và nhắc ưu đãi vào đầu tháng.</li>
       </ul>
     `,
     actions: [
-      { label: "Xem ưu đãi tháng này", variant: "primary", onClick: closeOfferModal },
-      { label: "Về trang chủ", variant: "ghost", href: "/index.html" }
+      { label: "Xem ưu đãi đang có", variant: "primary", href: OFFERS_URL },
+      { label: "Đóng", variant: "ghost", onClick: closeOfferModal }
     ]
   });
 }
@@ -233,46 +346,52 @@ function openBirthdayCountdownModal(profile, birthday) {
 async function openLoyaltyFlow() {
   if (!isMember()) {
     openInfoModal({
-      title: "Khách hàng thân thiết",
-      eyebrow: "Quyền lợi thành viên",
+      title: "Mua nhiều, nhận nhiều hơn",
+      eyebrow: "Khách hàng thân thiết",
       image: "/src/assets/images/banners/hot-banner-a4-loyal.png",
       body: `
-        <p>Tạo tài khoản để Velura ghi nhớ hành trình mua sắm và gợi ý cá nhân hóa cho bạn.</p>
-        <ul>
-          <li>Miễn phí vận chuyển cho đơn từ 500.000đ.</li>
-          <li>Lưu Style Profile và gợi ý AI cá nhân hóa.</li>
-          <li>Theo dõi đơn hàng, wishlist và lịch sử mua sắm.</li>
-          <li>Nhận ưu đãi sinh nhật và ưu đãi tháng này.</li>
-        </ul>
+        <p>Quyền lợi thân thiết được tính theo tổng chi tiêu tích lũy của tài khoản, không yêu cầu đăng ký chương trình riêng.</p>
+        ${renderTierList([
+          ["Từ 500.000đ", "Miễn phí vận chuyển cho đơn đủ điều kiện."],
+          ["Từ 2.000.000đ", "Nhận quà bất ngờ từ Velura."],
+          ["Từ 3.000.000đ", "Nhận voucher hoàn 5% cho lần mua tiếp theo."],
+          ["Từ 5.000.000đ", "Gói quà miễn phí và ưu tiên xử lý đơn."]
+        ])}
       `,
       actions: [
-        { label: "Tạo tài khoản", variant: "primary", href: `/src/pages/auth/signup.html?redirect=${encodeURIComponent("/src/pages/offers.html?offer=A4")}` },
-        { label: "Đăng nhập", variant: "ghost", href: `/src/pages/auth/signin.html?redirect=${encodeURIComponent("/src/pages/offers.html?offer=A4")}` }
+        { label: "Tạo tài khoản để tích lũy", variant: "primary", href: `/src/pages/auth/signup.html?redirect=${encodeURIComponent(`${OFFERS_URL}?offer=A4`)}` },
+        { label: "Xem sản phẩm", variant: "ghost", href: PRODUCT_LIST_URL }
       ]
     });
     return;
   }
 
   const profile = await getFreshProfile();
+  const spending = Number(profile?.total_spent || profile?.lifetime_spend || 0);
+  const nextTarget = spending >= 5000000 ? 5000000 : spending >= 3000000 ? 5000000 : spending >= 2000000 ? 3000000 : spending >= 500000 ? 2000000 : 500000;
+  const progress = nextTarget ? Math.min(100, Math.round((spending / nextTarget) * 100)) : 100;
+
   openInfoModal({
     title: `Xin chào, ${profile?.full_name || "bạn"}`,
-    eyebrow: "Tiến trình thành viên",
+    eyebrow: "Tiến trình thân thiết",
     image: "/src/assets/images/banners/hot-banner-a4-loyal.png",
     body: `
-      <p>Tài khoản của bạn đang được Velura ghi nhận để đồng bộ hồ sơ, đơn hàng và ưu đãi cá nhân.</p>
+      <p>Velura đang ghi nhận quyền lợi thành viên dựa trên tổng chi tiêu tích lũy của tài khoản.</p>
       <div class="monthly-offer-progress">
-        <span>Quyền lợi hiện có</span>
-        <div><i style="width: 58%"></i></div>
-        <small>Đã mở khóa freeship từ 500.000đ và gợi ý AI theo Style Profile.</small>
+        <span>Tổng chi tiêu hiện ghi nhận</span>
+        <strong>${formatMoney(spending)}</strong>
+        <div><i style="width: ${progress}%"></i></div>
+        <small>${renderLoyaltyNextMessage(spending, nextTarget)}</small>
       </div>
-      <ul>
-        <li>Ngày sinh: ${profile?.date_of_birth ? "đã bổ sung" : "chưa bổ sung"}</li>
-        <li>Email: ${profile?.email ? "đã xác thực thông tin liên hệ" : "chưa rõ"}</li>
-        <li>Ưu đãi tiếp theo sẽ hiển thị trong mục voucher khi đủ điều kiện.</li>
-      </ul>
+      ${renderTierList([
+        ["Từ 500.000đ", "Miễn phí vận chuyển cho đơn đủ điều kiện."],
+        ["Từ 2.000.000đ", "Nhận quà bất ngờ."],
+        ["Từ 3.000.000đ", "Voucher hoàn 5% cho lần mua tiếp theo."],
+        ["Từ 5.000.000đ", "Gói quà miễn phí và ưu tiên xử lý đơn."]
+      ])}
     `,
     actions: [
-      { label: "Mua sắm ngay", variant: "primary", href: "/src/pages/products/list.html" },
+      { label: "Mua sắm để mở khóa quyền lợi", variant: "primary", href: PRODUCT_LIST_URL },
       { label: "Xem hồ sơ", variant: "ghost", href: "/src/pages/account/profile.html" }
     ]
   });
@@ -281,11 +400,15 @@ async function openLoyaltyFlow() {
 async function openReferralFlow() {
   if (!isMember()) {
     openInfoModal({
-      title: "Rủ bạn bè, cả hai cùng có quà",
+      title: "Rủ bạn bè, cả hai đều có quà",
       eyebrow: "Chia sẻ Velura",
       image: "/src/assets/images/banners/hot-banner-a5-friend.png",
       body: `
-        <p>Bạn có thể chia sẻ Velura cho bạn bè. Khi chương trình được kích hoạt, cả người giới thiệu và người được giới thiệu đều nhận ưu đãi.</p>
+        <p>Bạn có thể xem điều kiện trước. Khi muốn tạo link giới thiệu riêng, hãy đăng nhập hoặc tạo tài khoản để hệ thống ghi nhận chính xác.</p>
+        ${renderMetricGrid([
+          ["Bạn của bạn", "Giảm 30.000đ cho đơn đầu tiên từ 300.000đ."],
+          ["Bạn", "Nhận 50.000đ khi người bạn hoàn tất đơn đầu tiên."]
+        ])}
         <form class="monthly-offer-form js-referral-form" novalidate>
           <label>
             <span>Đã có mã bạn bè?</span>
@@ -295,8 +418,8 @@ async function openReferralFlow() {
         </form>
       `,
       actions: [
-        { label: "Lưu mã bạn bè", variant: "ghost", onClick: saveReferralCode },
-        { label: "Đăng nhập để lấy link", variant: "primary", href: `/src/pages/auth/signin.html?redirect=${encodeURIComponent("/src/pages/offers.html?offer=A5")}` }
+        { label: "Nhập mã giới thiệu", variant: "ghost", onClick: saveReferralCode },
+        { label: "Tạo link giới thiệu của tôi", variant: "primary", href: `/src/pages/auth/signin.html?redirect=${encodeURIComponent(`${OFFERS_URL}?offer=A5`)}` }
       ]
     });
     return;
@@ -306,45 +429,99 @@ async function openReferralFlow() {
   const code = buildReferralCode(profile);
   const url = `${window.location.origin}/src/pages/auth/signup.html?ref=${encodeURIComponent(code)}`;
   openInfoModal({
-    title: "Link chia sẻ của bạn",
+    title: "Link giới thiệu của bạn",
     eyebrow: "Ưu đãi bạn bè",
     image: "/src/assets/images/banners/hot-banner-a5-friend.png",
     body: `
-      <p>Gửi link này cho bạn bè. Khi hệ thống referral được bật đầy đủ, mã này sẽ dùng để ghi nhận người giới thiệu.</p>
+      <p>Gửi link này cho bạn bè. Mã sẽ được lưu trong 30 ngày để ghi nhận người giới thiệu khi bạn mới tạo tài khoản.</p>
       <div class="monthly-offer-link">
         <span>${escapeHtml(url)}</span>
       </div>
-      <ul>
-        <li>Mã giới thiệu: ${escapeHtml(code)}</li>
-        <li>Link được lưu theo tài khoản hiện tại của bạn.</li>
-      </ul>
+      ${renderMetricGrid([
+        ["Người mới", "Nhận voucher 30.000đ cho đơn đầu tiên từ 300.000đ."],
+        ["Bạn", "Nhận voucher 50.000đ sau khi bạn mới hoàn tất đơn đầu tiên."],
+        ["Trạng thái", "Đang chờ dữ liệu thống kê từ hệ thống đơn hàng."]
+      ])}
     `,
     actions: [
       { label: "Sao chép link", variant: "primary", onClick: () => copyVoucher(url, "Đã sao chép link chia sẻ") },
-      { label: "Dùng voucher ngay", variant: "ghost", href: "/src/pages/cart/cart.html" }
+      { label: "Xem voucher của tôi", variant: "ghost", href: "/src/pages/account/offers.html" }
     ]
   });
 }
 
 function openFreeshipModal() {
+  const subtotal = getCartSubtotal();
+  const target = 500000;
+  const remaining = Math.max(0, target - subtotal);
+  const progress = Math.min(100, Math.round((subtotal / target) * 100));
   openInfoModal({
     title: "Miễn phí vận chuyển từ 500.000đ",
     eyebrow: "Chính sách vận chuyển",
     image: "/src/assets/images/banners/hot-banner-a6-freeship.png",
     body: `
-      <ul>
-        <li>Đơn từ 500.000đ được miễn phí vận chuyển toàn quốc.</li>
-        <li>Đơn dưới 500.000đ áp dụng phí tiêu chuẩn 30.000đ.</li>
-        <li>TP.HCM và Hà Nội: 1 đến 3 ngày làm việc.</li>
-        <li>Các tỉnh thành khác: 3 đến 5 ngày làm việc.</li>
-        <li>Shipper giao tối đa 3 lần theo chính sách vận chuyển.</li>
-      </ul>
+      <div class="monthly-offer-progress">
+        <span>${subtotal >= target ? "Bạn đã mở khóa Freeship" : `Còn ${formatMoney(remaining)} để mở khóa Freeship`}</span>
+        <strong>${formatMoney(subtotal)} / ${formatMoney(target)}</strong>
+        <div><i style="width: ${progress}%"></i></div>
+        <small>${progress}% tiến trình</small>
+      </div>
+      ${renderMetricGrid([
+        ["Đơn từ 500.000đ", "Miễn phí vận chuyển tiêu chuẩn toàn quốc."],
+        ["Đơn dưới 500.000đ", "Phí vận chuyển tiêu chuẩn 30.000đ."],
+        ["Nội thành", "Dự kiến giao trong 1–3 ngày làm việc."],
+        ["Tỉnh thành khác", "Dự kiến giao trong 3–5 ngày làm việc."]
+      ])}
     `,
     actions: [
-      { label: "Mua sắm ngay", variant: "primary", href: "/src/pages/products/list.html" },
-      { label: "Xem chính sách", variant: "ghost", href: "/src/pages/policies.html?tab=shipping" }
+      { label: "Mua sắm ngay", variant: "primary", href: PRODUCT_LIST_URL },
+      { label: "Xem đầy đủ chính sách", variant: "ghost", href: "/src/pages/policies.html?tab=shipping" }
     ]
   });
+}
+
+function getCartSubtotal() {
+  const cart = readJson("velura_cart") || readJson("cart") || [];
+  const items = Array.isArray(cart) ? cart : (Array.isArray(cart.items) ? cart.items : []);
+  return items.reduce((sum, item) => sum + Number(item.unit_price || item.price || 0) * Number(item.quantity || 1), 0);
+}
+
+function renderBenefitCard({ headline, items = [], footer = "" }) {
+  return `
+    <div class="monthly-offer-benefit">
+      <strong>${escapeHtml(headline)}</strong>
+      <ul>
+        ${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      </ul>
+      ${footer ? `<small>${escapeHtml(footer)}</small>` : ""}
+    </div>
+  `;
+}
+
+function renderTierList(items) {
+  return `
+    <div class="monthly-offer-tier-list">
+      ${items.map(([label, text]) => `
+        <div>
+          <strong>${escapeHtml(label)}</strong>
+          <span>${escapeHtml(text)}</span>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderMetricGrid(items) {
+  return `
+    <div class="monthly-offer-metric-grid">
+      ${items.map(([label, text]) => `
+        <div>
+          <strong>${escapeHtml(label)}</strong>
+          <span>${escapeHtml(text)}</span>
+        </div>
+      `).join("")}
+    </div>
+  `;
 }
 
 function openInfoModal({ title, eyebrow = "", image = "", body = "", actions = [], tone = "" }) {
@@ -458,14 +635,59 @@ function getBirthdayDate(profile) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function isValidDayMonth(day, month) {
-  const test = new Date(2000, month - 1, day);
-  return test.getMonth() === month - 1 && test.getDate() === day;
+function getPendingBirthdayDate() {
+  const value = localStorage.getItem(PENDING_BIRTHDAY_KEY);
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function toIsoDate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function formatDateForDisplay(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
+}
+
+function syncProfileBirthdayInDom(dateOfBirth) {
+  const dobInput = document.querySelector('.profile-form input[name="dob"]');
+  if (dobInput) {
+    dobInput.value = formatDateForDisplay(dateOfBirth);
+  }
+  window.dispatchEvent(new CustomEvent("velura:profile-updated", {
+    detail: { date_of_birth: dateOfBirth }
+  }));
+}
+
+function isValidBirthDate(day, month, year) {
+  const currentYear = new Date().getFullYear();
+  if (!day || !month || !year || year < 1950 || year > currentYear || month < 1 || month > 12 || day < 1 || day > 31) {
+    return false;
+  }
+  const test = new Date(year, month - 1, day);
+  if (test.getFullYear() !== year || test.getMonth() !== month - 1 || test.getDate() !== day) {
+    return false;
+  }
+  return test <= new Date();
 }
 
 function goShoppingWithVoucher(code) {
   localStorage.setItem("checkout_voucher_code", code);
-  window.location.href = "/src/pages/products/list.html";
+  localStorage.setItem("velura_pending_voucher", code);
+  window.location.href = PRODUCT_LIST_URL;
+}
+
+function saveMyOffer(offer) {
+  const current = readJson("velura_my_offers") || [];
+  const next = [
+    ...current.filter((item) => item?.id !== offer.id && item?.code !== offer.code),
+    { ...offer, saved_at: new Date().toISOString() }
+  ];
+  localStorage.setItem("velura_my_offers", JSON.stringify(next));
 }
 
 async function copyVoucher(value, successMessage = "Đã sao chép mã") {
@@ -493,6 +715,24 @@ function buildReferralCode(profile) {
   const userId = String(profile?.user_id || localStorage.getItem("user_id") || "member").slice(0, 8);
   const nameSlug = slugify(profile?.full_name || "velura");
   return `${userId}-${nameSlug}`;
+}
+
+function renderLoyaltyNextMessage(spending, nextTarget) {
+  if (spending >= 5000000) return "Bạn đã ở mốc quyền lợi cao nhất hiện tại.";
+  const remaining = Math.max(0, nextTarget - spending);
+  return `Còn ${formatMoney(remaining)} để chạm mốc quyền lợi tiếp theo.`;
+}
+
+function formatMoney(value) {
+  return `${Number(value || 0).toLocaleString("vi-VN")}đ`;
+}
+
+function readJson(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "null");
+  } catch {
+    return null;
+  }
 }
 
 function slugify(value) {

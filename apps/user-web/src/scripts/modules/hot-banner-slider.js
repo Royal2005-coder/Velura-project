@@ -3,58 +3,64 @@ const SLIDE_INTERVAL_MS = 4500;
 const HOT_BANNERS = [
   {
     id: "A1",
+    eyebrow: "ƯU ĐÃI CÁ NHÂN",
     title: "Tháng sinh nhật của bạn",
-    description: "Velura có quà nhỏ dành riêng",
+    description: "Voucher BDAY15 giảm 15% và quà bất ngờ trong tháng sinh nhật",
     ctaText: "Nhận quà ngay",
     ctaLink: "/src/pages/offers.html?offer=A1",
     imageSrc: "/src/assets/images/banners/hot-banner-a1-birthday.png",
     imageAlt: "Tháng sinh nhật của bạn - Velura có quà nhỏ dành riêng",
-    showCondition: { birthdayThisMonth: true }
+    showCondition: null
   },
   {
     id: "A2",
+    eyebrow: "CHỈ CÒN 2 NGÀY",
     title: "Chỉ còn 2 ngày",
-    description: "Ưu đãi đặc biệt dành riêng - nhanh tay nhé",
+    description: "Flash Sale ngắn hạn, giảm trực tiếp trên các sản phẩm được chọn",
     ctaText: "Xem ngay",
-    ctaLink: "/src/pages/products/list.html?sale=true&campaign=monthly-last-days",
+    ctaLink: "/src/pages/products/list.html?sale=true&campaign=flash-sale",
     imageSrc: "/src/assets/images/banners/hot-banner-a2-last-days.png",
-    imageAlt: "Chỉ còn 2 ngày - ưu đãi đặc biệt dành riêng",
+    imageAlt: "Chỉ còn 2 ngày - ưu đãi Flash Sale tháng này",
     showCondition: null
   },
   {
     id: "A3",
+    eyebrow: "PHỐI ĐỒ THÔNG MINH",
     title: "Combo Phối Đồ Tiết Kiệm",
-    description: "Mua trọn áo, quần và túi - tiết kiệm ngay 15%",
+    description: "Mua trọn set phối sẵn - tiết kiệm thêm 10%",
     ctaText: "Thêm vào giỏ trọn set",
     ctaLink: "/src/pages/collections.html?type=combo&offer=monthly-combo",
     imageSrc: "/src/assets/images/banners/hot-banner-a3-combo.png",
-    imageAlt: "Combo phối đồ tiết kiệm - mua trọn set tiết kiệm 15%",
+    imageAlt: "Combo phối đồ tiết kiệm - mua trọn set tiết kiệm thêm 10%",
     showCondition: null
   },
   {
     id: "A4",
+    eyebrow: "DÀNH CHO MEMBER",
     title: "Khách hàng thân thiết",
-    description: "Một món quà nhỏ thay lời cảm ơn từ Velura",
-    ctaText: "Nhận ngay ưu đãi",
+    description: "Quyền lợi tự động theo tổng chi tiêu tích lũy",
+    ctaText: "Xem quyền lợi",
     ctaLink: "/src/pages/offers.html?offer=A4",
     imageSrc: "/src/assets/images/banners/hot-banner-a4-loyal.png",
-    imageAlt: "Khách hàng thân thiết - giảm 10% không giới hạn đơn hàng",
+    imageAlt: "Khách hàng thân thiết - quyền lợi theo tổng chi tiêu tích lũy",
     showCondition: null
   },
   {
     id: "A5",
+    eyebrow: "CHIA SẺ CÙNG BẠN",
     title: "Một mình vui không bằng cả hai",
-    description: "Chia sẻ voucher cho bạn - cả hai cùng nhận ưu đãi",
+    description: "Bạn nhận 50.000đ, người mới nhận 30.000đ khi giới thiệu thành công",
     ctaText: "Chia sẻ ngay",
     ctaLink: "/src/pages/offers.html?offer=A5",
     imageSrc: "/src/assets/images/banners/hot-banner-a5-friend.png",
-    imageAlt: "Rủ rê bạn thân - chia sẻ voucher cho bạn",
+    imageAlt: "Rủ bạn bè - chia sẻ voucher cho bạn",
     showCondition: null
   },
   {
     id: "A6",
+    eyebrow: "MIỄN PHÍ VẬN CHUYỂN",
     title: "FreeShip cho đơn từ 500k",
-    description: "Vận chuyển nhanh, bảo quản cẩn thận, không phí ẩn",
+    description: "Miễn phí vận chuyển tiêu chuẩn toàn quốc cho đơn từ 500.000đ",
     ctaText: "Xem ngay",
     ctaLink: "/src/pages/offers.html?offer=A6",
     imageSrc: "/src/assets/images/banners/hot-banner-a6-freeship.png",
@@ -182,12 +188,16 @@ function initOfferBannerList() {
   const list = document.querySelector(".js-offer-banner-list");
   if (!list) return;
 
-  list.innerHTML = HOT_BANNERS.map((banner, index) => `
+  const banners = getVisibleBanners(getUserState());
+  list.innerHTML = banners.map((banner, index) => `
     <article class="offer-banner-row ${index % 2 === 1 ? "offer-banner-row--reverse" : ""}">
       <div class="offer-banner-row__copy">
         <span class="offer-banner-row__index">${escapeHtml(banner.id)}</span>
+        <span class="offer-banner-row__eyebrow">${escapeHtml(banner.eyebrow || "ƯU ĐÃI VELURA")}</span>
         <h3 class="offer-banner-row__title">${escapeHtml(banner.title)}</h3>
         <p class="offer-banner-row__desc">${escapeHtml(banner.description)}</p>
+        <p class="offer-banner-row__benefit"><strong>Quyền lợi:</strong> ${escapeHtml(getBannerBenefit(banner.id))}</p>
+        <p class="offer-banner-row__condition">${escapeHtml(getBannerCondition(banner.id))}</p>
         <a class="offer-banner-row__cta" href="${escapeHtml(banner.ctaLink)}" data-banner-id="${escapeHtml(banner.id)}">${escapeHtml(banner.ctaText)} →</a>
       </div>
       <a class="offer-banner-row__image-link" href="${escapeHtml(banner.ctaLink)}" aria-label="${escapeHtml(banner.title)}" data-banner-id="${escapeHtml(banner.id)}">
@@ -198,15 +208,36 @@ function initOfferBannerList() {
   `).join("");
 }
 
+function getBannerBenefit(id) {
+  return {
+    A1: "Giảm 15%, tối đa 300.000đ trong tháng sinh nhật.",
+    A2: "Giá sản phẩm đã giảm trực tiếp trong thời gian Flash Sale.",
+    A3: "Mua đủ set được giảm thêm 10%.",
+    A4: "Mở khóa quyền lợi theo tổng chi tiêu tích lũy.",
+    A5: "Bạn nhận 50.000đ, người mới nhận 30.000đ khi đủ điều kiện.",
+    A6: "Miễn phí vận chuyển cho đơn từ 500.000đ."
+  }[id] || "Quyền lợi theo chương trình đang áp dụng.";
+}
+
+function getBannerCondition(id) {
+  return {
+    A1: "Cần ngày sinh hợp lệ để kích hoạt ưu đãi.",
+    A2: "Chỉ áp dụng cho sản phẩm còn hàng trong chương trình.",
+    A3: "Cần mua đủ các sản phẩm bắt buộc trong set.",
+    A4: "Dành cho thành viên có lịch sử mua sắm tại Velura.",
+    A5: "Thưởng được cấp sau khi người được giới thiệu hoàn tất đơn đầu tiên.",
+    A6: "Áp dụng tự động khi tổng đơn đạt ngưỡng."
+  }[id] || "Xem điều kiện chi tiết trong chương trình.";
+}
+
 function initHotOfferTicker() {
   const track = document.querySelector(".js-hot-offer-ticker-track");
   if (!track) return;
 
-  const items = HOT_BANNERS.map((banner) => banner.title);
-  const duplicated = [...items, ...items];
-  track.innerHTML = duplicated.map((title) => `
-    <a class="hot-offer-ticker__item" href="/src/pages/offers.html">
-      <span>${escapeHtml(title)}</span>
+  const duplicated = [...HOT_BANNERS, ...HOT_BANNERS];
+  track.innerHTML = duplicated.map((banner) => `
+    <a class="hot-offer-ticker__item" href="${escapeHtml(banner.ctaLink)}" data-banner-id="${escapeHtml(banner.id)}">
+      <span>${escapeHtml(banner.title)}</span>
     </a>
   `).join("");
 }
@@ -224,7 +255,7 @@ function initHotOfferWidget() {
 
   if (count) count.textContent = `${banners.length || HOT_BANNERS.length} tin`;
   list.innerHTML = preview.map((banner) => `
-    <a class="hot-offer-widget__item" href="/src/pages/offers.html">
+    <a class="hot-offer-widget__item" href="${escapeHtml(banner.ctaLink)}" data-banner-id="${escapeHtml(banner.id)}">
       <img src="${escapeHtml(banner.imageSrc)}" alt="" loading="lazy" decoding="async" />
       <span>
         <strong>${escapeHtml(banner.title)}</strong>
@@ -248,15 +279,36 @@ function getVisibleBanners(userState) {
       return false;
     }
     return true;
-  });
+  }).sort((a, b) => scoreBanner(b, userState) - scoreBanner(a, userState));
 }
 
 function getUserState() {
+  const profile = readJson("velura_user") || readJson("velura_profile") || {};
+  const cart = readJson("velura_cart") || readJson("cart") || [];
+  const cartItems = Array.isArray(cart) ? cart : (Array.isArray(cart.items) ? cart.items : []);
+  const cartValue = cartItems.reduce((sum, item) => sum + Number(item.price || item.unit_price || 0) * Number(item.quantity || 1), 0);
   return {
     birthdayThisMonth: isBirthdayThisMonth(),
     hasItemsInCart: getCartCount() > 0,
-    isFirstTimeVisitor: !localStorage.getItem("velura_has_visited")
+    isFirstTimeVisitor: !localStorage.getItem("velura_has_visited"),
+    hasBirthday: Boolean(profile.date_of_birth || profile.birthday || profile.birthdate || profile.dob),
+    cartValue,
+    hasStyleProfile: Boolean(readJson("velura_style_profile") || readJson("velura_style_profile_results")),
+    isMember: Boolean(localStorage.getItem("velura_token"))
   };
+}
+
+function scoreBanner(banner, state) {
+  const scores = { A1: 20, A2: 10, A3: 12, A4: 8, A5: 6, A6: 9 };
+  let score = scores[banner.id] || 0;
+  if (banner.id === "A1" && !state.hasBirthday) score += 30;
+  if (banner.id === "A1" && state.birthdayThisMonth) score += 45;
+  if (banner.id === "A2" && state.hasItemsInCart) score += 8;
+  if (banner.id === "A3" && state.hasStyleProfile) score += 16;
+  if (banner.id === "A4" && state.isMember) score += 8;
+  if (banner.id === "A6" && state.cartValue > 0 && state.cartValue < 500000) score += 32;
+  if (banner.id === "A6" && state.cartValue >= 500000) score -= 10;
+  return score;
 }
 
 function isBirthdayThisMonth() {

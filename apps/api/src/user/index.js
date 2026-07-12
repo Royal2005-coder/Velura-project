@@ -10,6 +10,7 @@ import { handleWishlistRoute } from "./wishlist.js";
 import { handleCartRoute } from "./cart.js";
 import { handleNotificationsRoute } from "./notifications.js";
 import { handleUploadRoute } from "./upload.js";
+import { handleOffersRoute } from "./offers.js";
 
 export async function handleUserRoute(req, res, parts, corsHeaders, context) {
   const subRoute = parts[2]; // e.g. "auth", "profile", "addresses", "style-quiz", "wishlist", "orders", "reviews", "returns", "cart", "categories", "vouchers"
@@ -55,6 +56,9 @@ export async function handleUserRoute(req, res, parts, corsHeaders, context) {
       
     case "notifications":
       return await handleNotificationsRoute(req, res, action, parts, corsHeaders, context);
+
+    case "offers":
+      return await handleOffersRoute(req, res, corsHeaders, context);
       
     case "upload":
       return await handleUploadRoute(req, res, corsHeaders);

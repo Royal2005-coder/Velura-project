@@ -328,8 +328,8 @@ body.page-quiz-flow {
 /* ---------- Body Shapes Grid ---------- */
 .quiz-shape-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .quiz-shape-card {
@@ -365,7 +365,7 @@ body.page-quiz-flow {
 }
 
 .quiz-shape-card__img-box {
-  height: 140px;
+  height: 128px;
   background-color: var(--field-bg);
   border-radius: 6px;
   display: flex;

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ưu đãi của tôi | Velura</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/styles/main.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <load src="/src/components/header.html" />
+    <main class="offers-center" data-offers-center>
+      <div class="container">
+        <nav class="breadcrumb" aria-label="Đường dẫn"><a href="/index.html">Trang chủ</a><span>/</span><span>Ưu đãi của tôi</span></nav>
+        <header class="offers-center__hero">
+          <p class="offers-center__eyebrow">Quyền lợi thành viên</p>
+          <h1>Ưu đãi của tôi</h1>
+          <p>Velura tổng hợp các quyền lợi đang có, điều kiện mở khóa và thời hạn để bạn không phải tự ghi nhớ mã giảm giá.</p>
+        </header>
+        <div class="offers-center__filters" role="tablist" aria-label="Lọc ưu đãi">
+          <button type="button" class="is-active" data-offer-filter="ALL">Tất cả</button>
+          <button type="button" data-offer-filter="AVAILABLE">Có thể dùng</button>
+          <button type="button" data-offer-filter="LOCKED">Sắp mở khóa</button>
+          <button type="button" data-offer-filter="USED">Đã sử dụng</button>
+          <button type="button" data-offer-filter="EXPIRED">Hết hạn</button>
+        </div>
+        <section class="offers-center__list js-offers-list" aria-live="polite"><div class="offers-center__loading">Đang tải quyền lợi của bạn…</div></section>
+      </div>
+    </main>
+    <load src="/src/components/footer.html" />
+  </div>
+  <script type="module" src="/src/scripts/main.js"></script>
+</body>
+</html>

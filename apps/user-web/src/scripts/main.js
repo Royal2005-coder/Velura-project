@@ -29,6 +29,7 @@ import { initHotBannerSlider } from "./modules/hot-banner-slider.js";
 import { initMonthlyOffers } from "./modules/monthly-offers.js";
 import { initNotifications } from "./modules/notifications.js";
 import { initExitIntentPopup } from "./modules/exit-intent.js";
+import { initOffersCenter } from "./modules/offers-center.js";
 
 (function () {
   "use strict";
@@ -87,6 +88,7 @@ import { initExitIntentPopup } from "./modules/exit-intent.js";
   initAiSuggestions();
   initNotifications();
   initExitIntentPopup();
+  initOffersCenter();
 
   /* Mobile navigation */
   var menuToggle = document.querySelector(".menu-toggle");

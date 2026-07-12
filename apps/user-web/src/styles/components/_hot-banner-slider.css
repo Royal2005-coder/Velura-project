@@ -150,6 +150,14 @@
   letter-spacing: 0.08em;
 }
 
+.offer-banner-row__eyebrow {
+  margin-bottom: 8px;
+  color: var(--terracotta);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+
 .offer-banner-row__title {
   max-width: 380px;
   margin: 0;
@@ -167,6 +175,19 @@
   color: var(--text-secondary);
   font-size: 0.96rem;
   line-height: 1.7;
+}
+
+.offer-banner-row__benefit,
+.offer-banner-row__condition {
+  max-width: 440px;
+  margin: 0 0 8px;
+  color: var(--text-secondary);
+  font-size: .86rem;
+  line-height: 1.55;
+}
+
+.offer-banner-row__benefit strong {
+  color: var(--text-dark);
 }
 
 .offer-banner-row__cta {
@@ -231,7 +252,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  font-family: "DM Sans", sans-serif;
+  font-family: "DM Sans", Arial, sans-serif;
 }
 
 .monthly-offer-modal__overlay {
@@ -268,6 +289,7 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
   color: var(--text-dark);
+  font-family: "DM Sans", Arial, sans-serif;
   font-size: 1.35rem;
   line-height: 1;
   cursor: pointer;
@@ -288,6 +310,7 @@
   font-weight: 800;
   letter-spacing: 0.17em;
   text-transform: uppercase;
+  font-family: "DM Sans", Arial, sans-serif;
 }
 
 .monthly-offer-modal__title {
@@ -305,6 +328,7 @@
   color: var(--text-secondary);
   font-size: 0.98rem;
   line-height: 1.75;
+  font-family: "DM Sans", Arial, sans-serif;
 }
 
 .monthly-offer-modal__body p {
@@ -339,6 +363,7 @@
   border-radius: 999px;
   font-size: 0.92rem;
   font-weight: 800;
+  font-family: "DM Sans", Arial, sans-serif;
   text-decoration: none;
   cursor: pointer;
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
@@ -383,6 +408,10 @@
   gap: 12px;
 }
 
+.monthly-offer-form__grid--birthdate {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .monthly-offer-form label {
   display: grid;
   gap: 8px;
@@ -400,7 +429,9 @@
   border-radius: 14px;
   background: var(--field-bg);
   color: var(--text-dark);
-  font: inherit;
+  font-family: "DM Sans", Arial, sans-serif;
+  font-size: 0.96rem;
+  font-weight: 700;
 }
 
 .monthly-offer-form__hint,
@@ -464,6 +495,74 @@
   background: linear-gradient(90deg, #c97b63, #d9a09a);
 }
 
+.monthly-offer-progress strong {
+  color: var(--terracotta);
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 600;
+}
+
+.monthly-offer-benefit {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 18px;
+  padding: 16px;
+  border: 1px solid rgba(201, 123, 99, 0.18);
+  border-radius: 18px;
+  background: rgba(247, 228, 220, 0.64);
+}
+
+.monthly-offer-benefit strong {
+  color: var(--text-dark);
+  font-family: "DM Sans", Arial, sans-serif;
+  font-size: 0.95rem;
+}
+
+.monthly-offer-benefit ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.monthly-offer-benefit small {
+  color: var(--terracotta);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.monthly-offer-tier-list,
+.monthly-offer-metric-grid {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.monthly-offer-tier-list div,
+.monthly-offer-metric-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid rgba(201, 123, 99, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.monthly-offer-tier-list strong,
+.monthly-offer-metric-grid strong {
+  color: var(--terracotta);
+  font-size: 0.88rem;
+}
+
+.monthly-offer-tier-list span,
+.monthly-offer-metric-grid span {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.monthly-offer-metric-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .monthly-offer-modal__toast {
   position: absolute;
   right: 24px;
@@ -520,12 +619,19 @@
   .monthly-offer-modal__action {
     width: 100%;
   }
+
+  .monthly-offer-form__grid,
+  .monthly-offer-form__grid--birthdate,
+  .monthly-offer-metric-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .hot-offer-ticker {
   border-top: 1px solid rgba(125, 35, 39, 0.08);
   border-bottom: 1px solid rgba(125, 35, 39, 0.1);
   background: linear-gradient(90deg, #fff8f4, #f7e4dc, #fff8f4);
+  font-family: "DM Sans", Arial, sans-serif;
 }
 
 .hot-offer-ticker__inner {
@@ -602,6 +708,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
+  font-family: "DM Sans", Arial, sans-serif;
 }
 
 .hot-offer-widget__button {
@@ -617,6 +724,7 @@
   color: #fff;
   box-shadow: 0 16px 34px rgba(125, 35, 39, 0.28);
   cursor: pointer;
+  font-family: "DM Sans", Arial, sans-serif;
   animation: hotOfferFloat 2.8s ease-in-out infinite;
 }
 
@@ -638,6 +746,7 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
   color: #7d2327;
+  font-family: "DM Sans", Arial, sans-serif;
   font-size: 0.76rem;
   font-weight: 800;
   opacity: 0;
@@ -685,11 +794,14 @@
   gap: 12px;
   margin-bottom: 12px;
   color: #2f2623;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.28rem;
   font-weight: 900;
 }
 
 .hot-offer-widget__header small {
   color: #c97663;
+  font-family: "DM Sans", Arial, sans-serif;
   font-size: 0.75rem;
 }
 
@@ -721,6 +833,7 @@
 
 .hot-offer-widget__item strong {
   color: #2f2623;
+  font-family: "DM Sans", Arial, sans-serif;
   font-size: 0.86rem;
   line-height: 1.2;
 }
@@ -730,6 +843,7 @@
   color: #7a6a63;
   font-size: 0.75rem;
   line-height: 1.35;
+  font-family: "DM Sans", Arial, sans-serif;
 }
 
 .hot-offer-widget__cta {
@@ -740,6 +854,7 @@
   border-radius: 999px;
   background: #7d2327;
   color: #fff;
+  font-family: "DM Sans", Arial, sans-serif;
   font-size: 0.88rem;
   font-weight: 800;
   text-decoration: none;

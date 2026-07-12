@@ -51,6 +51,7 @@
 @import "./pages/_track-order.css";
 @import "./pages/_order-detail.css";
 @import "./pages/_collections.css";
+@import "./pages/_offers-center.css";
 
 /* Các trang từ nhánh feature/optimize-product-pages */
 @import "./pages/_home.css";
