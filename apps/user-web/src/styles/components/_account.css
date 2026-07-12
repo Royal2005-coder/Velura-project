@@ -431,37 +431,6 @@ select.profile-form__input {
   margin-top: 32px;
 }
 
-.profile-form__actions .btn {
-  padding: 12px 32px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-radius: 8px;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s ease;
-}
-
-.profile-form__actions .btn--primary {
-  background: var(--terracotta);
-  color: #fff;
-}
-
-.profile-form__actions .btn--primary:hover {
-  background: var(--terracotta-h);
-}
-
-.profile-form__actions .btn--outline {
-  background: #fff;
-  color: var(--soft);
-  border: 1px solid var(--line);
-}
-
-.profile-form__actions .btn--outline:hover {
-  background: var(--field-bg);
-  color: var(--text-dark);
-  border-color: var(--soft);
-}
-
 /* Validation Feedback Styles */
 .profile-form__input.is-invalid {
   border-color: var(--error) !important;

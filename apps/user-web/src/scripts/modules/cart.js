@@ -2,6 +2,7 @@ import { apiRequest } from "./api.js";
 import { getCurrentRole, hasRealAuthSession, storeAuthSession } from "./auth-session.js";
 import { locationData } from "./location-data.js";
 import { createSearchDropdown } from "./search-dropdown.js";
+import { isValidPhone } from "../utils/phone-validator.js";
 
 // Custom premium toast helper
 export function showToast(message) {
@@ -1120,7 +1121,7 @@ let paymentUserListenersBound = false;
 let checkoutAddresses = [];
 let checkoutUserObj = {};
 
-async function initPaymentUserPage() {
+async function initPaymentUserPage(selectedAddressIndex = null) {
   const token = localStorage.getItem("velura_token");
   const rawUser = localStorage.getItem("velura_user");
   let isLoggedIn = !!token;
@@ -1169,22 +1170,30 @@ async function initPaymentUserPage() {
   checkoutUserObj = user;
 
   if (addresses.length > 0) {
-    addressListContainer.innerHTML = addresses.map((addr, idx) => `
-      <label class="address-card ${addr.is_default ? "address-card--default is-selected" : "address-card--secondary"}" style="cursor: pointer;">
-        <input type="radio" name="address" value="${idx}" ${addr.is_default ? "checked" : ""} style="display: none;" />
-        <div class="address-card__check">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="20 6 9 17 4 12"></polyline>
-          </svg>
-        </div>
-        <div class="address-card__head">
-          <span class="address-card__name">${addr.name || addr.recipient_name || user.full_name || ""}</span>
-          ${addr.is_default ? '<span class="address-card__badge">Mặc định</span>' : ""}
-        </div>
-        <p class="address-card__phone">${addr.phone || addr.recipient_phone || user.phone || "Chưa có SĐT"}</p>
-        <p class="address-card__addr">${addr.detail || addr.address || addr.address_line || ""}</p>
-      </label>
-    `).join("");
+    let defaultIdx = addresses.findIndex(addr => addr.is_default);
+    if (defaultIdx === -1) defaultIdx = 0;
+    
+    const activeIdx = selectedAddressIndex !== null ? selectedAddressIndex : defaultIdx;
+
+    addressListContainer.innerHTML = addresses.map((addr, idx) => {
+      const isCardSelected = idx === activeIdx;
+      return `
+        <label class="address-card ${isCardSelected ? "address-card--default is-selected" : "address-card--secondary"}" style="cursor: pointer;">
+          <input type="radio" name="address" value="${idx}" ${isCardSelected ? "checked" : ""} style="display: none;" />
+          <div class="address-card__check">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="address-card__head">
+            <span class="address-card__name">${addr.name || addr.recipient_name || user.full_name || ""}</span>
+            ${addr.is_default ? '<span class="address-card__badge">Mặc định</span>' : ""}
+          </div>
+          <p class="address-card__phone">${addr.phone || addr.recipient_phone || user.phone || "Chưa có SĐT"}</p>
+          <p class="address-card__addr">${addr.detail || addr.address || addr.address_line || ""}</p>
+        </label>
+      `;
+    }).join("");
 
     const radios = addressListContainer.querySelectorAll("input[type='radio'][name='address']");
     radios.forEach(radio => {
@@ -1305,7 +1314,7 @@ async function initPaymentUserPage() {
   // Old select-based listeners removed — searchable dropdowns handle chaining via onSelect callbacks above
 
   // Add Address Handler
-  const btnAdd = document.querySelector(".btn-add-address");
+  const btnAdd = document.querySelector(".js-btn-add-address");
   if (btnAdd && modal) {
     btnAdd.style.cursor = "pointer";
     btnAdd.addEventListener("click", () => {
@@ -1361,8 +1370,7 @@ async function initPaymentUserPage() {
       };
 
       validateField(fullname, fullname.value.trim() !== "", "Họ và tên không được để trống");
-      const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
-      validateField(phone, phoneRegex.test(phone.value.trim().replace(/\s+/g, "")), "Số điện thoại không hợp lệ");
+      validateField(phone, isValidPhone(phone.value.trim()), "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)");
       validateField(provinceHidden, provKey !== "", "Vui lòng chọn Tỉnh/Thành phố");
       validateField(districtHidden, distKey !== "", "Vui lòng chọn Quận/Huyện");
       validateField(wardHidden, wardVal !== "", "Vui lòng chọn Phường/Xã");
@@ -1397,7 +1405,7 @@ async function initPaymentUserPage() {
           localStorage.setItem("velura_user", JSON.stringify(checkoutUserObj));
           showToast("Đã thêm địa chỉ mới thành công!");
           closeModal();
-          await initPaymentUserPage(); // Re-render address list
+          await initPaymentUserPage(updatedAddresses.length - 1); // Re-render address list
         } else {
           throw new Error("Lỗi lưu địa chỉ");
         }
@@ -1460,9 +1468,24 @@ function initPaymentGuestPage() {
   const passwordGroup = document.getElementById("guest-password-group");
   
   if (phoneInput) {
+    phoneInput.addEventListener("input", () => {
+      const phone = phoneInput.value.trim();
+      if (phone && !isValidPhone(phone)) {
+        phoneInput.classList.add("is-invalid");
+      } else {
+        phoneInput.classList.remove("is-invalid");
+      }
+    });
+
     phoneInput.addEventListener("blur", async () => {
       const phone = phoneInput.value.trim();
       if (!phone) return;
+      if (!isValidPhone(phone)) {
+        showToast("Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)!");
+        phoneInput.classList.add("is-invalid");
+        return;
+      }
+      phoneInput.classList.remove("is-invalid");
       try {
         const res = await apiRequest(`/api/user/auth/check-exists?phone=${phone}`);
         if (res && res.exists) {
@@ -1548,6 +1571,11 @@ function initPaymentGuestPage() {
 
       if (!name || !phone || !provVal || !distVal || !wardVal || !detailVal) {
         showToast("Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng!");
+        return;
+      }
+
+      if (!isValidPhone(phone)) {
+        showToast("Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)!");
         return;
       }
 

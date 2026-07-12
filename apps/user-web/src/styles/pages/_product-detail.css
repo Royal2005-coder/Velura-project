@@ -974,22 +974,6 @@
   margin: 0;
 }
 
-.reviews-header__btn {
-  padding: 8px 20px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: #fff;
-  color: var(--text-dark);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.reviews-header__btn:hover {
-  border-color: var(--terracotta);
-  color: var(--terracotta);
-}
 
 /* Reviews Summary Box */
 .reviews-summary-box {

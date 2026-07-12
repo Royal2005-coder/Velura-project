@@ -980,8 +980,8 @@ function cleanEmail(value) {
 }
 
 function cleanPhone(value) {
-  const phone = String(value || "").replace(/[^\d+]/g, "").slice(0, 20);
-  return phone.length >= 8 ? phone : "";
+  const phone = String(value || "").replace(/[^\d]/g, "");
+  return /^0\d{9}$/.test(phone) ? phone : "";
 }
 
 function shortSessionId(sessionId) {

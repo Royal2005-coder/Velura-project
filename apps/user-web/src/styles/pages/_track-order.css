@@ -67,24 +67,6 @@
   font-family: "DM Sans", sans-serif;
   outline: none;
 }
-
-.track-search-btn {
-  background-color: #c97b63;
-  color: #ffffff;
-  border: none;
-  padding: 14px 32px;
-  border-radius: 8px;
-  font-size: 1.125rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
-  font-family: "DM Sans", sans-serif;
-}
-
-.track-search-btn:hover {
-  background-color: #b36a53;
-}
-
 /* Main Grid Layout */
 .track-grid {
   display: grid;
@@ -483,31 +465,6 @@
   color: #2a2522;
   font-weight: 600;
 }
-
-.track-shipper-call-btn {
-  width: 100%;
-  background-color: #c97b63;
-  color: #ffffff;
-  border: none;
-  padding: 14px;
-  border-radius: 8px;
-  font-size: 1.125rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: background-color 0.2s, transform 0.2s;
-  font-family: "DM Sans", sans-serif;
-  box-shadow: 0 2px 8px rgba(201, 123, 99, 0.15);
-}
-
-.track-shipper-call-btn:hover {
-  background-color: #b36a53;
-  transform: translateY(-1px);
-}
-
 /* Shipping Address Card */
 .track-address-header {
   display: flex;

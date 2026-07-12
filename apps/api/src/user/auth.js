@@ -9,6 +9,12 @@ export function validateEmail(email) {
   return re.test(email);
 }
 
+// Helper to validate phone format (Vietnamese standard: 10 digits starting with 0)
+export function validatePhone(phone) {
+  const re = /^0\d{9}$/;
+  return re.test(phone);
+}
+
 // Helper to validate password (AUTH-04: min 8 chars, 1 uppercase, 1 lowercase, 1 number/special)
 export function validatePassword(password) {
   if (!password || password.length < 8) return false;
@@ -42,6 +48,9 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
       const user = await selectOne("users", { email: `eq.${email}` });
       exists = !!user && user.is_active;
     } else if (phone) {
+      if (!validatePhone(phone)) {
+        throw new HttpError(400, "BAD_REQUEST", "Số điện thoại không đúng định dạng (10 số, bắt đầu bằng 0)");
+      }
       const user = await selectOne("users", { phone: `eq.${phone}` });
       exists = !!user && user.is_active;
     }
@@ -62,6 +71,9 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
     }
     if (email && !validateEmail(email)) {
       throw new HttpError(400, "BAD_REQUEST", "Email không đúng định dạng");
+    }
+    if (phone && !validatePhone(phone)) {
+      throw new HttpError(400, "BAD_REQUEST", "Số điện thoại không đúng định dạng (10 số, bắt đầu bằng 0)");
     }
     if (!validatePassword(password)) {
       throw new HttpError(400, "BAD_REQUEST", "Mật khẩu phải dài tối thiểu 8 ký tự, bao gồm ít nhất một chữ hoa, một chữ thường và một số hoặc ký tự đặc biệt");

@@ -6,6 +6,7 @@ import {
   storeAuthSession
 } from "./auth-session.js";
 import { syncFavoriteOutfitsOnLogin } from "./chatbot.js";
+import { isValidPhone } from "../utils/phone-validator.js";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -343,7 +344,10 @@ function bindSignin() {
       ? document.getElementById("password")?.value || ""
       : document.getElementById("password-email")?.value || "";
 
-    if (isPhone && !phone) { setError("error-phone", "Vui lòng nhập số điện thoại."); return; }
+    if (isPhone) {
+      if (!phone) { setError("error-phone", "Vui lòng nhập số điện thoại."); return; }
+      if (!isValidPhone(phone)) { setError("error-phone", "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)."); return; }
+    }
     if (!isPhone && !emailLogin) { setError("error-email-login", "Vui lòng nhập email."); return; }
     if (!password) { setError(isPhone ? "error-password" : "error-password-email", "Vui lòng nhập mật khẩu."); return; }
 
@@ -437,8 +441,21 @@ function bindSignup() {
   const emailInput = document.getElementById("email-signup");
   if (phoneInput) {
     phoneInput.addEventListener("input", debounce(() => {
-      if (phoneInput.value.trim().length >= 9)
-        checkDuplicate("phone", phoneInput.value.trim(), "error-phone-signup", "phone-check-icon");
+      const phoneVal = phoneInput.value.trim();
+      if (!phoneVal) {
+        setError("error-phone-signup", "");
+        const icon = document.getElementById("phone-check-icon");
+        if (icon) icon.hidden = true;
+        return;
+      }
+      if (!isValidPhone(phoneVal)) {
+        setError("error-phone-signup", "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).");
+        const icon = document.getElementById("phone-check-icon");
+        if (icon) { icon.textContent = "✗"; icon.style.color = "#d9534f"; icon.hidden = false; }
+      } else {
+        setError("error-phone-signup", "");
+        checkDuplicate("phone", phoneVal, "error-phone-signup", "phone-check-icon");
+      }
     }, 600));
   }
   if (emailInput) {
@@ -471,7 +488,13 @@ function bindSignup() {
 
     let hasError = false;
     if (!fullname) { setError("error-fullname", "Họ và tên là bắt buộc."); hasError = true; }
-    if (!phone) { setError("error-phone-signup", "Số điện thoại là bắt buộc."); hasError = true; }
+    if (!phone) {
+      setError("error-phone-signup", "Số điện thoại là bắt buộc.");
+      hasError = true;
+    } else if (!isValidPhone(phone)) {
+      setError("error-phone-signup", "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).");
+      hasError = true;
+    }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError("error-email-signup", "Email không đúng định dạng."); hasError = true; }
     if (!validatePassword(password)) {
       setError("error-password-signup", "Mật khẩu tối thiểu 8 ký tự, gồm chữ hoa, chữ thường và số/ký tự đặc biệt.");
@@ -521,6 +544,11 @@ function bindForgotPassword() {
     clearErrors("error-identity");
     const identity = document.getElementById("identity")?.value.trim() || "";
     if (!identity) { setError("error-identity", "Vui lòng nhập email hoặc số điện thoại."); return; }
+    const isEmail = identity.includes("@");
+    if (!isEmail && !isValidPhone(identity)) {
+      setError("error-identity", "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).");
+      return;
+    }
     setLoading(btn, true);
 
     try {

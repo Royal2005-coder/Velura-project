@@ -1,7 +1,7 @@
 import { HttpError, readJson, sendJson } from "../http.js";
 import { selectOne, selectRows, insertRow, updateRows } from "../supabase.js";
 import { hashPassword, signJwt } from "../auth-helper.js";
-import { requireUserAuth } from "./auth.js";
+import { requireUserAuth, validatePhone } from "./auth.js";
 import { createNotification } from "./notifications.js";
 
 const checkoutOtpAttemptsMap = new Map();
@@ -453,6 +453,9 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
       if (!phone) {
         throw new HttpError(400, "BAD_REQUEST", "Số điện thoại là bắt buộc");
       }
+      if (!validatePhone(phone)) {
+        throw new HttpError(400, "BAD_REQUEST", "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)");
+      }
       
       const existingUser = await selectOne("users", { phone: `eq.${phone}` });
       if (existingUser && existingUser.is_active) {
@@ -554,6 +557,9 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
       
       if (!phone || !otp_code || !shipping_name || !shipping_address || !items || !items.length) {
         throw new HttpError(400, "BAD_REQUEST", "Thông tin xác thực hoặc đơn hàng không đầy đủ");
+      }
+      if (!validatePhone(phone)) {
+        throw new HttpError(400, "BAD_REQUEST", "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)");
       }
       
       const sessionState = checkoutOtpAttemptsMap.get(phone);
@@ -919,6 +925,9 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
 
       if (!shipping_name || !shipping_phone || !shipping_address || !items || !items.length) {
         throw new HttpError(400, "BAD_REQUEST", "Thông tin đơn hàng không đầy đủ");
+      }
+      if (!validatePhone(shipping_phone)) {
+        throw new HttpError(400, "BAD_REQUEST", "Số điện thoại giao hàng không hợp lệ (10 số, bắt đầu bằng 0)");
       }
 
       const profile = requireUserAuth(context);

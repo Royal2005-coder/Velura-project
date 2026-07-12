@@ -561,35 +561,6 @@
   box-shadow: 0 0 0 3px rgba(201, 123, 99, 0.12);
 }
 
-.newsletter-box__form button {
-  height: 48px;
-  padding: 0 24px;
-  border: 0;
-  border-radius: var(--radius-md, 8px);
-  background: var(--terracotta, #c97b63);
-  color: #fff;
-  cursor: pointer;
-  font-family: "DM Sans", sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: background 0.2s ease, transform 0.1s ease;
-}
-
-.newsletter-box__form button:hover {
-  background: var(--terracotta-h, #b36a53);
-  color: #fff;
-}
-
-.newsletter-box__form button:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-  box-shadow: 0 0 0 5px var(--terracotta, #7b1e2b);
-}
-
-.newsletter-box__form button:active {
-  transform: scale(0.97);
-}
 
 /* ============================================================
    Blog Detail Page

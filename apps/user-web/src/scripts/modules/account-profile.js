@@ -6,6 +6,7 @@ import { addToCart, getVariantImage } from "./cart.js";
 import { getCurrentRole, hasRealAuthSession } from "./auth-session.js";
 import { locationData } from "./location-data.js";
 import { createSearchDropdown } from "./search-dropdown.js";
+import { isValidPhone } from "../utils/phone-validator.js";
 
 
 
@@ -977,8 +978,7 @@ function initAddressManager() {
     validateField(fullname, fullname.value.trim() !== "", "Họ và tên không được để trống");
     
     const phoneVal = phone.value.trim();
-    const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
-    validateField(phone, phoneRegex.test(phoneVal.replace(/\s+/g, "")), "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)");
+    validateField(phone, isValidPhone(phoneVal), "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)");
     
     validateField(province, province.value !== "", "Vui lòng chọn Tỉnh/Thành phố");
     validateField(district, districtDD && districtDD.getValue() !== "", "Vui lòng chọn Quận/Huyện");
