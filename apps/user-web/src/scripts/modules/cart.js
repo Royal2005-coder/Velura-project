@@ -489,6 +489,13 @@ function renderCheckoutLayout(role) {
   }
 
   if (path.includes("/payment-guest.html") && isMember) {
+    const shouldResumeCheckout = sessionStorage.getItem(CHECKOUT_RESUME_AFTER_LOGIN_KEY) === "shipping-payment";
+    const shipping = readJsonStorage(localStorage, "checkout_shipping", {});
+    if (shouldResumeCheckout && shipping.name && shipping.phone && shipping.address) {
+      sessionStorage.removeItem(CHECKOUT_RESUME_AFTER_LOGIN_KEY);
+      window.location.href = "/src/pages/checkout/shipping-payment.html";
+      return;
+    }
     window.location.href = "/src/pages/checkout/payment-user.html";
     return;
   }
@@ -1177,6 +1184,125 @@ export function initVoucherModal() {
 let paymentUserListenersBound = false;
 let checkoutAddresses = [];
 let checkoutUserObj = {};
+const CHECKOUT_GUEST_DRAFT_KEY = "checkout_guest_draft";
+const CHECKOUT_RESUME_AFTER_LOGIN_KEY = "checkout_resume_after_login";
+
+function persistCheckoutGuestDraft() {
+  const draft = {
+    name: document.getElementById("fullname")?.value.trim() || "",
+    phone: document.getElementById("guest-phone")?.value.trim() || "",
+    email: document.getElementById("guest-email")?.value.trim() || "",
+    province: document.getElementById("address-province")?.value || "",
+    district: document.getElementById("address-district")?.value || "",
+    ward: document.getElementById("address-ward")?.value || "",
+    detail: document.getElementById("guest-address-detail")?.value.trim() || "",
+    note: document.getElementById("guest-note")?.value.trim() || ""
+  };
+
+  sessionStorage.setItem(CHECKOUT_GUEST_DRAFT_KEY, JSON.stringify(draft));
+  return draft;
+}
+
+function readCheckoutGuestDraft() {
+  const fromSession = readJsonStorage(sessionStorage, CHECKOUT_GUEST_DRAFT_KEY, {});
+  if (fromSession && Object.keys(fromSession).length) return fromSession;
+
+  const shipping = readJsonStorage(localStorage, "checkout_shipping", {});
+  if (!shipping || !Object.keys(shipping).length) return {};
+
+  return {
+    name: shipping.name || "",
+    phone: shipping.phone || "",
+    email: shipping.email || "",
+    province: shipping.province || "",
+    district: shipping.district || "",
+    ward: shipping.ward || "",
+    detail: shipping.detail || "",
+    note: shipping.note || ""
+  };
+}
+
+function restoreCheckoutGuestDraft({ provinceDD, districtDD, wardDD }) {
+  const draft = readCheckoutGuestDraft();
+  if (!draft || !Object.keys(draft).length) return;
+
+  const setValue = (id, value) => {
+    const el = document.getElementById(id);
+    if (el && value) el.value = value;
+  };
+
+  setValue("fullname", draft.name);
+  setValue("guest-phone", draft.phone);
+  setValue("guest-email", draft.email);
+  setValue("guest-address-detail", draft.detail);
+  setValue("guest-note", draft.note);
+
+  const provinceHidden = document.getElementById("address-province");
+  const districtHidden = document.getElementById("address-district");
+  const wardHidden = document.getElementById("address-ward");
+
+  if (draft.province && provinceDD && locationData[draft.province]) {
+    provinceHidden.value = draft.province;
+    provinceDD.setValue(draft.province);
+    const distOpts = Object.entries(locationData[draft.province].districts).map(([k, v]) => ({ value: k, label: v.name }));
+    districtDD?.setOptions(distOpts);
+    districtDD?.enable();
+  }
+
+  if (draft.province && draft.district && districtDD && locationData[draft.province]?.districts[draft.district]) {
+    districtHidden.value = draft.district;
+    districtDD.setValue(draft.district);
+    const wardOpts = locationData[draft.province].districts[draft.district].wards.map(w => ({ value: w, label: w }));
+    wardDD?.setOptions(wardOpts);
+    wardDD?.enable();
+  }
+
+  if (draft.ward && wardDD) {
+    wardHidden.value = draft.ward;
+    wardDD.setValue(draft.ward);
+  }
+}
+
+function buildGuestCheckoutShippingInfo() {
+  const name = document.getElementById("fullname")?.value.trim();
+  const phone = document.getElementById("guest-phone")?.value.trim();
+  const email = document.getElementById("guest-email")?.value.trim();
+  const provVal = document.getElementById("address-province")?.value || "";
+  const distVal = document.getElementById("address-district")?.value || "";
+  const wardVal = document.getElementById("address-ward")?.value || "";
+  const detailVal = document.getElementById("guest-address-detail")?.value.trim();
+  const note = document.getElementById("guest-note")?.value.trim() || "";
+
+  if (!name || !phone || !provVal || !distVal || !wardVal || !detailVal) {
+    return { error: "Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng!" };
+  }
+
+  if (!isValidPhone(phone)) {
+    return { error: "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)!" };
+  }
+
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: "Email giao hàng không đúng định dạng." };
+  }
+
+  const provText = locationData[provVal]?.name || "";
+  const distText = locationData[provVal]?.districts[distVal]?.name || "";
+  const address = `${detailVal}, ${wardVal}, ${distText}, ${provText}`;
+
+  return {
+    shippingInfo: {
+      name,
+      phone,
+      email,
+      address,
+      province: provVal,
+      district: distVal,
+      ward: wardVal,
+      detail: detailVal,
+      note
+    }
+  };
+}
 
 async function initPaymentUserPage(selectedAddressIndex = null) {
   const token = localStorage.getItem("velura_token");
@@ -1654,11 +1780,21 @@ function initPaymentGuestPage() {
             body: JSON.stringify({ phone, password })
           });
           if (authRes && authRes.token) {
+            const guestShipping = {
+              name,
+              phone,
+              email,
+              address,
+              note
+            };
+            localStorage.setItem("checkout_shipping", JSON.stringify(guestShipping));
+            sessionStorage.setItem(CHECKOUT_RESUME_AFTER_LOGIN_KEY, "shipping-payment");
+
             storeAuthSession(authRes);
             showToast("Đăng nhập thành công!");
             await mergeLocalCartWithDb();
             setTimeout(() => {
-              window.location.href = "./payment-user.html";
+              window.location.href = "./shipping-payment.html";
             }, 1000);
             return;
           }
@@ -1691,24 +1827,24 @@ async function initShippingPaymentPage() {
   const continueBtn = document.getElementById("btn-submit-order");
   const shippingContainer = document.getElementById("shipping-options");
 
-  // Detect HCM from address — prefer fresh server data, fallback to localStorage
+  // Detect HCM from address — prefer checkout_shipping (user-entered), fallback to server default
   let addressText = "";
-  const token = localStorage.getItem("velura_token");
-  if (token) {
-    try {
-      const user = await apiRequest("/api/user/profile");
-      const addrs = user?.saved_addresses || [];
-      const defaultAddr = addrs.find(a => a.is_default) || addrs[0];
-      if (defaultAddr) {
-        addressText = (defaultAddr.detail || defaultAddr.address || defaultAddr.address_line || "").toLowerCase();
-      }
-    } catch (e) {
-      // fallback to localStorage
-    }
+  const shipping = readJsonStorage(localStorage, "checkout_shipping", {});
+  if (shipping.address) {
+    addressText = shipping.address.toLowerCase();
   }
   if (!addressText) {
-    const shipping = JSON.parse(localStorage.getItem("checkout_shipping") || "{}");
-    addressText = (shipping.address || "").toLowerCase();
+    const token = localStorage.getItem("velura_token");
+    if (token) {
+      try {
+        const user = await apiRequest("/api/user/profile");
+        const addrs = user?.saved_addresses || [];
+        const defaultAddr = addrs.find(a => a.is_default) || addrs[0];
+        if (defaultAddr) {
+          addressText = (defaultAddr.detail || defaultAddr.address || defaultAddr.address_line || "").toLowerCase();
+        }
+      } catch (e) {}
+    }
   }
   const isHCM = /hồ chí minh|tp\.?\s*hcm|tp\.?\s*hồ chí minh|thành phố hcm/i.test(addressText);
 
