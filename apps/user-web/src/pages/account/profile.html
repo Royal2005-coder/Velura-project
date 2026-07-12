@@ -79,7 +79,7 @@
                 </svg>
                 Wishlist
               </a>
-              <a href="/src/pages/account/offers.html" class="account-sidebar__link">
+              <a href="#" class="account-sidebar__link" data-tab="offers">
                 <svg class="account-sidebar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8" />
                   <path d="M2 7h20v5H2z" />
@@ -814,6 +814,26 @@
                 <div class="profile-form__actions" style="margin-top: 40px; justify-content: flex-end;">
                   <button class="btn btn--primary js-btn-save-settings" type="button">Lưu cài đặt</button>
                 </div>
+              </div>
+            </div>
+
+            <!-- Tab 7: Offers -->
+            <div class="account-tab-content" id="tab-offers">
+              <div class="account-main__header">
+                <h2 class="account-main__title">Ưu đãi của tôi</h2>
+                <p class="account-main__subtitle">Quyền lợi thành viên của bạn tại Velura</p>
+              </div>
+              <div class="offers-center" data-offers-center style="padding: 0; min-height: auto; background: transparent;">
+                <div class="offers-center__filters" role="tablist" aria-label="Lọc ưu đãi" style="margin-top: 0; margin-bottom: 24px;">
+                  <button type="button" class="is-active" data-offer-filter="ALL">Tất cả</button>
+                  <button type="button" data-offer-filter="AVAILABLE">Có thể dùng</button>
+                  <button type="button" data-offer-filter="LOCKED">Sắp mở khóa</button>
+                  <button type="button" data-offer-filter="USED">Đã sử dụng</button>
+                  <button type="button" data-offer-filter="EXPIRED">Hết hạn</button>
+                </div>
+                <section class="offers-center__list js-offers-list" aria-live="polite">
+                  <div class="offers-center__loading">Đang tải quyền lợi của bạn…</div>
+                </section>
               </div>
             </div>
           </section>

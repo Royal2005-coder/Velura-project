@@ -3,7 +3,12 @@
   padding: 24px 0 96px;
   background: #fdfaf8;
   color: var(--text-body);
-  font-family: "DM Sans", sans-serif;
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+.offers-center :where(p, span, button, a, li, strong) {
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 .offers-center__hero {
@@ -27,6 +32,7 @@
   font-size: clamp(2.4rem, 5vw, 4.5rem);
   font-weight: 500;
   letter-spacing: -.04em;
+  text-rendering: optimizeLegibility;
 }
 
 .offers-center__hero p:last-child {
@@ -85,7 +91,16 @@
 .offer-card__badge { padding: 6px 10px; border-radius: 999px; background: #f7e4dc; color: var(--terracotta); font-size: .75rem; font-weight: 800; }
 .offer-card__expiry,
 .offer-card__minimum { color: var(--text-muted); font-size: .78rem; }
-.offer-card__title { margin: 22px 0 8px; color: var(--text-dark); font: 500 1.65rem/1.15 "Playfair Display", Georgia, serif; }
+.offer-card__title {
+  margin: 22px 0 8px;
+  color: var(--text-dark);
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.65rem;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 1.2;
+  text-rendering: optimizeLegibility;
+}
 .offer-card__description { margin: 0; color: var(--text-secondary); line-height: 1.55; }
 .offer-card__code { display: grid; gap: 3px; margin: 16px 0 0; padding: 12px 14px; border: 1px dashed rgba(201,123,99,.45); border-radius: 14px; background: #fff9f6; }
 .offer-card__code span { color: var(--text-muted); font-size: .75rem; }

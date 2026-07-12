@@ -252,7 +252,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  font-family: "DM Sans", Arial, sans-serif;
+  font-family: inherit;
 }
 
 .monthly-offer-modal__overlay {
@@ -269,7 +269,7 @@
   max-height: min(86vh, 760px);
   overflow: auto;
   border: 1px solid rgba(234, 228, 222, 0.96);
-  border-radius: 28px;
+  border-radius: var(--radius-lg);
   background:
     radial-gradient(circle at 88% 6%, rgba(201, 123, 99, 0.11), transparent 28%),
     #fffdfb;
@@ -280,19 +280,21 @@
 
 .monthly-offer-modal__close {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 16px;
+  right: 16px;
   z-index: 2;
-  width: 36px;
-  height: 36px;
-  border: 1px solid rgba(201, 123, 99, 0.2);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--text-dark);
-  font-family: "DM Sans", Arial, sans-serif;
-  font-size: 1.35rem;
-  line-height: 1;
+  background: none;
+  border: none;
+  font-size: 1.75rem;
   cursor: pointer;
+  color: var(--soft);
+  line-height: 1;
+  padding: 0 4px;
+  transition: color 0.2s ease;
+}
+
+.monthly-offer-modal__close:hover {
+  color: var(--text-dark);
 }
 
 .monthly-offer-modal__media {
@@ -300,7 +302,7 @@
   width: 100%;
   height: 168px;
   object-fit: cover;
-  border-radius: 28px 28px 0 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .monthly-offer-modal__eyebrow {
@@ -310,7 +312,7 @@
   font-weight: 800;
   letter-spacing: 0.17em;
   text-transform: uppercase;
-  font-family: "DM Sans", Arial, sans-serif;
+  font-family: inherit;
 }
 
 .monthly-offer-modal__title {
@@ -328,7 +330,7 @@
   color: var(--text-secondary);
   font-size: 0.98rem;
   line-height: 1.75;
-  font-family: "DM Sans", Arial, sans-serif;
+  font-family: inherit;
 }
 
 .monthly-offer-modal__body p {
@@ -358,12 +360,12 @@
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  padding: 0 18px;
+  padding: 12px 24px;
   border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: 0.92rem;
-  font-weight: 800;
-  font-family: "DM Sans", Arial, sans-serif;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
   text-decoration: none;
   cursor: pointer;
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
@@ -425,13 +427,21 @@
   width: 100%;
   min-height: 44px;
   padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
   background: var(--field-bg);
   color: var(--text-dark);
-  font-family: "DM Sans", Arial, sans-serif;
-  font-size: 0.96rem;
-  font-weight: 700;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.monthly-offer-form input:focus,
+.monthly-offer-form select:focus {
+  outline: none;
+  border-color: var(--terracotta);
+  background: #fff;
 }
 
 .monthly-offer-form__hint,
@@ -456,7 +466,7 @@
   margin: 16px 0;
   padding: 16px;
   border: 1px dashed rgba(201, 123, 99, 0.42);
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   background: rgba(201, 123, 99, 0.07);
 }
 
@@ -508,13 +518,13 @@
   margin: 16px 0 18px;
   padding: 16px;
   border: 1px solid rgba(201, 123, 99, 0.18);
-  border-radius: 18px;
+  border-radius: var(--radius-md);
   background: rgba(247, 228, 220, 0.64);
 }
 
 .monthly-offer-benefit strong {
   color: var(--text-dark);
-  font-family: "DM Sans", Arial, sans-serif;
+  font-family: inherit;
   font-size: 0.95rem;
 }
 
@@ -542,7 +552,7 @@
   gap: 4px;
   padding: 14px;
   border: 1px solid rgba(201, 123, 99, 0.16);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.72);
 }
 
@@ -650,8 +660,13 @@
   border-radius: 999px;
   background: #7d2327;
   color: #fff;
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif !important;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  text-rendering: optimizeLegibility;
   white-space: nowrap;
 }
 
@@ -746,9 +761,12 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
   color: #7d2327;
-  font-family: "DM Sans", Arial, sans-serif;
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif !important;
   font-size: 0.76rem;
-  font-weight: 800;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-rendering: optimizeLegibility;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-50%) translateX(8px);

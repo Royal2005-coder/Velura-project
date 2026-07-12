@@ -168,11 +168,17 @@ export function initProductCatalog() {
         if (priceRangeText) {
           priceRangeText.textContent = `${minPrice.toLocaleString('vi-VN')}₫ – ${maxPrice.toLocaleString('vi-VN')}₫`;
         }
+      } else {
+        if (priceInputs.length === 2) {
+          priceInputs[0].value = 0;
+          priceInputs[1].value = maxProductPrice;
+          if (priceRangeText) {
+            priceRangeText.textContent = `0₫ – ${maxProductPrice.toLocaleString('vi-VN')}₫`;
+          }
+        }
       }
 
       // 2. favorite_colors → Catalog color filter
-      // Quiz colors format: "Beige|#E8DFD6" or just "Beige"
-      // Catalog colors: Đen, Trắng, Terracotta, Kem, Xanh rêu, Xanh lam
       const quizColorNameMap = {
         "đen": "Đen", "black": "Đen", "charcoal": "Đen", "slate": "Đen", "midnight": "Đen", "onyx": "Đen",
         "trắng": "Trắng", "white": "Trắng", "ivory": "Trắng", "cream": "Kem", "champagne": "Trắng", "off-white": "Trắng",
@@ -197,75 +203,55 @@ export function initProductCatalog() {
         }
       }
 
-      // Fallback: skin tone → color
       if (!targetColor && quizData.skin_tone) {
         const tone = quizData.skin_tone.toLowerCase();
         const toneColorMap = { "warm": "Terracotta", "cool": "Trắng", "neutral": "Kem" };
         targetColor = toneColorMap[tone] || "";
       }
 
-      if (targetColor) {
-        colorOptions.forEach(btn => {
-          const btnTitle = (btn.getAttribute("title") || "").toLowerCase();
-          if (btnTitle === targetColor.toLowerCase()) {
-            btn.classList.add("is-selected");
-            selectedColor = btn.getAttribute("title") || targetColor;
-          } else {
-            btn.classList.remove("is-selected");
-          }
-        });
-      }
+      selectedColor = targetColor;
+      colorOptions.forEach(btn => {
+        const btnTitle = (btn.getAttribute("title") || "").toLowerCase();
+        if (targetColor && btnTitle === targetColor.toLowerCase()) {
+          btn.classList.add("is-selected");
+        } else {
+          btn.classList.remove("is-selected");
+        }
+      });
 
       // 3. Body measurements → Size
+      let recommendedSize = "";
       if (quizData.chest_cm || quizData.waist_cm) {
         const chest = quizData.chest_cm || 0;
         const waist = quizData.waist_cm || 0;
         const hip = quizData.hip_cm || 0;
-        let recommendedSize = "";
         if (chest <= 80 && waist <= 64 && hip <= 86) recommendedSize = "XS";
         else if (chest <= 84 && waist <= 68 && hip <= 90) recommendedSize = "S";
         else if (chest <= 88 && waist <= 72 && hip <= 94) recommendedSize = "M";
         else if (chest <= 92 && waist <= 76 && hip <= 98) recommendedSize = "L";
         else recommendedSize = "XL";
-
-        if (recommendedSize) {
-          const sizeOptionsList = document.querySelectorAll(".size-option");
-          sizeOptionsList.forEach(opt => {
-            if (opt.textContent.trim() === recommendedSize) {
-              opt.classList.add("is-active");
-              selectedSize = recommendedSize;
-            } else {
-              opt.classList.remove("is-active");
-            }
-          });
-        }
       }
+
+      selectedSize = recommendedSize;
+      const sizeOptionsList = document.querySelectorAll(".size-selector .size-option");
+      sizeOptionsList.forEach(opt => {
+        if (recommendedSize && opt.textContent.trim().toLowerCase() === recommendedSize.toLowerCase()) {
+          opt.classList.add("is-active");
+        } else {
+          opt.classList.remove("is-active");
+        }
+      });
 
       // 4. Body shape → checkbox
       const shapeCheckboxes = document.querySelectorAll('input[name="body_shape"]');
-      if (userBodyShape) {
-        shapeCheckboxes.forEach(cb => {
-          if (cb.value.toLowerCase() === (userBodyShape || "").toLowerCase()) {
-            cb.checked = true;
-          }
-        });
-      }
+      shapeCheckboxes.forEach(cb => {
+        if (userBodyShape && cb.value.toLowerCase() === userBodyShape.toLowerCase()) {
+          cb.checked = true;
+        } else {
+          cb.checked = false;
+        }
+      });
 
-      // 5. Preferred occasions → Category checkboxes
-      if (quizData.preferred_occasions && Array.isArray(quizData.preferred_occasions)) {
-        const occasionCategoryMap = {
-          "office": "top", "casual": "top", "party": "dress",
-          "school": "top", "sport": "top", "travel": "jacket", "home": "top"
-        };
-        const categoryCheckboxes = document.querySelectorAll('input[name="category"]');
-        const matchedCategories = new Set();
-        quizData.preferred_occasions.forEach(occ => {
-          const cat = occasionCategoryMap[occ.toLowerCase()];
-          if (cat) matchedCategories.add(cat);
-        });
-        // Don't tick categories — just don't filter them out (let all show)
-        // Instead, keep no category checked so all products are visible
-      }
     } else {
       // Clear profile-based filters
       if (priceInputs.length === 2) {
@@ -352,6 +338,7 @@ export function initProductCatalog() {
             localStorage.setItem("velura_suggestions_enabled", String(isSuggestionsEnabled));
             applyProfileFilters(isSuggestionsEnabled);
             updateFitHelperUI();
+            renderStyleProfileToggle();
           });
         }
       }
@@ -618,6 +605,7 @@ export function initProductCatalog() {
       const categoryParam = urlParams.get("category");
       const qParam = urlParams.get("q");
       const specialParam = urlParams.get("special");
+      const saleParam = urlParams.get("sale");
       const sortParam = urlParams.get("sort");
 
       if (categoryParam) {
@@ -634,8 +622,11 @@ export function initProductCatalog() {
         }
       }
 
-      if (specialParam) {
-        const specialVals = specialParam.split(",");
+      if (specialParam || saleParam === "true") {
+        const specialVals = specialParam ? specialParam.split(",") : [];
+        if (saleParam === "true" && !specialVals.includes("on_sale")) {
+          specialVals.push("on_sale");
+        }
         const specialCheckboxes = document.querySelectorAll('input[name="special"]');
         specialCheckboxes.forEach(cb => {
           if (specialVals.includes(cb.value)) {

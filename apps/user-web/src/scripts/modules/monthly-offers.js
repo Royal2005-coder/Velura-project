@@ -4,7 +4,7 @@ const OFFER_IDS_WITH_MODAL = new Set(["A1", "A4", "A5", "A6"]);
 const BIRTHDAY_VOUCHER_CODE = "BDAY15";
 const PRODUCT_LIST_URL = "/src/pages/products/list.html";
 const OFFERS_URL = "/src/pages/offers.html";
-const MY_OFFERS_URL = "/src/pages/account/offers.html";
+const MY_OFFERS_URL = "/src/pages/account/profile.html?tab=offers";
 const PENDING_BIRTHDAY_KEY = "velura_pending_birthday";
 
 export function initMonthlyOffers() {

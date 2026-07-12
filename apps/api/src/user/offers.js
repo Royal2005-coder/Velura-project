@@ -61,7 +61,7 @@ function normalizeVoucher(voucher, now, usedVoucherIds) {
   return {
     id: voucher.voucher_id,
     type: voucher.discount_type || "voucher",
-    title: voucher.name || voucher.code || "Ưu đãi Velura",
+    title: formatVoucherTitle(voucher),
     code: voucher.code || null,
     description: describeDiscount(voucher),
     status,
@@ -77,6 +77,19 @@ function normalizeVoucher(voucher, now, usedVoucherIds) {
       ? { label: "Dùng ngay", href: "/src/pages/cart.html" }
       : { label: "Xem chi tiết", href: "/src/pages/offers.html" }
   };
+}
+
+function formatVoucherTitle(voucher) {
+  const titlesByCode = {
+    SALE50K: "Giảm 50K cho đơn từ 500K",
+    SUMMER25: "Giảm 25% mùa hè",
+    VIP200K: "Ưu đãi VIP giảm 200K",
+    FREESHIP: "Miễn phí vận chuyển",
+    WELCOME10: "Giảm 10% cho khách mới",
+    WELCOME100: "Giảm 10% cho khách mới"
+  };
+  const code = String(voucher.code || "").trim().toUpperCase();
+  return titlesByCode[code] || voucher.name || voucher.code || "Ưu đãi Velura";
 }
 
 function describeDiscount(voucher) {
