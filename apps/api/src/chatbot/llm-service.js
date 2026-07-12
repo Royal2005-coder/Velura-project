@@ -508,6 +508,7 @@ async function callMistralChat(messages, repository, contextProducts = [], style
     let assistantMessage = choice?.message;
     let finalText = assistantMessage?.content || "";
     let allProductIds = [];
+    let allProductsObj = [];
     let allBlogIds = [];
     let usedTools = [];
     let createdTicket = null;
@@ -534,6 +535,7 @@ async function callMistralChat(messages, repository, contextProducts = [], style
         const toolResult = await executeToolCall(name, args, repository, userId);
         if (toolResult.products) {
           allProductIds.push(...toolResult.products.map(p => p.product_id));
+          allProductsObj.push(...toolResult.products);
         }
         if (toolResult.blogs) {
           allBlogIds.push(...toolResult.blogs.map(b => b.blog_id));
@@ -574,10 +576,11 @@ async function callMistralChat(messages, repository, contextProducts = [], style
       finalText = choice?.message?.content || "";
     }
 
-    console.log("[LLM] Final reply length:", finalText.length, "Products:", allProductIds.length, "Blogs:", allBlogIds.length);
+    const finalProductIds = inferProductIdsFromAnswer(finalText, contextProducts.concat(allProductsObj));
+    console.log("[LLM] Final reply length:", finalText.length, "Products:", finalProductIds.length, "Blogs:", allBlogIds.length);
     return {
       text: finalText.trim().slice(0, 4000),
-      productIds: [...new Set(allProductIds)].slice(0, 6),
+      productIds: finalProductIds.slice(0, 6),
       blogIds: [...new Set(allBlogIds)].slice(0, 6),
       used: true,
       intent: detectIntent(usedTools, messages),

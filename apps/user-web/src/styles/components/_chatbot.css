@@ -1459,3 +1459,16 @@ body .chatbot-widget {
 .guest-warning-modal-btn--primary:hover {
   background: #5c391d;
 }
+
+.chat-text-link {
+  color: var(--brown, #734724);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.chat-text-link:hover {
+  color: #5c391d;
+  opacity: 0.9;
+}

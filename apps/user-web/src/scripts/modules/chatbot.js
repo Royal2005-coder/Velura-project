@@ -25,10 +25,13 @@ export function initChatbot() {
   const containers = Array.from(document.querySelectorAll(".chatbot-widget, .chatbot-page"));
   if (!containers.length) return;
 
+  // Clear session ID on startup to ensure a fresh new session when navigating to/re-entering the chatbot
+  localStorage.removeItem(SESSION_ID_KEY);
+
   const state = {
     guestId: getOrCreateGuestId(),
     mode: localStorage.getItem("velura_token") ? "user" : "guest",
-    sessionId: localStorage.getItem(SESSION_ID_KEY) || "",
+    sessionId: "",
     sessions: [],
     messages: [localGreeting()],
     productsById: new Map(),
@@ -318,8 +321,8 @@ function bindSidebar(state) {
 async function loadSessions(state) {
   const data = await apiRequest(`/api/v1/chat/sessions?guestId=${encodeURIComponent(state.guestId)}&limit=50`);
   state.sessions = data.rows || [];
-  if (!state.sessionId || !state.sessions.some((session) => session.session_id === state.sessionId)) {
-    state.sessionId = state.sessions[0]?.session_id || "";
+  if (state.sessionId && !state.sessions.some((session) => session.session_id === state.sessionId)) {
+    state.sessionId = "";
   }
   if (state.sessionId) {
     localStorage.setItem(SESSION_ID_KEY, state.sessionId);
@@ -979,6 +982,7 @@ function formatBotText(text) {
   html = processedLines.join("\n");
   html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/__(.*?)__/g, "<strong>$1</strong>");
+  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="chat-text-link" target="_blank" rel="noopener">$1</a>');
   html = html.replace(/\n/g, "<br>");
   return html;
 }
