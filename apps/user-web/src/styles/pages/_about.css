@@ -334,6 +334,8 @@
   gap: 24px;
   max-width: 1120px;
   margin: 0 auto;
+  justify-items: center;
+  justify-content: center;
 }
 
 .team-card {
@@ -382,6 +384,7 @@
 
 .team-card__info {
   padding: 20px;
+  text-align: center;
 }
 
 .team-card__name {
