@@ -1,4 +1,4 @@
-﻿.otp-overlay {
+.otp-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
@@ -83,13 +83,4 @@
 .otp-resend {
   font-size: 0.875rem;
   color: var(--text-secondary);
-}
-
-.otp-resend button {
-  border: none;
-  background: none;
-  color: var(--terracotta);
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: underline;
 }

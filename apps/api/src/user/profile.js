@@ -1,6 +1,6 @@
 import { HttpError, readJson, sendJson } from "../http.js";
 import { updateRows } from "../supabase.js";
-import { requireUserAuth } from "./auth.js";
+import { requireUserAuth, validatePhone } from "./auth.js";
 
 export async function handleProfileRoute(req, res, subRoute, corsHeaders, context) {
   const profile = requireUserAuth(context);
@@ -56,6 +56,13 @@ export async function handleProfileRoute(req, res, subRoute, corsHeaders, contex
 
       if (!Array.isArray(addresses)) {
         throw new HttpError(400, "BAD_REQUEST", "Addresses phải là một mảng JSON");
+      }
+
+      for (const addr of addresses) {
+        const phone = addr.phone || addr.recipient_phone;
+        if (!phone || !validatePhone(phone)) {
+          throw new HttpError(400, "BAD_REQUEST", "Số điện thoại trong địa chỉ giao hàng không hợp lệ (10 số, bắt đầu bằng 0)");
+        }
       }
 
       await updateRows("users", { user_id: `eq.${profile.user_id}` }, {

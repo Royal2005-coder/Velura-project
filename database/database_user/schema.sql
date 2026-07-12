@@ -103,6 +103,7 @@ CREATE TABLE users (
   locked_until      TIMESTAMP,
   -- Äá»‹a chá»‰ lÆ°u dáº¡ng JSON array
   saved_addresses   JSONB        NOT NULL DEFAULT '[]',
+  social_accounts   JSONB        NOT NULL DEFAULT '{}',
   -- Wishlist lÆ°u trá»±c tiáº¿p trÃªn users, khÃ´ng táº¡o báº£ng wishlist riÃªng
   wishlist          JSONB        NOT NULL DEFAULT '[]',
   -- ThÃ nh viÃªn

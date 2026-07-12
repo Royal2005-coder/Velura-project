@@ -103,6 +103,7 @@
   <script type="module">
     import { FALLBACK_BLOG_POSTS, FALLBACK_BLOG_CATEGORIES, getFallbackBlogPost } from '../../scripts/modules/blog-posts.js';
     import { addToCart, updateBadge, showToast } from '../../scripts/modules/cart.js';
+    import { apiRequest } from '../../scripts/modules/api.js';
 
     // Product data (mock - in real app, fetch from API)
     const PRODUCTS = {
@@ -524,39 +525,79 @@
     function bindBlogCartButtons() {
       const buttons = document.querySelectorAll('.js-add-cart-blog');
       buttons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
           e.preventDefault();
           const sku = btn.getAttribute('data-sku');
-          const product = PRODUCTS[sku];
+          const productLocal = PRODUCTS[sku];
           const productId = PRODUCT_IDS[sku];
-          if (!product || !productId) return;
+          if (!productId) {
+            showToast('Sản phẩm này hiện không khả dụng!');
+            return;
+          }
 
-          addToCart({
-            variant_id: `var-${productId}`,
-            product_id: productId,
-            product_name: product.name,
-            product_image: product.image,
-            quantity: 1,
-            unit_price: product.price,
-            color: product.color || 'Mặc định',
-            size: 'M'
-          });
-          updateBadge();
+          const originalText = btn.innerHTML;
+          btn.disabled = true;
+          try {
+            // Fetch live product info
+            const product = await apiRequest(`/api/user/products/${productId}`);
+            const variants = product.variants || [];
 
-          if (btn.classList.contains('card__btn-cart')) {
-            showToast(`Đã thêm ${product.name} vào giỏ hàng!`);
-            btn.classList.add('is-added');
-            setTimeout(() => {
-              btn.classList.remove('is-added');
-            }, 1500);
-          } else {
-            const original = btn.innerHTML;
-            btn.innerHTML = 'Đã thêm ✓';
-            btn.classList.add('is-added');
-            setTimeout(() => {
-              btn.innerHTML = original;
-              btn.classList.remove('is-added');
-            }, 1500);
+            // If it has color and size options (more than 1 variant, or color/size values exist), redirect to details page
+            const hasMultipleVariants = variants.length > 1;
+
+            if (hasMultipleVariants) {
+              showToast("Vui lòng chọn màu sắc và kích cỡ sản phẩm! Đang chuyển hướng...");
+              setTimeout(() => {
+                window.location.href = `/src/pages/products/detail.html?id=${productId}`;
+              }, 1200);
+              return;
+            }
+
+            // Single/no variant case
+            const variant = variants[0];
+            if (!variant) {
+              showToast("Sản phẩm không có biến thể sẵn có.");
+              return;
+            }
+
+            const availableStock = variant.stock_quantity - (variant.reserved_quantity || 0);
+            if (availableStock <= 0) {
+              showToast("Sản phẩm hiện đã hết hàng!");
+              return;
+            }
+
+            await addToCart({
+              variant_id: variant.variant_id,
+              product_id: product.product_id,
+              product_name: product.name,
+              product_image: product.images?.[0] || productLocal?.image || '/src/assets/images/placeholder.jpg',
+              quantity: 1,
+              unit_price: product.sale_price || product.base_price,
+              color: variant.color || 'Mặc định',
+              size: variant.size || 'M'
+            });
+            updateBadge();
+
+            if (btn.classList.contains('card__btn-cart')) {
+              showToast(`Đã thêm ${product.name} vào giỏ hàng!`);
+              btn.classList.add('is-added');
+              setTimeout(() => {
+                btn.classList.remove('is-added');
+              }, 1500);
+            } else {
+              btn.innerHTML = 'Đã thêm ✓';
+              btn.classList.add('is-added');
+              setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('is-added');
+              }, 1500);
+            }
+          } catch (err) {
+            console.error(err);
+            // Fallback: redirect to detail page
+            window.location.href = `/src/pages/products/detail.html?id=${productId}`;
+          } finally {
+            btn.disabled = false;
           }
         });
       });
@@ -588,36 +629,96 @@
     function bindBlogBuyNow() {
       const buttons = document.querySelectorAll('.js-buy-now-blog');
       buttons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', async (e) => {
           e.preventDefault();
           const sku = btn.getAttribute('data-sku');
-          const product = PRODUCTS[sku];
+          const productLocal = PRODUCTS[sku];
           const productId = PRODUCT_IDS[sku];
-          if (!product || !productId) {
+          if (!productId) {
             showToast('Sản phẩm này hiện không khả dụng!');
             return;
           }
 
-          addToCart({
-            variant_id: `var-${productId}`,
-            product_id: productId,
-            product_name: product.name,
-            product_image: product.image,
-            quantity: 1,
-            unit_price: product.price,
-            color: product.color || 'Mặc định',
-            size: 'M'
-          });
-          updateBadge();
-
-          const original = btn.innerHTML;
-          btn.innerHTML = 'Đang chuyển…';
+          const originalText = btn.innerHTML;
           btn.disabled = true;
-          window.location.href = '/src/pages/checkout/shipping-payment.html';
-          setTimeout(() => {
-            btn.innerHTML = original;
+          try {
+            // Fetch live product info
+            const product = await apiRequest(`/api/user/products/${productId}`);
+            const variants = product.variants || [];
+
+            // If it has color and size options (more than 1 variant, or color/size values exist), redirect to details page
+            const hasMultipleVariants = variants.length > 1;
+
+            if (hasMultipleVariants) {
+              window.location.href = `/src/pages/products/detail.html?id=${productId}`;
+              return;
+            }
+
+            // Single/no variant case
+            const variant = variants[0];
+            if (!variant) {
+              showToast("Sản phẩm không có biến thể sẵn có.");
+              return;
+            }
+
+            const availableStock = variant.stock_quantity - (variant.reserved_quantity || 0);
+            if (availableStock <= 0) {
+              showToast("Sản phẩm hiện đã hết hàng!");
+              return;
+            }
+
+            const checkoutItem = {
+              variant_id: variant.variant_id,
+              product_id: product.product_id,
+              product_name: product.name,
+              product_image: product.images?.[0] || productLocal?.image || '/src/assets/images/placeholder.jpg',
+              quantity: 1,
+              unit_price: product.sale_price || product.base_price,
+              color: variant.color || 'Mặc định',
+              size: variant.size || 'M'
+            };
+
+            await addToCart(checkoutItem);
+            updateBadge();
+
+            sessionStorage.setItem("checkout_items", JSON.stringify([checkoutItem]));
+
+            // Clear any old checkout session data
+            localStorage.removeItem("checkout_discount");
+            localStorage.removeItem("checkout_voucher_id");
+            localStorage.removeItem("checkout_voucher_code");
+
+            if (localStorage.getItem("velura_token")) {
+              try {
+                const user = await apiRequest("/api/user/profile");
+                const savedAddresses = user.saved_addresses || user.addresses || [];
+                if (savedAddresses.length > 0) {
+                  const addr = savedAddresses.find(a => a.is_default) || savedAddresses[0];
+                  const shippingInfo = {
+                    name: addr.name || addr.recipient_name || user.full_name || "",
+                    phone: addr.phone || addr.recipient_phone || user.phone || "",
+                    email: user.email || "",
+                    address: addr.detail || addr.address || addr.address_line || "",
+                    note: ""
+                  };
+                  localStorage.setItem("checkout_shipping", JSON.stringify(shippingInfo));
+                  window.location.href = "/src/pages/checkout/shipping-payment.html";
+                } else {
+                  window.location.href = "/src/pages/checkout/payment-user.html";
+                }
+              } catch {
+                window.location.href = "/src/pages/checkout/payment-user.html";
+              }
+            } else {
+              window.location.href = "/src/pages/checkout/payment-guest.html";
+            }
+          } catch (err) {
+            console.error(err);
+            // Fallback: redirect to detail page
+            window.location.href = `/src/pages/products/detail.html?id=${productId}`;
+          } finally {
             btn.disabled = false;
-          }, 1200);
+          }
         });
       });
     }

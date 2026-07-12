@@ -288,46 +288,22 @@ body.page-my-orders {
 }
 
 .page-my-orders .order-card__actions .btn--success {
-  background-color: #E8F5E9;
-  color: #2E7D32;
+  background-color: #E6F4EA;
+  color: #137333;
 }
 
 .page-my-orders .order-card__actions .btn--success:hover {
-  background-color: #C8E6C9;
-  color: #2E7D32;
-}
-
-.page-my-orders .order-card__actions .btn--outline {
-  background-color: #FAF6F2;
-  border: 1px solid #D6C3B0;
-  color: #734724;
-}
-
-.page-my-orders .order-card__actions .btn--outline:hover {
-  background-color: #EFE7DD;
-  color: #734724;
+  background-color: #D2E3FC;
+  color: #137333;
 }
 
 .page-my-orders .order-card__actions .js-btn-return {
   background-color: #C89E9C;
   color: #fff;
-  border: none;
 }
 
 .page-my-orders .order-card__actions .js-btn-return:hover {
   background-color: #B88E8C;
-  color: #fff;
-}
-
-.page-my-orders .order-card__actions .btn--primary {
-  background-color: var(--terracotta);
-  color: #fff;
-  border: none;
-  text-decoration: none;
-}
-
-.page-my-orders .order-card__actions .btn--primary:hover {
-  background-color: var(--terracotta-h);
   color: #fff;
 }
 
@@ -486,41 +462,10 @@ body.page-my-orders {
   gap: 12px;
 }
 
-.review-popup__actions .btn {
-  height: 44px;
-  padding: 0 24px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-}
-
-.review-popup__actions .btn--outline {
-  background-color: #fff;
-  border: 1px solid #D6C3B0;
-  color: #734724;
-}
-
-.review-popup__actions .btn--outline:hover {
-  background-color: #FAF6F2;
-  border-color: #734724;
-}
-
-.review-popup__actions .btn--primary {
-  background-color: #734724;
-  color: #fff;
-  border: 1px solid #734724;
-  min-width: 130px;
-}
-
-.review-popup__actions .btn--primary:hover {
-  background-color: #5D371B;
-  border-color: #5D371B;
+.review-popup__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 .d-none {

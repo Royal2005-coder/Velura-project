@@ -357,4 +357,22 @@ import { initOffersCenter } from "./modules/offers-center.js";
     handleScroll();
   }
 
+  /* Strict phone input validation - numbers only */
+  const restrictPhoneInput = (input) => {
+    input.addEventListener("input", (e) => {
+      e.target.value = e.target.value.replace(/[^0-9]/g, "");
+    });
+  };
+
+  document.querySelectorAll('input[type="tel"], input[name*="phone"], input[id*="phone"]').forEach(restrictPhoneInput);
+
+  // Delegate for dynamically added inputs
+  document.addEventListener("focusin", (e) => {
+    if (e.target && e.target.tagName === "INPUT" && (e.target.type === "tel" || e.target.name?.includes("phone") || e.target.id?.includes("phone"))) {
+      if (!e.target.dataset.phoneRestricted) {
+        e.target.dataset.phoneRestricted = "true";
+        restrictPhoneInput(e.target);
+      }
+    }
+  });
 })();
