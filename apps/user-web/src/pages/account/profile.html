@@ -79,7 +79,7 @@
                 </svg>
                 Wishlist
               </a>
-              <a href="/src/pages/account/offers.html" class="account-sidebar__link">
+              <a href="#" class="account-sidebar__link" data-tab="offers">
                 <svg class="account-sidebar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M20 12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8" />
                   <path d="M2 7h20v5H2z" />
@@ -150,7 +150,7 @@
                         <circle cx="12" cy="7" r="4" />
                       </svg>
                       <input class="profile-form__input" type="text" id="profile-name" name="fullname"
-                        value="Nguyễn Thanh Hà" placeholder="Nhập họ và tên" required />
+                        value="" placeholder="Nhập họ và tên" required />
                     </div>
                   </div>
 
@@ -163,7 +163,7 @@
                         <path
                           d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
                       </svg>
-                      <input class="profile-form__input" type="tel" id="profile-phone" name="phone" value="000 111 2232"
+                      <input class="profile-form__input" type="tel" id="profile-phone" name="phone" value=""
                         placeholder="Nhập số điện thoại" required />
                     </div>
                   </div>
@@ -180,7 +180,7 @@
                         <polyline points="22,6 12,13 2,6" />
                       </svg>
                       <input class="profile-form__input" type="email" id="profile-email" name="email"
-                        value="hannpn@gmail.com" readonly />
+                        value="" readonly />
                     </div>
                   </div>
 
@@ -195,8 +195,8 @@
                         <line x1="8" y1="2" x2="8" y2="6" />
                         <line x1="3" y1="10" x2="21" y2="10" />
                       </svg>
-                      <input class="profile-form__input" type="text" id="profile-dob" name="dob" value="15/04/2000"
-                        placeholder="dd/mm/yyyy" />
+                      <input class="profile-form__input" type="text" id="profile-dob" name="dob" value=""
+                        placeholder="dd/mm/yyyy" inputmode="numeric" autocomplete="bday" maxlength="10" />
                     </div>
                   </div>
                 </div>
@@ -813,6 +813,26 @@
                 <div class="profile-form__actions" style="margin-top: 40px; justify-content: flex-end;">
                   <button class="btn btn--primary js-btn-save-settings" type="button">Lưu cài đặt</button>
                 </div>
+              </div>
+            </div>
+
+            <!-- Tab 7: Offers -->
+            <div class="account-tab-content" id="tab-offers">
+              <div class="account-main__header">
+                <h2 class="account-main__title">Ưu đãi của tôi</h2>
+                <p class="account-main__subtitle">Quyền lợi thành viên của bạn tại Velura</p>
+              </div>
+              <div class="offers-center" data-offers-center style="padding: 0; min-height: auto; background: transparent;">
+                <div class="offers-center__filters" role="tablist" aria-label="Lọc ưu đãi" style="margin-top: 0; margin-bottom: 24px;">
+                  <button type="button" class="is-active" data-offer-filter="ALL">Tất cả</button>
+                  <button type="button" data-offer-filter="AVAILABLE">Có thể dùng</button>
+                  <button type="button" data-offer-filter="LOCKED">Sắp mở khóa</button>
+                  <button type="button" data-offer-filter="USED">Đã sử dụng</button>
+                  <button type="button" data-offer-filter="EXPIRED">Hết hạn</button>
+                </div>
+                <section class="offers-center__list js-offers-list" aria-live="polite">
+                  <div class="offers-center__loading">Đang tải quyền lợi của bạn…</div>
+                </section>
               </div>
             </div>
           </section>

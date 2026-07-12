@@ -267,3 +267,27 @@ test("customer wishlist uses users.wishlist JSON and not a dedicated wishlist ta
   assert.match(schema, /wishlist\s+JSONB\s+NOT NULL DEFAULT '\[\]'/i);
   assert.doesNotMatch(schema, /CREATE TABLE\s+Wishlists/i);
 });
+
+test("profile birthday is database-backed and shared with banner A1", async () => {
+  const [profilePage, profileScript, offerScript, authScript, profileApi] = await Promise.all([
+    source("apps/user-web/src/pages/account/profile.html"),
+    source("apps/user-web/src/scripts/modules/account-profile.js"),
+    source("apps/user-web/src/scripts/modules/monthly-offers.js"),
+    source("apps/user-web/src/scripts/modules/auth-client.js"),
+    source("apps/api/src/user/profile.js")
+  ]);
+
+  assert.doesNotMatch(profilePage, /value=["']15\/04\/2000["']/);
+  assert.match(profilePage, /name=["']dob["'][^>]*value=["']["']/);
+  assert.match(profileScript, /dobInput\.value\s*=\s*formatProfileDate\(profile\.date_of_birth\)/);
+  assert.match(profileScript, /cacheLiveProfile\(updated\)/);
+  assert.match(profileScript, /velura:profile-updated/);
+  assert.match(offerScript, /apiRequest\(["']\/api\/user\/profile["']/);
+  assert.match(offerScript, /sessionStorage\.setItem\(PENDING_BIRTHDAY_KEY/);
+  assert.doesNotMatch(offerScript, /localStorage\.setItem\(PENDING_BIRTHDAY_KEY/);
+  assert.match(authScript, /getSafePostAuthRedirect\(\)/);
+  assert.match(profileApi, /validateDateOfBirth\(date_of_birth\)/);
+  assert.match(profileApi, /user_id:\s*`eq\.\$\{profile\.user_id\}`/);
+  const rbac = await source("apps/api/src/rbac.js");
+  assert.match(rbac, /"date_of_birth",\s*"gender"/);
+});

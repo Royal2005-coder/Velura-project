@@ -40,7 +40,21 @@ function completeAuthentication(
   migrateStyleQuizOnLogin().catch(console.error);
   if (mergeCart) mergeCartOnLogin();
   showToast(message);
-  setTimeout(() => { window.location.href = "/index.html"; }, redirectDelay);
+  setTimeout(() => { window.location.href = getSafePostAuthRedirect(); }, redirectDelay);
+}
+
+function getSafePostAuthRedirect() {
+  const requested = new URLSearchParams(window.location.search).get("redirect");
+  if (!requested) return "/index.html";
+  try {
+    const destination = new URL(requested, window.location.origin);
+    if (destination.origin !== window.location.origin || !destination.pathname.startsWith("/")) {
+      return "/index.html";
+    }
+    return `${destination.pathname}${destination.search}${destination.hash}`;
+  } catch {
+    return "/index.html";
+  }
 }
 
 function bindPasswordToggle(inputId) {
@@ -366,7 +380,7 @@ function bindSignin() {
           mergeCartOnLogin();
           syncFavoriteOutfitsOnLogin().catch(console.error);
           showToast("Đăng nhập thành công!");
-          setTimeout(() => { window.location.href = "/index.html"; }, 1200);
+          setTimeout(() => { window.location.href = getSafePostAuthRedirect(); }, 1200);
         }, () => apiRequest("/api/user/auth/otp-send", { method: "POST", body: JSON.stringify({ identity }) }));
         return;
       }
@@ -376,7 +390,7 @@ function bindSignin() {
       mergeCartOnLogin();
       syncFavoriteOutfitsOnLogin().catch(console.error);
       showToast("Đăng nhập thành công!");
-      setTimeout(() => { window.location.href = "/index.html"; }, 1200);
+      setTimeout(() => { window.location.href = getSafePostAuthRedirect(); }, 1200);
     } catch (err) {
       setLoading(btn, false);
       if (err.status === 403) {

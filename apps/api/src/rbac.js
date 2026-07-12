@@ -31,7 +31,7 @@ export async function buildAuthContext(req) {
   if (!token) return buildGuestContext();
 
   const accountSelect = [
-    "user_id", "auth_user_id", "email", "phone", "full_name", "avatar",
+    "user_id", "auth_user_id", "email", "phone", "full_name", "date_of_birth", "gender", "avatar",
     "role", "admin_role", "is_active", "is_verified", "created_at",
     "last_login_at", "version", "updated_at", "saved_addresses"
   ].join(",");
