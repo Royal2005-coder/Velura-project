@@ -351,7 +351,7 @@
 .about-stats {
   padding: 88px 0;
   margin-bottom: 88px;
-  background: #f0eee9;
+  background: #f4e2da;
 }
 
 .about-stats__header {
@@ -1089,7 +1089,7 @@
 .page-about .stat-card {
   border: 1px solid #e8dfda;
   border-radius: 0;
-  background: #faf7f5;
+  background: #ffffff;
   box-shadow: none;
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.6s ease, box-shadow 0.6s ease;
 }
@@ -1130,4 +1130,3 @@
   opacity: 1;
   transform: none;
 }
-

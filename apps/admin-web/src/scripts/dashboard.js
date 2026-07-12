@@ -11,6 +11,7 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
   var toast = document.querySelector("#dashboard-toast");
   var sidebar = document.querySelector("#admin-sidebar");
   var backdrop = document.querySelector("[data-dashboard-sidebar-close]");
+  var currentDashboardData = null;
 
   function icon(name) {
     return '<svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#' + name + '"></use></svg>';
@@ -393,6 +394,7 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
         throw new Error(errMsg);
       }
       var data = await response.json();
+      currentDashboardData = data;
       updateDashboardUI(data);
     } catch (err) {
       loadError = true;
@@ -418,6 +420,102 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
       content = '<span class="admin-badge admin-badge--warning">Cần xem xét</span><h3 class="admin-drawer__section">' + item.title + '</h3><p>' + item.description + '</p><div class="dashboard-drawer-metric"><div><small>Thay đổi</small><strong>' + item.first + '</strong></div><div><small>Giá trị liên quan</small><strong>' + item.second + '</strong></div></div><p class="admin-note">Dữ liệu là tín hiệu gợi ý. Admin nên mở phân hệ liên quan để kiểm tra chi tiết trước khi hành động.</p><a class="admin-btn admin-btn--secondary" href="' + item.action + '">' + item.actionLabel + '</a>';
     }
     overlay.innerHTML = '<div class="admin-drawer-backdrop" data-dashboard-close></div><aside class="admin-drawer admin-drawer--wide dashboard-drawer" aria-modal="true" role="dialog"><header class="admin-drawer__header"><div><small>TỔNG QUAN DASHBOARD</small><h2>' + title + '</h2></div><button class="admin-icon-button" type="button" data-dashboard-close aria-label="Đóng">×</button></header><div class="admin-drawer__body">' + content + '</div></aside>';
+  }
+
+  function toCsvRow(array) {
+    return array.map(function (val) {
+      var s = String(val === null || val === undefined ? "" : val);
+      if (s.indexOf(",") !== -1 || s.indexOf('"') !== -1 || s.indexOf("\n") !== -1) {
+        s = '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }).join(",");
+  }
+
+  function exportToExcel(data, typeIndex, period) {
+    var rows = [];
+    var dateStr = new Date().toLocaleDateString("vi-VN") + " " + new Date().toLocaleTimeString("vi-VN");
+
+    if (typeIndex === 0 || typeIndex === 2) {
+      rows.push(toCsvRow(["BÁO CÁO TỔNG QUAN ĐIỀU HÀNH VELURA"]));
+      rows.push(toCsvRow(["Khoảng thời gian", period]));
+      rows.push(toCsvRow(["Ngày xuất báo cáo", dateStr]));
+      rows.push("");
+      rows.push(toCsvRow(["I. CHỈ SỐ VẬN HÀNH"]));
+      rows.push(toCsvRow(["Chỉ số", "Số lượng", "Trạng thái"]));
+      rows.push(toCsvRow(["Đơn hàng cần xử lý", data.operations.pendingOrders, "Cần xử lý"]));
+      rows.push(toCsvRow(["Đơn hàng thanh toán lỗi", data.operations.paymentErrors, data.operations.paymentErrors > 0 ? "Khẩn cấp" : "Bình thường"]));
+      rows.push(toCsvRow(["Phiếu đổi/trả cần xử lý", data.operations.openReturns, data.operations.openReturns > 0 ? "Khẩn cấp" : "Bình thường"]));
+      rows.push(toCsvRow(["Phiếu hỗ trợ khách hàng", data.operations.openSupportTickets, data.operations.openSupportTickets > 0 ? "Cần chú ý" : "Bình thường"]));
+      rows.push(toCsvRow(["Sản phẩm sắp hết hàng", data.operations.lowStockProducts, data.operations.lowStockProducts > 0 ? "Khẩn cấp" : "Bình thường"]));
+      rows.push(toCsvRow(["Đánh giá cần duyệt", data.business.pendingReviews, "Bình thường"]));
+      rows.push(toCsvRow(["Đánh giá tiêu cực", data.operations.urgentReviews, data.operations.urgentReviews > 0 ? "Khẩn cấp" : "Bình thường"]));
+      rows.push("");
+      rows.push(toCsvRow(["II. DANH SÁCH CÔNG VIỆC CẦN XỬ LÝ HÔM NAY"]));
+      rows.push(toCsvRow(["STT", "Công việc", "Hạn xử lý", "Mức độ ưu tiên"]));
+      rows.push(toCsvRow(["1", "Duyệt " + data.operations.openReturns + " phiếu đổi/trả cần xử lý", "Trong tuần này", "Cao"]));
+      rows.push(toCsvRow(["2", "Kiểm tra " + data.operations.paymentErrors + " đơn thanh toán lỗi", "Cảnh báo hệ thống", "Cao"]));
+      rows.push(toCsvRow(["3", "Phản hồi " + data.operations.urgentReviews + " đánh giá tiêu cực", "Trong hôm nay", "Vừa"]));
+      rows.push(toCsvRow(["4", "Bổ sung tồn kho cho " + data.operations.lowStockProducts + " sản phẩm", "Tồn kho thấp", "Vừa"]));
+    }
+
+    if (typeIndex === 2) {
+      rows.push("");
+      rows.push("");
+      rows.push("");
+    }
+
+    if (typeIndex === 1 || typeIndex === 2) {
+      rows.push(toCsvRow(["BÁO CÁO HIỆU QUẢ KINH DOANH VELURA"]));
+      rows.push(toCsvRow(["Khoảng thời gian", period]));
+      rows.push(toCsvRow(["Ngày xuất báo cáo", dateStr]));
+      rows.push("");
+      rows.push(toCsvRow(["I. CHỈ SỐ KINH DOANH CHÍNH"]));
+      rows.push(toCsvRow(["Chỉ số", "Giá trị"]));
+      rows.push(toCsvRow(["Doanh thu", data.business.revenue + " VND"]));
+      rows.push(toCsvRow(["Số lượng đơn hàng", data.business.orderCount]));
+      rows.push(toCsvRow(["Giá trị đơn trung bình (AOV)", data.business.averageOrderValue + " VND"]));
+      rows.push(toCsvRow(["Tỷ lệ hoàn thành đơn", (data.business.completionRate ?? 100) + "%"]));
+      rows.push(toCsvRow(["Ngân sách khuyến mãi đã dùng", data.business.promotionBudgetUsed + " VND"]));
+      rows.push("");
+
+      rows.push(toCsvRow(["II. ĐÓNG GÓP DOANH THU THEO DANH MỤC"]));
+      rows.push(toCsvRow(["Danh mục", "Doanh thu (VND)", "Tỷ lệ đóng góp (%)"]));
+      if (data.business.categoryContributions) {
+        data.business.categoryContributions.forEach(function (cat) {
+          rows.push(toCsvRow([cat.name, cat.revenue, cat.pct + "%"]));
+        });
+      }
+      rows.push("");
+
+      rows.push(toCsvRow(["III. DANH SÁCH SẢN PHẨM BÁN CHẠY NHẤT"]));
+      rows.push(toCsvRow(["STT", "Tên sản phẩm", "SKU", "Số lượng bán", "Doanh thu (VND)", "Trạng thái tồn kho"]));
+      if (data.business.bestSellers) {
+        data.business.bestSellers.forEach(function (prod, index) {
+          rows.push(toCsvRow([index + 1, prod.name, prod.sku, prod.qty, prod.revenue, prod.stockStatus]));
+        });
+      }
+      rows.push("");
+
+      rows.push(toCsvRow(["IV. HIỆU QUẢ CHƯƠNG TRÌNH KHUYẾN MÃI"]));
+      rows.push(toCsvRow(["Chỉ số", "Giá trị"]));
+      rows.push(toCsvRow(["Đơn hàng có áp dụng khuyến mãi", data.business.promoOrdersCount]));
+      rows.push(toCsvRow(["Tổng ngân sách đã giảm", data.business.totalDiscount + " VND"]));
+      rows.push(toCsvRow(["Chiến dịch hiệu quả nhất", data.business.bestCampaign]));
+      rows.push(toCsvRow(["Voucher dùng nhiều nhất", data.business.bestVoucher]));
+    }
+
+    var csvContent = "\ufeff" + rows.join("\r\n");
+    var blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    var link = document.createElement("a");
+    var url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    var filename = "Velura_Bao_Cao_" + (typeIndex === 0 ? "Dieu_Hanh" : typeIndex === 1 ? "Kinh_Doanh" : "Tong_Hop") + "_" + period.replace(/\s+/g, "_") + ".csv";
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   function openReport() {
@@ -466,8 +564,26 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
     }
 
     if (event.target.closest("[data-dashboard-export]")) {
+      if (!currentDashboardData) {
+        showToast("Không tìm thấy dữ liệu báo cáo để xuất.");
+        return;
+      }
+      
+      var periodSelect = document.querySelector("[data-report-period]");
+      var period = periodSelect ? periodSelect.value : "7 ngày qua";
+      
+      var typeRadios = document.getElementsByName("report-type");
+      var typeIndex = 0;
+      for (var i = 0; i < typeRadios.length; i++) {
+        if (typeRadios[i].checked) {
+          typeIndex = i;
+          break;
+        }
+      }
+      
+      exportToExcel(currentDashboardData, typeIndex, period);
       closeOverlay();
-      showToast("Đã chuẩn bị báo cáo Dashboard.");
+      showToast("Đã xuất báo cáo thành công.");
       return;
     }
 

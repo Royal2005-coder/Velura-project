@@ -155,7 +155,8 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
 
     // Activate user if inactive
     const updates = {
-      is_active: true
+      is_active: true,
+      last_login_at: new Date().toISOString()
     };
     const wasInactive = !user.is_active;
     // Keep OTP for password reset flow because reset-password endpoint needs to check it.
@@ -250,13 +251,12 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
       }
     }
 
-    // Reset login failures
-    if (user.login_fail_count > 0 || user.locked_until) {
-      await updateRows("users", { user_id: `eq.${user.user_id}` }, {
-        login_fail_count: 0,
-        locked_until: null
-      });
-    }
+    // Reset login failures and update last_login_at
+    await updateRows("users", { user_id: `eq.${user.user_id}` }, {
+      login_fail_count: 0,
+      locked_until: null,
+      last_login_at: new Date().toISOString()
+    });
 
     // Check if user is active (AUTH-05 verification check)
     if (!user.is_active) {
