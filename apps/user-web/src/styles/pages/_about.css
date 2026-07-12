@@ -329,14 +329,17 @@
 }
 
 .about-team__grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 24px;
+  max-width: 1120px;
+  margin: 0 auto;
 }
 
 .team-card {
-  width: calc((100% - 48px) / 3);
+  width: 100%;
+  max-width: 350px;
+  margin: 0 auto;
   overflow: hidden;
   border: 1px solid rgba(42, 37, 34, 0.08);
   border-radius: 14px;
@@ -643,11 +646,12 @@
   }
 
   .about-team__grid {
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
 
   .team-card {
-    width: calc((100% - 20px) / 2);
+    max-width: 340px;
   }
 
   .about-stats__grid {
@@ -706,11 +710,12 @@
   }
 
   .about-team__grid {
+    grid-template-columns: 1fr;
     gap: 16px;
   }
 
   .team-card {
-    width: 100%;
+    max-width: 320px;
   }
 
   .press-logo {
