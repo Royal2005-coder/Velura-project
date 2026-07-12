@@ -98,85 +98,87 @@ Velura-project/
 
 ---
 
-## 🚀 Hướng dẫn Cài đặt & Chạy Local
+## 🚀 Hướng dẫn Cài đặt & Chạy Local (Cho Giảng viên & Hội đồng chấm)
 
-### Yêu cầu hệ thống
+Dự án này đã được cấu hình sẵn các khóa API Demo hoạt động tốt (bao gồm Supabase, Gemini AI, Mistral AI và SMTP Gmail). Dưới đây là các bước chi tiết để tái lập và khởi chạy dự án:
 
-- **Node.js** ≥ 22 ([tải tại đây](https://nodejs.org/))
-- **npm** ≥ 10 (đi kèm Node.js)
-- **Git** ([tải tại đây](https://git-scm.com/))
-- Tài khoản **Supabase** (miễn phí tại [supabase.com](https://supabase.com/))
+### 1. Yêu cầu hệ thống
+- **Node.js** phiên bản `>= 22` (Khuyến nghị sử dụng Node.js 22 LTS).
+- **npm** phiên bản `>= 10` (đi kèm sẵn khi cài đặt Node.js).
+- **Git** để clone mã nguồn.
 
-### Bước 1: Clone dự án
+### 2. Các bước cài đặt và cấu hình
 
+#### Bước 1: Clone dự án và truy cập thư mục
 ```bash
 git clone https://github.com/Royal2005-coder/Velura-project.git
 cd Velura-project
 ```
 
-### Bước 2: Cài đặt dependencies
-
+#### Bước 2: Cài đặt toàn bộ thư viện (Dependencies)
 ```bash
 npm install
 ```
 
-### Bước 3: Cấu hình biến môi trường
+#### Bước 3: Cấu hình biến môi trường (`.env`)
+Chúng tôi đã điền sẵn toàn bộ cấu hình, khóa API (Gemini, Mistral, Supabase, SMTP) chuẩn vào file `.env.example`. Bạn chỉ cần sao chép sang file `.env` bằng lệnh sau:
+
+* **Trên Windows (cmd / PowerShell):**
+  ```powershell
+  copy .env.example .env
+  ```
+* **Trên macOS / Linux:**
+  ```bash
+  cp .env.example .env
+  ```
+
+> [!NOTE]
+> File `.env` chứa các biến môi trường thực thi đã được tích hợp đầy đủ. Không cần sửa đổi gì thêm để chạy ở chế độ **development** (cổng mặc định `8787` cho API, `3001` cho User Shop và `5174` cho Admin Panel).
+
+#### Bước 4: Thiết lập và Khởi tạo Cơ sở dữ liệu (Database Setup)
+Chạy các lệnh sau theo thứ tự để đồng bộ schema cơ sở dữ liệu và dữ liệu mẫu (admin, blogs...):
 
 ```bash
-# Windows
-copy .env.example .env
-
-# Mac/Linux
-cp .env.example .env
-```
-
-Mở file `.env` và điền các giá trị:
-
-| Biến | Mô tả | Bắt buộc? |
-|------|--------|:---------:|
-| `VELURA_SUPABASE_URL` | URL dự án Supabase | ✅ |
-| `VELURA_SUPABASE_ANON_KEY` | Anon key từ Supabase Dashboard | ✅ |
-| `VELURA_SUPABASE_SERVICE_ROLE_KEY` | Service role key (bảo mật) | ✅ |
-| `SUPABASE_DB_URL` | Connection string PostgreSQL | ⚙️ Migration |
-| `GEMINI_API_KEY` | Google Gemini API key | 🤖 Chatbot AI |
-| `N8N_CHAT_WEBHOOK_URL` | n8n webhook URL | 🤖 Chatbot |
-| `SMTP_USER` / `SMTP_APP_PASSWORD` | Gmail SMTP credentials | 📧 Email |
-
-### Bước 4: Thiết lập Database (lần đầu)
-
-```bash
-# Chạy migration tạo bảng
+# 1. Chạy migrations để tự động dựng cấu trúc bảng, RLS và RPCs
 npm run db:migrate
 
-# Tạo tài khoản admin mẫu
+# 2. Tạo các tài khoản quản trị (Admin) mẫu trong hệ thống
 npm run db:seed:admins
 
-# (Tùy chọn) Seed dữ liệu blog
+# 3. Tạo dữ liệu bài viết mẫu cho blog thời trang
 npm run db:seed:blogs
 ```
 
-### Bước 5: Khởi động dự án
-
+#### Bước 5: Khởi động dự án
+Khởi động đồng thời cả 3 cổng dịch vụ (API + Admin + User) chỉ với một lệnh duy nhất:
 ```bash
 npm start
 ```
+*(hoặc sử dụng `npm run dev`)*
 
-Lệnh này sẽ khởi động **đồng thời** cả 3 service:
-
-| Service | URL | Mô tả |
-|---------|-----|-------|
-| 🔗 API Server | `http://localhost:8787` | Backend API |
-| 🔗 Admin Panel | `http://localhost:5174` | Trang quản trị |
-| 🔗 User Shop | `http://localhost:3001` | Trang khách hàng |
+Hệ thống sẽ chạy song song trên local:
+- 🔗 **API Server:** `http://localhost:8787` (Backend API)
+- 🔗 **User Shop:** `http://localhost:3001` (Giao diện mua sắm của khách hàng)
+- 🔗 **Admin Panel:** `http://localhost:5174` (Giao diện quản lý của Admin)
 
 ---
 
-## 🔑 Tài khoản Test
+## 🔑 Tài khoản Thử nghiệm (Test Accounts)
 
-| Loại | Email | Mật khẩu | Ghi chú |
-|------|-------|----------|---------|
-| Super Admin | *(tạo bằng `npm run db:seed:admins`)* | *(xem trong script)* | Quyền cao nhất |
-| Khách hàng | Tự đăng ký trên trang User | — | Đăng ký tại `/pages/auth/signup.html` |
+Sau khi chạy lệnh `npm run db:seed:admins`, cơ sở dữ liệu sẽ được điền sẵn thông tin phân quyền cho các tài khoản quản trị sau:
+
+| STT | Tài khoản quản trị | Email | Vai trò (RBAC) |
+|:---:|--------------------|-------|----------------|
+| 1 | **Phạm Thu Hương** | `admin@velura.vn` | `super_admin` (Quyền cao nhất) |
+| 2 | **Trần Minh Tuấn** | `product@velura.vn` | `admin_operator_sanpham` (Quản lý sản phẩm) |
+| 3 | **Lê Gia Linh** | `order@velura.vn` | `admin_operator_donhang` (Quản lý đơn hàng) |
+| 4 | **Ngô Thanh Sơn** | `price@velura.vn` | `admin_operator_gia_km` (Quản lý giá và khuyến mãi) |
+| 5 | **Vũ Thanh Mai** | `cskh@velura.vn` | `admin_operator_cskh_dt` (Chăm sóc khách hàng & đổi trả) |
+| 6 | **Đỗ Minh Anh** | `review@velura.vn` | `admin_operator_danhgia_review` (Kiểm duyệt đánh giá) |
+
+### Hướng dẫn Đăng nhập:
+1. **Trang Khách hàng (User Shop):** Bạn có thể tự do đăng ký tài khoản khách hàng mới trực tiếp tại trang đăng ký `/pages/auth/signup.html` hoặc đăng nhập bằng tài khoản cá nhân.
+2. **Trang Quản trị (Admin Panel):** Sử dụng các tài khoản email trên để đăng nhập qua Google OAuth/Supabase SSO liên kết hoặc đăng nhập bằng tài khoản được cấp quyền tương ứng để trải nghiệm phân quyền RBAC cực kỳ chặt chẽ trong hệ thống.
 
 ---
 

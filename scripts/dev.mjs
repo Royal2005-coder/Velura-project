@@ -31,7 +31,7 @@ for (const svc of services) {
   const child = spawn(svc.cmd, svc.args, {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
-    shell: false,
+    shell: true,
   });
 
   const prefix = `${svc.color}[${svc.name}]${reset}`;
