@@ -73,7 +73,26 @@ export function applyCors(req, res, corsOrigin) {
   const requestOrigin = req.headers.origin;
   const configured = Array.isArray(corsOrigin) ? corsOrigin : [corsOrigin];
   const wildcard = configured.includes("*");
-  const allowOrigin = wildcard ? requestOrigin || "*" : configured.includes(requestOrigin) ? requestOrigin : "";
+  let allowOrigin = wildcard ? requestOrigin || "*" : configured.includes(requestOrigin) ? requestOrigin : "";
+
+  if (!allowOrigin && requestOrigin && process.env.NODE_ENV !== "production") {
+    try {
+      const originUrl = new URL(requestOrigin);
+      if (
+        originUrl.hostname === "localhost" ||
+        originUrl.hostname === "127.0.0.1" ||
+        originUrl.hostname.startsWith("192.168.") ||
+        originUrl.hostname.startsWith("10.") ||
+        originUrl.hostname.startsWith("172.") ||
+        originUrl.hostname.startsWith("100.")
+      ) {
+        allowOrigin = requestOrigin;
+      }
+    } catch {
+      // Ignore invalid origin URLs
+    }
+  }
+
   const headers = {
     "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
     "access-control-allow-headers": "authorization,content-type,x-request-id,x-guest-session-id",

@@ -58,6 +58,26 @@ export const returnApi = {
   },
   auditLogs(params = {}) {
     return request(`/api/v1/admin/service-audit-logs${query(params)}`);
+  },
+  async uploadEvidence(file) {
+    const token = getAccessToken();
+    if (!token) throw new ReturnApiError(401, "AUTH_REQUIRED", "Not authenticated");
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+    
+    const response = await fetch(`${API_BASE_URL}/api/user/upload/evidence`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`
+      },
+      body: formData
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      const error = payload?.error || {};
+      throw new ReturnApiError(response.status, error.code || "UPLOAD_ERROR", error.message || "Failed to upload file");
+    }
+    return payload;
   }
 };
 

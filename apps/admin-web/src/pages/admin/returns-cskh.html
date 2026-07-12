@@ -137,13 +137,14 @@
 
           <div class="admin-tab-content" id="support-panel" hidden>
             <div class="admin-filter-bar"><label class="admin-search-field"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#search"></use></svg><input class="admin-form-control" type="search" data-table-search="support" placeholder="Mã phiếu, khách hàng, email, nội dung..."></label><select class="admin-form-control" id="ticket-type-filter"><option value="">Tất cả loại hỗ trợ</option><option value="Khiếu nại">Khiếu nại</option><option value="Đơn hàng">Đơn hàng</option><option value="Sản phẩm">Sản phẩm</option></select><select class="admin-form-control" id="ticket-priority-filter"><option value="">Tất cả ưu tiên</option><option value="high">Cao</option><option value="normal">Trung bình</option><option value="low">Thấp</option></select><div class="admin-filter-bar__actions"><button class="admin-btn admin-btn--filter admin-btn--sm" type="button" id="btn-filter-tickets">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="button" data-reset="support">Đặt lại</button></div></div>
-            <div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Mã phiếu</th><th>Khách hàng</th><th>Loại</th><th>Nội dung</th><th>Ưu tiên</th><th>Trạng thái</th><th>CSAT</th><th>Thao tác</th></tr></thead><tbody id="support-body"></tbody></table></div>
+            <div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Mã phiếu</th><th>Khách hàng</th><th>Loại</th><th>Nội dung</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="support-body"></tbody></table></div>
             <footer class="admin-card__footer"><p class="admin-table-note">Hiển thị 6 / 11 phiếu hỗ trợ</p><nav class="admin-pagination" aria-label="Phân trang hỗ trợ"><button type="button">←</button><button class="is-active" type="button">1</button><button type="button">2</button><button type="button">→</button></nav></footer>
           </div>
 
           <div class="admin-tab-content" id="logs-panel" hidden>
             <div class="admin-filter-bar"><label class="admin-search-field"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#search"></use></svg><input class="admin-form-control" type="search" data-table-search="logs" placeholder="Mã phiếu, người thực hiện, hành động..."></label><select class="admin-form-control"><option>Tất cả hành động</option><option>Tiếp nhận yêu cầu</option><option>Phản hồi khách hàng</option><option>Tạo đơn đổi hàng</option></select><div class="admin-filter-bar__actions"><button class="admin-btn admin-btn--filter admin-btn--sm" type="button">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="button" data-reset>Đặt lại</button></div></div>
-            <div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Thời gian</th><th>Phân khu</th><th>Mã phiếu</th><th>Người thực hiện</th><th>Hành động</th><th>Trạng thái cũ → mới</th><th>Kết quả</th></tr></thead><tbody id="logs-body"><tr><td>20/06/2026 10:30</td><td>Đổi/trả</td><td>RTN-1024</td><td>Phạm Thu Hương</td><td>Tiếp nhận yêu cầu</td><td>Mới → Chờ xử lý</td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr><tr><td>19/06/2026 16:45</td><td>CSKH</td><td>CSKH-2047</td><td>Trần Minh Tuấn</td><td>Phản hồi khách hàng</td><td>Đang xử lý → Đã phản hồi</td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr><tr><td>18/06/2026 09:00</td><td>Đổi/trả</td><td>RTN-1021</td><td>Phạm Thu Hương</td><td>Tạo đơn đổi hàng</td><td>Đang xử lý → Chờ giao</td><td><span class="admin-badge admin-badge--success">Thành công</span></td></tr></tbody></table></div>
+            <div class="admin-table-wrap"><table class="admin-table admin-data-table"><thead><tr><th>Thời gian</th><th>Phân khu</th><th>Mã phiếu</th><th>Người thực hiện</th><th>Hành động</th><th>Trạng thái cũ → mới</th><th>Kết quả</th></tr></thead><tbody id="logs-body"></tbody></table></div>
+            <footer class="admin-card__footer" id="logs-footer"></footer>
           </div>
         </section>
       </main>
@@ -151,6 +152,7 @@
   </div>
 
   <div id="service-layer"></div>
+  <div id="service-drawer-container"></div>
   <div class="admin-toast" id="service-toast" hidden role="status"></div>
   <script type="module">
     import { checkAuth, updateSidebarForRole, logout } from '../../scripts/auth.js';

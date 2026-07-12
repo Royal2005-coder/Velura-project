@@ -7,7 +7,8 @@ const state = {
   tab: "all",
   filtered: [],
   currentPage: 1,
-  itemsPerPage: 10
+  itemsPerPage: 10,
+  logsPage: 1
 };
 
 const panel = document.querySelector("#panel");
@@ -351,8 +352,51 @@ function requestTable() {
   `;
 }
 
+function renderLogsPagination(totalItems) {
+  const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
+  if (totalPages <= 1) return "";
+
+  let buttons = "";
+  buttons += `<button type="button" data-account-logs-page="${state.logsPage - 1}" ${state.logsPage === 1 ? "disabled" : ""} aria-label="Trang trước">&lt;</button>`;
+
+  for (let page = 1; page <= totalPages; page += 1) {
+    if (totalPages > 6 && page !== 1 && page !== totalPages && Math.abs(state.logsPage - page) > 1) {
+      if (page === 2 && state.logsPage > 3) buttons += `<span class="pagination-ellipsis">...</span>`;
+      if (page === totalPages - 1 && state.logsPage < totalPages - 2) buttons += `<span class="pagination-ellipsis">...</span>`;
+      continue;
+    }
+    buttons += `<button type="button" class="${state.logsPage === page ? "is-active" : ""}" data-account-logs-page="${page}">${page}</button>`;
+  }
+
+  buttons += `<button type="button" data-account-logs-page="${state.logsPage + 1}" ${state.logsPage === totalPages ? "disabled" : ""} aria-label="Trang sau">&gt;</button>`;
+  return `<nav class="admin-pagination">${buttons}</nav>`;
+}
+
 function logTable() {
   if (!state.logs.length) return '<div class="admin-empty-state"><strong>Chưa có nhật ký tài khoản</strong></div>';
+
+  const totalItems = state.logs.length;
+  const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
+  if (state.logsPage > totalPages) state.logsPage = totalPages;
+  if (state.logsPage < 1) state.logsPage = 1;
+
+  const start = (state.logsPage - 1) * state.itemsPerPage;
+  const pagedLogs = state.logs.slice(start, start + state.itemsPerPage);
+
+  const tableRows = pagedLogs.map((row) => `
+    <tr>
+      <td>${date(row.timestamp)}</td>
+      <td>${escapeHtml(row.actor_id || "system")}</td>
+      <td>${escapeHtml(row.action)}</td>
+      <td>${escapeHtml(row.target_id)}</td>
+      <td><div class="admin-log-json">${escapeHtml(JSON.stringify(row.old_value || {}))}</div></td>
+      <td><div class="admin-log-json">${escapeHtml(JSON.stringify(row.new_value || {}))}</div></td>
+    </tr>
+  `).join("");
+
+  const end = Math.min(start + state.itemsPerPage, totalItems);
+  const showStart = totalItems === 0 ? 0 : start + 1;
+
   return `
     <div class="admin-table-wrap">
       <table class="admin-table">
@@ -367,18 +411,13 @@ function logTable() {
           </tr>
         </thead>
         <tbody>
-          ${state.logs.map((row) => `
-            <tr>
-              <td>${date(row.timestamp)}</td>
-              <td>${escapeHtml(row.actor_id || "system")}</td>
-              <td>${escapeHtml(row.action)}</td>
-              <td>${escapeHtml(row.target_id)}</td>
-              <td><div class="admin-log-json">${escapeHtml(JSON.stringify(row.old_value || {}))}</div></td>
-              <td><div class="admin-log-json">${escapeHtml(JSON.stringify(row.new_value || {}))}</div></td>
-            </tr>
-          `).join("")}
+          ${tableRows}
         </tbody>
       </table>
+    </div>
+    <div class="admin-card__footer" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+      <p class="admin-table-note">Hiển thị ${showStart} - ${end} / ${totalItems} nhật ký</p>
+      ${renderLogsPagination(totalItems)}
     </div>
   `;
 }
@@ -663,10 +702,21 @@ document.addEventListener("click", (event) => {
   if (tab) {
     state.tab = tab.dataset.tab;
     state.currentPage = 1;
+    state.logsPage = 1;
     document.querySelectorAll(".admin-tab").forEach((node) => {
       node.classList.toggle("admin-tab--active", node.dataset.tab === state.tab);
     });
     render();
+  }
+
+  const logsPageBtn = event.target.closest("[data-account-logs-page]");
+  if (logsPageBtn) {
+    const page = Number(logsPageBtn.dataset.accountLogsPage);
+    if (!Number.isNaN(page) && page > 0) {
+      state.logsPage = page;
+      render();
+    }
+    return;
   }
 
   const pageBtn = event.target.closest("[data-account-page]");

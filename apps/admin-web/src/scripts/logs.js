@@ -1,7 +1,7 @@
 import { auditLogApi } from "./audit-log-api.js";
 import { accountApi } from "./account-api.js";
 
-const state = { rows: [], filtered: [], tab: "all", users: [] };
+const state = { rows: [], filtered: [], tab: "all", users: [], currentPage: 1, itemsPerPage: 10 };
 const panel = document.querySelector("#log-panel");
 const overlay = document.querySelector("#log-overlay");
 
@@ -13,11 +13,44 @@ function date(value) { if (!value) return "-"; const parsed = new Date(value); r
 function filters() { return `<form class="admin-filter-bar admin-log-filter" data-log-filter><label class="admin-search-field">${icon("search")}<input class="admin-form-control" name="q" placeholder="Tìm hành động, đối tượng hoặc admin" data-log-search></label><select class="admin-form-control" name="module" data-log-module><option value="">Tất cả phân hệ</option>${["accounts", "products", "orders", "reviews", "returns", "support", "pricing", "promotions", "vouchers", "system"].map((value) => `<option value="${value}">${value}</option>`).join("")}</select><select class="admin-form-control" name="result" data-log-result><option value="">Tất cả kết quả</option><option value="success">Thành công</option><option value="failure">Thất bại</option></select><div class="admin-filter-bar__actions"><button class="admin-btn admin-btn--filter admin-btn--sm">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button></div></form>`; }
 function table() {
   if (!state.filtered.length) return '<div class="admin-log-empty"><strong>Không có nhật ký phù hợp</strong><p>Dữ liệu được đọc từ audit_log theo RLS.</p></div>';
-  return `<div class="admin-table-wrap"><table class="admin-table admin-log-table"><thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Vai trò</th><th>Phân hệ</th><th>Hành động</th><th>Đối tượng</th><th>IP</th><th>Chi tiết</th></tr></thead><tbody>${state.filtered.map((row) => {
+  
+  const totalItems = state.filtered.length;
+  const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
+  if (state.currentPage > totalPages) state.currentPage = totalPages;
+  if (state.currentPage < 1) state.currentPage = 1;
+
+  const start = (state.currentPage - 1) * state.itemsPerPage;
+  const end = Math.min(start + state.itemsPerPage, totalItems);
+  const pagedRows = state.filtered.slice(start, end);
+
+  let paginationButtons = "";
+  if (totalPages > 1) {
+    paginationButtons += `<button type="button" data-log-page="${state.currentPage - 1}" ${state.currentPage === 1 ? "disabled" : ""}>←</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+      if (totalPages > 6) {
+        if (i !== 1 && i !== totalPages && Math.abs(state.currentPage - i) > 1) {
+          if (i === 2 && state.currentPage > 3) {
+            paginationButtons += `<span class="pagination-ellipsis" style="padding: 0 4px; color: var(--muted);">...</span>`;
+          } else if (i === totalPages - 1 && state.currentPage < totalPages - 2) {
+            paginationButtons += `<span class="pagination-ellipsis" style="padding: 0 4px; color: var(--muted);">...</span>`;
+          }
+          continue;
+        }
+      }
+      paginationButtons += `<button type="button" class="${state.currentPage === i ? "is-active" : ""}" data-log-page="${i}">${i}</button>`;
+    }
+    paginationButtons += `<button type="button" data-log-page="${state.currentPage + 1}" ${state.currentPage === totalPages ? "disabled" : ""}>→</button>`;
+  }
+  const paginationHtml = totalPages > 1 ? `<nav class="admin-pagination">${paginationButtons}</nav>` : "";
+
+  const rowsHtml = pagedRows.map((row) => {
     const actorUser = state.users?.find((u) => u.user_id === row.actor_id);
     const actorName = actorUser ? `${actorUser.full_name} (${actorUser.email})` : (row.actor_id || "system");
     return `<tr><td>${escapeAuditHtml(date(row.timestamp))}</td><td>${escapeAuditHtml(actorName)}</td><td>${escapeAuditHtml(row.actor_role || "-")}</td><td><span class="admin-log-module">${escapeAuditHtml(row.module)}</span></td><td>${escapeAuditHtml(row.action)}</td><td>${escapeAuditHtml(row.target_id || "-")}</td><td>${escapeAuditHtml(row.ip_address || "-")}</td><td><button class="admin-icon-button admin-icon-button--sm" data-log-detail="${escapeAuditHtml(row.audit_id)}">${icon("eye")}</button></td></tr>`;
-  }).join("")}</tbody></table></div><div class="admin-log-footer"><p class="admin-table-note">Hiển thị ${state.filtered.length} / ${state.rows.length} nhật ký</p></div>`;
+  }).join("");
+
+  const showStart = totalItems === 0 ? 0 : start + 1;
+  return `<div class="admin-table-wrap"><table class="admin-table admin-log-table"><thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Vai trò</th><th>Phân hệ</th><th>Hành động</th><th>Đối tượng</th><th>IP</th><th>Chi tiết</th></tr></thead><tbody>${rowsHtml}</tbody></table></div><div class="admin-log-footer"><p class="admin-table-note">Hiển thị ${showStart} - ${end} / ${totalItems} nhật ký</p>${paginationHtml}</div>`;
 }
 function render() {
   panel.innerHTML = filters() + table();
@@ -165,7 +198,8 @@ async function load() {
   }
 }
 
-function applyFilterAndRender() {
+function applyFilterAndRender(resetPage = false) {
+  if (resetPage) state.currentPage = 1;
   let filtered = [...state.rows];
   
   // Apply tab filter
@@ -210,12 +244,22 @@ document.addEventListener("click", (event) => {
   
   if (event.target.closest("[data-log-close]")) overlay.innerHTML = "";
   if (event.target.closest("[data-log-refresh]")) load();
+
+  const pageBtn = event.target.closest("[data-log-page]");
+  if (pageBtn) {
+    const page = Number(pageBtn.dataset.logPage);
+    if (!Number.isNaN(page) && page > 0) {
+      state.currentPage = page;
+      render();
+    }
+    return;
+  }
   
   const tab = event.target.closest("[data-log-tab]");
   if (tab) {
     document.querySelectorAll("[data-log-tab]").forEach((node) => node.classList.toggle("admin-tab--active", node === tab));
     state.tab = tab.dataset.logTab;
-    applyFilterAndRender();
+    applyFilterAndRender(true);
   }
 
   const alertBtn = event.target.closest("[data-log-alert-result]");
@@ -232,7 +276,7 @@ document.addEventListener("click", (event) => {
       } else if (type === "failed") {
         qInput.value = "fail";
       }
-      applyFilterAndRender();
+      applyFilterAndRender(true);
     }
   }
   
@@ -247,13 +291,13 @@ document.addEventListener("click", (event) => {
 document.addEventListener("submit", (event) => {
   if (!event.target.matches("[data-log-filter]")) return;
   event.preventDefault();
-  applyFilterAndRender();
+  applyFilterAndRender(true);
 });
 
 document.addEventListener("reset", (event) => {
   if (event.target.matches("[data-log-filter]")) {
     setTimeout(() => {
-      applyFilterAndRender();
+      applyFilterAndRender(true);
     });
   }
 });

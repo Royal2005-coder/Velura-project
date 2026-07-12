@@ -1,6 +1,6 @@
 import { reviewApi } from "./review-api.js";
 
-const state = { rows: [], count: 0, active: "all", selected: null, currentPage: 1, itemsPerPage: 10 };
+const state = { rows: [], count: 0, active: "all", selected: null, currentPage: 1, itemsPerPage: 10, logs: [], logsPage: 1 };
 const panel = document.querySelector("#review-panel");
 const overlay = document.querySelector("#review-overlay");
 const statusLabels = { pending: "Chờ duyệt", approved: "Đã duyệt", rejected: "Đã ẩn" };
@@ -138,12 +138,68 @@ async function load(params = {}) {
 }
 
 async function loadLogs() {
-  panel.innerHTML = '<div class="admin-order-empty"><strong>Đang tải nhật ký...</strong></div>';
-  try {
-    const result = await reviewApi.auditLogs({ limit: 100 });
-    const rows = result.rows || [];
-    panel.innerHTML = `<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Thời gian</th><th>Đối tượng</th><th>Vai trò</th><th>Hành động</th><th>Thay đổi</th></tr></thead><tbody>${rows.map((log) => `<tr><td>${escapeReviewHtml(formatDate(log.timestamp))}</td><td>${escapeReviewHtml(log.target_id)}</td><td>${escapeReviewHtml(log.actor_role)}</td><td>${escapeReviewHtml(log.action)}</td><td>${escapeReviewHtml(JSON.stringify(log.new_value || {}))}</td></tr>`).join("") || '<tr><td colspan="5">Chưa có nhật ký</td></tr>'}</tbody></table></div>`;
-  } catch (error) { showError(error); }
+  if (!state.logs || state.logs.length === 0) {
+    panel.innerHTML = '<div class="admin-order-empty"><strong>Đang tải nhật ký...</strong></div>';
+    try {
+      const result = await reviewApi.auditLogs({ limit: 100 });
+      state.logs = result.rows || [];
+    } catch (error) {
+      showError(error);
+      return;
+    }
+  }
+
+  const totalItems = state.logs.length;
+  const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
+  if (state.logsPage > totalPages) state.logsPage = totalPages;
+  if (state.logsPage < 1) state.logsPage = 1;
+
+  const start = (state.logsPage - 1) * state.itemsPerPage;
+  const end = start + state.itemsPerPage;
+  const pagedLogs = state.logs.slice(start, end);
+
+  let paginationButtons = "";
+  if (totalPages > 1) {
+    paginationButtons += `<button type="button" data-review-logs-page="${state.logsPage - 1}" ${state.logsPage === 1 ? "disabled" : ""}>←</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+      paginationButtons += `<button type="button" class="${state.logsPage === i ? "is-active" : ""}" data-review-logs-page="${i}">${i}</button>`;
+    }
+    paginationButtons += `<button type="button" data-review-logs-page="${state.logsPage + 1}" ${state.logsPage === totalPages ? "disabled" : ""}>→</button>`;
+  }
+  const paginationHtml = totalPages > 1 ? `<nav class="admin-pagination">${paginationButtons}</nav>` : "";
+
+  const tableRows = pagedLogs.map((log) => {
+    return `<tr>
+      <td>${escapeReviewHtml(formatDate(log.timestamp))}</td>
+      <td><span class="admin-order-code">${escapeReviewHtml(log.target_id)}</span></td>
+      <td>${escapeReviewHtml(log.actor_role)}</td>
+      <td>${escapeReviewHtml(log.action)}</td>
+      <td>${escapeReviewHtml(JSON.stringify(log.new_value || {}))}</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="5">Chưa có nhật ký</td></tr>`;
+
+  panel.innerHTML = `
+    <div class="admin-table-wrap">
+      <table class="admin-table admin-data-table">
+        <thead>
+          <tr>
+            <th>Thời gian</th>
+            <th>Đối tượng</th>
+            <th>Vai trò</th>
+            <th>Hành động</th>
+            <th>Thay đổi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+    </div>
+    <div class="admin-card__footer" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+      <p class="admin-table-note">Hiển thị ${totalItems === 0 ? 0 : start + 1} - ${Math.min(end, totalItems)} / ${totalItems} nhật ký</p>
+      ${paginationHtml}
+    </div>
+  `;
 }
 
 async function openDetail(id) {
@@ -212,6 +268,16 @@ document.addEventListener("click", (event) => {
     });
   }
 
+  const logsPageBtn = event.target.closest("[data-review-logs-page]");
+  if (logsPageBtn) {
+    const page = Number(logsPageBtn.dataset.reviewLogsPage);
+    if (!Number.isNaN(page) && page > 0) {
+      state.logsPage = page;
+      loadLogs();
+    }
+    return;
+  }
+
   const pageBtn = event.target.closest("[data-review-page]");
   if (pageBtn) {
     const page = Number(pageBtn.dataset.reviewPage);
@@ -226,10 +292,22 @@ document.addEventListener("click", (event) => {
   if (button.dataset.reviewTab) {
     state.active = button.dataset.reviewTab;
     state.currentPage = 1;
+    state.logsPage = 1;
+    state.logs = [];
     document.querySelectorAll("[data-review-tab]").forEach((tab) => tab.classList.toggle("admin-tab--active", tab === button));
     render();
   }
-  if (button.dataset.reviewOpenLogs !== undefined) { state.active = "logs"; state.currentPage = 1; render(); }
+  if (button.dataset.reviewOpenLogs !== undefined) {
+    state.active = "logs";
+    state.currentPage = 1;
+    state.logsPage = 1;
+    state.logs = [];
+    const logsTab = document.querySelector('[data-review-tab="logs"]');
+    if (logsTab) {
+      document.querySelectorAll("[data-review-tab]").forEach((tab) => tab.classList.toggle("admin-tab--active", tab === logsTab));
+    }
+    render();
+  }
   if (button.dataset.reviewSidebar !== undefined) document.querySelector(".admin-layout").classList.toggle("admin-layout--sidebar-collapsed");
   if (button.dataset.reviewMenu) {
     const targetMenu = document.querySelector(`#review-menu-${CSS.escape(button.dataset.reviewMenu)}`);

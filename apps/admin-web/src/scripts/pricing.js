@@ -1,7 +1,7 @@
 import { productApi } from "./product-api.js";
 import { pricingApi } from "./pricing-api.js";
 
-const state = { products: [], history: [], filtered: [], currentPage: 1, itemsPerPage: 10 };
+const state = { products: [], history: [], filtered: [], currentPage: 1, itemsPerPage: 10, filters: { q: "", category: "", status: "" } };
 const panel = document.querySelector("#pricing-panel");
 const overlay = document.querySelector("#pricing-overlay");
 const toast = document.querySelector("#pricing-toast");
@@ -36,7 +36,10 @@ function updateKpis() {
 }
 function filters() {
   const categories = [...new Set(state.products.map((p) => p.category?.name).filter(Boolean))];
-  return `<form class="admin-filter-bar admin-order-filter-bar" data-pricing-filter><label class="admin-search-field">${icon("search")}<input class="admin-form-control" name="q" placeholder="Tìm SKU hoặc tên sản phẩm"></label><select class="admin-form-control" name="category"><option value="">Tất cả danh mục</option>${categories.map((value) => `<option>${escapePricingHtml(value)}</option>`).join("")}</select><select class="admin-form-control" name="status"><option value="">Tất cả trạng thái giá</option><option value="discount">Đang giảm giá</option><option value="invalid">Cần kiểm tra</option><option value="missing">Thiếu giá bán</option></select><div class="admin-filter-bar__actions"><button class="admin-btn admin-btn--filter admin-btn--sm" type="submit">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button></div></form>`;
+  const q = state.filters.q || "";
+  const cat = state.filters.category || "";
+  const stat = state.filters.status || "";
+  return `<form class="admin-filter-bar admin-order-filter-bar" data-pricing-filter><label class="admin-search-field">${icon("search")}<input class="admin-form-control" name="q" value="${escapePricingHtml(q)}" placeholder="Tìm SKU hoặc tên sản phẩm"></label><select class="admin-form-control" name="category"><option value="">Tất cả danh mục</option>${categories.map((value) => `<option ${value === cat ? "selected" : ""}>${escapePricingHtml(value)}</option>`).join("")}</select><select class="admin-form-control" name="status"><option value="">Tất cả trạng thái giá</option><option value="discount" ${stat === "discount" ? "selected" : ""}>Đang giảm giá</option><option value="invalid" ${stat === "invalid" ? "selected" : ""}>Cần kiểm tra</option><option value="missing" ${stat === "missing" ? "selected" : ""}>Thiếu giá bán</option></select><div class="admin-filter-bar__actions"><button class="admin-btn admin-btn--filter admin-btn--sm" type="submit">Lọc</button><button class="admin-btn admin-btn--ghost admin-btn--sm" type="reset">Đặt lại</button></div></form>`;
 }
 function pagination() {
   const totalItems = state.filtered.length;
@@ -110,10 +113,32 @@ document.addEventListener("click", (event) => {
 });
 document.addEventListener("submit", async (event) => {
   if (event.target.matches("[data-pricing-filter]")) {
-    event.preventDefault(); const data = new FormData(event.target); const q = String(data.get("q") || "").toLowerCase(); const category = data.get("category"); const status = data.get("status");
-    state.filtered = state.products.filter((row) => (!q || `${row.name} ${row.sku}`.toLowerCase().includes(q)) && (!category || row.category?.name === category) && (!status || (status === "discount" && discount(row) > 0) || (status === "invalid" && Number(row.sale_price) > Number(row.base_price)) || (status === "missing" && row.sale_price == null)));
+    event.preventDefault();
+    const data = new FormData(event.target);
+    const q = String(data.get("q") || "").trim();
+    const category = String(data.get("category") || "");
+    const status = String(data.get("status") || "");
+    state.filters = { q, category, status };
+    
+    const qLower = q.toLowerCase();
+    state.filtered = state.products.filter((row) => 
+      (!qLower || `${row.name} ${row.sku}`.toLowerCase().includes(qLower)) && 
+      (!category || row.category?.name === category) && 
+      (!status || 
+        (status === "discount" && discount(row) > 0) || 
+        (status === "invalid" && Number(row.sale_price) > Number(row.base_price)) || 
+        (status === "missing" && row.sale_price == null)
+      )
+    );
     state.currentPage = 1;
-    render(); return;
+    render();
+    
+    const input = panel.querySelector("input[name='q']");
+    if (input) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+    return;
   }
   if (!event.target.matches("[data-price-form]")) return;
   event.preventDefault(); const row = state.products.find((p) => p.product_id === event.target.dataset.id);
@@ -137,7 +162,7 @@ document.addEventListener("submit", async (event) => {
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Xác nhận"; }
   }
 });
-document.addEventListener("reset", (event) => { if (event.target.matches("[data-pricing-filter]")) setTimeout(() => { state.filtered = [...state.products]; state.currentPage = 1; render(); }); });
+document.addEventListener("reset", (event) => { if (event.target.matches("[data-pricing-filter]")) { state.filters = { q: "", category: "", status: "" }; setTimeout(() => { state.filtered = [...state.products]; state.currentPage = 1; render(); }); } });
 document.querySelector("[data-pricing-export]")?.addEventListener("click", () => { const blob = new Blob([JSON.stringify(state.filtered, null, 2)], { type: "application/json" }); const link = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "velura-pricing.json" }); link.click(); URL.revokeObjectURL(link.href); });
 
 load();

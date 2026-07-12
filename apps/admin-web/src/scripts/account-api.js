@@ -1,7 +1,7 @@
 const API_BASE_URL = String(
   window.VELURA_CONFIG?.apiBaseUrl ||
   localStorage.getItem("velura_api_base_url") ||
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  (window.location.port && window.location.port !== "8787"
     ? window.location.protocol + "//" + window.location.hostname + ":8787"
     : window.location.origin)
 ).replace(/\/+$/, "");
