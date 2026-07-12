@@ -175,20 +175,18 @@ function loadProfileData(form) {
         emailInput.value = profile.email || "";
         emailInput.readOnly = true;
       }
-      if (dobInput && profile.date_of_birth) {
-        const parts = profile.date_of_birth.split("-");
-        if (parts.length === 3) {
-          dobInput.value = `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
-      }
+      if (dobInput) dobInput.value = formatProfileDate(profile.date_of_birth);
       if (avatarInput) {
         avatarInput.value = profile.avatar || "";
       }
 
+      form.querySelectorAll('input[name="gender"]').forEach((radio) => { radio.checked = false; });
       if (profile.gender) {
         const genderRadio = form.querySelector(`input[name="gender"][value="${profile.gender}"]`);
         if (genderRadio) genderRadio.checked = true;
       }
+
+      cacheLiveProfile(profile);
 
       // Update names on UI
       const sidebarName = document.querySelector(".account-sidebar__name");
@@ -230,6 +228,7 @@ function loadProfileData(form) {
             const nameInput = form.querySelector('input[name="fullname"]');
             const phoneInput = form.querySelector('input[name="phone"]');
             const emailInput = form.querySelector('input[name="email"]');
+            const dobInput = form.querySelector('input[name="dob"]');
             const avatarInput = createHiddenAvatarInput(form);
             
             if (nameInput) nameInput.value = profile.full_name || "";
@@ -241,8 +240,15 @@ function loadProfileData(form) {
               emailInput.value = profile.email || "";
               emailInput.readOnly = true;
             }
+            if (dobInput) dobInput.value = formatProfileDate(profile.date_of_birth);
             if (avatarInput) {
               avatarInput.value = profile.avatar || "";
+            }
+
+            form.querySelectorAll('input[name="gender"]').forEach((radio) => { radio.checked = false; });
+            if (profile.gender) {
+              const genderRadio = form.querySelector(`input[name="gender"][value="${profile.gender}"]`);
+              if (genderRadio) genderRadio.checked = true;
             }
 
             // Update names on UI
@@ -447,7 +453,7 @@ function initProfileFormValidation() {
     });
   }
 
-  form.addEventListener("submit", function(e) {
+  form.addEventListener("submit", async function(e) {
     e.preventDefault();
     
     // Clear previous errors
@@ -481,53 +487,46 @@ function initProfileFormValidation() {
 
     // 3. Validate Date of Birth (dd/mm/yyyy format)
     const dobInput = form.querySelector('input[name="dob"]');
+    let parsedDateOfBirth = null;
     if (dobInput) {
       const dobVal = dobInput.value.trim();
-      const dobRegex = /^\d{2}\/\d{2}\/\d{4}$/;
-      if (dobVal && !dobRegex.test(dobVal)) {
-        showError(dobInput, "Ngày sinh phải đúng định dạng dd/mm/yyyy.");
-        isValid = false;
+      if (dobVal) {
+        parsedDateOfBirth = parseProfileDate(dobVal);
+        if (!parsedDateOfBirth) {
+          showError(dobInput, "Ngày sinh không hợp lệ hoặc không đúng định dạng dd/mm/yyyy.");
+          isValid = false;
+        }
       }
     }
 
     if (isValid) {
       const fullname = nameInput.value.trim();
-      const dobVal = dobInput.value.trim();
-      
-      let date_of_birth = null;
-      if (dobVal) {
-        const parts = dobVal.split("/");
-        if (parts.length === 3) {
-          date_of_birth = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-      }
-      
       const genderInput = form.querySelector('input[name="gender"]:checked');
       const gender = genderInput ? genderInput.value : null;
 
       const avatarInput = createHiddenAvatarInput(form);
       const avatar = avatarInput ? avatarInput.value.trim() : "";
 
-      apiRequest("/api/user/profile", {
-        method: "PATCH",
-        body: JSON.stringify({
+      const submitButton = form.querySelector('button[type="submit"]');
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = "Đang cập nhật...";
+      }
+
+      try {
+        const updated = await apiRequest("/api/user/profile", {
+          method: "PATCH",
+          body: {
           full_name: fullname,
-          date_of_birth,
+          ...(parsedDateOfBirth ? { date_of_birth: parsedDateOfBirth } : {}),
           gender,
           avatar
-        })
-      })
-      .then(updated => {
+          }
+        });
         showToast("Cập nhật thông tin tài khoản thành công!");
-        
-        // Sync header local storage if present
-        const localUser = localStorage.getItem("velura_user");
-        if (localUser) {
-          const parsed = JSON.parse(localUser);
-          parsed.full_name = updated.full_name;
-          parsed.avatar = updated.avatar; // Sync avatar to local storage
-          localStorage.setItem("velura_user", JSON.stringify(parsed));
-        }
+        cacheLiveProfile(updated);
+        if (dobInput) dobInput.value = formatProfileDate(updated.date_of_birth);
+        window.dispatchEvent(new CustomEvent("velura:profile-updated", { detail: updated }));
 
         // Sync names dynamically
         const updatedName = updated.full_name;
@@ -551,12 +550,46 @@ function initProfileFormValidation() {
 
         // Update avatar on UI dynamically
         renderUserAvatar(updated.avatar, updated.full_name);
-      })
-      .catch(err => {
+      } catch (err) {
         showToast(`Cập nhật thất bại: ${err.message}`);
-      });
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = "Cập nhật";
+        }
+      }
     }
   });
+}
+
+function formatProfileDate(value) {
+  if (!value) return "";
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value));
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : "";
+}
+
+function parseProfileDate(value) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(value || "").trim());
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  const isValid = year >= 1900
+    && date.getFullYear() === year
+    && date.getMonth() === month - 1
+    && date.getDate() === day
+    && date <= new Date();
+  return isValid ? `${match[3]}-${match[2]}-${match[1]}` : null;
+}
+
+function cacheLiveProfile(profile) {
+  if (!profile || typeof profile !== "object") return;
+  let current = {};
+  try { current = JSON.parse(localStorage.getItem("velura_user") || "{}"); } catch { current = {}; }
+  const merged = { ...current, ...profile };
+  localStorage.setItem("velura_user", JSON.stringify(merged));
+  localStorage.setItem("velura_profile", JSON.stringify(merged));
 }
 
 function showError(inputEl, message) {

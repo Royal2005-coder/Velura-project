@@ -18,10 +18,24 @@ export async function handleProfileRoute(req, res, subRoute, corsHeaders, contex
       const { full_name, date_of_birth, gender, avatar } = body;
 
       const updates = {};
-      if (full_name) updates.full_name = full_name;
-      if (date_of_birth) updates.date_of_birth = date_of_birth;
-      if (gender) updates.gender = gender;
-      if (avatar) updates.avatar = avatar;
+      if (full_name !== undefined) {
+        const normalizedName = String(full_name || "").trim();
+        if (normalizedName.length < 2 || normalizedName.length > 120) {
+          throw new HttpError(422, "INVALID_FULL_NAME", "Họ và tên phải có từ 2 đến 120 ký tự");
+        }
+        updates.full_name = normalizedName;
+      }
+      if (date_of_birth !== undefined && date_of_birth !== null && date_of_birth !== "") {
+        updates.date_of_birth = validateDateOfBirth(date_of_birth);
+      }
+      if (gender !== undefined && gender !== null && gender !== "") {
+        const allowedGenders = new Set(["Nam", "Nữ", "Khác"]);
+        if (!allowedGenders.has(gender)) {
+          throw new HttpError(422, "INVALID_GENDER", "Giới tính không hợp lệ");
+        }
+        updates.gender = gender;
+      }
+      if (avatar !== undefined) updates.avatar = String(avatar || "").trim() || null;
       updates.updated_at = new Date().toISOString();
 
       const updatedRows = await updateRows("users", { user_id: `eq.${profile.user_id}` }, updates);
@@ -54,4 +68,27 @@ export async function handleProfileRoute(req, res, subRoute, corsHeaders, contex
   }
 
   throw new HttpError(404, "NOT_FOUND", "Route profile not found");
+}
+
+function validateDateOfBirth(value) {
+  const normalized = String(value || "").trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(normalized);
+  if (!match) {
+    throw new HttpError(422, "INVALID_DATE_OF_BIRTH", "Ngày sinh phải đúng định dạng YYYY-MM-DD");
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const isRealDate = date.getUTCFullYear() === year
+    && date.getUTCMonth() === month - 1
+    && date.getUTCDate() === day;
+  if (!isRealDate || date > new Date()) {
+    throw new HttpError(422, "INVALID_DATE_OF_BIRTH", "Ngày sinh không hợp lệ");
+  }
+  if (year < 1900) {
+    throw new HttpError(422, "INVALID_DATE_OF_BIRTH", "Năm sinh không hợp lệ");
+  }
+  return normalized;
 }

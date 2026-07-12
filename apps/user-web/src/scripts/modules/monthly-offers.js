@@ -4,6 +4,7 @@ const OFFER_IDS_WITH_MODAL = new Set(["A1", "A4", "A5", "A6"]);
 const BIRTHDAY_VOUCHER_CODE = "BDAY15";
 const PRODUCT_LIST_URL = "/src/pages/products/list.html";
 const OFFERS_URL = "/src/pages/offers.html";
+const MY_OFFERS_URL = "/src/pages/account/offers.html";
 const PENDING_BIRTHDAY_KEY = "velura_pending_birthday";
 
 export function initMonthlyOffers() {
@@ -211,7 +212,8 @@ async function submitBirthdayForm({ isGuest = false } = {}) {
   const date_of_birth = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
   if (isGuest || !isMember()) {
-    localStorage.setItem(PENDING_BIRTHDAY_KEY, date_of_birth);
+    sessionStorage.setItem(PENDING_BIRTHDAY_KEY, date_of_birth);
+    localStorage.removeItem(PENDING_BIRTHDAY_KEY);
     openBirthdayLoginRequiredModal(date_of_birth);
     return;
   }
@@ -227,6 +229,7 @@ async function saveBirthdayToProfile(date_of_birth, errorNode) {
       body: { date_of_birth }
     });
     const updatedProfile = { ...(getStoredUser() || {}), ...updated, date_of_birth };
+    sessionStorage.removeItem(PENDING_BIRTHDAY_KEY);
     localStorage.removeItem(PENDING_BIRTHDAY_KEY);
     cacheProfile(updatedProfile);
     syncProfileBirthdayInDom(date_of_birth);
@@ -304,11 +307,11 @@ function openBirthdayActiveModal(profile) {
   });
 
   openInfoModal({
-    title: `Chúc mừng sinh nhật, ${name}!`,
+    title: "Velura đã ghi nhớ sinh nhật của bạn",
     eyebrow: "Ưu đãi đã sẵn sàng",
     image: "/src/assets/images/banners/hot-banner-a1-birthday.png",
     body: `
-      <p>Bạn đã nhận ưu đãi sinh nhật dành riêng cho tháng này.</p>
+      <p>Chúc mừng sinh nhật, ${escapeHtml(name)}! Ưu đãi dành riêng cho tháng này đã sẵn sàng.</p>
       <div class="monthly-offer-voucher">
         <span>Mã của bạn</span>
         <strong>${BIRTHDAY_VOUCHER_CODE}</strong>
@@ -317,7 +320,7 @@ function openBirthdayActiveModal(profile) {
       <p>Đơn hàng đầu tiên trong tháng sinh nhật có thể nhận thêm một món quà bất ngờ từ Velura.</p>
     `,
     actions: [
-      { label: "Xem trong ưu đãi của tôi", variant: "ghost", href: "/src/pages/account/offers.html" },
+      { label: "Xem trong ưu đãi của tôi", variant: "ghost", href: MY_OFFERS_URL },
       { label: "Áp dụng và mua sắm ngay", variant: "primary", onClick: () => goShoppingWithVoucher(BIRTHDAY_VOUCHER_CODE) }
     ]
   });
@@ -337,7 +340,7 @@ function openBirthdayCountdownModal(profile, birthday) {
       </ul>
     `,
     actions: [
-      { label: "Xem ưu đãi đang có", variant: "primary", href: OFFERS_URL },
+      { label: "Xem ưu đãi đang có", variant: "primary", href: MY_OFFERS_URL },
       { label: "Đóng", variant: "ghost", onClick: closeOfferModal }
     ]
   });
@@ -445,7 +448,7 @@ async function openReferralFlow() {
     `,
     actions: [
       { label: "Sao chép link", variant: "primary", onClick: () => copyVoucher(url, "Đã sao chép link chia sẻ") },
-      { label: "Xem voucher của tôi", variant: "ghost", href: "/src/pages/account/offers.html" }
+      { label: "Xem voucher của tôi", variant: "ghost", href: MY_OFFERS_URL }
     ]
   });
 }
@@ -636,7 +639,7 @@ function getBirthdayDate(profile) {
 }
 
 function getPendingBirthdayDate() {
-  const value = localStorage.getItem(PENDING_BIRTHDAY_KEY);
+  const value = sessionStorage.getItem(PENDING_BIRTHDAY_KEY) || localStorage.getItem(PENDING_BIRTHDAY_KEY);
   if (!value) return null;
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
