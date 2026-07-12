@@ -149,11 +149,9 @@ test("A04-A06 admin pages use typed APIs and escape Supabase values", async () =
 
 test("source tree contains no hard-coded Supabase management or secret key", async () => {
   const candidates = [
-    "scripts/verify-a01-supabase.mjs",
-    "scripts/verify-a02-supabase.mjs",
-    "scripts/verify-a03-supabase.mjs",
-    "scripts/verify-lifecycle.js",
-    ".env.example"
+    ".env.example",
+    "apps/api/src/server.js",
+    "apps/api/src/supabase.js"
   ];
   const combined = (await Promise.all(candidates.map(source))).join("\n");
   assert.doesNotMatch(combined, /sbp_[A-Za-z0-9]{20,}|sb_secret_[A-Za-z0-9_-]{20,}/);

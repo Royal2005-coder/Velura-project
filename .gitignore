@@ -4,20 +4,33 @@ dist/
 .mimocode/
 test-results/
 playwright-report/
-permission-test.txt
-categories/
+coverage/
+
+# Logs
+logs/
 *.log
+
+# Certificates (SSL local dev)
+certs/
+
+# Archives
 *.zip
-.mcp.json
-scratch/
-Velura-project (1)/
+
+# IDE / Editor
 .vscode/*
 !.vscode/settings.json
 .idea/
+.mcp.json
+
+# OS files
 .DS_Store
 Thumbs.db
 desktop.ini
-coverage/
+
+# AI agent configs (không cần thiết cho dự án)
+.agents/
+skill.md
+opencode.json
 
 # Environment variables — KHÔNG BAO GIỜ commit file này lên Git
 .env
@@ -26,13 +39,16 @@ coverage/
 .env.development
 .env.production
 .env.staging
-*.env
 
-# Scratch / debug scripts — có thể chứa credentials, không commit
+# Scratch / debug scripts — có thể chứa credentials
+scratch/
 scratch_*.mjs
 scratch_*.js
 scratch_*.cjs
+permission-test.txt
 test.jpg
 scratch_screenshot*.png
 query-review-*.mjs
 inspect-*.mjs
+categories/
+Velura-project (1)/

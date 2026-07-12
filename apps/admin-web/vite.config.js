@@ -30,10 +30,12 @@ export default defineConfig({
   server: {
     port: 5174,
     host: true,
-    https: {
-      key: fs.readFileSync(resolve(__dirname, "../../certs/key.pem")),
-      cert: fs.readFileSync(resolve(__dirname, "../../certs/cert.pem"))
-    },
+    ...(fs.existsSync(resolve(__dirname, "../../certs/key.pem")) ? {
+      https: {
+        key: fs.readFileSync(resolve(__dirname, "../../certs/key.pem")),
+        cert: fs.readFileSync(resolve(__dirname, "../../certs/cert.pem"))
+      }
+    } : {}),
     proxy: {
       "/api": {
         target: "http://localhost:8787",

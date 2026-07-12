@@ -1,32 +1,31 @@
 {
   "name": "velura",
   "private": true,
-  "version": "0.1.0",
-  "description": "Velura commerce monorepo with admin backend, shared database schema, and static admin UI",
+  "version": "1.0.0",
+  "description": "Velura Fashion Shop monorepo: customer web, admin web, Node.js API and Supabase database",
   "type": "module",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w apps/admin-web",
-    "admin:dev": "npm run dev -w apps/admin-web",
-    "user:dev": "npm run dev -w apps/user-web",
-    "api:dev": "node --env-file=.env --watch apps/api/src/server.js",
-    "api:check": "node --check apps/api/src/server.js",
-    "ai:embed:products": "node --env-file=.env scripts/backfill-product-embeddings.mjs",
-    "check:js": "node scripts/check-js.mjs",
-    "check": "npm run check:js && npm run build",
+    "start": "node --env-file-if-exists=.env scripts/dev.mjs",
+    "dev": "node --env-file-if-exists=.env scripts/dev.mjs",
+    "dev:api": "node --env-file=.env --watch apps/api/src/server.js",
+    "dev:admin": "npm run dev -w apps/admin-web",
+    "dev:user": "npm run dev -w apps/user-web",
+    "build": "npm run build:user && npm run build:admin",
+    "build:user": "npm run build -w apps/user-web",
+    "build:admin": "npm run build -w apps/admin-web",
+    "preview:user": "npm run preview -w apps/user-web",
+    "preview:admin": "npm run preview -w apps/admin-web",
     "test": "npm run test:api",
     "test:api": "node --test tests/api/account-service.test.js tests/api/account-router.test.js tests/api/product-service.test.js tests/api/product-router.test.js tests/api/order-service.test.js tests/api/order-router.test.js tests/api/review-service.test.js tests/api/return-service.test.js tests/api/pricing-service.test.js tests/api/security.test.js tests/api/frontend-auth-security.test.js tests/api/dashboard.test.js tests/api/chatbot-recovery.test.js tests/api/chatbot-service.test.js tests/api/recommendation-service.test.js tests/api/quiz.test.js",
     "smoke:api": "node scripts/smoke-api.mjs",
-    "verify:a01:supabase": "node scripts/verify-a01-supabase.mjs",
-    "verify:a02:supabase": "node scripts/verify-a02-supabase.mjs",
-    "verify:a03:supabase": "node scripts/verify-a03-supabase.mjs",
-    "verify:a06:supabase": "node scripts/verify-a06-supabase.mjs",
-    "db:seed:admins": "node database/seed/seed-admin-users.mjs",
-    "build": "npm run build -w apps/admin-web",
-    "preview": "npm run preview -w apps/admin-web"
+    "db:migrate": "node --env-file=.env scripts/apply-migrations.mjs",
+    "db:seed:admins": "node --env-file=.env database/seed/seed-admin-users.mjs",
+    "db:seed:blogs": "node --env-file=.env database/seed/seed-new-blogs.mjs",
+    "ai:embed:products": "node --env-file=.env scripts/backfill-product-embeddings.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
@@ -35,7 +34,7 @@
     "vite": "^5.4.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22 <25"
   },
   "dependencies": {
     "@supabase/server": "^1.2.0",
