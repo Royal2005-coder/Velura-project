@@ -2,7 +2,7 @@ const SUPABASE_URL = window.VELURA_CONFIG?.supabaseUrl || "https://drvkrpoojynco
 const SUPABASE_ANON_KEY = window.VELURA_CONFIG?.supabaseAnonKey || "sb_publishable_6ELMfwBsM3SFAXQz8-jmOQ_kv1kkGh7";
 const API_BASE_URL = String(
   window.VELURA_CONFIG?.apiBaseUrl ||
-  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  (window.location.port && window.location.port !== "8787"
     ? window.location.protocol + "//" + window.location.hostname + ":8787"
     : window.location.origin)
 ).replace(/\/+$/, "");

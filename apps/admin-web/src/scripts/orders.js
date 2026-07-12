@@ -1,6 +1,6 @@
 import { orderApi } from "./order-api.js";
 
-const state = { orders: [], count: 0, active: "all", selected: null, logs: [], currentPage: 1, itemsPerPage: 10 };
+const state = { orders: [], count: 0, active: "all", selected: null, logs: [], currentPage: 1, itemsPerPage: 10, logsPage: 1 };
 const panel = document.querySelector("#order-panel");
 const overlay = document.querySelector("#order-overlay");
 
@@ -226,9 +226,9 @@ function openAction(type, orderId) {
           ${optionsHtml}
         </select>
       </label>
-      <label class="admin-form-group" data-tracking hidden>
+      <label class="admin-form-group" data-tracking style="display: none;">
         <span class="admin-form-label">Mã vận đơn</span>
-        <input class="admin-form-control" name="trackingCode" maxlength="100">
+        <input class="admin-form-control" name="trackingCode" value="${escapeHtml(order.order_id)}" readonly maxlength="100">
       </label>
     `;
   } else if (type === "cancel") title = "Hủy đơn hàng";
@@ -258,13 +258,69 @@ async function submitAction(form) {
 }
 
 async function renderLogs() {
-  const targets = state.orders.slice(0, 20);
-  panel.innerHTML = `<div class="admin-order-empty"><strong>Đang tải nhật ký...</strong></div>`;
-  try {
-    const results = await Promise.all(targets.map((order) => orderApi.auditLogs(order.order_id, { limit: 20 })));
-    state.logs = results.flatMap((result) => result.rows || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    panel.innerHTML = `<div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Thời gian</th><th>Mã đơn</th><th>Vai trò</th><th>Hành động</th><th>Thay đổi</th></tr></thead><tbody>${state.logs.map((log) => `<tr><td>${escapeHtml(dateTime(log.timestamp))}</td><td>${escapeHtml(log.target_id)}</td><td>${escapeHtml(log.actor_role)}</td><td>${escapeHtml(log.action)}</td><td>${escapeHtml(JSON.stringify(log.new_value || {}))}</td></tr>`).join("") || `<tr><td colspan="5">Chưa có nhật ký</td></tr>`}</tbody></table></div>`;
-  } catch (error) { panel.innerHTML = `<div class="admin-order-empty"><strong>Không thể tải nhật ký</strong><span>${escapeHtml(error.message)}</span></div>`; }
+  if (!state.logs || state.logs.length === 0) {
+    const targets = state.orders.slice(0, 20);
+    panel.innerHTML = `<div class="admin-order-empty"><strong>Đang tải nhật ký...</strong></div>`;
+    try {
+      const results = await Promise.all(targets.map((order) => orderApi.auditLogs(order.order_id, { limit: 20 })));
+      state.logs = results.flatMap((result) => result.rows || []).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    } catch (error) {
+      panel.innerHTML = `<div class="admin-order-empty"><strong>Không thể tải nhật ký</strong><span>${escapeHtml(error.message)}</span></div>`;
+      return;
+    }
+  }
+
+  const totalItems = state.logs.length;
+  const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
+  if (state.logsPage > totalPages) state.logsPage = totalPages;
+  if (state.logsPage < 1) state.logsPage = 1;
+
+  const start = (state.logsPage - 1) * state.itemsPerPage;
+  const end = start + state.itemsPerPage;
+  const pagedLogs = state.logs.slice(start, end);
+
+  let paginationButtons = "";
+  if (totalPages > 1) {
+    paginationButtons += `<button type="button" data-order-logs-page="${state.logsPage - 1}" ${state.logsPage === 1 ? "disabled" : ""}>←</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+      paginationButtons += `<button type="button" class="${state.logsPage === i ? "is-active" : ""}" data-order-logs-page="${i}">${i}</button>`;
+    }
+    paginationButtons += `<button type="button" data-order-logs-page="${state.logsPage + 1}" ${state.logsPage === totalPages ? "disabled" : ""}>→</button>`;
+  }
+  const paginationHtml = totalPages > 1 ? `<nav class="admin-pagination">${paginationButtons}</nav>` : "";
+
+  const tableRows = pagedLogs.map((log) => {
+    return `<tr>
+      <td>${escapeHtml(dateTime(log.timestamp))}</td>
+      <td><span class="admin-order-code">${escapeHtml(log.target_id)}</span></td>
+      <td>${escapeHtml(log.actor_role)}</td>
+      <td>${escapeHtml(log.action)}</td>
+      <td>${escapeHtml(JSON.stringify(log.new_value || {}))}</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="5">Chưa có nhật ký</td></tr>`;
+
+  panel.innerHTML = `
+    <div class="admin-table-wrap">
+      <table class="admin-table admin-data-table">
+        <thead>
+          <tr>
+            <th>Thời gian</th>
+            <th>Mã đơn</th>
+            <th>Vai trò</th>
+            <th>Hành động</th>
+            <th>Thay đổi</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+    </div>
+    <div class="admin-card__footer" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+      <p class="admin-table-note">Hiển thị ${totalItems === 0 ? 0 : start + 1} - ${Math.min(end, totalItems)} / ${totalItems} nhật ký</p>
+      ${paginationHtml}
+    </div>
+  `;
 }
 
 function exportCsv() {
@@ -295,6 +351,16 @@ document.addEventListener("click", (event) => {
     });
   }
 
+  const logsPageBtn = event.target.closest("[data-order-logs-page]");
+  if (logsPageBtn) {
+    const page = Number(logsPageBtn.dataset.orderLogsPage);
+    if (!Number.isNaN(page) && page > 0) {
+      state.logsPage = page;
+      renderLogs();
+    }
+    return;
+  }
+
   const pageBtn = event.target.closest("[data-order-page]");
   if (pageBtn) {
     const page = Number(pageBtn.dataset.orderPage);
@@ -310,10 +376,20 @@ document.addEventListener("click", (event) => {
   if (button.dataset.orderTab) {
     state.active = button.dataset.orderTab;
     state.currentPage = 1;
+    state.logsPage = 1;
     document.querySelectorAll("[data-order-tab]").forEach((tab) => tab.classList.toggle("admin-tab--active", tab === button));
     render();
   }
-  if (button.dataset.orderOpenLogs !== undefined) { state.active = "logs"; state.currentPage = 1; render(); }
+  if (button.dataset.orderOpenLogs !== undefined) {
+    state.active = "logs";
+    state.currentPage = 1;
+    state.logsPage = 1;
+    const logsTab = document.querySelector('[data-order-tab="logs"]');
+    if (logsTab) {
+      document.querySelectorAll("[data-order-tab]").forEach((tab) => tab.classList.toggle("admin-tab--active", tab === logsTab));
+    }
+    render();
+  }
   if (button.dataset.orderSidebar !== undefined) document.querySelector(".admin-layout").classList.toggle("admin-layout--sidebar-collapsed");
   if (button.dataset.orderMenu) {
     const targetMenu = document.querySelector(`#order-menu-${CSS.escape(button.dataset.orderMenu)}`);
@@ -342,8 +418,9 @@ panel.addEventListener("reset", () => {
 overlay.addEventListener("change", (event) => {
   if (event.target.name === "status") {
     const tracking = event.target.form.querySelector("[data-tracking]");
-    tracking.hidden = event.target.value !== "shipping";
-    tracking.querySelector("input").required = event.target.value === "shipping";
+    const isShipping = event.target.value === "shipping";
+    tracking.style.display = isShipping ? "" : "none";
+    tracking.querySelector("input").required = isShipping;
   }
 });
 overlay.addEventListener("submit", (event) => {

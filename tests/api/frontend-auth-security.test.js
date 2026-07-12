@@ -102,14 +102,17 @@ test("product administration uses the versioned API and encodes database values"
   assert.doesNotMatch(api, /\/rest\/v1\/product/);
 });
 
-test("dashboard backend reads canonical Supabase production tables", async () => {
-  const dashboard = await source("apps/api/src/dashboard.js");
-  assert.match(dashboard, /safeSelect\("product"/);
-  assert.match(dashboard, /safeSelect\("variant"/);
-  assert.match(dashboard, /safeSelect\("review"/);
-  assert.match(dashboard, /safeSelect\("return_exchange"/);
-  assert.match(dashboard, /safeSelect\("support_ticket"/);
-  assert.doesNotMatch(dashboard, /safeSelect\("products"|safeSelect\("reviews"|safeSelect\("return_requests"|safeSelect\("support_tickets"/);
+test("dashboard backend uses the canonical, service-only Supabase aggregation", async () => {
+  const [dashboard, migration] = await Promise.all([
+    source("apps/api/src/dashboard.js"),
+    source("database/migrations/018_admin_dashboard_summary.sql")
+  ]);
+  assert.match(dashboard, /callRpc\("get_admin_dashboard_summary"/);
+  assert.match(migration, /security invoker/i);
+  assert.match(migration, /revoke all on function .* from public, anon, authenticated/i);
+  assert.match(migration, /grant execute on function .* to service_role/i);
+  assert.match(migration, /join current_orders o on o\.order_id = oi\.order_id/i);
+  assert.match(migration, /count\(distinct product_id\)/i);
 });
 
 test("admin registration page has no demo account creation path", async () => {

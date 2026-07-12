@@ -12,6 +12,7 @@ const state = {
   selected: null,
   returnsPage: 1,
   ticketsPage: 1,
+  logsPage: 1,
   itemsPerPage: 10,
   chat: {
     selectedSessionId: null,
@@ -32,6 +33,16 @@ export function escapeServiceHtml(value) {
   return String(value ?? "").replace(/[&<>'"]/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;"
   })[char]);
+}
+
+function getEvidenceImageUrl(img) {
+  if (!img) return "";
+  if (img.startsWith("http://") || img.startsWith("https://")) {
+    return img;
+  }
+  const apiHost = window.location.hostname;
+  const apiBase = `http://${apiHost}:8787`;
+  return apiBase + (img.startsWith("/") ? img : "/" + img);
 }
 
 function icon(name) { return `<svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#${escapeServiceHtml(name)}"></use></svg>`; }
@@ -206,9 +217,7 @@ function renderTickets(rows = state.tickets) {
     <td>${escapeServiceHtml(row.user_id || row.guest_email || row.guest_phone || "Khách")}</td>
     <td>${escapeServiceHtml(row.title)}</td>
     <td>${escapeServiceHtml(row.description)}</td>
-    <td><span class="admin-badge admin-badge--priority-${row.priority}">${escapeServiceHtml(row.priority === "high" ? "Cao" : row.priority === "normal" ? "Trung bình" : "Thấp")}</span></td>
     <td>${badge(row.status)}</td>
-    <td>${row.csat_score == null ? "-" : escapeServiceHtml(row.csat_score)}</td>
     <td><div class="admin-table-actions">
       ${row.status === 'closed' ? `
         <button class="admin-icon-button admin-icon-button--sm" data-menu data-service-detail="ticket:${escapeServiceHtml(row.ticket_id)}" title="Chi tiết">${icon("eye")}</button>
@@ -274,12 +283,12 @@ function detail(type, id) {
         <h3 class="admin-drawer__section">Minh chứng từ khách hàng</h3>
         <div class="admin-proof-images admin-proof-images-list">
           ${(row.evidence_images && row.evidence_images.length) ? row.evidence_images.map(img => `
-            <a href="${escapeServiceHtml(img)}" target="_blank" title="Xem ảnh lớn">
-              <img src="${escapeServiceHtml(img)}" alt="Minh chứng đổi trả" class="admin-proof-img" style="cursor: pointer; max-height: 240px; border-radius: var(--radius-md); border: 1px solid var(--line);">
+            <a href="${escapeServiceHtml(getEvidenceImageUrl(img))}" target="_blank" title="Xem ảnh lớn">
+              <img src="${escapeServiceHtml(getEvidenceImageUrl(img))}" alt="Minh chứng đổi trả" class="admin-proof-img" style="cursor: pointer; max-height: 240px; border-radius: var(--radius-md); border: 1px solid var(--line);">
             </a>
           `).join("") : row.image_proof_url ? `
-            <a href="${escapeServiceHtml(row.image_proof_url)}" target="_blank" title="Xem ảnh lớn">
-              <img src="${escapeServiceHtml(row.image_proof_url)}" alt="Minh chứng đổi trả" class="admin-proof-img" style="cursor: pointer; max-height: 240px; border-radius: var(--radius-md); border: 1px solid var(--line);">
+            <a href="${escapeServiceHtml(getEvidenceImageUrl(row.image_proof_url))}" target="_blank" title="Xem ảnh lớn">
+              <img src="${escapeServiceHtml(getEvidenceImageUrl(row.image_proof_url))}" alt="Minh chứng đổi trả" class="admin-proof-img" style="cursor: pointer; max-height: 240px; border-radius: var(--radius-md); border: 1px solid var(--line);">
             </a>
           ` : `
             <div class="admin-proof-empty">
@@ -368,8 +377,8 @@ function getInfoSection(type, row) {
           <span>Minh chứng:</span>
           <div class="admin-details-evidence-list">
             ${row.evidence_images.map(img => `
-              <a href="${escapeServiceHtml(img)}" target="_blank" title="Xem ảnh lớn">
-                <img src="${escapeServiceHtml(img)}" class="admin-proof-img-thumb" style="cursor: pointer; max-height: 80px; width: auto; border-radius: var(--radius-sm); border: 1px solid var(--line);">
+              <a href="${escapeServiceHtml(getEvidenceImageUrl(img))}" target="_blank" title="Xem ảnh lớn">
+                <img src="${escapeServiceHtml(getEvidenceImageUrl(img))}" class="admin-proof-img-thumb" style="cursor: pointer; max-height: 80px; width: auto; border-radius: var(--radius-sm); border: 1px solid var(--line);">
               </a>
             `).join("")}
           </div>
@@ -377,8 +386,8 @@ function getInfoSection(type, row) {
         <div class="admin-details-block">
           <span>Minh chứng:</span>
           <div class="admin-details-evidence-list">
-            <a href="${escapeServiceHtml(row.image_proof_url)}" target="_blank" title="Xem ảnh lớn">
-              <img src="${escapeServiceHtml(row.image_proof_url)}" class="admin-proof-img-thumb" style="cursor: pointer; max-height: 80px; width: auto; border-radius: var(--radius-sm); border: 1px solid var(--line);">
+            <a href="${escapeServiceHtml(getEvidenceImageUrl(row.image_proof_url))}" target="_blank" title="Xem ảnh lớn">
+              <img src="${escapeServiceHtml(getEvidenceImageUrl(row.image_proof_url))}" class="admin-proof-img-thumb" style="cursor: pointer; max-height: 80px; width: auto; border-radius: var(--radius-sm); border: 1px solid var(--line);">
             </a>
           </div>
         </div>` : ""}
@@ -603,7 +612,11 @@ async function submitAction(form) {
         await returnApi.approveExchange(id, { adminNote: finalNote, expectedVersion: ret.version });
       } else if (act === "reject") {
         const fileInput = form.elements.imageProof;
-        const proofUrl = fileInput?.files?.[0] ? `/uploads/proof/${fileInput.files[0].name}` : "https://placehold.co/600x400/png?text=Evidence";
+        let proofUrl = "https://placehold.co/600x400/png?text=Evidence";
+        if (fileInput?.files?.[0]) {
+          const uploadRes = await returnApi.uploadEvidence(fileInput.files[0]);
+          proofUrl = uploadRes.url;
+        }
         await returnApi.reject(id, { reason: note, imageProof: proofUrl, expectedVersion: ret.version });
       }
     } else {
@@ -628,7 +641,11 @@ async function submitAction(form) {
         });
       } else if (act === "reject") {
         const fileInput = form.elements.imageProof;
-        const proofUrl = fileInput?.files?.[0] ? `/uploads/proof/${fileInput.files[0].name}` : "https://placehold.co/600x400/png?text=Evidence";
+        let proofUrl = "https://placehold.co/600x400/png?text=Evidence";
+        if (fileInput?.files?.[0]) {
+          const uploadRes = await returnApi.uploadEvidence(fileInput.files[0]);
+          proofUrl = uploadRes.url;
+        }
         await returnApi.updateStatus(id, { 
           status: "rejected", 
           conditionCheckResult: "major_damage", 
@@ -707,9 +724,18 @@ function renderLogs(rows = state.logs) {
     return true;
   });
 
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
+  if (state.logsPage > totalPages) state.logsPage = totalPages;
+  if (state.logsPage < 1) state.logsPage = 1;
+
+  const start = (state.logsPage - 1) * state.itemsPerPage;
+  const end = Math.min(start + state.itemsPerPage, totalItems);
+  const pagedRows = filtered.slice(start, end);
+
   const body = document.querySelector("#logs-body");
   if (!body) return;
-  body.innerHTML = filtered.length ? filtered.map((row) => {
+  body.innerHTML = pagedRows.length ? pagedRows.map((row) => {
     const oldValue = row.old_value || {};
     const newValue = row.new_value || {};
     const statusText = (oldValue.status || newValue.status) 
@@ -726,6 +752,15 @@ function renderLogs(rows = state.logs) {
       <td><span class="admin-badge admin-badge--success">Thành công</span></td>
     </tr>`;
   }).join("") : `<tr><td colspan="7"><div class="admin-empty-state">Không có nhật ký phù hợp</div></td></tr>`;
+
+  const footer = document.querySelector("#logs-footer");
+  if (footer) {
+    const showStart = totalItems === 0 ? 0 : start + 1;
+    footer.innerHTML = `
+      <p class="admin-table-note">Hiển thị ${showStart} - ${end} / ${totalItems} nhật ký</p>
+      ${renderPaginationMarkup(totalItems, state.logsPage, "logs")}
+    `;
+  }
 }
 
 async function loadAll() {
@@ -1103,6 +1138,9 @@ document.addEventListener("click", (event) => {
       if (type === "returns") {
         state.returnsPage = page;
         renderReturns();
+      } else if (type === "logs") {
+        state.logsPage = page;
+        renderLogs();
       } else {
         state.ticketsPage = page;
         renderTickets();
@@ -1116,6 +1154,7 @@ document.addEventListener("click", (event) => {
     state.zone = zone.dataset.zone;
     state.returnsPage = 1;
     state.ticketsPage = 1;
+    state.logsPage = 1;
     document.querySelectorAll("[data-zone]").forEach((node) => node.classList.toggle("admin-tab--active", node === zone));
     ["chat", "returns", "support", "logs"].forEach((name) => { 
       const panel = document.querySelector(`#${name}-panel`);
@@ -1264,6 +1303,7 @@ window.addEventListener("hashchange", () => {
   state.zone = targetZone;
   state.returnsPage = 1;
   state.ticketsPage = 1;
+  state.logsPage = 1;
   
   const tabButton = document.querySelector(`[data-zone="${targetZone}"]`);
   if (tabButton) {

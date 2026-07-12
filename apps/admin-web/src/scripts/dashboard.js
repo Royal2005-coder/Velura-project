@@ -11,6 +11,18 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
   var toast = document.querySelector("#dashboard-toast");
   var sidebar = document.querySelector("#admin-sidebar");
   var backdrop = document.querySelector("[data-dashboard-sidebar-close]");
+  var currentDashboardData = null;
+
+  root.querySelectorAll(".dashboard-kpi").forEach(function (card) {
+    card.classList.add("dashboard-kpi--loading");
+  });
+
+  var todayForInput = new Date();
+  var sevenDaysAgo = new Date(todayForInput.getTime() - 6 * 24 * 60 * 60 * 1000);
+  var fromInput = document.querySelector("[data-dashboard-date-from]");
+  var toInput = document.querySelector("[data-dashboard-date-to]");
+  if (fromInput) fromInput.value = sevenDaysAgo.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
+  if (toInput) toInput.value = todayForInput.toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
 
   function icon(name) {
     return '<svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#' + name + '"></use></svg>';
@@ -34,6 +46,39 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
     if (abs >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, "") + "M";
     if (abs >= 1e3) return (n / 1e3).toFixed(0) + "K";
     return String(n);
+  }
+
+  function fmtPercent(n) {
+    return Number(n).toLocaleString("vi-VN", { maximumFractionDigits: 1 });
+  }
+
+  function setTrend(element, value, suffix) {
+    if (!element) return;
+    element.classList.remove("dashboard-trend--up", "dashboard-trend--down");
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+      element.textContent = "Chưa có dữ liệu kỳ trước";
+      return;
+    }
+    var numeric = Number(value);
+    var arrow = numeric > 0 ? "↑" : numeric < 0 ? "↓" : "→";
+    if (numeric > 0) element.classList.add("dashboard-trend--up");
+    if (numeric < 0) element.classList.add("dashboard-trend--down");
+    element.textContent = arrow + " " + fmtPercent(Math.abs(numeric)) + (suffix || "% so với kỳ trước");
+  }
+
+  function compressTrend(points, maxPoints) {
+    if (!Array.isArray(points) || points.length <= maxPoints) return points || [];
+    var size = Math.ceil(points.length / maxPoints);
+    var result = [];
+    for (var i = 0; i < points.length; i += size) {
+      var chunk = points.slice(i, i + size);
+      result.push({
+        dateStr: chunk.length === 1 ? chunk[0].dateStr : chunk[0].dateStr + "–" + chunk[chunk.length - 1].dateStr,
+        revenue: chunk.reduce(function (sum, point) { return sum + Number(point.revenue || 0); }, 0),
+        orderCount: chunk.reduce(function (sum, point) { return sum + Number(point.orderCount || 0); }, 0)
+      });
+    }
+    return result;
   }
 
   function escapeHtml(str) {
@@ -268,16 +313,33 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
 
     var busPanel = document.querySelector("#dashboard-business");
     if (busPanel) {
+      var comparisons = data.business.comparisons || {};
       var kpis = busPanel.querySelectorAll(".dashboard-kpi");
       if (kpis.length >= 5) {
         kpis[0].querySelector("strong").textContent = fmtMoney(data.business.revenue);
+        setTrend(kpis[0].querySelector("small"), comparisons.revenuePct);
         kpis[1].querySelector("strong").textContent = fmtNum(data.business.orderCount);
+        setTrend(kpis[1].querySelector("small"), comparisons.orderCountPct);
 
         kpis[2].querySelector("strong").textContent = fmtMoney(data.business.averageOrderValue || 0);
+        setTrend(kpis[2].querySelector("small"), comparisons.aovPct);
 
-        kpis[3].querySelector("strong").textContent = (data.business.completionRate ?? 100) + "%";
+        kpis[3].querySelector("strong").textContent = fmtPercent(data.business.completionRate || 0) + "%";
+        setTrend(kpis[3].querySelector("small"), comparisons.completionRatePoints, " điểm phần trăm");
 
-        kpis[4].querySelector("strong").textContent = fmtMoney(data.business.promotionBudgetUsed);
+        kpis[4].querySelector("strong").textContent = fmtMoney(data.business.promotionRevenue || 0);
+        kpis[4].querySelector("small").textContent = fmtPercent(data.business.promotionRevenueShare || 0) + "% tổng doanh thu";
+      }
+
+      var periodLabel = busPanel.querySelector(".dashboard-revenue .dashboard-eyebrow");
+      if (periodLabel) periodLabel.textContent = data.periodDays + " ngày đã chọn";
+      var chartLabel = busPanel.querySelector(".dashboard-chart");
+      if (chartLabel) chartLabel.setAttribute("aria-label", "Biểu đồ doanh thu và số đơn trong " + data.periodDays + " ngày đã chọn");
+
+      var dataStatus = document.querySelector("[data-dashboard-data-status]");
+      if (dataStatus && data.meta) {
+        var generated = new Date(data.meta.generatedAt);
+        dataStatus.innerHTML = '<span class="dashboard-data-status__dot"></span><strong>Dữ liệu trực tiếp từ Supabase</strong><span>Cập nhật ' + generated.toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" }) + '</span><button type="button" data-dashboard-definitions>Xem công thức</button>';
       }
 
       // Update best categories ranking
@@ -322,17 +384,77 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
         `;
       }
 
+      var budget = data.business.insights?.budget || {};
+      var impactNote = busPanel.querySelector(".dashboard-impact-note span");
+      if (impactNote) {
+        if (budget.campaign && Number(budget.usagePct) > 0) {
+          impactNote.innerHTML = "<strong>Cần theo dõi ngân sách.</strong> " + escapeHtml(budget.campaign) + " đã sử dụng " + fmtPercent(budget.usagePct) + "% ngân sách.";
+        } else {
+          impactNote.innerHTML = "<strong>Chưa có mức sử dụng ngân sách.</strong> Supabase chưa ghi nhận chi phí giảm giá vào ngân sách campaign đang hoạt động.";
+        }
+      }
+
+      var peak = data.business.insights?.peakDay || {};
+      var chartInsight = busPanel.querySelector(".dashboard-chart-insight");
+      if (chartInsight) {
+        var peakDate = peak.date ? new Date(peak.date + "T00:00:00+07:00").toLocaleDateString("vi-VN") : "kỳ đã chọn";
+        var hasPeakChange = peak.changePct !== null && peak.changePct !== undefined && Number.isFinite(Number(peak.changePct));
+        var peakChange = hasPeakChange ? ", " + (Number(peak.changePct) >= 0 ? "tăng " : "giảm ") + fmtPercent(Math.abs(Number(peak.changePct))) + "% so với ngày liền trước" : "";
+        chartInsight.innerHTML = '<span>Insight từ dữ liệu thật</span><h4>Doanh thu cao nhất vào ' + escapeHtml(peakDate) + '</h4><p>Đạt ' + fmtMoney(peak.revenue || 0) + peakChange + '.</p><a href="./orders.html">Xem đơn hàng</a>';
+      }
+
+      var insightList = busPanel.querySelector(".dashboard-insight-list");
+      if (insightList) {
+        var promoAovPct = data.business.insights?.promotionAovPct;
+        var lowStockBest = Number(data.business.insights?.lowStockBestSellers || 0);
+        var voucherInsight = data.business.insights?.newCustomerVoucher || {};
+        var topCategory = data.business.categoryContributions?.[0];
+        var insightRows = [
+          {
+            key: "category",
+            title: topCategory ? topCategory.name + " dẫn đầu doanh thu" : "Chưa có doanh thu theo danh mục",
+            detail: topCategory ? fmtMoney(topCategory.revenue) + " · đóng góp " + fmtPercent(topCategory.pct) + "% trong kỳ." : "Không có đơn hợp lệ trong khoảng đã chọn.",
+            label: topCategory ? "Cơ hội" : "Thông tin",
+            klass: topCategory ? "success" : "neutral"
+          },
+          {
+            key: "aov",
+            title: promoAovPct === null || promoAovPct === undefined ? "Chưa đủ dữ liệu so sánh AOV" : "AOV đơn khuyến mãi " + (Number(promoAovPct) < 0 ? "thấp hơn" : "cao hơn"),
+            detail: promoAovPct === null || promoAovPct === undefined ? "Cần cả đơn khuyến mãi và đơn thường để so sánh." : "Chênh " + fmtPercent(Math.abs(Number(promoAovPct))) + "% so với đơn không khuyến mãi.",
+            label: promoAovPct === null || promoAovPct === undefined ? "Thiếu dữ liệu" : Number(promoAovPct) < 0 ? "Theo dõi" : "Tích cực",
+            klass: promoAovPct === null || promoAovPct === undefined ? "neutral" : Number(promoAovPct) < 0 ? "warning" : "success"
+          },
+          {
+            key: "stock",
+            title: lowStockBest > 0 ? "Sản phẩm bán chạy cần bổ sung tồn" : "Top bán chạy vẫn đủ tồn kho",
+            detail: lowStockBest > 0 ? lowStockBest + " sản phẩm có doanh thu trong kỳ đang dưới ngưỡng tồn." : "Không có sản phẩm bán chạy nào dưới ngưỡng tồn tối thiểu.",
+            label: lowStockBest > 0 ? "Rủi ro" : "Ổn định",
+            klass: lowStockBest > 0 ? "danger" : "success"
+          },
+          {
+            key: "voucher",
+            title: voucherInsight.code ? "Hiệu suất voucher " + voucherInsight.code : "Chưa có voucher riêng cho khách mới",
+            detail: voucherInsight.usagePct === null || voucherInsight.usagePct === undefined ? "Supabase chưa có đủ giới hạn và lượt dùng để tính tỷ lệ." : "Đã dùng " + fmtPercent(voucherInsight.usagePct) + "% hạn mức phát hành.",
+            label: voucherInsight.usagePct === null || voucherInsight.usagePct === undefined ? "Thiếu dữ liệu" : "Theo dõi",
+            klass: "neutral"
+          }
+        ];
+        insightList.innerHTML = insightRows.map(function (row) {
+          return '<button type="button" data-dashboard-drawer="insight" data-insight="' + row.key + '"><div><strong>' + escapeHtml(row.title) + '</strong><small>' + escapeHtml(row.detail) + '</small></div><span class="admin-badge admin-badge--' + row.klass + '">' + escapeHtml(row.label) + '</span><em>›</em></button>';
+        }).join("");
+      }
+
       // Update chart dynamically
       var chartContainer = busPanel.querySelector(".dashboard-chart__bars");
       var gridContainer = busPanel.querySelector(".dashboard-chart__grid");
       if (chartContainer && data.business.revenueTrend && data.business.revenueTrend.length > 0) {
-        var trend = data.business.revenueTrend;
+        var trend = compressTrend(data.business.revenueTrend, 15);
         var maxRevenue = Math.max.apply(null, trend.map(function(p) { return p.revenue; })) || 1;
         var maxOrders = Math.max.apply(null, trend.map(function(p) { return p.orderCount; })) || 1;
 
         chartContainer.innerHTML = trend.map(function(p) {
-          var pctBar = Math.round((p.revenue / maxRevenue) * 90) + 10;
-          var pctOrders = Math.round((p.orderCount / maxOrders) * 90) + 10;
+          var pctBar = p.revenue > 0 ? Math.max(4, Math.round((p.revenue / maxRevenue) * 100)) : 0;
+          var pctOrders = p.orderCount > 0 ? Math.max(4, Math.round((p.orderCount / maxOrders) * 100)) : 0;
           return `
             <div style="--bar: ${pctBar}%; --orders: ${pctOrders}%;">
               <i title="Doanh thu: ${fmtMoney(p.revenue)}"></i>
@@ -341,6 +463,7 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
             </div>
           `;
         }).join("");
+        chartContainer.style.gridTemplateColumns = "repeat(" + trend.length + ", minmax(12px, 1fr))";
 
         if (gridContainer) {
           gridContainer.innerHTML = `
@@ -393,10 +516,15 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
         throw new Error(errMsg);
       }
       var data = await response.json();
+      currentDashboardData = data;
       updateDashboardUI(data);
+      root.querySelectorAll(".dashboard-kpi--loading").forEach(function (card) { card.classList.remove("dashboard-kpi--loading"); });
     } catch (err) {
       loadError = true;
       console.error("[Dashboard] Load error:", err);
+      var dataStatus = document.querySelector("[data-dashboard-data-status]");
+      if (dataStatus) dataStatus.innerHTML = '<span class="dashboard-data-status__dot dashboard-data-status__dot--error"></span><strong>Không thể xác minh dữ liệu</strong><span>' + escapeHtml(err.message || "Lỗi kết nối tới server") + '</span>';
+      root.querySelectorAll(".dashboard-kpi--loading").forEach(function (card) { card.classList.remove("dashboard-kpi--loading"); });
       showToast(err.message || "Lỗi kết nối tới server");
     }
   }
@@ -406,18 +534,129 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
     var title = "Cảnh báo vận hành";
     if (type === "alerts") {
       content = '<p class="admin-note">Cảnh báo được tổng hợp từ các phân hệ. Dashboard chỉ hiển thị các mục có mức ưu tiên cao nhất.</p><div class="dashboard-drawer-list"><a href="./returns-cskh.html"><strong>Yêu cầu đổi/trả mới nhận</strong><span>Mở CSKH</span></a><a href="./orders.html"><strong>Đơn hàng cần xử lý</strong><span>Mở đơn hàng</span></a><a href="./products.html"><strong>Sản phẩm dưới tồn tối thiểu</strong><span>Mở tồn kho</span></a><a href="./promotions.html"><strong>Chiến dịch khuyến mãi hoạt động</strong><span>Mở khuyến mãi</span></a><a href="./reviews.html"><strong>Đánh giá chưa phản hồi</strong><span>Mở đánh giá</span></a></div>';
+    } else if (type === "definitions") {
+      title = "Công thức và nguồn dữ liệu";
+      var definitions = currentDashboardData?.meta?.definitions || {};
+      content = '<p class="admin-note">Mỗi KPI được tính trực tiếp trong PostgreSQL, theo múi giờ Việt Nam và cùng một khoảng lọc. Đơn hủy/hoàn không đóng góp doanh thu, danh mục hay sản phẩm bán chạy.</p><div class="dashboard-definition-list">' + [
+        ["Doanh thu", definitions.revenue],
+        ["Giá trị đơn trung bình", definitions.averageOrderValue],
+        ["Tỷ lệ hoàn tất", definitions.completionRate],
+        ["Doanh thu khuyến mãi", definitions.promotionRevenue]
+      ].map(function (row) { return '<div><strong>' + escapeHtml(row[0]) + '</strong><span>' + escapeHtml(row[1] || "Chưa có định nghĩa") + '</span></div>'; }).join("") + '</div>';
     } else {
+      var business = currentDashboardData?.business || {};
+      var insightData = business.insights || {};
+      var topCategory = business.categoryContributions?.[0];
+      var promoAovPct = insightData.promotionAovPct;
+      var lowStockBest = Number(insightData.lowStockBestSellers || 0);
+      var newVoucher = insightData.newCustomerVoucher || {};
       var insights = {
-        linen: { title: "Áo linen tăng trưởng tốt", description: "Doanh thu nhóm áo linen tăng trưởng tốt, chủ yếu từ khách hàng quay lại.", first: "+18%", second: "42,6M", action: "./products.html", actionLabel: "Xem nhóm sản phẩm" },
-        aov: { title: "AOV thay đổi nhẹ", description: "Giá trị đơn trung bình biến động khi áp dụng các chương trình khuyến mãi mùa hè.", first: "-3%", second: "420K", action: "./promotions.html", actionLabel: "Xem hiệu quả khuyến mãi" },
-        stock: { title: "Sản phẩm bán chạy sắp hết hàng", description: "Các sản phẩm đóng góp doanh thu cao đang chạm ngưỡng tồn kho tối thiểu.", first: "Mức thấp", second: "31%", action: "./products.html", actionLabel: "Xem tồn kho" },
-        voucher: { title: "Voucher khách mới hoạt động", description: "Mã voucher khuyến khích khách hàng đăng ký tài khoản và phát sinh đơn hàng đầu tiên.", first: "12%", second: "5 ngày", action: "./promotions.html", actionLabel: "Xem voucher" }
+        category: { title: topCategory ? topCategory.name + " dẫn đầu doanh thu" : "Chưa có doanh thu theo danh mục", description: topCategory ? "Xếp hạng được tính từ order_item của các đơn hợp lệ trong đúng khoảng đang chọn." : "Không có đơn hợp lệ để xếp hạng danh mục.", first: topCategory ? fmtPercent(topCategory.pct) + "%" : "0%", second: topCategory ? fmtMoney(topCategory.revenue) : "0", action: "./products.html", actionLabel: "Xem sản phẩm" },
+        aov: { title: "So sánh AOV khuyến mãi", description: promoAovPct === null || promoAovPct === undefined ? "Chưa đủ cả hai nhóm đơn để so sánh." : "So sánh AOV đơn có voucher/giảm giá với đơn không khuyến mãi trong cùng kỳ.", first: promoAovPct === null || promoAovPct === undefined ? "Chưa đủ dữ liệu" : fmtPercent(promoAovPct) + "%", second: fmtMoney(business.averageOrderValue || 0), action: "./promotions.html", actionLabel: "Xem khuyến mãi" },
+        stock: { title: "Tồn kho của sản phẩm bán chạy", description: "Tồn kho được cộng từ toàn bộ biến thể và đối chiếu với tổng ngưỡng tồn tối thiểu của sản phẩm.", first: fmtNum(lowStockBest), second: "sản phẩm", action: "./products.html", actionLabel: "Xem tồn kho" },
+        voucher: { title: "Hiệu suất voucher khách mới", description: newVoucher.usagePct === null || newVoucher.usagePct === undefined ? "Chưa có đủ usage_limit_total và used_count để tính tỷ lệ." : "Tỷ lệ được tính từ lượt đã dùng chia hạn mức phát hành.", first: newVoucher.usagePct === null || newVoucher.usagePct === undefined ? "Chưa đủ dữ liệu" : fmtPercent(newVoucher.usagePct) + "%", second: newVoucher.code || "Không có", action: "./promotions.html", actionLabel: "Xem voucher" }
       };
-      var item = insights[insightKey] || insights.linen;
+      var item = insights[insightKey] || insights.category;
       title = "Insight kinh doanh";
-      content = '<span class="admin-badge admin-badge--warning">Cần xem xét</span><h3 class="admin-drawer__section">' + item.title + '</h3><p>' + item.description + '</p><div class="dashboard-drawer-metric"><div><small>Thay đổi</small><strong>' + item.first + '</strong></div><div><small>Giá trị liên quan</small><strong>' + item.second + '</strong></div></div><p class="admin-note">Dữ liệu là tín hiệu gợi ý. Admin nên mở phân hệ liên quan để kiểm tra chi tiết trước khi hành động.</p><a class="admin-btn admin-btn--secondary" href="' + item.action + '">' + item.actionLabel + '</a>';
+      content = '<span class="admin-badge admin-badge--warning">Dữ liệu đã kiểm chứng</span><h3 class="admin-drawer__section">' + escapeHtml(item.title) + '</h3><p>' + escapeHtml(item.description) + '</p><div class="dashboard-drawer-metric"><div><small>Chỉ số</small><strong>' + escapeHtml(item.first) + '</strong></div><div><small>Giá trị liên quan</small><strong>' + escapeHtml(item.second) + '</strong></div></div><p class="admin-note">Kết quả phản ánh dữ liệu hiện có trong Supabase tại thời điểm tải dashboard.</p><a class="admin-btn admin-btn--secondary" href="' + item.action + '">' + item.actionLabel + '</a>';
     }
     overlay.innerHTML = '<div class="admin-drawer-backdrop" data-dashboard-close></div><aside class="admin-drawer admin-drawer--wide dashboard-drawer" aria-modal="true" role="dialog"><header class="admin-drawer__header"><div><small>TỔNG QUAN DASHBOARD</small><h2>' + title + '</h2></div><button class="admin-icon-button" type="button" data-dashboard-close aria-label="Đóng">×</button></header><div class="admin-drawer__body">' + content + '</div></aside>';
+  }
+
+  function toCsvRow(array) {
+    return array.map(function (val) {
+      var s = String(val === null || val === undefined ? "" : val);
+      if (s.indexOf(",") !== -1 || s.indexOf('"') !== -1 || s.indexOf("\n") !== -1) {
+        s = '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }).join(",");
+  }
+
+  function exportToExcel(data, typeIndex, period) {
+    var rows = [];
+    var dateStr = new Date().toLocaleDateString("vi-VN") + " " + new Date().toLocaleTimeString("vi-VN");
+
+    if (typeIndex === 0 || typeIndex === 2) {
+      rows.push(toCsvRow(["BÁO CÁO TỔNG QUAN ĐIỀU HÀNH VELURA"]));
+      rows.push(toCsvRow(["Khoảng thời gian", period]));
+      rows.push(toCsvRow(["Ngày xuất báo cáo", dateStr]));
+      rows.push("");
+      rows.push(toCsvRow(["I. CHỈ SỐ VẬN HÀNH"]));
+      rows.push(toCsvRow(["Chỉ số", "Số lượng", "Trạng thái"]));
+      rows.push(toCsvRow(["Đơn hàng cần xử lý", data.operations.pendingOrders, "Cần xử lý"]));
+      rows.push(toCsvRow(["Đơn hàng thanh toán lỗi", data.operations.paymentErrors, data.operations.paymentErrors > 0 ? "Khẩn cấp" : "Bình thường"]));
+      rows.push(toCsvRow(["Phiếu đổi/trả cần xử lý", data.operations.openReturns, data.operations.openReturns > 0 ? "Khẩn cấp" : "Bình thường"]));
+      rows.push(toCsvRow(["Phiếu hỗ trợ khách hàng", data.operations.openSupportTickets, data.operations.openSupportTickets > 0 ? "Cần chú ý" : "Bình thường"]));
+      rows.push(toCsvRow(["Sản phẩm sắp hết hàng", data.operations.lowStockProducts, data.operations.lowStockProducts > 0 ? "Khẩn cấp" : "Bình thường"]));
+      rows.push(toCsvRow(["Đánh giá cần duyệt", data.business.pendingReviews, "Bình thường"]));
+      rows.push(toCsvRow(["Đánh giá tiêu cực", data.operations.urgentReviews, data.operations.urgentReviews > 0 ? "Khẩn cấp" : "Bình thường"]));
+      rows.push("");
+      rows.push(toCsvRow(["II. DANH SÁCH CÔNG VIỆC CẦN XỬ LÝ HÔM NAY"]));
+      rows.push(toCsvRow(["STT", "Công việc", "Hạn xử lý", "Mức độ ưu tiên"]));
+      rows.push(toCsvRow(["1", "Duyệt " + data.operations.openReturns + " phiếu đổi/trả cần xử lý", "Trong tuần này", "Cao"]));
+      rows.push(toCsvRow(["2", "Kiểm tra " + data.operations.paymentErrors + " đơn thanh toán lỗi", "Cảnh báo hệ thống", "Cao"]));
+      rows.push(toCsvRow(["3", "Phản hồi " + data.operations.urgentReviews + " đánh giá tiêu cực", "Trong hôm nay", "Vừa"]));
+      rows.push(toCsvRow(["4", "Bổ sung tồn kho cho " + data.operations.lowStockProducts + " sản phẩm", "Tồn kho thấp", "Vừa"]));
+    }
+
+    if (typeIndex === 2) {
+      rows.push("");
+      rows.push("");
+      rows.push("");
+    }
+
+    if (typeIndex === 1 || typeIndex === 2) {
+      rows.push(toCsvRow(["BÁO CÁO HIỆU QUẢ KINH DOANH VELURA"]));
+      rows.push(toCsvRow(["Khoảng thời gian", period]));
+      rows.push(toCsvRow(["Ngày xuất báo cáo", dateStr]));
+      rows.push("");
+      rows.push(toCsvRow(["I. CHỈ SỐ KINH DOANH CHÍNH"]));
+      rows.push(toCsvRow(["Chỉ số", "Giá trị"]));
+      rows.push(toCsvRow(["Doanh thu", data.business.revenue + " VND"]));
+      rows.push(toCsvRow(["Số lượng đơn hàng", data.business.orderCount]));
+      rows.push(toCsvRow(["Giá trị đơn trung bình (AOV)", data.business.averageOrderValue + " VND"]));
+      rows.push(toCsvRow(["Tỷ lệ hoàn thành đơn", (data.business.completionRate ?? 100) + "%"]));
+      rows.push(toCsvRow(["Doanh thu đơn có khuyến mãi", data.business.promotionRevenue + " VND"]));
+      rows.push("");
+
+      rows.push(toCsvRow(["II. ĐÓNG GÓP DOANH THU THEO DANH MỤC"]));
+      rows.push(toCsvRow(["Danh mục", "Doanh thu (VND)", "Tỷ lệ đóng góp (%)"]));
+      if (data.business.categoryContributions) {
+        data.business.categoryContributions.forEach(function (cat) {
+          rows.push(toCsvRow([cat.name, cat.revenue, cat.pct + "%"]));
+        });
+      }
+      rows.push("");
+
+      rows.push(toCsvRow(["III. DANH SÁCH SẢN PHẨM BÁN CHẠY NHẤT"]));
+      rows.push(toCsvRow(["STT", "Tên sản phẩm", "SKU", "Số lượng bán", "Doanh thu (VND)", "Trạng thái tồn kho"]));
+      if (data.business.bestSellers) {
+        data.business.bestSellers.forEach(function (prod, index) {
+          rows.push(toCsvRow([index + 1, prod.name, prod.sku, prod.qty, prod.revenue, prod.stockStatus]));
+        });
+      }
+      rows.push("");
+
+      rows.push(toCsvRow(["IV. HIỆU QUẢ CHƯƠNG TRÌNH KHUYẾN MÃI"]));
+      rows.push(toCsvRow(["Chỉ số", "Giá trị"]));
+      rows.push(toCsvRow(["Đơn hàng có áp dụng khuyến mãi", data.business.promoOrdersCount]));
+      rows.push(toCsvRow(["Tổng ngân sách đã giảm", data.business.totalDiscount + " VND"]));
+      rows.push(toCsvRow(["Chiến dịch hiệu quả nhất", data.business.bestCampaign]));
+      rows.push(toCsvRow(["Voucher dùng nhiều nhất", data.business.mostUsedVoucher]));
+    }
+
+    var csvContent = "\ufeff" + rows.join("\r\n");
+    var blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    var link = document.createElement("a");
+    var url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    var filename = "Velura_Bao_Cao_" + (typeIndex === 0 ? "Dieu_Hanh" : typeIndex === 1 ? "Kinh_Doanh" : "Tong_Hop") + "_" + period.replace(/\s+/g, "_") + ".csv";
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   function openReport() {
@@ -460,14 +699,36 @@ import { API_BASE_URL, getAccessToken } from "./supabase-auth.js";
       return;
     }
 
+    if (event.target.closest("[data-dashboard-definitions]")) {
+      openDrawer("definitions");
+      return;
+    }
+
     if (event.target.closest("[data-dashboard-report]")) {
       openReport();
       return;
     }
 
     if (event.target.closest("[data-dashboard-export]")) {
+      if (!currentDashboardData) {
+        showToast("Không tìm thấy dữ liệu báo cáo để xuất.");
+        return;
+      }
+      
+      var period = currentDashboardData.periodDays + " ngày đã chọn (" + new Date(currentDashboardData.from).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }) + " - " + new Date(currentDashboardData.to).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }) + ")";
+      
+      var typeRadios = document.getElementsByName("report-type");
+      var typeIndex = 0;
+      for (var i = 0; i < typeRadios.length; i++) {
+        if (typeRadios[i].checked) {
+          typeIndex = i;
+          break;
+        }
+      }
+      
+      exportToExcel(currentDashboardData, typeIndex, period);
       closeOverlay();
-      showToast("Đã chuẩn bị báo cáo Dashboard.");
+      showToast("Đã xuất báo cáo thành công.");
       return;
     }
 

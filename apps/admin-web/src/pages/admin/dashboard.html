@@ -61,9 +61,12 @@
             <button type="button" data-dashboard-range="custom" aria-pressed="false"><svg class="admin-line-icon"><use href="../../assets/icons/admin-icons.svg#clock"></use></svg>Tùy chọn</button>
           </div>
         </div>
+        <div class="dashboard-data-status" data-dashboard-data-status aria-live="polite">
+          <span class="dashboard-data-status__dot"></span><strong>Đang kết nối Supabase</strong><span>Đang xác minh dữ liệu…</span>
+        </div>
         <form class="dashboard-custom-period" data-dashboard-custom-period hidden>
-          <label><span>Từ ngày</span><input class="admin-form-control" type="date" value="2026-06-21" data-dashboard-date-from></label>
-          <label><span>Đến ngày</span><input class="admin-form-control" type="date" value="2026-06-27" data-dashboard-date-to></label>
+          <label><span>Từ ngày</span><input class="admin-form-control" type="date" data-dashboard-date-from></label>
+          <label><span>Đến ngày</span><input class="admin-form-control" type="date" data-dashboard-date-to></label>
           <button class="admin-btn admin-btn--filter admin-btn--sm" type="submit">Áp dụng</button>
         </form>
 

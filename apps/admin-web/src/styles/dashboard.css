@@ -1,6 +1,12 @@
 .admin-dashboard-page { --dashboard-blue: #3d6f91; --dashboard-red: var(--error); --dashboard-amber: #a35f1e; --dashboard-green: #4c7048; --dashboard-skeleton: linear-gradient(90deg, var(--field-bg) 25%, #e8e5e1 50%, var(--field-bg) 75%); }
 .dashboard-content { padding-bottom: 48px; overflow-x: hidden; }
 .dashboard-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.dashboard-data-status { display: flex; align-items: center; gap: 8px; margin: -8px 0 20px; padding: 10px 13px; border: 1px solid #dce8dc; border-radius: var(--radius-sm); background: #f5faf4; color: var(--dashboard-green); font-size: .75rem; }
+.dashboard-data-status__dot { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: var(--dashboard-green); box-shadow: 0 0 0 3px rgba(76, 112, 72, .12); }
+.dashboard-data-status__dot--error { background: var(--dashboard-red); box-shadow: 0 0 0 3px rgba(177, 55, 55, .12); }
+.dashboard-data-status strong { font-weight: 600; }
+.dashboard-data-status > span:not(.dashboard-data-status__dot) { color: var(--soft); }
+.dashboard-data-status button { margin-left: auto; padding: 0; border: 0; background: transparent; color: var(--brown); cursor: pointer; font: inherit; font-weight: 500; }
 .dashboard-view-tabs { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-md); background: #fff; }
 .dashboard-view-tab { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 14px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--muted); cursor: pointer; font: inherit; font-size: .9375rem; }
 .dashboard-view-tab.is-active { background: var(--tab-bg); color: var(--brown); }
@@ -158,6 +164,10 @@
 .dashboard-drawer-metric div { display: grid; gap: 4px; padding: 12px; border-radius: var(--radius-sm); background: var(--field-bg); }
 .dashboard-drawer-metric small { color: var(--soft); font-size: .75rem; }
 .dashboard-drawer-metric strong { color: var(--brown); font-size: 1rem; font-weight: 600; }
+.dashboard-definition-list { display: grid; gap: 0; }
+.dashboard-definition-list div { display: grid; gap: 4px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.dashboard-definition-list strong { color: var(--ink); font-size: .875rem; font-weight: 600; }
+.dashboard-definition-list span { color: var(--text-body); font-size: .8125rem; line-height: 1.55; }
 .dashboard-drawer .admin-drawer__header { align-items: center; padding: 22px 24px; }
 .dashboard-drawer .admin-drawer__header > div { display: grid; gap: 4px; }
 .dashboard-drawer .admin-drawer__header small { color: var(--soft); font-family: "Playfair Display", Georgia, serif; font-size: .6875rem; font-weight: 600; letter-spacing: .08em; line-height: 1.4; }
@@ -173,6 +183,7 @@
 @keyframes dashboard-spin { to { transform: rotate(360deg); } }
 @keyframes dashboard-skeleton-pulse { 0% { background-position: 200% 0; } to { background-position: -200% 0; } }
 .dashboard-kpi--loading strong { display: block; width: 60%; height: 1.6rem; border-radius: var(--radius-sm); background: var(--dashboard-skeleton); background-size: 200% 100%; animation: dashboard-skeleton-pulse 1.5s ease-in-out infinite; color: transparent; }
+.dashboard-kpi--loading small { visibility: hidden; }
 @media (max-width: 1280px) {
   .dashboard-kpi-grid, .dashboard-kpi-grid--business { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .dashboard-command-grid, .dashboard-lower-grid, .dashboard-business-grid, .dashboard-business-grid--lower { grid-template-columns: 1fr; }
@@ -186,6 +197,8 @@
 @media (max-width: 768px) {
   .dashboard-content { padding-top: 22px; }
   .dashboard-controls { align-items: stretch; flex-direction: column; }
+  .dashboard-data-status { align-items: flex-start; flex-wrap: wrap; }
+  .dashboard-data-status button { width: 100%; margin: 2px 0 0 16px; text-align: left; }
   .dashboard-view-tabs { display: flex; width: 100%; }
   .dashboard-view-tab { flex: 1; justify-content: center; }
   .dashboard-time-filter { display: grid; grid-template-columns: repeat(4, 1fr); }

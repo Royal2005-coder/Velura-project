@@ -18,7 +18,7 @@
     "check:js": "node scripts/check-js.mjs",
     "check": "npm run check:js && npm run build",
     "test": "npm run test:api",
-    "test:api": "node --test tests/api/account-service.test.js tests/api/account-router.test.js tests/api/product-service.test.js tests/api/product-router.test.js tests/api/order-service.test.js tests/api/order-router.test.js tests/api/review-service.test.js tests/api/return-service.test.js tests/api/pricing-service.test.js tests/api/security.test.js tests/api/frontend-auth-security.test.js tests/api/chatbot-recovery.test.js tests/api/chatbot-service.test.js tests/api/recommendation-service.test.js tests/api/quiz.test.js",
+    "test:api": "node --test tests/api/account-service.test.js tests/api/account-router.test.js tests/api/product-service.test.js tests/api/product-router.test.js tests/api/order-service.test.js tests/api/order-router.test.js tests/api/review-service.test.js tests/api/return-service.test.js tests/api/pricing-service.test.js tests/api/security.test.js tests/api/frontend-auth-security.test.js tests/api/dashboard.test.js tests/api/chatbot-recovery.test.js tests/api/chatbot-service.test.js tests/api/recommendation-service.test.js tests/api/quiz.test.js",
     "smoke:api": "node scripts/smoke-api.mjs",
     "verify:a01:supabase": "node scripts/verify-a01-supabase.mjs",
     "verify:a02:supabase": "node scripts/verify-a02-supabase.mjs",

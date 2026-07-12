@@ -1,7 +1,7 @@
 import { pricingApi } from "./pricing-api.js";
 import { productApi } from "./product-api.js";
 
-const state = { view: "campaigns", promotions: [], vouchers: [], bundles: [], logs: [], stats: null, comboPage: 1, comboPerPage: 10, comboItems: {}, allProducts: [], categories: [] };
+const state = { view: "campaigns", promotions: [], vouchers: [], bundles: [], logs: [], stats: null, comboPage: 1, comboPerPage: 10, comboItems: {}, allProducts: [], categories: [], logsPage: 1, logsPerPage: 10 };
 const panel = document.querySelector("#promo-panel");
 const overlay = document.querySelector("#promo-overlay");
 const toast = document.querySelector("#promo-toast");
@@ -162,7 +162,14 @@ function render() {
     const footer = `<div class="admin-card__footer"><p class="admin-table-note">Hiển thị ${b.start + 1} - ${b.end} / ${b.total} combo</p>${renderPagination(b.total, state.comboPage, state.comboPerPage, "combo-page")}</div>`;
     panel.innerHTML = `<div class="admin-section__header"><h3 class="admin-section__title" style="margin:0;font-size:1.125rem;font-weight:500;">Danh sách Combo</h3><button class="admin-btn admin-btn--secondary admin-btn--sm" data-promo-modal="combo">${icon("plus")} Tạo Combo mới</button></div>` + tableWrap(["Combo", "Giá gốc", "Giá bán", "Thành phần", "Trạng thái", "Thao tác"], b.rows, "Chưa có combo trong danh sách sản phẩm", footer);
   }
-  else if (state.view === "logs") panel.innerHTML = tableWrap(["Thời gian", "Người thực hiện", "Nhóm", "Đối tượng", "Hành động", "Dữ liệu mới"], logRows(), "Chưa có nhật ký");
+  else if (state.view === "logs") {
+    const total = state.logs.length;
+    const start = (state.logsPage - 1) * state.logsPerPage;
+    const paged = state.logs.slice(start, start + state.logsPerPage);
+    const rowsHtml = paged.map((row) => `<tr><td>${date(row.timestamp)}</td><td>${escapePromotionHtml(row.actor_id || "system")}</td><td>${escapePromotionHtml(row.module)}</td><td>${escapePromotionHtml(row.target_id)}</td><td>${escapePromotionHtml(row.action)}</td><td>${escapePromotionHtml(JSON.stringify(row.new_value || {}))}</td></tr>`).join("");
+    const footer = `<div class="admin-card__footer"><p class="admin-table-note">Hiển thị ${total === 0 ? 0 : start + 1} - ${Math.min(start + state.logsPerPage, total)} / ${total} nhật ký</p>${renderPagination(total, state.logsPage, state.logsPerPage, "promo-logs-page")}</div>`;
+    panel.innerHTML = tableWrap(["Thời gian", "Người thực hiện", "Nhóm", "Đối tượng", "Hành động", "Dữ liệu mới"], rowsHtml, "Chưa có nhật ký", footer);
+  }
   else panel.innerHTML = tableWrap(["Chiến dịch", "Loại", "Thời gian", "Ngân sách", "Trạng thái", "Thao tác"], campaignRows(), "Chưa có chiến dịch");
 }
 
@@ -409,8 +416,17 @@ document.addEventListener("click", async (event) => {
   const view = event.target.closest("[data-promo-view]");
   if (view) {
     state.view = view.dataset.promoView;
+    state.logsPage = 1;
+    state.comboPage = 1;
     document.querySelectorAll("[data-promo-view]").forEach((node) => node.classList.toggle("admin-tab--active", node === view));
     render();
+  }
+
+  const promoLogsPage = event.target.closest("[data-promo-logs-page]");
+  if (promoLogsPage) {
+    const page = Number(promoLogsPage.dataset.promoLogsPage);
+    if (!Number.isNaN(page) && page > 0) { state.logsPage = page; render(); }
+    return;
   }
 
   const comboPage = event.target.closest("[data-combo-page]");
