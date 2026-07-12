@@ -50,7 +50,8 @@
 /* --- Button Variants --- */
 
 /* Primary Filled Button (Terracotta theme) */
-.btn--primary {
+.btn--primary,
+.btn--accent {
   height: 48px;
   padding: 0 28px;
   background-color: var(--terracotta);
@@ -61,7 +62,8 @@
   border: none;
 }
 
-.btn--primary:hover {
+.btn--primary:hover,
+.btn--accent:hover {
   background-color: var(--terracotta-h);
   color: #fff;
 }
@@ -84,6 +86,40 @@
   color: var(--terracotta-h);
 }
 
+.btn--brown {
+  height: 48px;
+  padding: 0 28px;
+  background-color: var(--brown);
+  color: #fff;
+  border: 1px solid var(--brown);
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn--brown:hover {
+  background-color: #654320;
+  border-color: #654320;
+  color: #fff;
+}
+
+.btn--brown-outline {
+  height: 48px;
+  padding: 0 28px;
+  background-color: transparent;
+  color: var(--brown);
+  border: 1px solid var(--brown);
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn--brown-outline:hover {
+  background-color: rgba(125, 86, 45, 0.08);
+  border-color: #654320;
+  color: #654320;
+}
+
 /* Secondary/Neutral Outline Button (Gray border, dark/soft text) */
 .btn--secondary {
   height: 48px;
@@ -100,6 +136,40 @@
   background-color: var(--field-bg);
   color: var(--text-dark);
   border-color: var(--soft);
+}
+
+.btn--success {
+  height: 48px;
+  padding: 0 28px;
+  background-color: #E6F4EA;
+  color: #137333;
+  border: 1px solid #B7DFBF;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn--success:hover {
+  background-color: #D7EEDF;
+  border-color: #8BC69B;
+  color: #0F5E29;
+}
+
+.btn--danger {
+  height: 48px;
+  padding: 0 28px;
+  background-color: #DC3545;
+  color: #fff;
+  border: 1px solid #DC3545;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn--danger:hover {
+  background-color: #B02A37;
+  border-color: #B02A37;
+  color: #fff;
 }
 
 /* Plain Text / Link Style Button */

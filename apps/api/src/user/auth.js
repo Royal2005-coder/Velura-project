@@ -32,6 +32,82 @@ export function requireUserAuth(context) {
   return context.profile;
 }
 
+function normalizeSocialProvider(provider) {
+  const value = String(provider || "").toLowerCase();
+  return value === "google" || value === "facebook" ? value : null;
+}
+
+function getSocialIdentity(authUser, provider) {
+  const identities = Array.isArray(authUser?.identities) ? authUser.identities : [];
+  return identities.find(identity => normalizeSocialProvider(identity?.provider) === provider) || null;
+}
+
+function getProviderProfile(authUser) {
+  const provider = normalizeSocialProvider(
+    authUser?.app_metadata?.provider
+      || (Array.isArray(authUser?.app_metadata?.providers) ? authUser.app_metadata.providers[0] : null)
+      || authUser?.identities?.[0]?.provider
+  );
+
+  if (!provider) return null;
+
+  const identityData = getSocialIdentity(authUser, provider)?.identity_data || {};
+  const metadata = authUser.user_metadata || {};
+  const providerEmail = identityData.email || metadata.email || authUser.email || null;
+  const providerName = identityData.full_name
+    || identityData.name
+    || identityData.user_name
+    || metadata.full_name
+    || metadata.name
+    || (providerEmail ? providerEmail.split("@")[0] : null);
+
+  return {
+    provider,
+    email: providerEmail ? String(providerEmail).slice(0, 255) : null,
+    name: providerName ? String(providerName).slice(0, 100) : null
+  };
+}
+
+function buildSocialAccounts(existingAccounts, providerProfile) {
+  const current = existingAccounts && typeof existingAccounts === "object" && !Array.isArray(existingAccounts)
+    ? existingAccounts
+    : {};
+  if (!providerProfile?.provider) return current;
+
+  return {
+    ...current,
+    [providerProfile.provider]: {
+      provider: providerProfile.provider,
+      providerEmail: providerProfile.email,
+      providerName: providerProfile.name,
+      linkedAt: new Date().toISOString()
+    }
+  };
+}
+
+function isMissingSocialAccountsColumn(error) {
+  const message = `${error?.message || ""} ${error?.details?.message || ""} ${error?.details?.msg || ""}`;
+  return error?.status === 400 && /social_accounts/i.test(message) && /schema cache|column/i.test(message);
+}
+
+async function saveSocialAccountsIfSupported(user, providerProfile) {
+  if (!user?.user_id || !providerProfile?.provider) return user;
+
+  try {
+    const rows = await updateRows("users", { user_id: `eq.${user.user_id}` }, {
+      social_accounts: buildSocialAccounts(user.social_accounts, providerProfile),
+      updated_at: new Date().toISOString()
+    }, { silentError: true });
+    return rows[0] || user;
+  } catch (err) {
+    if (isMissingSocialAccountsColumn(err)) {
+      console.warn("[social-login] users.social_accounts is not available yet; continuing without linked-account metadata.");
+      return user;
+    }
+    throw err;
+  }
+}
+
 export async function handleAuthRoute(req, res, action, corsHeaders, context) {
   // GET /api/user/auth/check-exists?email=...&phone=...
   if (action === "check-exists" && req.method === "GET") {
@@ -400,14 +476,19 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
       console.error("[social-login] getAuthUser error:", err.status, err.message, err.details);
       throw new HttpError(502, "SUPABASE_ERROR", "Không thể xác thực token: " + (err.details?.msg || err.message));
     }
-    if (!authUser || !authUser.email) {
+    if (!authUser) {
       console.error("[social-login] authUser is null or missing email:", authUser);
       throw new HttpError(401, "INVALID_TOKEN", "Token Supabase không hợp lệ hoặc đã hết hạn");
     }
 
-    const email = authUser.email;
+    const providerProfile = getProviderProfile(authUser);
+    const email = authUser.email || providerProfile?.email || null;
+    if (!email) {
+      throw new HttpError(400, "PROVIDER_EMAIL_REQUIRED", "Tài khoản mạng xã hội chưa cung cấp email để tạo tài khoản Velura");
+    }
     const fullName = authUser.user_metadata?.full_name
       || authUser.user_metadata?.name
+      || providerProfile?.name
       || email.split("@")[0];
     const avatarRaw = authUser.user_metadata?.avatar_url
       || authUser.user_metadata?.picture
@@ -424,18 +505,17 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
     }
 
     if (user) {
-      // Link auth_user_id if not already linked
-      if (!user.auth_user_id) {
-        await updateRows("users", { user_id: `eq.${user.user_id}` }, {
-          auth_user_id: authUserId
-        });
+      const updates = {
+        updated_at: new Date().toISOString()
+      };
+      if (!user.auth_user_id) updates.auth_user_id = authUserId;
+      if (!user.avatar && avatar) updates.avatar = avatar;
+
+      const updatedRows = await updateRows("users", { user_id: `eq.${user.user_id}` }, updates);
+      if (updatedRows[0]) {
+        user = updatedRows[0];
       }
-      // Update avatar if user doesn't have one
-      if (!user.avatar && avatar) {
-        await updateRows("users", { user_id: `eq.${user.user_id}` }, {
-          avatar
-        });
-      }
+      user = await saveSocialAccountsIfSupported(user, providerProfile);
     } else {
       // Create new user from social profile
       const randomPassword = "SocialAuth" + Math.floor(1000 + Math.random() * 9000) + "!";
@@ -449,6 +529,7 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
         role: "member",
         tier: "Standard"
       });
+      user = await saveSocialAccountsIfSupported(user, providerProfile);
 
       // Welcome notification
       await createNotification(

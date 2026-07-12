@@ -489,6 +489,13 @@ function renderCheckoutLayout(role) {
   }
 
   if (path.includes("/payment-guest.html") && isMember) {
+    const shouldResumeCheckout = sessionStorage.getItem(CHECKOUT_RESUME_AFTER_LOGIN_KEY) === "shipping-payment";
+    const shipping = readJsonStorage(localStorage, "checkout_shipping", {});
+    if (shouldResumeCheckout && shipping.name && shipping.phone && shipping.address) {
+      sessionStorage.removeItem(CHECKOUT_RESUME_AFTER_LOGIN_KEY);
+      window.location.href = "/src/pages/checkout/shipping-payment.html";
+      return;
+    }
     window.location.href = "/src/pages/checkout/payment-user.html";
     return;
   }
@@ -496,10 +503,56 @@ function renderCheckoutLayout(role) {
   document.body.dataset.checkoutRole = isMember ? "member" : "guest";
 }
 
-function showGuestOrderConfirmModal(shipping, onConfirm) {
+function readJsonStorage(storage, key, fallback = {}) {
+  try {
+    const raw = storage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function getCheckoutSnapshot() {
+  const cart = getCheckoutItems();
+  const shipping = readJsonStorage(localStorage, "checkout_shipping", {});
+  const methods = readJsonStorage(localStorage, "checkout_methods", {});
+  const discountAmount = parseInt(localStorage.getItem("checkout_discount") || 0, 10);
+  const subtotal = cart.reduce((sum, item) => sum + Number(item.unit_price || 0) * Number(item.quantity || 0), 0);
+  const shippingFee = Number(methods.shippingFee || 0);
+  const grandTotal = Math.max(0, subtotal - discountAmount + shippingFee);
+
+  return { cart, shipping, methods, discountAmount, subtotal, grandTotal };
+}
+
+function validateCheckoutShipping(shipping) {
+  if (!shipping || !shipping.name || !shipping.phone || !shipping.address) {
+    return "Vui lòng cập nhật đầy đủ họ tên, số điện thoại và địa chỉ giao hàng.";
+  }
+  if (!isValidPhone(String(shipping.phone).trim())) {
+    return "Số điện thoại giao hàng không hợp lệ.";
+  }
+  if (shipping.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(shipping.email).trim())) {
+    return "Email giao hàng không đúng định dạng.";
+  }
+  return "";
+}
+
+function setButtonLoading(button, isLoading, loadingText, idleText) {
+  if (!button) return;
+  if (!button.dataset.idleText) {
+    button.dataset.idleText = idleText || button.textContent;
+  }
+  button.textContent = isLoading ? loadingText : (idleText || button.dataset.idleText);
+  button.disabled = isLoading;
+  button.style.pointerEvents = isLoading ? "none" : "auto";
+  button.style.opacity = isLoading ? "0.7" : "1";
+}
+
+function showGuestOrderConfirmModal(getShipping, onConfirm) {
   const existing = document.querySelector(".guest-order-confirm-modal");
   if (existing) existing.remove();
 
+  const shipping = getShipping();
   const modal = document.createElement("div");
   modal.className = "guest-order-confirm-modal";
   modal.setAttribute("role", "dialog");
@@ -515,15 +568,26 @@ function showGuestOrderConfirmModal(shipping, onConfirm) {
       </dl>
       <div class="guest-order-confirm-modal__actions">
         <button class="guest-order-confirm-modal__btn guest-order-confirm-modal__btn--secondary" type="button" data-action="cancel">Kiểm tra lại</button>
-        <button class="guest-order-confirm-modal__btn guest-order-confirm-modal__btn--primary" type="button" data-action="confirm">Đồng ý</button>
+        <button class="guest-order-confirm-modal__btn guest-order-confirm-modal__btn--primary" type="button" data-action="confirm">Xác nhận và nhận mã OTP</button>
       </div>
     </div>
   `;
+  const fields = modal.querySelectorAll("dd");
+  fields[0].textContent = shipping.name || "-";
+  fields[1].textContent = shipping.phone || "-";
+  fields[2].textContent = shipping.email || "-";
+  fields[3].textContent = shipping.address || "-";
 
   modal.querySelector("[data-action='cancel']").addEventListener("click", () => modal.remove());
-  modal.querySelector("[data-action='confirm']").addEventListener("click", () => {
-    modal.remove();
-    onConfirm();
+  modal.querySelector("[data-action='confirm']").addEventListener("click", async (event) => {
+    event.preventDefault();
+    const latestShipping = getShipping();
+    const validationError = validateCheckoutShipping(latestShipping);
+    if (validationError) {
+      showToast(validationError);
+      return;
+    }
+    await onConfirm(latestShipping, modal.querySelector("[data-action='confirm']"), modal);
   });
   document.body.appendChild(modal);
 }
@@ -1120,6 +1184,125 @@ export function initVoucherModal() {
 let paymentUserListenersBound = false;
 let checkoutAddresses = [];
 let checkoutUserObj = {};
+const CHECKOUT_GUEST_DRAFT_KEY = "checkout_guest_draft";
+const CHECKOUT_RESUME_AFTER_LOGIN_KEY = "checkout_resume_after_login";
+
+function persistCheckoutGuestDraft() {
+  const draft = {
+    name: document.getElementById("fullname")?.value.trim() || "",
+    phone: document.getElementById("guest-phone")?.value.trim() || "",
+    email: document.getElementById("guest-email")?.value.trim() || "",
+    province: document.getElementById("address-province")?.value || "",
+    district: document.getElementById("address-district")?.value || "",
+    ward: document.getElementById("address-ward")?.value || "",
+    detail: document.getElementById("guest-address-detail")?.value.trim() || "",
+    note: document.getElementById("guest-note")?.value.trim() || ""
+  };
+
+  sessionStorage.setItem(CHECKOUT_GUEST_DRAFT_KEY, JSON.stringify(draft));
+  return draft;
+}
+
+function readCheckoutGuestDraft() {
+  const fromSession = readJsonStorage(sessionStorage, CHECKOUT_GUEST_DRAFT_KEY, {});
+  if (fromSession && Object.keys(fromSession).length) return fromSession;
+
+  const shipping = readJsonStorage(localStorage, "checkout_shipping", {});
+  if (!shipping || !Object.keys(shipping).length) return {};
+
+  return {
+    name: shipping.name || "",
+    phone: shipping.phone || "",
+    email: shipping.email || "",
+    province: shipping.province || "",
+    district: shipping.district || "",
+    ward: shipping.ward || "",
+    detail: shipping.detail || "",
+    note: shipping.note || ""
+  };
+}
+
+function restoreCheckoutGuestDraft({ provinceDD, districtDD, wardDD }) {
+  const draft = readCheckoutGuestDraft();
+  if (!draft || !Object.keys(draft).length) return;
+
+  const setValue = (id, value) => {
+    const el = document.getElementById(id);
+    if (el && value) el.value = value;
+  };
+
+  setValue("fullname", draft.name);
+  setValue("guest-phone", draft.phone);
+  setValue("guest-email", draft.email);
+  setValue("guest-address-detail", draft.detail);
+  setValue("guest-note", draft.note);
+
+  const provinceHidden = document.getElementById("address-province");
+  const districtHidden = document.getElementById("address-district");
+  const wardHidden = document.getElementById("address-ward");
+
+  if (draft.province && provinceDD && locationData[draft.province]) {
+    provinceHidden.value = draft.province;
+    provinceDD.setValue(draft.province);
+    const distOpts = Object.entries(locationData[draft.province].districts).map(([k, v]) => ({ value: k, label: v.name }));
+    districtDD?.setOptions(distOpts);
+    districtDD?.enable();
+  }
+
+  if (draft.province && draft.district && districtDD && locationData[draft.province]?.districts[draft.district]) {
+    districtHidden.value = draft.district;
+    districtDD.setValue(draft.district);
+    const wardOpts = locationData[draft.province].districts[draft.district].wards.map(w => ({ value: w, label: w }));
+    wardDD?.setOptions(wardOpts);
+    wardDD?.enable();
+  }
+
+  if (draft.ward && wardDD) {
+    wardHidden.value = draft.ward;
+    wardDD.setValue(draft.ward);
+  }
+}
+
+function buildGuestCheckoutShippingInfo() {
+  const name = document.getElementById("fullname")?.value.trim();
+  const phone = document.getElementById("guest-phone")?.value.trim();
+  const email = document.getElementById("guest-email")?.value.trim();
+  const provVal = document.getElementById("address-province")?.value || "";
+  const distVal = document.getElementById("address-district")?.value || "";
+  const wardVal = document.getElementById("address-ward")?.value || "";
+  const detailVal = document.getElementById("guest-address-detail")?.value.trim();
+  const note = document.getElementById("guest-note")?.value.trim() || "";
+
+  if (!name || !phone || !provVal || !distVal || !wardVal || !detailVal) {
+    return { error: "Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ giao hàng!" };
+  }
+
+  if (!isValidPhone(phone)) {
+    return { error: "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0)!" };
+  }
+
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: "Email giao hàng không đúng định dạng." };
+  }
+
+  const provText = locationData[provVal]?.name || "";
+  const distText = locationData[provVal]?.districts[distVal]?.name || "";
+  const address = `${detailVal}, ${wardVal}, ${distText}, ${provText}`;
+
+  return {
+    shippingInfo: {
+      name,
+      phone,
+      email,
+      address,
+      province: provVal,
+      district: distVal,
+      ward: wardVal,
+      detail: detailVal,
+      note
+    }
+  };
+}
 
 async function initPaymentUserPage(selectedAddressIndex = null) {
   const token = localStorage.getItem("velura_token");
@@ -1597,11 +1780,21 @@ function initPaymentGuestPage() {
             body: JSON.stringify({ phone, password })
           });
           if (authRes && authRes.token) {
+            const guestShipping = {
+              name,
+              phone,
+              email,
+              address,
+              note
+            };
+            localStorage.setItem("checkout_shipping", JSON.stringify(guestShipping));
+            sessionStorage.setItem(CHECKOUT_RESUME_AFTER_LOGIN_KEY, "shipping-payment");
+
             storeAuthSession(authRes);
             showToast("Đăng nhập thành công!");
             await mergeLocalCartWithDb();
             setTimeout(() => {
-              window.location.href = "./payment-user.html";
+              window.location.href = "./shipping-payment.html";
             }, 1000);
             return;
           }
@@ -1634,24 +1827,24 @@ async function initShippingPaymentPage() {
   const continueBtn = document.getElementById("btn-submit-order");
   const shippingContainer = document.getElementById("shipping-options");
 
-  // Detect HCM from address — prefer fresh server data, fallback to localStorage
+  // Detect HCM from address — prefer checkout_shipping (user-entered), fallback to server default
   let addressText = "";
-  const token = localStorage.getItem("velura_token");
-  if (token) {
-    try {
-      const user = await apiRequest("/api/user/profile");
-      const addrs = user?.saved_addresses || [];
-      const defaultAddr = addrs.find(a => a.is_default) || addrs[0];
-      if (defaultAddr) {
-        addressText = (defaultAddr.detail || defaultAddr.address || defaultAddr.address_line || "").toLowerCase();
-      }
-    } catch (e) {
-      // fallback to localStorage
-    }
+  const shipping = readJsonStorage(localStorage, "checkout_shipping", {});
+  if (shipping.address) {
+    addressText = shipping.address.toLowerCase();
   }
   if (!addressText) {
-    const shipping = JSON.parse(localStorage.getItem("checkout_shipping") || "{}");
-    addressText = (shipping.address || "").toLowerCase();
+    const token = localStorage.getItem("velura_token");
+    if (token) {
+      try {
+        const user = await apiRequest("/api/user/profile");
+        const addrs = user?.saved_addresses || [];
+        const defaultAddr = addrs.find(a => a.is_default) || addrs[0];
+        if (defaultAddr) {
+          addressText = (defaultAddr.detail || defaultAddr.address || defaultAddr.address_line || "").toLowerCase();
+        }
+      } catch (e) {}
+    }
   }
   const isHCM = /hồ chí minh|tp\.?\s*hcm|tp\.?\s*hồ chí minh|thành phố hcm/i.test(addressText);
 
@@ -2039,27 +2232,47 @@ function initReviewEditModals() {
   });
 
   // Save address
-  document.querySelector(".js-save-address")?.addEventListener("click", () => {
-    const shipping = JSON.parse(localStorage.getItem("checkout_shipping") || "{}");
+  document.querySelector(".js-save-address")?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    const saveBtn = event.currentTarget;
+    const shipping = readJsonStorage(localStorage, "checkout_shipping", {});
 
     if (isMember) {
       const checked = document.querySelector('#edit-address-body input[name="edit-address-radio"]:checked');
       if (!checked) { showToast("Vui lòng chọn một địa chỉ"); return; }
       const emailInput = document.getElementById("edit-email");
       if (emailInput) shipping.email = emailInput.value.trim();
-      // Re-fetch from API to get the selected address detail
-      apiRequest("/api/user/profile").then(user => {
+      if (shipping.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shipping.email)) {
+        showToast("Email giao hàng không đúng định dạng.");
+        return;
+      }
+
+      try {
+        setButtonLoading(saveBtn, true, "Đang lưu...", "Lưu");
+        const user = await apiRequest("/api/user/profile");
         const addrs = user?.saved_addresses || [];
         const selected = addrs[parseInt(checked.value)];
-        if (selected) {
-          shipping.name = selected.name || shipping.name;
-          shipping.phone = selected.phone || shipping.phone;
-          shipping.address = selected.detail || shipping.address;
-          localStorage.setItem("checkout_shipping", JSON.stringify(shipping));
-          refreshReviewSections();
-          closeReviewModal("edit-address-modal");
+        if (!selected) {
+          showToast("Không tìm thấy địa chỉ đã chọn.");
+          return;
         }
-      }).catch(() => {});
+        shipping.name = selected.name || shipping.name;
+        shipping.phone = selected.phone || shipping.phone;
+        shipping.address = selected.detail || shipping.address;
+        const validationError = validateCheckoutShipping(shipping);
+        if (validationError) {
+          showToast(validationError);
+          return;
+        }
+        localStorage.setItem("checkout_shipping", JSON.stringify(shipping));
+        localStorage.setItem("velura_user", JSON.stringify(user));
+        refreshReviewSections();
+        closeReviewModal("edit-address-modal");
+      } catch (err) {
+        showToast(err.message || "Không thể cập nhật địa chỉ giao hàng.");
+      } finally {
+        setButtonLoading(saveBtn, false, "Đang lưu...", "Lưu");
+      }
     } else {
       const fullname = document.getElementById("edit-fullname")?.value.trim();
       const phone = document.getElementById("edit-phone")?.value.trim();
@@ -2073,6 +2286,14 @@ function initReviewEditModals() {
         showToast("Vui lòng điền đầy đủ thông tin địa chỉ");
         return;
       }
+      if (!isValidPhone(phone)) {
+        showToast("Số điện thoại giao hàng không hợp lệ.");
+        return;
+      }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showToast("Email giao hàng không đúng định dạng.");
+        return;
+      }
 
       const provName = locationData[provVal]?.name || "";
       const distName = locationData[provVal]?.districts[distVal]?.name || "";
@@ -2080,6 +2301,11 @@ function initReviewEditModals() {
       shipping.phone = phone;
       shipping.email = email || "";
       shipping.address = `${detail}, ${wardVal}, ${distName}, ${provName}`;
+      const validationError = validateCheckoutShipping(shipping);
+      if (validationError) {
+        showToast(validationError);
+        return;
+      }
       localStorage.setItem("checkout_shipping", JSON.stringify(shipping));
       refreshReviewSections();
       closeReviewModal("edit-address-modal");
@@ -2331,23 +2557,24 @@ function initOrderConfirmPage() {
     if (otpConfirmBtn) {
       otpConfirmBtn.addEventListener("click", async (e) => {
         e.preventDefault();
+        if (otpConfirmBtn.dataset.loading === "true") return;
         const enteredOtp = Array.from(otpInputs).map(x => x.value.trim()).join("");
         if (enteredOtp.length < 4) {
           showToast("Vui lòng nhập đầy đủ mã OTP 4 chữ số!");
           return;
         }
 
+        const guestPayload = JSON.parse(sessionStorage.getItem("guest_checkout_payload") || "{}");
+        if (!guestPayload.phone) {
+          showToast("Th\u00f4ng tin \u0111\u1eb7t h\u00e0ng kh\u00f4ng h\u1ee3p l\u1ec7. Vui l\u00f2ng th\u1eed l\u1ea1i t\u1eeb \u0111\u1ea7u.");
+          return;
+        }
+
         try {
+          otpConfirmBtn.dataset.loading = "true";
           otpConfirmBtn.textContent = "Đang xác thực...";
           otpConfirmBtn.style.pointerEvents = "none";
           otpConfirmBtn.style.opacity = "0.7";
-
-          const guestPayload = JSON.parse(sessionStorage.getItem("guest_checkout_payload") || "{}");
-          if (!guestPayload.phone) {
-            showToast("Thông tin đặt hàng không hợp lệ. Vui lòng thử lại từ đầu.");
-            return;
-          }
-
           const payload = {
             phone: guestPayload.phone,
             otp: enteredOtp,
@@ -2428,6 +2655,11 @@ function initOrderConfirmPage() {
               otpInputs[0].focus();
             }
           }
+        } finally {
+          otpConfirmBtn.dataset.loading = "false";
+          otpConfirmBtn.textContent = "X\u00e1c nh\u1eadn";
+          otpConfirmBtn.style.pointerEvents = "auto";
+          otpConfirmBtn.style.opacity = "1";
         }
       });
     }
@@ -2443,28 +2675,42 @@ function initOrderConfirmPage() {
 
     submitOrderBtn.addEventListener("click", async (e) => {
       e.preventDefault();
+      e.stopImmediatePropagation();
+
+      if (submitOrderBtn.dataset.loading === "true") return;
+
+      const snapshot = getCheckoutSnapshot();
+      const validationError = validateCheckoutShipping(snapshot.shipping);
+      if (validationError) {
+        showToast(validationError);
+        return;
+      }
+      if (!snapshot.cart.length) {
+        showToast("Giỏ hàng không có sản phẩm để thanh toán.");
+        return;
+      }
+      if (!snapshot.methods.shippingMethod || !snapshot.methods.paymentMethod) {
+        showToast("Vui lòng chọn phương thức vận chuyển và thanh toán.");
+        return;
+      }
 
       try {
-        submitOrderBtn.textContent = "Đang xử lý...";
-        submitOrderBtn.style.pointerEvents = "none";
-        submitOrderBtn.style.opacity = "0.7";
-
         if (isMemberCheckout) {
-          // Member Checkout
-          const orderItems = expandCheckoutItemsForBackend(cart);
+          submitOrderBtn.dataset.loading = "true";
+          setButtonLoading(submitOrderBtn, true, "Đang xử lý...", "Xác nhận đặt hàng");
 
           const payload = {
-            shipping_name: shipping.name,
-            shipping_phone: shipping.phone,
-            shipping_address: shipping.address,
-            shipping_fee: methods.shippingFee,
+            shipping_name: snapshot.shipping.name,
+            shipping_phone: snapshot.shipping.phone,
+            shipping_address: snapshot.shipping.address,
+            shipping_fee: snapshot.methods.shippingFee,
             voucher_id: localStorage.getItem("checkout_voucher_id") || null,
-            discount_amount: discountAmount,
-            subtotal: subtotal,
-            total_amount: grandTotal,
-            payment_method: methods.paymentMethod,
-            shipping_email: shipping.email || "",
-            items: orderItems
+            discount_amount: snapshot.discountAmount,
+            subtotal: snapshot.subtotal,
+            total_amount: snapshot.grandTotal,
+            payment_method: snapshot.methods.paymentMethod,
+            shipping_email: snapshot.shipping.email || "",
+            items: expandCheckoutItemsForBackend(snapshot.cart)
           };
 
           const res = await apiRequest("/api/user/orders", {
@@ -2472,93 +2718,111 @@ function initOrderConfirmPage() {
             body: JSON.stringify(payload)
           });
 
-          if (res.success) {
-            localStorage.setItem("created_order", JSON.stringify({
-              order_id: res.order.order_id,
-              tracking_code: res.order.tracking_code,
-              payment_method: res.order.payment_method,
-              shipping_address: res.order.shipping_address,
-              shipping_method: methods.shippingMethod
-            }));
-
-            // Remove only checked out items
-            const mainCart = getCart();
-            const remainingCart = getRemainingCartAfterCheckout(mainCart, cart);
-            localStorage.setItem("velura_cart", JSON.stringify(remainingCart));
-            syncCartWithDb(remainingCart);
-
-            sessionStorage.removeItem("checkout_items");
-            localStorage.removeItem("checkout_shipping");
-            localStorage.removeItem("checkout_methods");
-            localStorage.removeItem("checkout_discount");
-            localStorage.removeItem("checkout_voucher_id");
-            localStorage.removeItem("checkout_voucher_code");
-
-            if (methods.paymentMethod === "VNPAY" || methods.paymentMethod === "MOMO") {
-              window.location.href = `/src/pages/checkout/mock-payment.html?order_id=${res.order.order_id}&amount=${grandTotal}&method=${methods.paymentMethod}`;
-            } else {
-              showToast("Đặt hàng thành công!");
-              setTimeout(() => {
-                window.location.href = "/src/pages/checkout/payment-confirm.html";
-              }, 1500);
-            }
-          } else {
+          if (!res.success) {
             throw new Error(res.message || "Đặt hàng thất bại");
           }
+
+          localStorage.setItem("created_order", JSON.stringify({
+            order_id: res.order.order_id,
+            tracking_code: res.order.tracking_code,
+            payment_method: res.order.payment_method,
+            shipping_address: res.order.shipping_address,
+            shipping_method: snapshot.methods.shippingMethod
+          }));
+
+          const mainCart = getCart();
+          const remainingCart = getRemainingCartAfterCheckout(mainCart, snapshot.cart);
+          localStorage.setItem("velura_cart", JSON.stringify(remainingCart));
+          await syncCartWithDb(remainingCart);
+
+          sessionStorage.removeItem("checkout_items");
+          localStorage.removeItem("checkout_shipping");
+          localStorage.removeItem("checkout_methods");
+          localStorage.removeItem("checkout_discount");
+          localStorage.removeItem("checkout_voucher_id");
+          localStorage.removeItem("checkout_voucher_code");
+
+          if (snapshot.methods.paymentMethod === "VNPAY" || snapshot.methods.paymentMethod === "MOMO") {
+            window.location.href = `/src/pages/checkout/mock-payment.html?order_id=${res.order.order_id}&amount=${snapshot.grandTotal}&method=${snapshot.methods.paymentMethod}`;
+          } else {
+            showToast("Đặt hàng thành công!");
+            setTimeout(() => {
+              window.location.href = "/src/pages/checkout/payment-confirm.html";
+            }, 1500);
+          }
         } else {
-          // Guest Checkout - confirm details before sending OTP
-          showGuestOrderConfirmModal(shipping, async () => {
-            try {
-              submitOrderBtn.textContent = "Đang gửi OTP...";
-              submitOrderBtn.style.pointerEvents = "none";
-              submitOrderBtn.style.opacity = "0.7";
+          showGuestOrderConfirmModal(
+            () => getCheckoutSnapshot().shipping,
+            async (latestShipping, confirmBtn, modal) => {
+              if (confirmBtn.dataset.loading === "true") return;
 
-              const sendRes = await apiRequest("/api/user/orders/otp-send", {
-                method: "POST",
-                body: JSON.stringify({
-                  phone: shipping.phone,
-                  email: shipping.email || "",
-                  full_name: shipping.name
-                })
-              });
+              const latestSnapshot = getCheckoutSnapshot();
+              const latestValidationError = validateCheckoutShipping(latestSnapshot.shipping);
+              if (latestValidationError) {
+                showToast(latestValidationError);
+                return;
+              }
+              if (!latestSnapshot.cart.length) {
+                showToast("Giỏ hàng không có sản phẩm để thanh toán.");
+                return;
+              }
 
-              if (sendRes.success) {
+              try {
+                confirmBtn.dataset.loading = "true";
+                setButtonLoading(confirmBtn, true, "Đang gửi OTP...", "Xác nhận và nhận mã OTP");
+
+                const sendRes = await apiRequest("/api/user/orders/otp-send", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    phone: latestShipping.phone,
+                    email: latestShipping.email || "",
+                    full_name: latestShipping.name
+                  })
+                });
+
+                if (!sendRes.success) {
+                  throw new Error(sendRes.message || "Không thể gửi mã xác thực");
+                }
+
                 showToast("Mã xác thực OTP đã được gửi!");
                 sessionStorage.setItem("guest_checkout_payload", JSON.stringify({
-                  phone: shipping.phone,
-                  shipping_name: shipping.name,
-                  shipping_address: shipping.address,
-                  shipping_fee: methods.shippingFee,
+                  phone: latestShipping.phone,
+                  shipping_name: latestShipping.name,
+                  shipping_address: latestShipping.address,
+                  shipping_fee: latestSnapshot.methods.shippingFee,
                   voucher_id: localStorage.getItem("checkout_voucher_id") || null,
-                  discount_amount: discountAmount,
-                  subtotal: subtotal,
-                  total_amount: grandTotal,
-                  payment_method: methods.paymentMethod,
-                  email: shipping.email || "",
-                  items: cart
+                  discount_amount: latestSnapshot.discountAmount,
+                  subtotal: latestSnapshot.subtotal,
+                  total_amount: latestSnapshot.grandTotal,
+                  payment_method: latestSnapshot.methods.paymentMethod,
+                  email: latestShipping.email || "",
+                  items: latestSnapshot.cart
                 }));
 
+                modal.remove();
                 setTimeout(() => {
                   window.location.href = "/src/pages/checkout/otp-verify.html";
-                }, 1500);
-              } else {
-                throw new Error(sendRes.message || "Không thể gửi mã xác thực");
+                }, 300);
+              } catch (err) {
+                showToast(err.message || "Không thể gửi OTP. Vui lòng thử lại.");
+              } finally {
+                confirmBtn.dataset.loading = "false";
+                setButtonLoading(confirmBtn, false, "Đang gửi OTP...", "Xác nhận và nhận mã OTP");
               }
-            } catch (err) {
-              showToast(err.message || "Lỗi xử lý đặt hàng");
-              submitOrderBtn.textContent = "Nhận mã OTP & Đặt hàng";
-              submitOrderBtn.style.pointerEvents = "auto";
-              submitOrderBtn.style.opacity = "1";
             }
-          });
+          );
         }
       } catch (err) {
         showToast(err.message || "Lỗi xử lý đặt hàng");
-        submitOrderBtn.textContent = isMemberCheckout ? "Xác nhận đặt hàng" : "Nhận mã OTP & Đặt hàng";
-        submitOrderBtn.style.pointerEvents = "auto";
-        submitOrderBtn.style.opacity = "1";
+      } finally {
+        if (isMemberCheckout) {
+          submitOrderBtn.dataset.loading = "false";
+          setButtonLoading(submitOrderBtn, false, "Đang xử lý...", "Xác nhận đặt hàng");
+        }
       }
-    });
+    }, true);
+
+
   }
 }
 

@@ -236,7 +236,7 @@ test("customer member and guest flows require real auth sessions", async () => {
   assert.match(cart, /storeAuthSession\(authRes\)/);
   assert.doesNotMatch(cart, /login_id:\s*phone/);
   assert.match(cart, /renderCheckoutLayout\(getCurrentRole\(\)\)/);
-  assert.match(cart, /showGuestOrderConfirmModal\(shipping/);
+  assert.match(cart, /showGuestOrderConfirmModal\(\s*\(\) => getCheckoutSnapshot\(\)\.shipping/);
   assert.match(cart, /hasRealAuthSession\(\)/);
 
   assert.match(main, /profile\.html/);

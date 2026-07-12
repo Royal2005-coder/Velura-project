@@ -1216,6 +1216,19 @@ select.profile-form__input {
   flex-grow: 1;
 }
 
+.setting-row__social {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.setting-row__social-logo {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  display: block;
+}
+
 .setting-row__label {
   font-size: 0.9375rem;
   font-weight: 500;

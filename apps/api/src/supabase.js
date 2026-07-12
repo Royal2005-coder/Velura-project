@@ -137,6 +137,7 @@ export async function callRpc(name, payload, options = {}) {
     body: payload,
     useAnonKey: options.useAnonKey,
     accessToken: options.accessToken,
+    silentError: options.silentError,
     headers: {
       prefer: "return=representation"
     }
@@ -153,6 +154,7 @@ export async function insertRow(table, payload, options = {}) {
     body: payload,
     useAnonKey: options.useAnonKey,
     accessToken: options.accessToken,
+    silentError: options.silentError,
     headers: {
       prefer: "return=representation"
     }
@@ -167,6 +169,7 @@ export async function updateRows(table, query, payload, options = {}) {
     body: payload,
     useAnonKey: options.useAnonKey,
     accessToken: options.accessToken,
+    silentError: options.silentError,
     headers: {
       prefer: "return=representation"
     }

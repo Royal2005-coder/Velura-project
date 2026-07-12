@@ -224,7 +224,7 @@ export function initMyOrders() {
         let reviewBtnHtml = "";
         if (orderReview) {
           if (orderReview.status === "rejected") {
-            reviewBtnHtml = `<button class="btn js-btn-review-trigger" data-id="${orderId}" type="button" style="background-color: #DC3545; border-color: #DC3545; color: #fff;">Đánh giá lại &gt;</button>`;
+            reviewBtnHtml = `<button class="btn btn--danger js-btn-review-trigger" data-id="${orderId}" type="button">Đánh giá lại &gt;</button>`;
           } else if (orderReview.status === "pending") {
             reviewBtnHtml = `<button class="btn btn--outline" disabled type="button">Đang duyệt...</button>`;
           } else {
