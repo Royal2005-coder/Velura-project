@@ -425,7 +425,10 @@ export function initReturnRequest() {
       const headers = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      const response = await fetch("http://localhost:8787/api/user/upload/evidence", {
+      const apiBase = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+        ? "http://localhost:8787"
+        : window.location.origin;
+      const response = await fetch(`${apiBase}/api/user/upload/evidence`, {
         method: "POST",
         headers,
         body: formData

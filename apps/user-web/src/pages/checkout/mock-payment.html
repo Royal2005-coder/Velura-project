@@ -201,7 +201,9 @@
       badge.className = 'gateway-badge gateway-badge--vnpay';
     }
 
-    const apiBase = 'http://localhost:8787';
+    const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:8787'
+      : window.location.origin;
 
     async function submitCallback(status) {
       if (!orderId) {

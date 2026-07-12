@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
+import fs from "node:fs";
 
 export default defineConfig({
   root: "src",
@@ -29,6 +30,22 @@ export default defineConfig({
   server: {
     port: 5174,
     host: true,
+    https: {
+      key: fs.readFileSync(resolve(__dirname, "../../certs/key.pem")),
+      cert: fs.readFileSync(resolve(__dirname, "../../certs/cert.pem"))
+    },
+    proxy: {
+      "/api": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+        secure: false
+      },
+      "/uploads": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+        secure: false
+      }
+    },
     open: "/pages/admin/login.html"
   }
 });

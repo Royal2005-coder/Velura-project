@@ -2,7 +2,9 @@ import { clearAuthSession, isTokenExpired } from "./auth-session.js";
 
 // Velura Frontend API Client Module
 
-const API_URL = "http://localhost:8787";
+const API_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  ? "http://localhost:8787"
+  : window.location.origin;
 
 
 /**

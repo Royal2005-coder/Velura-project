@@ -41,7 +41,9 @@ function getEvidenceImageUrl(img) {
     return img;
   }
   const apiHost = window.location.hostname;
-  const apiBase = `http://${apiHost}:8787`;
+  const apiBase = (apiHost === "localhost" || apiHost === "127.0.0.1")
+    ? `http://${apiHost}:8787`
+    : window.location.origin;
   return apiBase + (img.startsWith("/") ? img : "/" + img);
 }
 

@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
 import injectHTML from "vite-plugin-html-inject";
+import fs from "node:fs";
 
 export default defineConfig({
   root: ".",
@@ -47,8 +48,24 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3000,
+    port: 3001,
     host: true,
+    https: {
+      key: fs.readFileSync(resolve(__dirname, "../../certs/key.pem")),
+      cert: fs.readFileSync(resolve(__dirname, "../../certs/cert.pem"))
+    },
+    proxy: {
+      "/api": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+        secure: false
+      },
+      "/uploads": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+        secure: false
+      }
+    },
     open: "/src/pages/auth/signin.html"
   }
 });

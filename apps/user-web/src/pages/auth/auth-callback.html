@@ -27,7 +27,7 @@
     const SUPABASE_URL = "https://drvkrpoojyncodfytftn.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_6ELMfwBsM3SFAXQz8-jmOQ_kv1kkGh7";
     const SUPABASE_AUTH = SUPABASE_URL + "/auth/v1";
-    const API_BASE = "http://localhost:8787";
+    const API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") ? "http://localhost:8787" : window.location.origin;
     const PKCE_KEY = "velura-oauth-pkce-code-verifier";
     const REDIRECT_URI = window.location.origin + "/src/pages/auth/auth-callback.html";
 
