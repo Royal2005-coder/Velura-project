@@ -85,6 +85,29 @@ function buildSocialAccounts(existingAccounts, providerProfile) {
   };
 }
 
+function isMissingSocialAccountsColumn(error) {
+  const message = `${error?.message || ""} ${error?.details?.message || ""} ${error?.details?.msg || ""}`;
+  return error?.status === 400 && /social_accounts/i.test(message) && /schema cache|column/i.test(message);
+}
+
+async function saveSocialAccountsIfSupported(user, providerProfile) {
+  if (!user?.user_id || !providerProfile?.provider) return user;
+
+  try {
+    const rows = await updateRows("users", { user_id: `eq.${user.user_id}` }, {
+      social_accounts: buildSocialAccounts(user.social_accounts, providerProfile),
+      updated_at: new Date().toISOString()
+    }, { silentError: true });
+    return rows[0] || user;
+  } catch (err) {
+    if (isMissingSocialAccountsColumn(err)) {
+      console.warn("[social-login] users.social_accounts is not available yet; continuing without linked-account metadata.");
+      return user;
+    }
+    throw err;
+  }
+}
+
 export async function handleAuthRoute(req, res, action, corsHeaders, context) {
   // GET /api/user/auth/check-exists?email=...&phone=...
   if (action === "check-exists" && req.method === "GET") {
@@ -483,7 +506,6 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
 
     if (user) {
       const updates = {
-        social_accounts: buildSocialAccounts(user.social_accounts, providerProfile),
         updated_at: new Date().toISOString()
       };
       if (!user.auth_user_id) updates.auth_user_id = authUserId;
@@ -493,6 +515,7 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
       if (updatedRows[0]) {
         user = updatedRows[0];
       }
+      user = await saveSocialAccountsIfSupported(user, providerProfile);
     } else {
       // Create new user from social profile
       const randomPassword = "SocialAuth" + Math.floor(1000 + Math.random() * 9000) + "!";
@@ -502,11 +525,11 @@ export async function handleAuthRoute(req, res, action, corsHeaders, context) {
         full_name: safeName,
         avatar,
         auth_user_id: authUserId,
-        social_accounts: buildSocialAccounts({}, providerProfile),
         is_active: true,
         role: "member",
         tier: "Standard"
       });
+      user = await saveSocialAccountsIfSupported(user, providerProfile);
 
       // Welcome notification
       await createNotification(
