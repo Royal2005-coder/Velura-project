@@ -8,6 +8,14 @@ const checkoutOtpAttemptsMap = new Map();
 
 import { config } from "../config.js";
 
+function withTimeout(promise, ms, label) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
+
 // Helper to parse Postgres date as UTC robustly
 export function parseUtcDate(dateStr) {
   if (!dateStr) return new Date();
@@ -21,7 +29,9 @@ export function parseUtcDate(dateStr) {
 // Helper to send email directly without relying on email_outbox and service role worker
 async function sendDirectEmail(to, subject, text, html) {
   if (!config.smtpHost || !config.smtpUser || !config.smtpAppPassword) {
-    console.log(`[EMAIL MOCK] Gửi tới ${to}: ${subject}\n${text}`);
+    if (config.nodeEnv !== "production") {
+      console.log(`[EMAIL MOCK] Sending to ${to}: ${subject}`);
+    }
     return;
   }
   try {
@@ -35,16 +45,16 @@ async function sendDirectEmail(to, subject, text, html) {
         pass: config.smtpAppPassword
       }
     });
-    await transporter.sendMail({
+    await withTimeout(transporter.sendMail({
       from: `"Velura" <${config.smtpUser}>`,
       to,
       subject,
       text,
       html
-    });
-    console.log(`[EMAIL SENT] Gửi thành công tới ${to}`);
+    }), 10000, "SMTP send");
+    console.log(`[EMAIL SENT] Sent successfully to ${to}`);
   } catch (err) {
-    console.error(`[EMAIL ERROR] Lỗi gửi email tới ${to}:`, err.message);
+    console.error(`[EMAIL ERROR] Failed to send email to ${to}:`, err.message);
   }
 }
 
@@ -477,9 +487,13 @@ export async function handleOrdersRoute(req, res, subRoute, action, parts, corsH
       const otpCode = Math.floor(1000 + Math.random() * 9000).toString(); // 4 digits
       const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
       
-      console.log(`\n==================================================`);
-      console.log(`[CHECKOUT GUEST OTP] Mã xác thực đơn hàng của ${phone} là: ${otpCode}`);
-      console.log(`==================================================\n`);
+      if (config.nodeEnv !== "production") {
+        console.log(`\n==================================================`);
+        console.log(`[CHECKOUT GUEST OTP] Checkout OTP for ${phone}: ${otpCode}`);
+        console.log(`==================================================\n`);
+      } else {
+        console.log(`[CHECKOUT GUEST OTP] OTP requested for ${phone}`);
+      }
       
       let userId = existingUser ? existingUser.user_id : null;
       

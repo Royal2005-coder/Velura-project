@@ -158,9 +158,98 @@ function initAccountTabs() {
 /**
  * Profile form verification and submission
  */
+const SOCIAL_SUPABASE_AUTH = "https://drvkrpoojyncodfytftn.supabase.co/auth/v1";
+const SOCIAL_PKCE_KEY = "velura-oauth-pkce-code-verifier";
+const SOCIAL_CALLBACK_URL = window.location.origin + "/src/pages/auth/auth-callback.html";
+
+function generateSocialCodeVerifier() {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode.apply(null, array))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function computeSocialCodeChallenge(verifier) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  const array = new Uint8Array(digest);
+  return btoa(String.fromCharCode.apply(null, array))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function startProfileSocialOAuth(provider) {
+  const verifier = generateSocialCodeVerifier();
+  const challenge = await computeSocialCodeChallenge(verifier);
+  localStorage.setItem(SOCIAL_PKCE_KEY, verifier);
+  const url = SOCIAL_SUPABASE_AUTH + "/authorize?provider=" + provider
+    + "&code_challenge=" + encodeURIComponent(challenge)
+    + "&code_challenge_method=s256"
+    + "&redirect_to=" + encodeURIComponent(SOCIAL_CALLBACK_URL);
+  window.location.href = url;
+}
+
+function getProviderAccount(profile, provider) {
+  const accounts = profile?.social_accounts || profile?.socialAccounts || {};
+  if (accounts && typeof accounts === "object" && !Array.isArray(accounts)) {
+    const account = accounts[provider];
+    if (account) {
+      return {
+        email: account.providerEmail || account.email || null,
+        name: account.providerName || account.name || null
+      };
+    }
+  }
+
+  if (provider === "google") {
+    return {
+      email: profile?.googleEmail || profile?.google_email || null,
+      name: profile?.googleName || profile?.google_name || null
+    };
+  }
+
+  return {
+    email: profile?.facebookEmail || profile?.facebook_email || null,
+    name: profile?.facebookName || profile?.facebook_name || null
+  };
+}
+
+function getProviderDisplayValue(provider, account) {
+  if (provider === "facebook") {
+    return account.email || account.name || "";
+  }
+  return account.email || "";
+}
+
+function renderSocialAccountLinks(profile = {}) {
+  document.querySelectorAll("[data-social-provider]").forEach(row => {
+    const provider = row.dataset.socialProvider;
+    const desc = row.querySelector("[data-social-desc]");
+    const button = row.querySelector("[data-social-action]");
+    const account = getProviderAccount(profile, provider);
+    const displayValue = getProviderDisplayValue(provider, account);
+    const providerLabel = provider === "facebook" ? "Facebook" : "Google";
+    const isLinked = Boolean(displayValue);
+
+    if (desc) {
+      desc.textContent = isLinked
+        ? displayValue
+        : `Chưa liên kết tài khoản ${providerLabel}`;
+    }
+
+    if (button) {
+      button.textContent = isLinked ? "Hủy liên kết" : "Liên kết";
+      button.classList.toggle("linked", isLinked);
+      button.dataset.socialLinked = isLinked ? "true" : "false";
+    }
+  });
+}
+
 function loadProfileData(form) {
   apiRequest("/api/user/profile")
     .then(profile => {
+      renderSocialAccountLinks(profile);
+
       const nameInput = form.querySelector('input[name="fullname"]');
       const phoneInput = form.querySelector('input[name="phone"]');
       const emailInput = form.querySelector('input[name="email"]');
@@ -228,6 +317,8 @@ function loadProfileData(form) {
         if (rawUser) {
           try {
             const profile = JSON.parse(rawUser);
+            renderSocialAccountLinks(profile);
+
             const nameInput = form.querySelector('input[name="fullname"]');
             const phoneInput = form.querySelector('input[name="phone"]');
             const emailInput = form.querySelector('input[name="email"]');
@@ -1389,6 +1480,28 @@ function initWishlistActions() {
  * Settings & Style Profile saving buttons
  */
 function initSettingsAndStyleActions() {
+  document.querySelectorAll("[data-social-action]").forEach(button => {
+    if (button.dataset.bound === "true") return;
+    button.dataset.bound = "true";
+
+    button.addEventListener("click", async () => {
+      const row = button.closest("[data-social-provider]");
+      const provider = row?.dataset.socialProvider;
+      if (!provider) return;
+
+      if (button.dataset.socialLinked === "true") {
+        showToast("Tính năng hủy liên kết tài khoản sẽ được cập nhật trong phiên bản tiếp theo.");
+        return;
+      }
+
+      try {
+        await startProfileSocialOAuth(provider);
+      } catch {
+        showToast(`Không thể kết nối ${provider === "facebook" ? "Facebook" : "Google"}. Vui lòng thử lại.`);
+      }
+    });
+  });
+
   const saveSettingsBtn = document.querySelector(".js-btn-save-settings");
   if (saveSettingsBtn) {
     saveSettingsBtn.addEventListener("click", () => {
