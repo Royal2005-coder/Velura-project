@@ -302,7 +302,7 @@ export function createChatbotService({ repository }) {
       const message = (messages.rows || []).find(m => m.message_id === messageId);
       if (!message) throw new HttpError(404, "MESSAGE_NOT_FOUND", "Message not found");
 
-      const productIds = message.product_ids || [];
+      const productIds = normalizeUuidList(message.product_ids || []);
 
       const aiLog = await repository.insertAiLog({
         profileUserId: context.profile.user_id,
@@ -980,8 +980,8 @@ function cleanEmail(value) {
 }
 
 function cleanPhone(value) {
-  const phone = String(value || "").replace(/[^\d]/g, "");
-  return /^0\d{9}$/.test(phone) ? phone : "";
+  const phone = String(value || "").replace(/[^\d+]/g, "").slice(0, 20);
+  return phone.length >= 8 ? phone : "";
 }
 
 function shortSessionId(sessionId) {
@@ -989,10 +989,16 @@ function shortSessionId(sessionId) {
 }
 
 function normalizeUuidList(values) {
-  const input = Array.isArray(values) ? values : String(values || "").split(",");
+  let list = [];
+  if (Array.isArray(values)) {
+    list = values;
+  } else {
+    const cleanStr = String(values || "").replace(/^\{|\}$/g, "");
+    list = cleanStr.split(",");
+  }
   const seen = new Set();
   const result = [];
-  for (const value of input) {
+  for (const value of list) {
     const id = String(value || "").trim();
     if (!isUuid(id) || seen.has(id)) continue;
     seen.add(id);

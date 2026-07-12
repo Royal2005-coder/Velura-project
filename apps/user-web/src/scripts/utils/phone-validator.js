@@ -6,5 +6,6 @@
  */
 export function isValidPhone(phone) {
   if (typeof phone !== "string") return false;
-  return /^0\d{9}$/.test(phone);
+  const clean = phone.replace(/[^\d+]/g, "");
+  return clean.length >= 8 && clean.length <= 20;
 }

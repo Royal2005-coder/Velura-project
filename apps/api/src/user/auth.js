@@ -9,10 +9,10 @@ export function validateEmail(email) {
   return re.test(email);
 }
 
-// Helper to validate phone format (Vietnamese standard: 10 digits starting with 0)
+// Helper to validate phone format (Vietnamese and international formats)
 export function validatePhone(phone) {
-  const re = /^0\d{9}$/;
-  return re.test(phone);
+  const clean = String(phone || "").replace(/[^\d+]/g, "");
+  return clean.length >= 8 && clean.length <= 20;
 }
 
 // Helper to validate password (AUTH-04: min 8 chars, 1 uppercase, 1 lowercase, 1 number/special)
